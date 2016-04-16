@@ -1,0 +1,17 @@
+---
+- name: update package lists
+  apt: update_cache=yes
+
+- name: install common packages
+  apt: pkg={{ item }} state=installed
+  with_items:
+   - build-essential
+   - byobu
+   - git
+   - htop
+   - jq
+   - tmux
+  tags: install
+
+- name: upgrade all packages
+  apt: upgrade=dist
