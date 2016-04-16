@@ -1,20 +1,32 @@
 ---
 - name: install git
+  tags:
+    - golang
   apt: pkg=git state=installed
 
 - name: install mercurial
+  tags:
+    - golang
   apt: pkg=mercurial state=installed
 
 - name: remove any existing go installations
+  tags:
+    - golang
   file: path={{ golang_root }} state=absent
 
 - name: download and checksum go tarball
+  tags:
+    - golang
   get_url: url={{ golang_url }} dest={{ golang_tgz }} checksum=sha256:{{ golang_sha256 }}
 
 - name: unpack tarball
+  tags:
+    - golang
   unarchive: src={{ golang_tgz }} dest=/usr/local/ copy=no
 
 - name: insert go configuration into shell configuration
+  tags:
+    - golang
   blockinfile:
     dest: /{{ golang_user }}/.bashrc
     marker: "# {mark} ansible-managed Go configuration"
@@ -25,10 +37,16 @@
       export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 - name: create personal GOPATH location
+  tags:
+    - golang
   file: path={{ golang_home_dir }}/src/{{ golang_personal_gopath }} state=directory
 
 - name: symlink personal GOPATH location to ~/go
+  tags:
+    - golang
   file: dest={{ golang_home_dir }}/go src={{ golang_home_dir }}/src/{{ golang_personal_gopath }} owner={{ golang_user }} group={{ golang_user }} state=link
 
 - name: remove temporary go tarball
+  tags:
+    - golang
   file: path={{ golang_tgz }} state=absent

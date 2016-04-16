@@ -1,23 +1,31 @@
 ---
 - name: install rtorrent
+  tags:
+    - rtorrent
   apt: pkg=rtorrent state=installed
   register: rtorrentinstalled
 
-- name: fail the play if rtorrent could not be installed
-  when: rtorrentinstalled|failed
-  fail: msg="failed to install rtorrent"
-
 - name: create rtorrent user
+  tags:
+    - rtorrent
   user: name=rtorrent shell=/bin/false comment="rtorrent service user"
 
 - name: create rtorrent configuration
+  tags:
+    - rtorrent
   template: src=rtorrent.rc.j2 dest=/home/rtorrent/.rtorrent.rc owner=rtorrent group=rtorrent mode=0755
 
 - name: create files directory
+  tags:
+    - rtorrent
   file: path={{ rtorrent_path_files }} state=directory owner=rtorrent group=rtorrent mode=0755
 
 - name: create watch directory
+  tags:
+    - rtorrent
   file: path={{ rtorrent_path_watch }} state=directory owner=rtorrent group=rtorrent mode=0755
 
 - name: create session directory
+  tags:
+    - rtorrent
   file: path={{ rtorrent_path_session }} state=directory owner=rtorrent group=rtorrent mode=0755

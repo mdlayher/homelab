@@ -1,12 +1,20 @@
 ---
 - name: download and checksum plex debian package
+  tags:
+    - plex
   get_url: url={{ plex_url }} dest={{ plex_deb }} checksum=sha1:{{ plex_sha1 }}
 
 - name: install plex
+  tags:
+    - plex
   apt: deb={{ plex_deb }} state=installed
 
 - name: remove temporary plex debian package
+  tags:
+    - plex
   file: path={{ plex_deb }} state=absent
 
 - name: start plex service
+  tags:
+    - plex
   service: name=plexmediaserver state=started enabled=yes

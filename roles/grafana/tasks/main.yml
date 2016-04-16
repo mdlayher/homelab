@@ -1,12 +1,20 @@
 ---
 - name: add packagecloud apt key
+  tags:
+    - grafana
   apt_key: url=https://packagecloud.io/gpg.key state=present
 
 - name: add grafana apt repository
+  tags:
+    - grafana
   apt_repository: repo="deb https://packagecloud.io/grafana/stable/debian/ wheezy main" state=present
 
 - name: install grafana
+  tags:
+    - grafana
   apt: pkg=grafana state=installed update_cache=yes
 
 - name: start grafana service
+  tags:
+    - grafana
   service: name=grafana-server state=started enabled=yes
