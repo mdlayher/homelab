@@ -1,0 +1,36 @@
+---
+- hosts: rtorrent
+  vars:
+    # Client configurations
+    - rtorrent_port: 58575
+    - rtorrent_download_rate: 10000
+    - rtorrent_upload_rate: 400
+    - rtorrent_low_diskspace: "1G"
+    # Path configurations
+    - rtorrent_path_root: "/mnt/rtorrent"
+    - rtorrent_path_files: "{{ rtorrent_path_root }}/files"
+    - rtorrent_path_session: "{{ rtorrent_path_root }}/.session"
+    - rtorrent_path_watch: "{{ rtorrent_path_root }}/watch"
+  tasks:
+    - name: install rtorrent
+      apt: pkg=rtorrent state=installed
+      register: rtorrentinstalled
+
+    - name: fail the play if rtorrent could not be installed
+      when: rtorrentinstalled|failed
+      fail: msg="failed to install rtorrent"
+
+    - name: create rtorrent user
+      user: name=rtorrent shell=/bin/false comment="rtorrent service user"
+
+    - name: create rtorrent configuration
+      template: src=rtorrent.rc.j2 dest=/home/rtorrent/.rtorrent.rc owner=rtorrent group=rtorrent mode=0755
+
+    - name: create files directory
+      file: path={{ rtorrent_path_files }} state=directory owner=rtorrent group=rtorrent mode=0755
+
+    - name: create watch directory
+      file: path={{ rtorrent_path_watch }} state=directory owner=rtorrent group=rtorrent mode=0755
+
+    - name: create session directory
+      file: path={{ rtorrent_path_session }} state=directory owner=rtorrent group=rtorrent mode=0755

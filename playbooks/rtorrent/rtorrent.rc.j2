@@ -1,0 +1,48 @@
+# {{ ansible_managed }}
+# rtorrent configuration, Matt Layher, 2016-04-15
+
+#
+# Dynamic configurations.
+#
+
+# Configure global upload and download rates in KiB. "0" is unlimited.
+download_rate = {{ rtorrent_download_rate }}
+upload_rate = {{ rtorrent_upload_rate }}
+
+# Listen on a single port.
+port_range = {{ rtorrent_port }}-{{ rtorrent_port }}
+port_random = no
+
+# Files and session directory configurations.
+directory = {{ rtorrent_path_files }}
+session = {{ rtorrent_path_session }}
+
+# Watch directory configuration.
+schedule = watch_directory,5,5,load_start="{{ rtorrent_path_watch }}/*.torrent"
+schedule = untied_directory,5,5,stop_untied=
+schedule = tied_directory,5,5,start_tied=
+
+# Halt further downloads when disk space is low.
+schedule = low_diskspace,5,60,close_low_diskspace={{ rtorrent_low_diskspace }}
+
+# Delete file data when a torrent is removed.
+system.method.set_key = event.download.erased,remove_erased,"execute=rm,-rf,--,$d.get_base_path={{ rtorrent_path_files }}"
+
+{% if rtorrent_scgi_port is defined %}
+# SCGI interface configuration.
+scgi_port = {{ rtorrent_scgi_port }}
+
+{% endif %}
+#
+# Static configurations.
+#
+
+# Check hash on completed torrents.
+check_hash = yes
+
+# Use encryption whenever possible.
+encryption = allow_incoming,try_outgoing,enable_retry
+
+# Disable DHT and peer exchange.
+dht = disable
+peer_exchange = no
