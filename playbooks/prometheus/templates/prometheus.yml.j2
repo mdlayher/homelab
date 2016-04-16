@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+# prometheus configuration, Matt Layher, 2016-04-15
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+{% for job in prometheus_jobs %}
+  - job_name: "{{ job.job }}"
+  {% if job.scrape_interval is defined %}
+  scrape_interval: "{{ job.scrape_interval }}"
+  {% endif %}
+  target_groups:
+    - targets: {{ job.targets | to_yaml }}
+{% endfor %}
