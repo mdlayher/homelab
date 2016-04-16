@@ -1,20 +1,32 @@
 ---
+- name: check for existing plex installation
+  tags:
+    - plex
+  # Do not report changes from running shell command to check installation
+  changed_when: false
+  command: "dpkg-query -l plexmediaserver"
+  register: installed
+
 - name: download and checksum plex debian package
   tags:
     - plex
+  when: installed|failed
   get_url: url={{ plex_url }} dest={{ plex_deb }} checksum=sha1:{{ plex_sha1 }}
 
 - name: install plex
   tags:
     - plex
+  when: installed|failed
   apt: deb={{ plex_deb }} state=installed
 
 - name: remove temporary plex debian package
   tags:
     - plex
+  when: installed|failed
   file: path={{ plex_deb }} state=absent
 
 - name: start plex service
   tags:
     - plex
+  when: installed|failed
   service: name=plexmediaserver state=started enabled=yes
