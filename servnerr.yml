@@ -2,6 +2,7 @@
 - hosts: servnerr
   roles:
     - golang
+    - grafana
     - plex
     - prometheus
     - rtorrent
