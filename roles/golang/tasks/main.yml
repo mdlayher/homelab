@@ -5,6 +5,9 @@
 - name: install mercurial
   apt: pkg=mercurial state=installed
 
+- name: remove any existing go installations
+  file: path={{ golang_root }} state=absent
+
 - name: download and checksum go tarball
   get_url: url={{ golang_url }} dest={{ golang_tgz }} checksum=sha256:{{ golang_sha256 }}
 
