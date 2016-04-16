@@ -1,0 +1,45 @@
+---
+- name: check if prometheus service exists
+  stat: path=/etc/init/prometheus.conf
+  register: prometheusexists
+
+- name: stop prometheus service
+  service: name=prometheus state=stopped
+  when: prometheusexists.stat.exists
+
+- name: download and checksum prometheus tarball
+  get_url: url={{ prometheus_url }} dest={{ prometheus_tgz }} checksum=sha1:{{ prometheus_sha1 }}
+
+- name: unpack tarball
+  unarchive: src={{ prometheus_tgz }} dest=/tmp/ copy=no
+
+- name: create prometheus user
+  user: name=prometheus shell=/bin/false comment="prometheus service user"
+
+- name: copy prometheus binary to /usr/local/bin
+  copy: src={{ prometheus_tmp }}/prometheus dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
+
+- name: copy promtool binary to /usr/local/bin
+  copy: src={{ prometheus_tmp }}/promtool dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
+
+- name: create prometheus config directory
+  file: path={{ prometheus_config }} state=directory owner=prometheus group=prometheus mode=0755
+
+- name: create prometheus configuration
+  template: src=prometheus.yml.j2 dest={{ prometheus_config }}/prometheus.yml
+  with_items: "{{ prometheus_jobs }}"
+
+- name: create prometheus data directory
+  file: path={{ prometheus_data }} state=directory owner=prometheus group=prometheus mode=0755
+
+- name: create prometheus upstart job
+  template: src=prometheus.conf.j2 dest=/etc/init/prometheus.conf
+
+- name: start prometheus service
+  service: name=prometheus state=started enabled=yes
+
+- name: remove temporary prometheus directory
+  file: path={{ prometheus_tmp }} state=absent
+
+- name: remove temporary prometheus tarball
+  file: path={{ prometheus_tgz }} state=absent

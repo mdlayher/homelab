@@ -1,0 +1,10 @@
+---
+# Personal Go configuration
+golang_user: "root"
+golang_home_dir: "/root"
+golang_personal_gopath: "github.com/mdlayher"
+# Go installation configuration
+golang_url: "https://storage.googleapis.com/golang/go1.6.1.linux-amd64.tar.gz"
+golang_tgz: "/tmp/golang.tar.gz"
+golang_sha256: "6d894da8b4ad3f7f6c295db0d73ccc3646bce630e1c43e662a0120681d47e988"
+golang_root: "/usr/local/go"

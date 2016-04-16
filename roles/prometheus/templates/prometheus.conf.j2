@@ -1,3 +1,4 @@
+# {{ ansible_managed }}
 # prometheus - service job file
 
 description "Prometheus metrics and monitoring system"
@@ -17,4 +18,4 @@ setuid prometheus
 setgid prometheus
 
 # What to execute
-exec /usr/local/bin/prometheus -config.file {{ prometheus_config }} -storage.local.path {{ prometheus_data }} -storage.local.chunk-encoding-version 2
+exec /usr/local/bin/prometheus -config.file {{ prometheus_config }}/prometheus.yml -storage.local.path {{ prometheus_data }} -storage.local.chunk-encoding-version 2
