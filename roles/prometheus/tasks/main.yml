@@ -3,22 +3,18 @@
   tags:
     - prometheus
   stat: path=/etc/init/prometheus.conf
-  register: prometheusexists
-
-- name: stop prometheus service
-  tags:
-    - prometheus
-  service: name=prometheus state=stopped
-  when: prometheusexists.stat.exists
+  register: installed
 
 - name: download and checksum prometheus tarball
   tags:
     - prometheus
+  when: installed|failed
   get_url: url={{ prometheus_url }} dest={{ prometheus_tgz }} checksum=sha1:{{ prometheus_sha1 }}
 
 - name: unpack prometheus tarball
   tags:
     - prometheus
+  when: installed|failed
   unarchive: src={{ prometheus_tgz }} dest=/tmp/ copy=no
 
 - name: create prometheus user
@@ -29,11 +25,13 @@
 - name: copy prometheus binary to /usr/local/bin
   tags:
     - prometheus
+  when: installed|failed
   copy: src={{ prometheus_tmp }}/prometheus dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
 
 - name: copy promtool binary to /usr/local/bin
   tags:
     - prometheus
+  when: installed|failed
   copy: src={{ prometheus_tmp }}/promtool dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
 
 - name: create prometheus config directory
@@ -57,17 +55,21 @@
     - prometheus
   template: src=prometheus.conf.j2 dest=/etc/init/prometheus.conf
 
-- name: start prometheus service
+- name: restart prometheus service
   tags:
     - prometheus
-  service: name=prometheus state=started enabled=yes
+  # Do not report restarting prometheus as a change; only report config changes
+  changed_when: false
+  service: name=prometheus state=restarted enabled=yes
 
 - name: remove temporary prometheus directory
   tags:
     - prometheus
+  when: installed|failed
   file: path={{ prometheus_tmp }} state=absent
 
 - name: remove temporary prometheus tarball
   tags:
     - prometheus
+  when: installed|failed
   file: path={{ prometheus_tgz }} state=absent
