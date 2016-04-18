@@ -64,7 +64,7 @@
     - golang
   when: install
   blockinfile:
-    dest: /{{ golang_user }}/.bashrc
+    dest: "{{ ansible_env.HOME }}/.bashrc"
     marker: "# {mark} ansible-managed Go configuration"
     block: |
       export GOROOT={{ golang_root }}
@@ -76,13 +76,13 @@
   tags:
     - golang
   when: install
-  file: path={{ golang_home_dir }}/src/{{ golang_personal_gopath }} state=directory
+  file: path={{ ansible_env.HOME }}/src/{{ golang_personal_gopath }} state=directory
 
 - name: symlink personal GOPATH location to ~/go
   tags:
     - golang
   when: install
-  file: dest={{ golang_home_dir }}/go src={{ golang_home_dir }}/src/{{ golang_personal_gopath }} owner={{ golang_user }} group={{ golang_user }} state=link
+  file: dest={{ ansible_env.HOME }}/go src={{ ansible_env.HOME }}/src/{{ golang_personal_gopath }} owner={{ ansible_env.USER }} group={{ ansible_env.USER }} state=link
 
 - name: remove temporary go tarball
   tags:
