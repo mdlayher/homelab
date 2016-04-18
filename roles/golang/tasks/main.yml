@@ -2,39 +2,67 @@
 - name: check for existing go installation
   tags:
     - golang
+  stat: path="{{ golang_root }}/bin/go"
+  register: checked
+
+- name: determine version of existing go installation
+  tags:
+    - golang
   # Do not report changes from running shell command to check version
   changed_when: false
+  when: checked.stat.exists
   command: "{{ golang_root }}/bin/go version"
-  register: installed
+  register: version
+
+- name: check if go version matches {{ golang_version }}
+  tags:
+    - golang
+  when: checked.stat.exists and version|success
+  set_fact:
+    # Install when reported version does not match specified version
+    install: "{{ version.stdout.find(golang_version) == -1 }}"
+
+- name: cleanup existing go installation
+  tags:
+    - golang
+  when: checked.stat.exists and version|success and install
+  file: path={{ golang_root }} state=absent
+
+- name: install go because no installation present
+  tags:
+    - golang
+  when: checked.stat.exists == false
+  set_fact:
+    install: true
 
 - name: install git
   tags:
     - golang
-  when: installed|failed
+  when: install
   apt: pkg=git state=installed
 
 - name: install mercurial
   tags:
     - golang
-  when: installed|failed
+  when: install
   apt: pkg=mercurial state=installed
 
-- name: download and checksum go tarball
+- name: download and checksum {{ golang_version }} tarball
   tags:
     - golang
-  when: installed|failed
+  when: install
   get_url: url={{ golang_url }} dest={{ golang_tgz }} checksum=sha256:{{ golang_sha256 }}
 
 - name: unpack tarball
   tags:
     - golang
-  when: installed|failed
+  when: install
   unarchive: src={{ golang_tgz }} dest=/usr/local/ copy=no
 
 - name: insert go configuration into shell configuration
   tags:
     - golang
-  when: installed|failed
+  when: install
   blockinfile:
     dest: /{{ golang_user }}/.bashrc
     marker: "# {mark} ansible-managed Go configuration"
@@ -47,17 +75,17 @@
 - name: create personal GOPATH location
   tags:
     - golang
-  when: installed|failed
+  when: install
   file: path={{ golang_home_dir }}/src/{{ golang_personal_gopath }} state=directory
 
 - name: symlink personal GOPATH location to ~/go
   tags:
     - golang
-  when: installed|failed
+  when: install
   file: dest={{ golang_home_dir }}/go src={{ golang_home_dir }}/src/{{ golang_personal_gopath }} owner={{ golang_user }} group={{ golang_user }} state=link
 
 - name: remove temporary go tarball
   tags:
     - golang
-  when: installed|failed
+  when: install
   file: path={{ golang_tgz }} state=absent
