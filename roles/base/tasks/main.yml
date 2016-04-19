@@ -5,12 +5,10 @@
 - name: install common packages
   apt: pkg={{ item }} state=installed
   with_items:
-   - build-essential
    - byobu
    - git
    - htop
    - jq
-   - libvirt-bin
    - tmux
   tags: install
 

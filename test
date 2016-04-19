@@ -1,2 +1,5 @@
 [servnerr]
 test-ansible
+
+[unifi]
+test-ansible
