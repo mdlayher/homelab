@@ -1,6 +1,7 @@
 ---
 - hosts: servnerr
   roles:
+    - base
     - golang
     - grafana
     - plex
