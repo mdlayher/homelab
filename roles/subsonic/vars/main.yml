@@ -1,0 +1,4 @@
+---
+subsonic_url: "http://subsonic.org/download/subsonic-5.3.deb"
+subsonic_deb: "/tmp/subsonic.deb"
+subsonic_sha256: "ff161159e5a3ae7f70e79cba59c3321b1889efbfad101ecb1eadf7ed4f47125a"

@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# subsonic configuration, Matt Layher, 2016-04-19
+
+{% if subsonic_args is defined %}
+SUBSONIC_ARGS="{{ subsonic_args }}"
+{% else %}
+SUBSONIC_ARGS="--max-memory=150"
+{% endif %}
+SUBSONIC_USER="subsonic"
