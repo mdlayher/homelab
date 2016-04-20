@@ -1,20 +1,12 @@
 ---
-- name: check if prometheus service exists
-  tags:
-    - prometheus
-  stat: path=/etc/init/prometheus.conf
-  register: installed
-
 - name: download and checksum prometheus tarball
   tags:
     - prometheus
-  when: installed|failed
   get_url: url={{ prometheus_url }} dest={{ prometheus_tgz }} checksum=sha1:{{ prometheus_sha1 }}
 
 - name: unpack prometheus tarball
   tags:
     - prometheus
-  when: installed|failed
   unarchive: src={{ prometheus_tgz }} dest=/tmp/ copy=no
 
 - name: create prometheus user
@@ -22,17 +14,33 @@
     - prometheus
   user: name=prometheus shell=/bin/false comment="prometheus service user"
 
-- name: copy prometheus binary to /usr/local/bin
+- name: check if prometheus service exists
   tags:
     - prometheus
-  when: installed|failed
-  copy: src={{ prometheus_tmp }}/prometheus dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
+  stat: path=/etc/init/prometheus.conf
+  register: checked
 
-- name: copy promtool binary to /usr/local/bin
+- name: stop prometheus service if it exists
   tags:
     - prometheus
-  when: installed|failed
-  copy: src={{ prometheus_tmp }}/promtool dest=/usr/local/bin/ owner=prometheus group=prometheus mode=0755
+  when: checked.stat.exists
+  service: name=prometheus state=stopped
+
+- name: copy prometheus binaries to /usr/local/bin
+  tags:
+    - prometheus
+  command: "cp {{ prometheus_tmp }}/{{ item }} /usr/local/bin/"
+  with_items:
+    - "prometheus"
+    - "promtool"
+
+- name: set permissions on prometheus binaries
+  tags:
+    - prometheus
+  file: path=/usr/local/bin/{{ item }} owner=prometheus group=prometheus mode=0755
+  with_items:
+    - "prometheus"
+    - "promtool"
 
 - name: create prometheus config directory
   tags:
@@ -55,21 +63,17 @@
     - prometheus
   template: src=prometheus.conf.j2 dest=/etc/init/prometheus.conf
 
-- name: restart prometheus service
+- name: start prometheus service
   tags:
     - prometheus
-  # Do not report restarting prometheus as a change; only report config changes
-  changed_when: false
-  service: name=prometheus state=restarted enabled=yes
+  service: name=prometheus state=started enabled=yes
 
 - name: remove temporary prometheus directory
   tags:
     - prometheus
-  when: installed|failed
   file: path={{ prometheus_tmp }} state=absent
 
 - name: remove temporary prometheus tarball
   tags:
     - prometheus
-  when: installed|failed
   file: path={{ prometheus_tgz }} state=absent
