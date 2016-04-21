@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+# NFS /etc/exports, Matt Layher, 2016-04-21
+{% for export in nfs_exports %}
+{{ export.mountpoint }} {{ export.allowed }}({{ export.options }})
+{% endfor %}

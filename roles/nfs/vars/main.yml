@@ -1,0 +1,11 @@
+---
+nfs_exports:
+  - mountpoint: "/primary/archive"
+    allowed: "192.168.1.0/24"
+    options: "rw,sync,no_subtree_check,crossmnt"
+  - mountpoint: "/primary/media"
+    allowed: "192.168.1.0/24"
+    options: "rw,sync,no_subtree_check,crossmnt"
+  - mountpoint: "/mnt/rtorrent"
+    allowed: "192.168.1.0/24"
+    options: "rw,sync,no_subtree_check,crossmnt"
