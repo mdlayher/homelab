@@ -1,8 +1,12 @@
 ---
 - name: update package lists
+  tags:
+    - base
   apt: update_cache=yes
 
 - name: install common packages
+  tags:
+    - base
   apt: pkg={{ item }} state=installed
   with_items:
    - byobu
@@ -10,7 +14,8 @@
    - htop
    - jq
    - tmux
-  tags: install
 
 - name: upgrade all packages
+  tags:
+    - base
   apt: upgrade=dist
