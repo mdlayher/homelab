@@ -3,8 +3,8 @@
 prometheus_version: "0.18.0rc1"
 prometheus_sha1: "915b0396b9ed973842c3c3e5394caec24269fa37"
 # Prometheus configuration and data storage locations
-prometheus_config: "/etc/prometheus/"
-prometheus_data: "/var/lib/prometheus/"
+prometheus_config: "/etc/prometheus"
+prometheus_data: "/var/lib/prometheus"
 # Prometheus jobs configuration
 prometheus_jobs:
   - job: "edgemax"

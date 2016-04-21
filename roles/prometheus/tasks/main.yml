@@ -17,7 +17,7 @@
 - name: check if prometheus service exists
   tags:
     - prometheus
-  stat: path=/etc/init/prometheus.conf
+  stat: path=/lib/systemd/system/prometheus.service
   register: checked
 
 - name: stop prometheus service if it exists
@@ -58,10 +58,15 @@
     - prometheus
   file: path={{ prometheus_data }} state=directory owner=prometheus group=prometheus mode=0755
 
-- name: create prometheus upstart job
+- name: create prometheus systemd unit
   tags:
     - prometheus
-  template: src=prometheus.conf.j2 dest=/etc/init/prometheus.conf
+  template: src=prometheus.service.j2 dest=/lib/systemd/system/prometheus.service
+
+- name: reload systemd configurations
+  tags:
+    - prometheus
+  command: "systemctl daemon-reload"
 
 - name: start prometheus service
   tags:
