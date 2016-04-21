@@ -1,7 +1,10 @@
 ---
 - hosts: servnerr
+  become: yes
+  become_user: root
   roles:
     - base
+    - sshkeys
     - golang
     - grafana
     - plex
