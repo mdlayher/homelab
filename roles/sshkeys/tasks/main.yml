@@ -1,0 +1,10 @@
+---
+- name: install matt's SSH keys
+  tags:
+    - sshkeys
+  authorized_key:
+    user: matt
+    key: "{{ item }}"
+    state: present
+  with_file:
+    - public_keys/nerr_servnerr_rsa.pub
