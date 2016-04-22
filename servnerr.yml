@@ -11,5 +11,6 @@
     - plex
     - prometheus
     - rtorrent
-    - subsonic
+    - rtorrent_exporter
+    #- subsonic
     - nfs
