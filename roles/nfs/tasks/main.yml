@@ -2,15 +2,21 @@
 - name: install nfs-kernel-server
   tags:
     - nfs
-  apt: pkg=nfs-kernel-server state=installed
+  apt:
+    pkg: nfs-kernel-server
+    state: installed
 
 - name: write NFS exports to /etc/exports
   tags:
     - nfs
-  template: src=exports.j2 dest=/etc/exports
+  template:
+    src: exports.j2
+    dest: "/etc/exports"
   with_items: "{{ nfs_exports }}"
 
 - name: restart nfs-kernel-server
   tags:
     - nfs
-  service: name=nfs-kernel-server state=restarted
+  service:
+    name: nfs-kernel-server
+    state: restarted

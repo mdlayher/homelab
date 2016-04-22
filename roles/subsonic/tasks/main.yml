@@ -2,34 +2,51 @@
 - name: install java runtime
   tags:
     - subsonic
-  apt: pkg=openjdk-7-jre state=installed
+  apt:
+    pkg: openjdk-7-jre
+    state: installed
 
 - name: create subsonic user
   tags:
     - subsonic
-  user: name=subsonic shell=/bin/false comment="subsonic service user"
+  user:
+    name: subsonic
+    shell: "/bin/false"
+    comment: "subsonic service user"
 
 - name: download and checksum subsonic debian package
   tags:
     - subsonic
-  get_url: url={{ subsonic_url }} dest={{ subsonic_deb }} checksum=sha256:{{ subsonic_sha256 }}
+  get_url:
+    url: "{{ subsonic_url }}"
+    dest: "{{ subsonic_deb }}"
+    checksum: "sha256:{{ subsonic_sha256 }}"
 
 - name: install subsonic
   tags:
     - subsonic
-  apt: deb={{ subsonic_deb }} state=installed
+  apt:
+    deb: "{{ subsonic_deb }}"
+    state: installed
 
 - name: write subsonic configuration
   tags:
     - subsonic
-  template: src=subsonic.j2 dest=/etc/default/subsonic
+  template:
+    src: subsonic.j2
+    dest: "/etc/default/subsonic"
 
 - name: restart subsonic service
   tags:
     - subsonic
-  service: name=subsonic state=restarted enabled=yes
+  service:
+    name: subsonic
+    state: restarted
+    enabled: yes
 
 - name: remove temporary subsonic debian package
   tags:
     - subsonic
-  file: path={{ subsonic_deb }} state=absent
+  file:
+    path: "{{ subsonic_deb }}"
+    state: absent

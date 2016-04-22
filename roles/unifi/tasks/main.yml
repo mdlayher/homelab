@@ -2,19 +2,29 @@
 - name: add unifi apt key
   tags:
     - unifi
-  apt_key: keyserver=keyserver.ubuntu.com id=C0A52C50
+  apt_key:
+    keyserver: "keyserver.ubuntu.com"
+    id: C0A52C50
 
 - name: add unifi apt repository
   tags:
     - unifi
-  apt_repository: repo="deb http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" state=present
+  apt_repository:
+    repo: "deb http://www.ubnt.com/downloads/unifi/debian stable ubiquiti"
+    state: present
 
 - name: install unifi controller
   tags:
     - unifi
-  apt: pkg=unifi state=installed update_cache=yes
+  apt:
+    pkg: unifi
+    state: installed
+    update_cache: yes
 
 - name: start unifi service
   tags:
     - unifi
-  service: name=unifi state=started enabled=yes
+  service:
+    name: unifi
+    state: started
+    enabled: yes

@@ -2,7 +2,8 @@
 - name: check for existing go installation
   tags:
     - golang
-  stat: path="{{ golang_root }}/bin/go"
+  stat:
+    path: "{{ golang_root }}/bin/go"
   register: checked
 
 - name: determine version of existing go installation
@@ -26,7 +27,9 @@
   tags:
     - golang
   when: checked.stat.exists and version|success and install
-  file: path={{ golang_root }} state=absent
+  file:
+    path: "{{ golang_root }}"
+    state: absent
 
 - name: install go because no installation present
   tags:
@@ -35,29 +38,34 @@
   set_fact:
     install: true
 
-- name: install git
+- name: install version control clients used by go
   tags:
     - golang
   when: install
-  apt: pkg=git state=installed
-
-- name: install mercurial
-  tags:
-    - golang
-  when: install
-  apt: pkg=mercurial state=installed
+  apt:
+    pkg: "{{ item }}"
+    state: installed
+  with_items:
+    - git
+    - mercurial
 
 - name: download and checksum {{ golang_version }} tarball
   tags:
     - golang
   when: install
-  get_url: url={{ golang_url }} dest={{ golang_tgz }} checksum=sha256:{{ golang_sha256 }}
+  get_url:
+    url: "{{ golang_url }}"
+    dest: "{{ golang_tgz }}"
+    checksum: "sha256:{{ golang_sha256 }}"
 
 - name: unpack tarball
   tags:
     - golang
   when: install
-  unarchive: src={{ golang_tgz }} dest=/usr/local/ copy=no
+  unarchive:
+    src: "{{ golang_tgz }}"
+    dest: "/usr/local/"
+    copy: no
 
 - name: insert go configuration into shell configuration
   tags:
@@ -76,16 +84,27 @@
   tags:
     - golang
   when: install
-  file: path={{ golang_user_home }}/src/{{ golang_personal_gopath }} owner={{ golang_user }} group={{ golang_user }} state=directory
+  file:
+    path: "{{ golang_user_home }}/src/{{ golang_personal_gopath }}"
+    owner: "{{ golang_user }}"
+    group: "{{ golang_user }}"
+    state: directory
 
 - name: symlink personal GOPATH location to ~/go
   tags:
     - golang
   when: install
-  file: dest={{ golang_user_home }}/go src={{ golang_user_home }}/src/{{ golang_personal_gopath }} owner={{ golang_user }} group={{ golang_user }} state=link
+  file:
+    dest: "{{ golang_user_home }}/go"
+    src: "{{ golang_user_home }}/src/{{ golang_personal_gopath }}"
+    owner: "{{ golang_user }}"
+    group: "{{ golang_user }}"
+    state: link
 
 - name: remove temporary go tarball
   tags:
     - golang
   when: install
-  file: path={{ golang_tgz }} state=absent
+  file:
+    path: "{{ golang_tgz }}"
+    state: absent

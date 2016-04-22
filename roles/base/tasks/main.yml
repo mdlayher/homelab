@@ -2,7 +2,8 @@
 - name: update package lists
   tags:
     - base
-  apt: update_cache=yes
+  apt:
+    update_cache: yes
 
 - name: install common packages
   tags:
@@ -18,4 +19,5 @@
 - name: upgrade all packages
   tags:
     - base
-  apt: upgrade=dist
+  apt:
+    upgrade: dist

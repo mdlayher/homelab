@@ -2,29 +2,41 @@
 - name: download and checksum prometheus tarball
   tags:
     - prometheus
-  get_url: url={{ prometheus_url }} dest={{ prometheus_tgz }} checksum=sha1:{{ prometheus_sha1 }}
+  get_url:
+    url: "{{ prometheus_url }}"
+    dest: "{{ prometheus_tgz }}"
+    checksum: "sha1:{{ prometheus_sha1 }}"
 
 - name: unpack prometheus tarball
   tags:
     - prometheus
-  unarchive: src={{ prometheus_tgz }} dest=/tmp/ copy=no
+  unarchive:
+    src: "{{ prometheus_tgz }}"
+    dest: "/tmp/"
+    copy: no
 
 - name: create prometheus user
   tags:
     - prometheus
-  user: name=prometheus shell=/bin/false comment="prometheus service user"
+  user:
+    name: prometheus
+    shell: "/bin/false"
+    comment: "prometheus service user"
 
 - name: check if prometheus service exists
   tags:
     - prometheus
-  stat: path=/lib/systemd/system/prometheus.service
+  stat:
+    path: "/lib/systemd/system/prometheus.service"
   register: checked
 
 - name: stop prometheus service if it exists
   tags:
     - prometheus
   when: checked.stat.exists
-  service: name=prometheus state=stopped
+  service:
+    name: prometheus
+    state: stopped
 
 - name: copy prometheus binaries to /usr/local/bin
   tags:
@@ -37,7 +49,11 @@
 - name: set permissions on prometheus binaries
   tags:
     - prometheus
-  file: path=/usr/local/bin/{{ item }} owner=prometheus group=prometheus mode=0755
+  file:
+    path: "/usr/local/bin/{{ item }}"
+    owner: prometheus
+    group: prometheus
+    mode: 0755
   with_items:
     - "prometheus"
     - "promtool"
@@ -45,23 +61,37 @@
 - name: create prometheus config directory
   tags:
     - prometheus
-  file: path={{ prometheus_config }} state=directory owner=prometheus group=prometheus mode=0755
+  file:
+    path: "{{ prometheus_config }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: 0755
 
 - name: create prometheus configuration
   tags:
     - prometheus
-  template: src=prometheus.yml.j2 dest={{ prometheus_config }}/prometheus.yml
+  template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_config }}/prometheus.yml"
   with_items: "{{ prometheus_jobs }}"
 
 - name: create prometheus data directory
   tags:
     - prometheus
-  file: path={{ prometheus_data }} state=directory owner=prometheus group=prometheus mode=0755
+  file:
+    path: "{{ prometheus_data }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: 0755
 
 - name: create prometheus systemd unit
   tags:
     - prometheus
-  template: src=prometheus.service.j2 dest=/lib/systemd/system/prometheus.service
+  template:
+    src: prometheus.service.j2
+    dest: "/lib/systemd/system/prometheus.service"
 
 - name: reload systemd configurations
   tags:
@@ -71,14 +101,17 @@
 - name: start prometheus service
   tags:
     - prometheus
-  service: name=prometheus state=started enabled=yes
+  service:
+    name: prometheus
+    state: started
+    enabled: yes
 
-- name: remove temporary prometheus directory
+- name: remove temporary prometheus files
   tags:
     - prometheus
-  file: path={{ prometheus_tmp }} state=absent
-
-- name: remove temporary prometheus tarball
-  tags:
-    - prometheus
-  file: path={{ prometheus_tgz }} state=absent
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ prometheus_tmp }}"
+    - "{{ prometheus_tgz }}"
