@@ -8,3 +8,4 @@
     state: present
   with_file:
     - public_keys/nerr_servnerr_rsa.pub
+    - public_keys/matt_servnerr_rsa.pub
