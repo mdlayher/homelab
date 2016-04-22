@@ -16,3 +16,4 @@
     #- subsonic
     - nfs
     - unifi_exporter
+    - zfs_exporter

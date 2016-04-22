@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus ZFS exporter
+Documentation=https://github.com/eliothedeman/zfs_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=root
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/zfs_exporter
+
+[Install]
+WantedBy=multi-user.target
