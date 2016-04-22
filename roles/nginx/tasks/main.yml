@@ -1,0 +1,16 @@
+---
+- name: install nginx
+  tags:
+    - nginx
+  apt: pkg=nginx state=installed
+  register: nginxinstalled
+
+- name: create nginx default site configuration
+  tags:
+    - nginx
+  template: src=default.j2 dest=/etc/nginx/sites-available/default
+
+- name: restart nginx
+  tags:
+    - nginx
+  service: name=nginx state=restarted
