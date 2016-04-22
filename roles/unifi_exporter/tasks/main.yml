@@ -1,0 +1,52 @@
+---
+- name: download and checksum unifi_exporter binary
+  tags:
+    - unifi_exporter
+  get_url:
+    url: "{{ unifi_exporter_url }}"
+    dest: "/usr/local/bin/unifi_exporter"
+    checksum: "sha256:{{ unifi_exporter_sha256 }}"
+
+- name: check if unifi_exporter service exists
+  tags:
+    - unifi_exporter
+  stat:
+    path: "/lib/systemd/system/unifi_exporter.service"
+  register: checked
+
+- name: stop unifi_exporter service if it exists
+  tags:
+    - unifi_exporter
+  when: checked.stat.exists
+  service:
+    name: unifi_exporter
+    state: stopped
+
+- name: set permissions on unifi_exporter binary
+  tags:
+    - unifi_exporter
+  file:
+    path: "/usr/local/bin/unifi_exporter"
+    owner: prometheus
+    group: prometheus
+    mode: 0755
+
+- name: create unifi_exporter systemd unit
+  tags:
+    - unifi_exporter
+  template:
+    src: unifi_exporter.service.j2
+    dest: "/lib/systemd/system/unifi_exporter.service"
+
+- name: reload systemd configurations
+  tags:
+    - unifi_exporter
+  command: "systemctl daemon-reload"
+
+- name: start unifi_exporter service
+  tags:
+    - unifi_exporter
+  service:
+    name: unifi_exporter
+    state: started
+    enabled: yes
