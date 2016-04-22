@@ -8,6 +8,7 @@
     - golang
     - grafana
     - nginx
+    - node_exporter
     - plex
     - prometheus
     - rtorrent

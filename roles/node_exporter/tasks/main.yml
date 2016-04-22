@@ -1,0 +1,75 @@
+---
+- name: download and checksum node_exporter binary
+  tags:
+    - node_exporter
+  get_url:
+    url: "{{ node_exporter_url }}"
+    dest: "{{ node_exporter_tgz }}"
+    checksum: "sha256:{{ node_exporter_sha256 }}"
+
+- name: unpack node_exporter tarball
+  tags:
+    - node_exporter
+  unarchive:
+    src: "{{ node_exporter_tgz }}"
+    dest: "/tmp/"
+    copy: no
+
+- name: check if node_exporter service exists
+  tags:
+    - node_exporter
+  stat:
+    path: "/lib/systemd/system/node_exporter.service"
+  register: checked
+
+- name: stop node_exporter service if it exists
+  tags:
+    - node_exporter
+  when: checked.stat.exists
+  service:
+    name: node_exporter
+    state: stopped
+
+- name: copy node_exporter binary to /usr/local/bin
+  tags:
+    - node_exporter
+  command: "cp {{ node_exporter_tmp }} /usr/local/bin/"
+
+- name: set permissions on node_exporter binary
+  tags:
+    - node_exporter
+  file:
+    path: "/usr/local/bin/node_exporter"
+    owner: prometheus
+    group: prometheus
+    mode: 0755
+
+- name: create node_exporter systemd unit
+  tags:
+    - node_exporter
+  template:
+    src: node_exporter.service.j2
+    dest: "/lib/systemd/system/node_exporter.service"
+
+- name: reload systemd configurations
+  tags:
+    - node_exporter
+  command: "systemctl daemon-reload"
+
+- name: start node_exporter service
+  tags:
+    - node_exporter
+  service:
+    name: node_exporter
+    state: started
+    enabled: yes
+
+- name: remove temporary node_exporter files
+  tags:
+    - node_exporter
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ node_exporter_tmp }}"
+    - "{{ node_exporter_tgz }}"
