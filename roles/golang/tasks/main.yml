@@ -79,27 +79,7 @@
       export GOROOT_BOOTSTRAP=$GOROOT
       export GOPATH=$HOME
       export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-
-- name: create personal GOPATH location
-  tags:
-    - golang
-  when: install
-  file:
-    path: "{{ golang_user_home }}/src/{{ golang_personal_gopath }}"
-    owner: "{{ golang_user }}"
-    group: "{{ golang_user }}"
-    state: directory
-
-- name: symlink personal GOPATH location to ~/go
-  tags:
-    - golang
-  when: install
-  file:
-    dest: "{{ golang_user_home }}/go"
-    src: "{{ golang_user_home }}/src/{{ golang_personal_gopath }}"
-    owner: "{{ golang_user }}"
-    group: "{{ golang_user }}"
-    state: link
+      export CDPATH=$CDPATH:{{ golang_user_home }}/src/{{ golang_personal_gopath }}
 
 - name: remove temporary go tarball
   tags:
