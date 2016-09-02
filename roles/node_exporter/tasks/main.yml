@@ -15,6 +15,14 @@
     dest: "/tmp/"
     copy: no
 
+- name: create node_exporter user
+  tags:
+    - node_exporter
+  user:
+    name: node_exporter
+    shell: "/bin/false"
+    comment: "node_exporter service user"
+
 - name: check if node_exporter service exists
   tags:
     - node_exporter
@@ -33,15 +41,15 @@
 - name: copy node_exporter binary to /usr/local/bin
   tags:
     - node_exporter
-  command: "cp {{ node_exporter_tmp }} /usr/local/bin/"
+  command: "cp /tmp/{{ node_exporter_dir }}/node_exporter /usr/local/bin/"
 
 - name: set permissions on node_exporter binary
   tags:
     - node_exporter
   file:
     path: "/usr/local/bin/node_exporter"
-    owner: prometheus
-    group: prometheus
+    owner: node_exporter
+    group: node_exporter
     mode: 0755
 
 - name: create node_exporter systemd unit
@@ -71,5 +79,5 @@
     path: "{{ item }}"
     state: absent
   with_items:
-    - "{{ node_exporter_tmp }}"
+    - "/tmp/{{ node_exporter_dir }}"
     - "{{ node_exporter_tgz }}"

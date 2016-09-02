@@ -1,7 +1,8 @@
 ---
 # Version configuration.
-node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/0.12.0rc3/node_exporter-0.12.0rc3.linux-amd64.tar.gz"
-node_exporter_sha256: "4674fd685bc33cc26f680c49423114e6ccac5a88f03f6f691ff374892809fb0f"
+node_exporter_version: "0.12.0"
+node_exporter_sha256: "d48de5b89dac04aca751177afaa9b0919e5b3d389364d40160babc00d63aac7b"
 # Static configuration.
+node_exporter_dir: "node_exporter-{{ node_exporter_version }}.linux-amd64"
+node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/{{ node_exporter_version }}/{{ node_exporter_dir }}.tar.gz"
 node_exporter_tgz: "/tmp/node_exporter.tgz"
-node_exporter_tmp: "/tmp/node_exporter"
