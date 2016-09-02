@@ -5,7 +5,7 @@
   get_url:
     url: "{{ plex_url }}"
     dest: "{{ plex_deb }}"
-    checksum: "sha1:{{ plex_sha1 }}"
+    checksum: "sha256:{{ plex_sha256 }}"
 
 - name: install plex
   tags:
