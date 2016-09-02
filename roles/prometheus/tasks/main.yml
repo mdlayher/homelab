@@ -5,7 +5,7 @@
   get_url:
     url: "{{ prometheus_url }}"
     dest: "{{ prometheus_tgz }}"
-    checksum: "sha1:{{ prometheus_sha1 }}"
+    checksum: "sha256:{{ prometheus_sha256 }}"
 
 - name: unpack prometheus tarball
   tags:

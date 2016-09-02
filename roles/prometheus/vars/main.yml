@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration
-prometheus_version: "0.18.0rc1"
-prometheus_sha1: "915b0396b9ed973842c3c3e5394caec24269fa37"
+prometheus_version: "1.0.2"
+prometheus_sha256: "b42f642090f1313ab49cccaa0c58a91b7a566a911ac7830697f67db060f3d329"
 # Prometheus configuration and data storage locations
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
@@ -32,5 +32,5 @@ prometheus_jobs:
 # Static configuration.
 prometheus_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
 prometheus_tmp: "/tmp/{{ prometheus_dir }}"
-prometheus_url: "https://github.com/prometheus/prometheus/releases/download/{{ prometheus_version }}/{{ prometheus_dir }}.tar.gz"
+prometheus_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/{{ prometheus_dir }}.tar.gz"
 prometheus_tgz: "/tmp/prometheus.tar.gz"

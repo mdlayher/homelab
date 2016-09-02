@@ -11,6 +11,6 @@ scrape_configs:
   {% if job.scrape_interval is defined %}
   scrape_interval: "{{ job.scrape_interval }}"
   {% endif %}
-  target_groups:
+  static_configs:
     - targets: {{ job.targets | to_yaml }}
 {% endfor %}
