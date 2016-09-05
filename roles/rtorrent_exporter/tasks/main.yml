@@ -7,6 +7,14 @@
     dest: "/usr/local/bin/rtorrent_exporter"
     checksum: "sha256:{{ rtorrent_exporter_sha256 }}"
 
+- name: create rtorrent_exporter user
+  tags:
+    - rtorrent_exporter
+  user:
+    name: rtorrent_exporter
+    shell: "/bin/false"
+    comment: "rtorrent_exporter service user"
+
 - name: check if rtorrent_exporter service exists
   tags:
     - rtorrent_exporter
@@ -27,8 +35,8 @@
     - rtorrent_exporter
   file:
     path: "/usr/local/bin/rtorrent_exporter"
-    owner: prometheus
-    group: prometheus
+    owner: rtorrent_exporter
+    group: rtorrent_exporter
     mode: 0755
 
 - name: create rtorrent_exporter systemd unit
