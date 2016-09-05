@@ -1,0 +1,28 @@
+---
+- name: install apcupsd
+  tags:
+    - apcupsd
+  apt:
+    pkg: apcupsd
+    state: installed
+
+- name: create apcupsd configuration
+  tags:
+    - apcupsd
+  template:
+    src: apcupsd.conf.j2
+    dest: "/etc/apcupsd/apcupsd.conf"
+
+- name: set apcupsd as configured
+  tags:
+    - apcupsd
+  template:
+    src: apcupsd.j2
+    dest: "/etc/default/apcupsd"
+
+- name: restart apcupsd
+  tags:
+    - apcupsd
+  service:
+    name: apcupsd
+    state: restarted
