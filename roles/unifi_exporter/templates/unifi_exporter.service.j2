@@ -6,8 +6,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-User=prometheus
-Group=prometheus
+User=unifi_exporter
+Group=unifi_exporter
 Type=simple
 ExecStart=/usr/local/bin/unifi_exporter \
 	-unifi.addr {{ unifi_exporter_host }} \

@@ -7,6 +7,14 @@
     dest: "/usr/local/bin/unifi_exporter"
     checksum: "sha256:{{ unifi_exporter_sha256 }}"
 
+- name: create unifi_exporter user
+  tags:
+    - unifi_exporter
+  user:
+    name: unifi_exporter
+    shell: "/bin/false"
+    comment: "unifi_exporter service user"
+
 - name: check if unifi_exporter service exists
   tags:
     - unifi_exporter
@@ -27,8 +35,8 @@
     - unifi_exporter
   file:
     path: "/usr/local/bin/unifi_exporter"
-    owner: prometheus
-    group: prometheus
+    owner: unifi_exporter
+    group: unifi_exporter
     mode: 0755
 
 - name: create unifi_exporter systemd unit
