@@ -25,6 +25,9 @@ schedule = tied_directory,5,5,start_tied=
 # Halt further downloads when disk space is low.
 schedule = low_diskspace,5,60,close_low_diskspace={{ rtorrent_low_diskspace }}
 
+# Make the active tab only show torrents with network activity.
+schedule = filter_active,30,30,"view_filter = active,\"or={d.get_up_rate=,d.get_down_rate=}\""
+
 # Delete file data when a torrent is removed.
 system.method.set_key = event.download.erased,remove_erased,"execute=rm,-rf,--,$d.get_base_path={{ rtorrent_path_files }}"
 
