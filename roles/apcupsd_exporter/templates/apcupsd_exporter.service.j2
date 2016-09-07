@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus apcupsd exporter
+Documentation=https://github.com/mdlayher/apcupsd_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=apcupsd_exporter
+Group=apcupsd_exporter
+Type=simple
+ExecStart=/usr/local/bin/apcupsd_exporter
+
+[Install]
+WantedBy=multi-user.target

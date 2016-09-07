@@ -6,6 +6,7 @@
     - base
     - sshkeys
     - apcupsd
+    - apcupsd_exporter
     - golang
     - grafana
     - nginx

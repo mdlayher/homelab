@@ -1,0 +1,72 @@
+---
+- name: download and checksum apcupsd_exporter {{ apcupsd_exporter_version }} binary
+  tags:
+    - apcupsd_exporter
+  get_url:
+    url: "{{ apcupsd_exporter_url }}"
+    dest: "/tmp/apcupsd_exporter"
+    checksum: "sha256:{{ apcupsd_exporter_sha256 }}"
+
+- name: create apcupsd_exporter user
+  tags:
+    - apcupsd_exporter
+  user:
+    name: apcupsd_exporter
+    shell: "/bin/false"
+    comment: "apcupsd_exporter service user"
+
+- name: check if apcupsd_exporter service exists
+  tags:
+    - apcupsd_exporter
+  stat:
+    path: "/lib/systemd/system/apcupsd_exporter.service"
+  register: checked
+
+- name: stop apcupsd_exporter service if it exists
+  tags:
+    - apcupsd_exporter
+  when: checked.stat.exists
+  service:
+    name: apcupsd_exporter
+    state: stopped
+
+- name: copy apcupsd_exporter binary to /usr/local/bin
+  tags:
+    - apcupsd_exporter
+  command: "cp /tmp/apcupsd_exporter /usr/local/bin/"
+
+- name: set permissions on apcupsd_exporter binary
+  tags:
+    - apcupsd_exporter
+  file:
+    path: "/usr/local/bin/apcupsd_exporter"
+    owner: apcupsd_exporter
+    group: apcupsd_exporter
+    mode: 0755
+
+- name: create apcupsd_exporter systemd unit
+  tags:
+    - apcupsd_exporter
+  template:
+    src: apcupsd_exporter.service.j2
+    dest: "/lib/systemd/system/apcupsd_exporter.service"
+
+- name: reload systemd configurations
+  tags:
+    - apcupsd_exporter
+  command: "systemctl daemon-reload"
+
+- name: start apcupsd_exporter service
+  tags:
+    - apcupsd_exporter
+  service:
+    name: apcupsd_exporter
+    state: started
+    enabled: yes
+
+- name: remove temporary files
+  tags:
+    - apcupsd_exporter
+  file:
+    path: "/tmp/apcupsd_exporter"
+    state: absent
