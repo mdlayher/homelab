@@ -1,5 +1,5 @@
 ---
-- name: download and checksum prometheus tarball
+- name: download and checksum prometheus {{ prometheus_version }} tarball
   tags:
     - prometheus
   get_url:
