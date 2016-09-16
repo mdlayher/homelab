@@ -76,6 +76,13 @@
     dest: "{{ prometheus_config }}/prometheus.yml"
   with_items: "{{ prometheus_jobs }}"
 
+- name: create prometheus alerts file
+  tags:
+    - prometheus
+  template:
+    src: alerts.rules.j2
+    dest: "{{ prometheus_config }}/alerts.rules"
+
 - name: create prometheus data directory
   tags:
     - prometheus
