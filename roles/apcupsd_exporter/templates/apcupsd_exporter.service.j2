@@ -2,8 +2,9 @@
 [Unit]
 Description=Prometheus apcupsd exporter
 Documentation=https://github.com/mdlayher/apcupsd_exporter
+Requires=apcupsd.service
 Wants=network-online.target
-After=network-online.target
+After=network-online.target apcupsd.service
 
 [Service]
 User=apcupsd_exporter
