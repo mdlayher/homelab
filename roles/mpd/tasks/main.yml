@@ -1,0 +1,21 @@
+---
+- name: install mpd
+  tags:
+    - mpd
+  apt:
+    pkg: mpd
+    state: installed
+
+- name: create mpd configuration
+  tags:
+    - mpd
+  template:
+    src: mpd.conf.j2
+    dest: "/etc/mpd.conf"
+
+- name: restart mpd
+  tags:
+    - mpd
+  service:
+    name: mpd
+    state: restarted

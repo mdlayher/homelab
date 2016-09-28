@@ -10,6 +10,7 @@
     - dropboxd
     - golang
     - grafana
+    - mpd
     - nginx
     - node_exporter
     - plex
