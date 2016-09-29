@@ -96,6 +96,21 @@ audio_output {
 }
 
 #
+# HTTP streaming output
+#
+audio_output {
+	type		"httpd"
+	name		"HTTP"
+	encoder		"lame"		# optional, vorbis or lame
+	bind_to_address "0.0.0.0"
+	port		"6601"
+	bitrate		"192"			# do not define if quality is defined
+	format		"44100:16:1"
+	always_on	"yes"			# prevent MPD from disconnecting all listeners when playback is stopped.
+	tags		"yes"			# httpd supports sending tags to listening streams.
+}
+
+#
 # If file or directory names do not display correctly for your locale then you
 # may need to modify this setting.
 #
