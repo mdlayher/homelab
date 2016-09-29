@@ -1,10 +1,13 @@
 ---
-- name: install mpd
+- name: install mpd and ncmpcpp
   tags:
     - mpd
   apt:
-    pkg: mpd
+    pkg: "{{ item }}"
     state: installed
+  with_items:
+    - mpd
+    - ncmpcpp
 
 - name: create mpd configuration
   tags:
