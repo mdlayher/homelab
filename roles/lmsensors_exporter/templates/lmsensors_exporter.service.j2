@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus lmsensors exporter
+Documentation=https://github.com/mdlayher/lmsensors_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=lmsensors_exporter
+Group=lmsensors_exporter
+Type=simple
+ExecStart=/usr/local/bin/lmsensors_exporter
+
+[Install]
+WantedBy=multi-user.target

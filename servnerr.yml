@@ -10,6 +10,7 @@
     - dropboxd
     - golang
     - grafana
+    - lmsensors_exporter
     - mpd
     - nginx
     - node_exporter
