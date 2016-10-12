@@ -10,6 +10,9 @@ prometheus_jobs:
   - job: "apcupsd"
     targets:
       - "192.168.1.3:9162"
+  - job: "lmsensors"
+    targets:
+      - "192.168.1.3:9165"
   - job: "node"
     targets:
       - "192.168.1.3:9100"
