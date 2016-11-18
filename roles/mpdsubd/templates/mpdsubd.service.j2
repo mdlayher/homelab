@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=mpdsubd MPD to Subsonic API bridge
+Documentation=https://github.com/mdlayher/mpdsubd
+Wants=network-online.target
+After=network-online.target mpd.service
+
+[Service]
+User=mpdsubd
+Group=mpdsubd
+Type=simple
+ExecStart=/usr/local/bin/mpdsubd \
+	-mpd.music.dir {{ mpdsubd_music_dir }} \
+	-user {{ mpdsubd_subsonic_user }} \
+	-pass {{ mpdsubd_subsonic_pass }}
+
+[Install]
+WantedBy=multi-user.target

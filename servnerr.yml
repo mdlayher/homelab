@@ -12,6 +12,7 @@
     - grafana
     - lmsensors_exporter
     - mpd
+    - mpdsubd
     - nginx
     - node_exporter
     - plex
