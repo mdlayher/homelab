@@ -9,7 +9,8 @@ After=network-online.target
 User=node_exporter
 Group=node_exporter
 Type=simple
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/local/bin/node_exporter \
+	--collectors.enabled {{ node_exporter_collectors }}
 
 [Install]
 WantedBy=multi-user.target
