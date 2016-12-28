@@ -1,0 +1,8 @@
+---
+- hosts: workstation
+  become: yes
+  become_user: root
+  roles:
+    - base
+    - golang
+    - node_exporter

@@ -1,5 +1,8 @@
 [servnerr]
 test-ansible
 
+[workstation]
+test-ansible
+
 [unifi]
 test-ansible
