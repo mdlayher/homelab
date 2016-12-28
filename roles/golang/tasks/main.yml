@@ -67,12 +67,12 @@
     dest: "/usr/local/"
     copy: no
 
-- name: insert go configuration into shell configuration
+- name: insert go configuration into shell profile
   tags:
     - golang
   when: install
   blockinfile:
-    dest: "{{ golang_user_home }}/.bashrc"
+    dest: "{{ golang_user_home }}/.profile"
     marker: "# {mark} ansible-managed Go configuration"
     block: |
       export GOROOT={{ golang_root }}
