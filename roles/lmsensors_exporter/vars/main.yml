@@ -1,4 +1,0 @@
----
-lmsensors_exporter_version: "0.1.0"
-lmsensors_exporter_url: "https://github.com/mdlayher/lmsensors_exporter/releases/download/{{ lmsensors_exporter_version }}/lmsensors_exporter"
-lmsensors_exporter_sha256: "c9caa8bdec593c87008e61da9a3e288285b4cd8b47d1271c08df4804bb8ff6b0"
