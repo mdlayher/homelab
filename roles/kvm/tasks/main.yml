@@ -1,0 +1,45 @@
+---
+- name: install qemu, KVM, libvirt, and utilities
+  tags:
+    - kvm
+  apt:
+    pkg: "{{item}}"
+    state: installed
+  with_items:
+    - qemu-kvm
+    - libvirt-bin
+    - virtinst
+    - bridge-utils
+    - cpu-checker
+
+- name: check for KVM acceleration capabilities
+  tags:
+    - kvm
+  command: kvm-ok
+
+- name: check for bridge br0
+  tags:
+    - kvm
+  command: brctl show br0
+  register: brcheck
+
+- name: create bridge br0 if it doesn't exist
+  tags:
+    - kvm
+  command: brctl addbr br0
+  when: brcheck.stdout.find("No such device") != -1
+
+- name: insert bridge configuration template
+  tags:
+    - kvm
+  blockinfile:
+    dest: "/etc/network/interfaces"
+    marker: "# {mark} ansible-managed /etc/network/interfaces KVM br0 template"
+    block: |
+      {{ '#' }} Set primary network interface to manual, add it in place of eth0, and restart networking.
+      {{ '#' }} auto br0
+      {{ '#' }} iface br0 inet dhcp
+      {{ '#' }}     bridge_ports   eth0
+      {{ '#' }}     bridge_stp     off
+      {{ '#' }}     bridge_fd      0
+      {{ '#' }}     bridge_maxwait 0

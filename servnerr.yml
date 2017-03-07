@@ -10,6 +10,7 @@
     - dropboxd
     - golang
     - grafana
+    - kvm
     - mpd
     - mpdsubd
     - nginx
