@@ -1,8 +1,8 @@
 ---
 node_exporter_collectors: "conntrack,diskstats,entropy,filefd,filesystem,hwmon,loadavg,mdadm,meminfo,mountstats,netdev,netstat,sockstat,stat,textfile,time,uname,vmstat,wifi"
 # Version configuration.
-node_exporter_version: "0.14.0-rc.1"
-node_exporter_sha256: "7fe8ac67ff5b3151d41454c208d2708cf49875c6de84753046f34a1f85b8c64c"
+node_exporter_version: "0.14.0"
+node_exporter_sha256: "d5980bf5d0dc7214741b65d3771f08e6f8311c86531ae21c6ffec1d643549b2e"
 # Static configuration.
 node_exporter_dir: "node_exporter-{{ node_exporter_version }}.linux-amd64"
 node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_dir }}.tar.gz"
