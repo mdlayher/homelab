@@ -12,6 +12,7 @@ Type=simple
 ExecStart=/usr/local/bin/prometheus \
 	-config.file {{ prometheus_config }}/prometheus.yml \
 	-storage.local.path {{ prometheus_data }} \
+	-log.level debug
 
 [Install]
 WantedBy=multi-user.target
