@@ -15,6 +15,7 @@
    - htop
    - jq
    - tmux
+   - tree
 
 - name: upgrade all packages
   tags:
