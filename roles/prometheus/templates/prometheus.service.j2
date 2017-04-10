@@ -12,7 +12,6 @@ Type=simple
 ExecStart=/usr/local/bin/prometheus \
 	-config.file {{ prometheus_config }}/prometheus.yml \
 	-storage.local.path {{ prometheus_data }} \
-	-storage.local.chunk-encoding-version 2
 
 [Install]
 WantedBy=multi-user.target
