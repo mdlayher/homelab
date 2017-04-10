@@ -64,6 +64,16 @@
     - node_exporter
   command: "systemctl daemon-reload"
 
+- name: create node_exporter textfile collector directory
+  tags:
+    - node_exporter
+  file:
+    path: "{{ node_exporter_textfile_dir }}"
+    state: directory
+    owner: node_exporter
+    group: node_exporter
+    mode: 0755
+
 - name: start node_exporter service
   tags:
     - node_exporter

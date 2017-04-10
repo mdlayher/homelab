@@ -1,4 +1,5 @@
 ---
+node_exporter_textfile_dir: "/var/lib/node_exporter"
 node_exporter_collectors: "conntrack,diskstats,entropy,filefd,filesystem,hwmon,loadavg,mdadm,meminfo,mountstats,netdev,netstat,sockstat,stat,textfile,time,uname,vmstat,wifi"
 # Version configuration.
 node_exporter_version: "0.14.0"

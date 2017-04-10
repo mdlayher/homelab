@@ -10,7 +10,8 @@ User=node_exporter
 Group=node_exporter
 Type=simple
 ExecStart=/usr/local/bin/node_exporter \
-	--collectors.enabled {{ node_exporter_collectors }}
+	--collectors.enabled {{ node_exporter_collectors }} \
+	--collector.textfile.directory {{ node_exporter_textfile_dir }}
 
 [Install]
 WantedBy=multi-user.target
