@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration
-prometheus_version: "2.0.0-alpha.0"
-prometheus_sha256: "2ab0e18fd8e021a61b8afa76386dc74e536a958457c381a82275ab909d69eea0"
+prometheus_version: "2.0.0-alpha.2"
+prometheus_sha256: "81d494d7fef8d111905024d35af5e31fc8260bac6a9d6b9be4259adba7ee11f1"
 # Prometheus configuration and data storage locations
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
