@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Matt Layher's personal website
+Documentation=https://github.com/mdlayher/mdlayher.com
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=mdlayhercom
+Group=mdlayhercom
+Type=simple
+ExecStart=/usr/local/bin/mdlayher.com -tls
+
+[Install]
+WantedBy=multi-user.target
