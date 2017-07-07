@@ -1,4 +1,19 @@
 ---
+- name: check if mdlayher.com service exists
+  tags:
+    - mdlayhercom
+  stat:
+    path: "/lib/systemd/system/mdlayher.com.service"
+  register: checked
+
+- name: stop mdlayher.com service if it exists
+  tags:
+    - mdlayhercom
+  when: checked.stat.exists
+  service:
+    name: mdlayher.com
+    state: stopped
+
 - name: download and checksum mdlayher.com binary
   tags:
     - mdlayhercom
@@ -14,21 +29,6 @@
     name: mdlayhercom
     shell: "/bin/false"
     comment: "mdlayhercom service user"
-
-- name: check if mdlayher.com service exists
-  tags:
-    - mdlayhercom
-  stat:
-    path: "/lib/systemd/system/mdlayher.com.service"
-  register: checked
-
-- name: stop mdlayher.com service if it exists
-  tags:
-    - mdlayhercom
-  when: checked.stat.exists
-  service:
-    name: mdlayher.com
-    state: stopped
 
 - name: grant capabilities to mdlayher.com binary
   tags:
