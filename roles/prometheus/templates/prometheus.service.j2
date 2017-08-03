@@ -10,9 +10,9 @@ User=prometheus
 Group=prometheus
 Type=simple
 ExecStart=/usr/local/bin/prometheus \
-	-config.file {{ prometheus_config }}/prometheus.yml \
-	-storage.local.path {{ prometheus_data }} \
-	-log.level debug
+	--config.file {{ prometheus_config }}/prometheus.yml \
+	--storage.tsdb.path {{ prometheus_data }} \
+	--log.level debug
 
 [Install]
 WantedBy=multi-user.target

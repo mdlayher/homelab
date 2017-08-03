@@ -1,5 +1,1 @@
 # {{ ansible_managed }}
-
-# Alert when any UPSes are on battery power.
-ALERT UPSOnBattery
-	IF apcupsd_battery_time_on_seconds > 0
