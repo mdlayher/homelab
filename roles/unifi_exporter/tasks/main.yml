@@ -19,7 +19,7 @@
   tags:
     - unifi_exporter
   stat:
-    path: "/lib/systemd/system/unifi_exporter.service"
+    path: "/etc/systemd/system/unifi_exporter.service"
   register: checked
 
 - name: stop unifi_exporter service if it exists
@@ -49,7 +49,7 @@
     - unifi_exporter
   template:
     src: unifi_exporter.service.j2
-    dest: "/lib/systemd/system/unifi_exporter.service"
+    dest: "/etc/systemd/system/unifi_exporter.service"
 
 - name: reload systemd configurations
   tags:

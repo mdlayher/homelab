@@ -3,7 +3,7 @@
   tags:
     - mdlayhercom
   stat:
-    path: "/lib/systemd/system/mdlayher.com.service"
+    path: "/etc/systemd/system/mdlayher.com.service"
   register: checked
 
 - name: stop mdlayher.com service if it exists
@@ -52,7 +52,7 @@
     - mdlayhercom
   template:
     src: mdlayher.com.service.j2
-    dest: "/lib/systemd/system/mdlayher.com.service"
+    dest: "/etc/systemd/system/mdlayher.com.service"
 
 - name: reload systemd configurations
   tags:

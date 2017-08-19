@@ -19,7 +19,7 @@
   tags:
     - mpdsubd
   stat:
-    path: "/lib/systemd/system/mpdsubd.service"
+    path: "/etc/systemd/system/mpdsubd.service"
   register: checked
 
 - name: stop mpdsubd service if it exists
@@ -49,7 +49,7 @@
     - mpdsubd
   template:
     src: mpdsubd.service.j2
-    dest: "/lib/systemd/system/mpdsubd.service"
+    dest: "/etc/systemd/system/mpdsubd.service"
 
 - name: reload systemd configurations
   tags:

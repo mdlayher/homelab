@@ -27,7 +27,7 @@
   tags:
     - node_exporter
   stat:
-    path: "/lib/systemd/system/node_exporter.service"
+    path: "/etc/systemd/system/node_exporter.service"
   register: checked
 
 - name: stop node_exporter service if it exists
@@ -57,7 +57,7 @@
     - node_exporter
   template:
     src: node_exporter.service.j2
-    dest: "/lib/systemd/system/node_exporter.service"
+    dest: "/etc/systemd/system/node_exporter.service"
 
 - name: reload systemd configurations
   tags:

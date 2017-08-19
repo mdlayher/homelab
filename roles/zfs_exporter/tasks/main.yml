@@ -18,7 +18,7 @@
   tags:
     - zfs_exporter
   stat:
-    path: "/lib/systemd/system/zfs_exporter.service"
+    path: "/etc/systemd/system/zfs_exporter.service"
   register: checked
 
 - name: stop zfs_exporter service if it exists
@@ -43,7 +43,7 @@
     - zfs_exporter
   template:
     src: zfs_exporter.service.j2
-    dest: "/lib/systemd/system/zfs_exporter.service"
+    dest: "/etc/systemd/system/zfs_exporter.service"
 
 - name: reload systemd configurations
   tags:

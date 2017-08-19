@@ -27,7 +27,7 @@
   tags:
     - prometheus
   stat:
-    path: "/lib/systemd/system/prometheus.service"
+    path: "/etc/systemd/system/prometheus.service"
   register: checked
 
 - name: stop prometheus service if it exists
@@ -98,7 +98,7 @@
     - prometheus
   template:
     src: prometheus.service.j2
-    dest: "/lib/systemd/system/prometheus.service"
+    dest: "/etc/systemd/system/prometheus.service"
 
 - name: reload systemd configurations
   tags:

@@ -19,7 +19,7 @@
   tags:
     - apcupsd_exporter
   stat:
-    path: "/lib/systemd/system/apcupsd_exporter.service"
+    path: "/etc/systemd/system/apcupsd_exporter.service"
   register: checked
 
 - name: stop apcupsd_exporter service if it exists
@@ -49,7 +49,7 @@
     - apcupsd_exporter
   template:
     src: apcupsd_exporter.service.j2
-    dest: "/lib/systemd/system/apcupsd_exporter.service"
+    dest: "/etc/systemd/system/apcupsd_exporter.service"
 
 - name: reload systemd configurations
   tags:

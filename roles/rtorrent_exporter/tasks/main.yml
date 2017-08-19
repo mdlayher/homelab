@@ -19,7 +19,7 @@
   tags:
     - rtorrent_exporter
   stat:
-    path: "/lib/systemd/system/rtorrent_exporter.service"
+    path: "/etc/systemd/system/rtorrent_exporter.service"
   register: checked
 
 - name: stop rtorrent_exporter service if it exists
@@ -44,7 +44,7 @@
     - rtorrent_exporter
   template:
     src: rtorrent_exporter.service.j2
-    dest: "/lib/systemd/system/rtorrent_exporter.service"
+    dest: "/etc/systemd/system/rtorrent_exporter.service"
 
 - name: reload systemd configurations
   tags:
