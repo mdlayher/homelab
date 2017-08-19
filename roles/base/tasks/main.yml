@@ -20,6 +20,7 @@
    - lm-sensors
    - zfsutils-linux
    - hddtemp
+   - smartmontools
 
 - name: upgrade all packages
   tags:
