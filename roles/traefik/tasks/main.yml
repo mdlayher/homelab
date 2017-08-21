@@ -1,0 +1,98 @@
+---
+- name: download and checksum traefik {{ traefik_version }}
+  tags:
+    - traefik
+  get_url:
+    url: "{{ traefik_url }}"
+    dest: "{{ traefik_tmp }}"
+    checksum: "sha256:{{ traefik_sha256 }}"
+
+- name: create traefik user
+  tags:
+    - traefik
+  user:
+    name: traefik
+    shell: "/bin/false"
+    comment: "traefik service user"
+
+- name: check if traefik service exists
+  tags:
+    - traefik
+  stat:
+    path: "/etc/systemd/system/traefik.service"
+  register: checked
+
+- name: stop traefik service if it exists
+  tags:
+    - traefik
+  when: checked.stat.exists
+  service:
+    name: traefik
+    state: stopped
+
+- name: copy traefik binary to /usr/local/bin
+  tags:
+    - traefik
+  command: "cp {{ traefik_tmp }} /usr/local/bin/traefik"
+
+- name: grant capabilities to traefik binary
+  tags:
+    - traefik
+  capabilities:
+    path: "/usr/local/bin/traefik"
+    capability: "cap_net_bind_service+ep"
+    state: present
+
+- name: set permissions on traefik binaries
+  tags:
+    - traefik
+  file:
+    path: "/usr/local/bin/traefik"
+    owner: traefik
+    group: traefik
+    mode: 0755
+
+- name: create traefik config directory
+  tags:
+    - traefik
+  file:
+    path: "{{ traefik_config_dir }}"
+    state: directory
+    owner: traefik
+    group: traefik
+    mode: 0755
+
+- name: create traefik configuration
+  tags:
+    - traefik
+  template:
+    src: traefik.toml.j2
+    dest: "{{ traefik_config_dir }}/traefik.toml"
+  with_items: "{{ traefik_config }}"
+
+- name: create traefik systemd unit
+  tags:
+    - traefik
+  template:
+    src: traefik.service.j2
+    dest: "/etc/systemd/system/traefik.service"
+
+- name: reload systemd configurations
+  tags:
+    - traefik
+  command: "systemctl daemon-reload"
+
+- name: start traefik service
+  tags:
+    - traefik
+  service:
+    name: traefik
+    state: started
+    enabled: yes
+
+- name: remove temporary traefik files
+  tags:
+    - traefik
+  file:
+    path: "{{ traefik_tmp }}"
+    state: absent

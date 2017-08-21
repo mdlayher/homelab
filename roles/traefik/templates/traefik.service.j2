@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Traefik HTTP reverse proxy
+Documentation=https://docs.traefik.io/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=traefik
+Group=traefik
+Type=simple
+ExecStart=/usr/local/bin/traefik \
+	-c {{ traefik_config_dir }}/traefik.toml
+
+[Install]
+WantedBy=multi-user.target
