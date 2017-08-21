@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration
-prometheus_version: "2.0.0-beta.0"
-prometheus_sha256: "34cbe71fd97b9b836381432b9223d8ec6b235db04cc2c63e40a4221147286702"
+prometheus_version: "2.0.0-beta.2"
+prometheus_sha256: "c56e16d76adc05eeba6f60be3c3aaf2d07d9f7c2617118084fd7dcad17abc88d"
 # Prometheus configuration and data storage locations
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
@@ -10,22 +10,22 @@ prometheus_jobs:
   - job: "apcupsd"
     targets:
       - "192.168.1.3:9162"
+      - "192.168.1.4:9162"
   - job: "node"
     targets:
       - "192.168.1.1:9100"
       - "192.168.1.3:9100"
+      - "192.168.1.4:9100"
       - "192.168.1.5:9100"
       - "192.168.1.20:9100"
   - job: "prometheus"
     scrape_interval: "5s"
     targets:
       - "192.168.1.3:9090"
+      - "192.168.1.4:9090"
   - job: "unifi"
     targets:
-      - "192.168.1.3:9130"
-  - job: "zfs"
-    targets:
-      - "192.168.1.3:9134"
+      - "192.168.1.4:9130"
 # Static configuration.
 prometheus_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
 prometheus_tmp: "/tmp/{{ prometheus_dir }}"
