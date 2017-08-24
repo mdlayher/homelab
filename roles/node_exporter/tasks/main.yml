@@ -74,6 +74,23 @@
     group: node_exporter
     mode: 0755
 
+- name: download smartmon.sh textfile collector script
+  tags:
+    - node_exporter
+  get_url:
+    url: "https://raw.githubusercontent.com/prometheus/node_exporter/master/text_collector_examples/smartmon.sh"
+    dest: "{{ node_exporter_textfile_dir }}/smartmon.sh"
+    mode: 0744
+
+- name: enable smartmon.sh cronjob
+  tags:
+    - node_exporter
+  cron:
+    name: smartmon.sh
+    minute: "*"
+    user: root
+    job: "{{ node_exporter_textfile_dir }}/smartmon.sh > {{ node_exporter_textfile_dir }}/smartmon.prom"
+
 - name: start node_exporter service
   tags:
     - node_exporter
