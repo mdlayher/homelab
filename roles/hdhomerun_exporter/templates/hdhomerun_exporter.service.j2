@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus hdhomerun exporter
+Documentation=https://github.com/mdlayher/hdhomerun_exporter
+Wants=network-online.target
+After=network-online.target hdhomerun.service
+
+[Service]
+User=hdhomerun_exporter
+Group=hdhomerun_exporter
+Type=simple
+ExecStart=/usr/local/bin/hdhomerun_exporter
+
+[Install]
+WantedBy=multi-user.target

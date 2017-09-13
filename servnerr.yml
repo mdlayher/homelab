@@ -9,6 +9,7 @@
     - apcupsd_exporter
     - golang
     - grafana
+    - hdhomerun_exporter
     - kvm
     - mpd
     - mpdsubd
