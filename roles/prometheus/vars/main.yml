@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration
-prometheus_version: "2.0.0-rc.0"
-prometheus_sha256: "1c06f43e018336a1efaddd9f6a79422ca6329f85085eed5eb1130867c474f947"
+prometheus_version: "2.0.0"
+prometheus_sha256: "e12917b25b32980daee0e9cf879d9ec197e2893924bd1574604eb0f550034d46"
 # Prometheus configuration and data storage locations
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
@@ -15,6 +15,9 @@ prometheus_jobs:
     targets:
       - "192.168.1.10"
     relabel_target: "192.168.1.4:9137"
+  - job: "netconsoled"
+    targets:
+      - "192.168.1.1:8080"
   - job: "node"
     targets:
       - "192.168.1.1:9100"
