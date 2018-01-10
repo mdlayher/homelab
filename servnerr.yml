@@ -12,7 +12,6 @@
     - hdhomerun_exporter
     - kvm
     - mpd
-    - mpdsubd
     - node_exporter
     - plex
     - prometheus
