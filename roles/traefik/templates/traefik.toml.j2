@@ -22,6 +22,10 @@ email = "{{ traefik_acme_email }}"
 storage = "{{ traefik_config_dir }}/acme.json"
 entryPoint = "https"
 
+# Use HTTP-01 ACME challenge.
+[acme.httpChallenge]
+  entryPoint = "http"
+
 {% for domain in traefik_config %}
 [[acme.domains]]
   main = "{{ domain.domain }}"
