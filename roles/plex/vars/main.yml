@@ -1,4 +1,4 @@
 ---
-plex_url: "https://downloads.plex.tv/plex-media-server/1.10.0.4523-648bc61d4/plexmediaserver_1.10.0.4523-648bc61d4_amd64.deb"
+plex_url: "https://downloads.plex.tv/plex-media-server/1.11.0.4666-fc63598ba/plexmediaserver_1.11.0.4666-fc63598ba_amd64.deb"
 plex_deb: "/tmp/plex.deb"
-plex_sha256: "868309aa6a80abb59d07d9f10964bfd97ca5bf27f4aad7ebf60f37351707d2cd"
+plex_sha256: "920b4fefec75dca74c333412fd8297442d96db37189c99bee81637ebf24ec980"
