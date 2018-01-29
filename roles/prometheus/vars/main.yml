@@ -10,6 +10,10 @@ prometheus_jobs:
   - job: "apcupsd"
     targets:
       - "192.168.1.4:9162"
+  - job: "arris"
+    targets:
+      - "192.168.100.1"
+    relabel_target: "192.168.1.4:9393"
   - job: "hdhomerun"
     targets:
       - "192.168.1.8"
