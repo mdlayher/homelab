@@ -16,7 +16,6 @@
    - jq
    - tmux
    - tree
-   - linux-generic-hwe-16.04
    - lm-sensors
    - zfsutils-linux
    - hddtemp
