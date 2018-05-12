@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration
-prometheus_version: "2.0.0"
-prometheus_sha256: "e12917b25b32980daee0e9cf879d9ec197e2893924bd1574604eb0f550034d46"
+prometheus_version: "2.2.1"
+prometheus_sha256: "ec1798dbda1636f49d709c3931078dc17eafef76c480b67751aa09828396cf31"
 # Prometheus configuration and data storage locations
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
@@ -18,15 +18,11 @@ prometheus_jobs:
     targets:
       - "192.168.1.8"
     relabel_target: "192.168.1.4:9137"
-  - job: "netconsoled"
-    targets:
-      - "192.168.1.1:8080"
   - job: "node"
     targets:
       - "192.168.1.1:9100"
       - "192.168.1.4:9100"
       - "192.168.1.5:9100"
-      - "192.168.1.20:9100"
   - job: "prometheus"
     scrape_interval: "5s"
     targets:
@@ -34,9 +30,6 @@ prometheus_jobs:
   - job: "traefik"
     targets:
       - "192.168.1.4:8080"
-  - job: "unifi"
-    targets:
-      - "192.168.1.4:9130"
 # Static configuration.
 prometheus_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
 prometheus_tmp: "/tmp/{{ prometheus_dir }}"
