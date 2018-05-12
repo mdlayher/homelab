@@ -1,3 +1,0 @@
----
-zfs_exporter_url: "https://github.com/eliothedeman/zfs_exporter/releases/download/0.1.0/zfs_exporter"
-zfs_exporter_sha256: "9bca89f71092bff35dc5065e44d0d56cac15864609f1fb60533ec7ddd8de7691"
