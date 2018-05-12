@@ -1,4 +1,0 @@
----
-rtorrent_exporter_url: "https://github.com/mdlayher/rtorrent_exporter/releases/download/0.1.0/rtorrent_exporter"
-rtorrent_exporter_sha256: "9760092718ef0e6166a9b325a34420cfbbecdc66b0e0b992578f26a196ca3a8d"
-rtorrent_exporter_scgi: "http://127.0.0.1/RPC2"
