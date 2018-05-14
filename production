@@ -1,11 +1,14 @@
-[servnerr]
+[server]
 servnerr-3
 
-[website]
-mdlayher.com
+[backupserver]
+servnerr-2
 
 [workstation]
 matt-2
+
+[website]
+mdlayher.com
 
 [unifi]
 unifi.servnerr.com

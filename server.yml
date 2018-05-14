@@ -1,0 +1,19 @@
+---
+- hosts: server
+  become: yes
+  become_user: root
+  roles:
+    - base
+    - sshkeys
+    - apcupsd
+    - apcupsd_exporter
+    - arris_exporter
+    - golang
+    - grafana
+    - hdhomerun_exporter
+    - kvm
+    - node_exporter
+    - plex
+    - prometheus
+    - traefik
+    - nfs
