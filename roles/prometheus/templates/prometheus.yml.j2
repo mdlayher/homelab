@@ -16,6 +16,9 @@ scrape_configs:
   {% endif %}
   static_configs:
     - targets: {{ job.targets | to_yaml }}
+{% if job.scheme is defined %}
+    scheme: "{{ job.scheme }}"
+{% endif %}
 {% if job.relabel_target is defined %}
     relabel_configs:
     - source_labels: [__address__]

@@ -18,6 +18,10 @@ prometheus_jobs:
     targets:
       - "192.168.1.8"
     relabel_target: "192.168.1.4:9137"
+  - job: "mdlayher.com"
+    scheme: "https"
+    targets:
+      - "mdlayher.com"
   - job: "node"
     targets:
       - "192.168.1.1:9100"
