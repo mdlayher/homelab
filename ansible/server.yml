@@ -7,7 +7,6 @@
     - sshkeys
     - apcupsd
     - apcupsd_exporter
-    - arris_exporter
     - golang
     - grafana
     - hdhomerun_exporter
