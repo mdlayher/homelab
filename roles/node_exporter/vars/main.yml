@@ -1,8 +1,8 @@
 ---
 node_exporter_textfile_dir: "/var/lib/node_exporter"
 # Version configuration.
-node_exporter_version: "0.16.0"
-node_exporter_sha256: "e92a601a5ef4f77cce967266b488a978711dabc527a720bea26505cba426c029"
+node_exporter_version: "0.17.0"
+node_exporter_sha256: "d2e00d805dbfdc67e7291ce2d2ff151f758dd7401dd993411ff3818d0e231489"
 # Static configuration.
 node_exporter_dir: "node_exporter-{{ node_exporter_version }}.linux-amd64"
 node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_dir }}.tar.gz"
