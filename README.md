@@ -1,5 +1,4 @@
-ansible
+homelab
 =======
 
-Ansible playbooks used to configure Matt Layher's machines.
-MIT Licensed.
+Configuration management for Matt Layher's machines. MIT Licensed.
