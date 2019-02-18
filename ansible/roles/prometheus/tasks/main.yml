@@ -3,7 +3,7 @@
   tags:
     - prometheus
   shell: "cat {{ prometheus_config }}/.sha256"
-  ignore_errors: yes
+  ignore_errors: true
   register: checksum
 
 - name: determine if prometheus {{ prometheus_version}} should be installed
@@ -28,7 +28,7 @@
   unarchive:
     src: "{{ prometheus_tgz }}"
     dest: "/tmp/"
-    copy: no
+    copy: false
 
 - name: create prometheus user
   tags:
@@ -131,7 +131,7 @@
   service:
     name: prometheus
     state: started
-    enabled: yes
+    enabled: true
 
 - name: remove temporary prometheus files
   tags:

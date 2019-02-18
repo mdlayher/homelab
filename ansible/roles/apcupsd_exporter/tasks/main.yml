@@ -62,7 +62,7 @@
   service:
     name: apcupsd_exporter
     state: started
-    enabled: yes
+    enabled: true
 
 - name: remove temporary files
   tags:

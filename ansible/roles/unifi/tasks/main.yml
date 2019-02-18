@@ -19,7 +19,7 @@
   apt:
     pkg: unifi
     state: installed
-    update_cache: yes
+    update_cache: true
 
 - name: start unifi service
   tags:
@@ -27,4 +27,4 @@
   service:
     name: unifi
     state: started
-    enabled: yes
+    enabled: true

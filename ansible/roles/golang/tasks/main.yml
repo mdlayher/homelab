@@ -65,7 +65,7 @@
   unarchive:
     src: "{{ golang_tgz }}"
     dest: "/usr/local/"
-    copy: no
+    copy: false
 
 - name: insert go configuration into shell profile
   tags:

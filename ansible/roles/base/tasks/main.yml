@@ -3,7 +3,7 @@
   tags:
     - base
   apt:
-    update_cache: yes
+    update_cache: true
 
 - name: install common packages
   tags:

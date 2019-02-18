@@ -88,7 +88,7 @@
   service:
     name: traefik
     state: started
-    enabled: yes
+    enabled: true
 
 - name: remove temporary traefik files
   tags:

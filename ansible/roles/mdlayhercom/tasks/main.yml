@@ -65,4 +65,4 @@
   service:
     name: mdlayher.com
     state: started
-    enabled: yes
+    enabled: true

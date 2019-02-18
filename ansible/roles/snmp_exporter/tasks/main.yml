@@ -13,7 +13,7 @@
   unarchive:
     src: "{{ snmp_exporter_tgz }}"
     dest: "/tmp/"
-    copy: no
+    copy: false
 
 - name: create snmp_exporter user
   tags:
@@ -85,7 +85,7 @@
   service:
     name: snmp_exporter
     state: started
-    enabled: yes
+    enabled: true
 
 - name: remove temporary snmp_exporter files
   tags:

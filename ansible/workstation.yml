@@ -1,6 +1,6 @@
 ---
 - hosts: workstation
-  become: yes
+  become: true
   become_user: root
   roles:
     - base

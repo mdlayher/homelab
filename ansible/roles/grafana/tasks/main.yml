@@ -19,7 +19,7 @@
   apt:
     pkg: grafana
     state: installed
-    update_cache: yes
+    update_cache: true
 
 - name: start grafana service
   tags:
@@ -27,4 +27,4 @@
   service:
     name: grafana-server
     state: started
-    enabled: yes
+    enabled: true

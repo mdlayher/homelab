@@ -27,4 +27,4 @@
   service:
     name: plexmediaserver
     state: started
-    enabled: yes
+    enabled: true
