@@ -1,10 +1,10 @@
 ---
+language: python
 os:
   - linux
 dist: xenial
-sudo: required
 before_install:
-  - sudo apt install -y yamllint
+  - pip install yamllint
 script:
   # Sanity check all YAML files:
   #   - ignore line-length lint
