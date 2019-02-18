@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus SNMP exporter
+Documentation=https://github.com/prometheus/snmp_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=snmp_exporter
+Group=snmp_exporter
+Type=simple
+ExecStart=/usr/local/bin/snmp_exporter --config.file "/etc/snmp_exporter/snmp.yml"
+
+[Install]
+WantedBy=multi-user.target

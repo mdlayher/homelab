@@ -1,0 +1,8 @@
+---
+# Version configuration.
+snmp_exporter_version: "0.15.0"
+snmp_exporter_sha256: "c5e8e58a8187e9d0bd41dbeb7e09a15f5a59626821fa801dd99828d9cdd7efe9"
+# Static configuration.
+snmp_exporter_dir: "snmp_exporter-{{ snmp_exporter_version }}.linux-amd64"
+snmp_exporter_url: "https://github.com/prometheus/snmp_exporter/releases/download/v{{ snmp_exporter_version }}/{{ snmp_exporter_dir }}.tar.gz"
+snmp_exporter_tgz: "/tmp/snmp_exporter.tgz"

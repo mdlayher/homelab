@@ -14,5 +14,6 @@
     - node_exporter
     - plex
     - prometheus
+    - snmp_exporter
     - traefik
     - nfs
