@@ -19,6 +19,13 @@ scrape_configs:
 {% if job.scheme is defined %}
     scheme: "{{ job.scheme }}"
 {% endif %}
+{% if job.path is defined %}
+    metrics_path: "{{ job.path }}"
+{% endif %}
+{% if job.params is defined %}
+    params:
+      {{ job.params | to_yaml }}
+{% endif %}
 {% if job.relabel_target is defined %}
     relabel_configs:
     - source_labels: [__address__]
