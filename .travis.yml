@@ -1,0 +1,11 @@
+---
+os:
+  - linux
+sudo: required
+before_install:
+  - sudo apt install -y yamllint
+script:
+  # Sanity check all YAML files:
+  #   - ignore line-length lint
+  #   - ignore ansible vault-encrypted files
+  - diff -u <(echo -n) <(yamllint -f parsable ./ansible | grep -v "line-length" | grep -v "traefik/vars/main.yml")
