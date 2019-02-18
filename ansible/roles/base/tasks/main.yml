@@ -10,16 +10,16 @@
     - base
   apt: pkg={{ item }} state=installed
   with_items:
-   - byobu
-   - git
-   - htop
-   - jq
-   - tmux
-   - tree
-   - lm-sensors
-   - zfsutils-linux
-   - hddtemp
-   - smartmontools
+    - byobu
+    - git
+    - htop
+    - jq
+    - tmux
+    - tree
+    - lm-sensors
+    - zfsutils-linux
+    - hddtemp
+    - smartmontools
 
 - name: upgrade all packages
   tags:
