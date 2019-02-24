@@ -13,12 +13,14 @@
     repo: "deb http://www.ubnt.com/downloads/unifi/debian stable ubiquiti"
     state: present
 
-- name: install unifi controller
+- name: install haveged and unifi controller
   tags:
     - unifi
   apt:
-    pkg: unifi
-    state: installed
+    pkg:
+      - haveged
+      - unifi
+    state: present
     update_cache: true
 
 - name: start unifi service
