@@ -1,7 +1,7 @@
 ---
 # Go version to install and its tarball checksum.
-golang_version: "go1.10.3"
-golang_sha256: "fa1b0e45d3b647c252f51f5e1204aba049cde4af177ef9f2181f43004f901035"
+golang_version: "go1.12"
+golang_sha256: "750a07fef8579ae4839458701f4df690e0b20b8bcce33b437e4df89c451b6f13"
 # Personal Go configuration.
 golang_user: "matt"
 golang_user_home: "/home/{{ golang_user }}"

@@ -18,7 +18,7 @@
 - name: check if go version matches {{ golang_version }}
   tags:
     - golang
-  when: checked.stat.exists and version|success
+  when: checked.stat.exists and version is success
   set_fact:
     # Install when reported version does not match specified version
     install: "{{ version.stdout.find(golang_version) == -1 }}"
@@ -26,7 +26,7 @@
 - name: cleanup existing go installation
   tags:
     - golang
-  when: checked.stat.exists and version|success and install
+  when: checked.stat.exists and version is success and install
   file:
     path: "{{ golang_root }}"
     state: absent
@@ -44,7 +44,7 @@
   when: install
   apt:
     pkg: "{{ item }}"
-    state: installed
+    state: present
   with_items:
     - git
     - mercurial
