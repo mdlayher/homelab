@@ -1,5 +1,0 @@
----
-- hosts: website
-  roles:
-    - base
-    - mdlayhercom
