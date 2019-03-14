@@ -14,10 +14,6 @@ prometheus_jobs:
     targets:
       - "hdhomerun"
     relabel_target: "servnerr-3:9137"
-  - job: "mdlayher.com"
-    scheme: "https"
-    targets:
-      - "mdlayher.com"
   - job: "node"
     targets:
       - "servnerr-3:9100"
