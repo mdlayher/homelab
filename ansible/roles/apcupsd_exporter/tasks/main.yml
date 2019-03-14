@@ -1,5 +1,5 @@
 ---
-- name: download and checksum apcupsd_exporter {{ apcupsd_exporter_version }} binary
+- name: download and checksum apcupsd_exporter binary
   tags:
     - apcupsd_exporter
   get_url:

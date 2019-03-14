@@ -1,4 +1,3 @@
 ---
-apcupsd_exporter_version: "0.1.0"
-apcupsd_exporter_url: "https://github.com/mdlayher/apcupsd_exporter/releases/download/{{ apcupsd_exporter_version }}/apcupsd_exporter"
-apcupsd_exporter_sha256: "217cfdfbd085657be5579b1cc691078fc5e2e6aaac4b3c72b45bbba05aba4b41"
+apcupsd_exporter_url: "https://mdlayher.nyc3.digitaloceanspaces.com/bin/apcupsd_exporter"
+apcupsd_exporter_sha256: "bbaf560622ed4dc7505b463af5b6c7ffeccdf9409481d30a5c9d7bbc98a89ed0"
