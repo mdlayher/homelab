@@ -38,6 +38,9 @@ prometheus_jobs:
   - job: "traefik"
     targets:
       - "servnerr-3:8080"
+  - job: "wireguard"
+    targets:
+      - "routnerr-1:9586"
 # Static configuration.
 prometheus_dir: "prometheus-{{ prometheus_version }}.linux-amd64"
 prometheus_tmp: "/tmp/{{ prometheus_dir }}"
