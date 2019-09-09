@@ -78,7 +78,7 @@
   tags:
     - node_exporter
   get_url:
-    url: "https://raw.githubusercontent.com/prometheus/node_exporter/master/text_collector_examples/smartmon.sh"
+    url: "https://raw.githubusercontent.com/prometheus-community/node-exporter-textfile-collector-scripts/master/smartmon.sh"
     dest: "{{ node_exporter_textfile_dir }}/smartmon.sh"
     mode: 0744
 
