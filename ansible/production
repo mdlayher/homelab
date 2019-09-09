@@ -1,11 +1,8 @@
 [server]
 servnerr-3
 
-[backupserver]
-servnerr-2
-
 [workstation]
-nerr-2
+matt@nerr-3
 
 [unifi]
 unifi.servnerr.com
