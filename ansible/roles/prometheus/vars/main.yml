@@ -17,7 +17,6 @@ prometheus_jobs:
   - job: "node"
     targets:
       - "servnerr-3:9100"
-      - "nerr-2:9100"
       - "nerr-3:9100"
   - job: "prometheus"
     scrape_interval: "5s"
