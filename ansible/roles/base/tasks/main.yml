@@ -21,6 +21,7 @@
     - hddtemp
     - smartmontools
     - nvme-cli
+    - yamllint
 
 - name: upgrade all packages
   tags:
