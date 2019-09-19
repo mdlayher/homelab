@@ -8,7 +8,7 @@
 - name: install common packages
   tags:
     - base
-  apt: pkg={{ item }} state=installed
+  apt: pkg={{ item }} state=present
   with_items:
     - byobu
     - git
@@ -20,6 +20,7 @@
     - zfsutils-linux
     - hddtemp
     - smartmontools
+    - nvme-cli
 
 - name: upgrade all packages
   tags:
