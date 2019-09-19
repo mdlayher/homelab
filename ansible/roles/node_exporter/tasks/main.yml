@@ -74,22 +74,36 @@
     group: node_exporter
     mode: 0755
 
-- name: download smartmon.sh textfile collector script
+- name: download textfile collector scripts
   tags:
     - node_exporter
   get_url:
-    url: "https://raw.githubusercontent.com/prometheus-community/node-exporter-textfile-collector-scripts/master/smartmon.sh"
-    dest: "{{ node_exporter_textfile_dir }}/smartmon.sh"
+    url: "{{ item }}"
+    dest: "{{ node_exporter_textfile_dir }}/"
     mode: 0744
+  with_items:
+    - "https://raw.githubusercontent.com/prometheus-community/node-exporter-textfile-collector-scripts/master/smartmon.sh"
+    - "https://raw.githubusercontent.com/prometheus-community/node-exporter-textfile-collector-scripts/master/nvme_metrics.sh"
 
-- name: enable smartmon.sh cronjob
+- name: set cron PATH entries for scripts
   tags:
     - node_exporter
   cron:
-    name: smartmon.sh
+    name: PATH
+    env: yes
+    job: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+- name: enable textfile collector cronjobs
+  tags:
+    - node_exporter
+  cron:
+    name: "{{ item }}"
     minute: "*"
     user: root
-    job: "{{ node_exporter_textfile_dir }}/smartmon.sh > {{ node_exporter_textfile_dir }}/smartmon.prom"
+    job: "{{ node_exporter_textfile_dir }}/{{ item }} > {{ node_exporter_textfile_dir }}/{{ item }}.prom"
+  with_items:
+    - "smartmon.sh"
+    - "nvme_metrics.sh"
 
 - name: start node_exporter service
   tags:
