@@ -90,7 +90,7 @@
     - node_exporter
   cron:
     name: PATH
-    env: yes
+    env: true
     job: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 - name: enable textfile collector cronjobs
