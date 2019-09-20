@@ -10,6 +10,7 @@ prometheus_jobs:
   - job: "apcupsd"
     targets:
       - "servnerr-3:9162"
+      - "nerr-3:9162"
   - job: "hdhomerun"
     targets:
       - "hdhomerun"
