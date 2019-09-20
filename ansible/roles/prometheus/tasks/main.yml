@@ -54,11 +54,11 @@
     name: prometheus
     state: stopped
 
-- name: copy prometheus binaries to {{ bin_path }}
+- name: copy prometheus binaries to {{ host_bin_path }}
   tags:
     - prometheus
   when: prometheus_install
-  command: "cp {{ prometheus_tmp }}/{{ item }} {{ bin_path }}/"
+  command: "cp {{ prometheus_tmp }}/{{ item }} {{ host_bin_path }}/"
   with_items:
     - "prometheus"
     - "promtool"
@@ -68,7 +68,7 @@
     - prometheus
   when: prometheus_install
   file:
-    path: "{{ bin_path }}/{{ item }}"
+    path: "{{ host_bin_path }}/{{ item }}"
     owner: prometheus
     group: prometheus
     mode: 0755

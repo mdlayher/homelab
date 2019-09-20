@@ -1,5 +1,5 @@
 ---
-- name: download and checksum node_exporter {{ node_exporter_arch }} binary
+- name: download and checksum node_exporter {{ host_golang_arch }} binary
   tags:
     - node_exporter
   get_url:
@@ -38,16 +38,16 @@
     name: node_exporter
     state: stopped
 
-- name: copy node_exporter binary to {{ bin_path }}
+- name: copy node_exporter binary to {{ host_bin_path }}
   tags:
     - node_exporter
-  command: "cp /tmp/{{ node_exporter_dir }}/node_exporter {{ bin_path }}/"
+  command: "cp /tmp/{{ node_exporter_dir }}/node_exporter {{ host_bin_path }}/"
 
 - name: set permissions on node_exporter binary
   tags:
     - node_exporter
   file:
-    path: "{{ bin_path }}/node_exporter"
+    path: "{{ host_bin_path }}/node_exporter"
     owner: node_exporter
     group: node_exporter
     mode: 0755
@@ -94,7 +94,7 @@
   cron:
     name: PATH
     env: true
-    job: "/usr/local/sbin:{{ bin_path }}:/usr/sbin:/usr/bin:/sbin:/bin"
+    job: "/usr/local/sbin:{{ host_bin_path }}:/usr/sbin:/usr/bin:/sbin:/bin"
 
 - name: enable textfile collector cronjobs
   tags:

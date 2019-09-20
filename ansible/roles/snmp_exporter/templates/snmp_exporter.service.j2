@@ -9,7 +9,7 @@ After=network-online.target
 User=snmp_exporter
 Group=snmp_exporter
 Type=simple
-ExecStart={{ bin_path }}/snmp_exporter --config.file "/etc/snmp_exporter/snmp.yml"
+ExecStart={{ host_bin_path }}/snmp_exporter --config.file "/etc/snmp_exporter/snmp.yml"
 
 [Install]
 WantedBy=multi-user.target

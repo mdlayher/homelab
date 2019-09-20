@@ -1,9 +1,9 @@
 ---
-- name: download and checksum wireguard_exporter binary
+- name: download and checksum wireguard_exporter {{ host_golang_arch }} binary
   tags:
     - wireguard_exporter
   get_url:
-    url: "{{ wireguard_exporter_url }}"
+    url: "https://mdlayher.nyc3.digitaloceanspaces.com/bin/wireguard_exporter_{{ host_golang_arch }}"
     dest: "/tmp/wireguard_exporter"
     checksum: "sha256:{{ wireguard_exporter_sha256 }}"
 
@@ -30,16 +30,16 @@
     name: wireguard_exporter
     state: stopped
 
-- name: copy wireguard_exporter binary to {{ bin_path }}
+- name: copy wireguard_exporter binary to {{ host_bin_path }}
   tags:
     - wireguard_exporter
-  command: "cp /tmp/wireguard_exporter {{ bin_path }}/"
+  command: "cp /tmp/wireguard_exporter {{ host_bin_path }}/"
 
 - name: grant capabilities to wireguard_exporter binary
   tags:
     - wireguard_exporter
   capabilities:
-    path: "{{ bin_path }}/wireguard_exporter"
+    path: "{{ host_bin_path }}/wireguard_exporter"
     capability: "cap_net_admin+ep"
     state: present
 
@@ -47,7 +47,7 @@
   tags:
     - wireguard_exporter
   file:
-    path: "{{ bin_path }}/wireguard_exporter"
+    path: "{{ host_bin_path }}/wireguard_exporter"
     owner: wireguard_exporter
     group: wireguard_exporter
     mode: 0755

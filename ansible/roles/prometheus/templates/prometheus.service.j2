@@ -9,7 +9,7 @@ After=network-online.target
 User=prometheus
 Group=prometheus
 Type=simple
-ExecStart={{ bin_path }}/prometheus \
+ExecStart={{ host_bin_path }}/prometheus \
 	--config.file {{ prometheus_config }}/prometheus.yml \
 	--storage.tsdb.path {{ prometheus_data }} \
 	--storage.tsdb.retention.time 180d \

@@ -10,7 +10,7 @@ After=network-online.target apcupsd.service
 User=apcupsd_exporter
 Group=apcupsd_exporter
 Type=simple
-ExecStart={{ bin_path }}/apcupsd_exporter
+ExecStart={{ host_bin_path }}/apcupsd_exporter
 
 [Install]
 WantedBy=multi-user.target

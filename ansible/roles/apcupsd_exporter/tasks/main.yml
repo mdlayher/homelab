@@ -30,16 +30,16 @@
     name: apcupsd_exporter
     state: stopped
 
-- name: copy apcupsd_exporter binary to {{ bin_path }}
+- name: copy apcupsd_exporter binary to {{ host_bin_path }}
   tags:
     - apcupsd_exporter
-  command: "cp /tmp/apcupsd_exporter {{ bin_path }}/"
+  command: "cp /tmp/apcupsd_exporter {{ host_bin_path }}/"
 
 - name: set permissions on apcupsd_exporter binary
   tags:
     - apcupsd_exporter
   file:
-    path: "{{ bin_path }}/apcupsd_exporter"
+    path: "{{ host_bin_path }}/apcupsd_exporter"
     owner: apcupsd_exporter
     group: apcupsd_exporter
     mode: 0755
