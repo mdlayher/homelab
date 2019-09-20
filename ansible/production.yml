@@ -1,20 +1,21 @@
 ---
+amd64:
+  hosts:
+    servnerr-3:
+    nerr-3:
+  vars:
+    bin_path: "/usr/local/bin"
+    node_exporter_arch: "amd64"
+    node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
+    node_exporter_use_textfile: true
 server:
   hosts:
     servnerr-3:
-      bin_path: "/usr/local/bin"
       apcupsd_battery_date: "05/19/17"
-      node_exporter_arch: "amd64"
-      node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
-      node_exporter_use_textfile: true
 workstation:
   hosts:
     nerr-3:
-      bin_path: "/usr/local/bin"
       apcupsd_battery_date: "11/29/2016"
-      node_exporter_arch: "amd64"
-      node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
-      node_exporter_use_textfile: true
 router:
   hosts:
     routnerr-1:
