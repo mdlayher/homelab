@@ -12,6 +12,7 @@ server:
   hosts:
     servnerr-3:
       apcupsd_battery_date: "05/19/17"
+      rtorrent_exporter_sha256: "7b143833b5a41e3e93938902ba96d6c2643a6b50b80cfcb54eba0c88846b7eb1"
 workstation:
   hosts:
     nerr-3:

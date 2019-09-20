@@ -17,3 +17,4 @@
     - snmp_exporter
     - traefik
     - nfs
+    - rtorrent_exporter
