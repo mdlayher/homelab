@@ -9,7 +9,7 @@ After=network-online.target
 User=wireguard_exporter
 Group=wireguard_exporter
 Type=simple
-ExecStart=/usr/bin/wireguard_exporter
+ExecStart={{ host_bin_path }}/wireguard_exporter
 
 [Install]
 WantedBy=multi-user.target
