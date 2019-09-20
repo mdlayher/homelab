@@ -23,6 +23,8 @@ router:
       node_exporter_arch: "mips64"
       node_exporter_sha256: "c2721c1b85e3024e61f37fb2dc44a57f6d4eed8cc0576185a1dedea20e36fb31"
       node_exporter_use_textfile: false
+      wireguard_exporter_url: "https://mdlayher.nyc3.digitaloceanspaces.com/bin/wireguard_exporter_mips64"
+      wireguard_exporter_sha256: "4a49b28a7661f964c2f2f9030fdb53c1171f228e1602c2a3c95b77c6ad824f47"
 unifi:
   hosts:
     unifi.servnerr.com:

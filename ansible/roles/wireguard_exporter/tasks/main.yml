@@ -30,16 +30,16 @@
     name: wireguard_exporter
     state: stopped
 
-- name: copy wireguard_exporter binary to /usr/bin
+- name: copy wireguard_exporter binary to {{ bin_path }}
   tags:
     - wireguard_exporter
-  command: "cp /tmp/wireguard_exporter /usr/bin/"
+  command: "cp /tmp/wireguard_exporter {{ bin_path }}/"
 
 - name: grant capabilities to wireguard_exporter binary
   tags:
     - wireguard_exporter
   capabilities:
-    path: "/usr/bin/wireguard_exporter"
+    path: "{{ bin_path }}/wireguard_exporter"
     capability: "cap_net_admin+ep"
     state: present
 
@@ -47,7 +47,7 @@
   tags:
     - wireguard_exporter
   file:
-    path: "/usr/bin/wireguard_exporter"
+    path: "{{ bin_path }}/wireguard_exporter"
     owner: wireguard_exporter
     group: wireguard_exporter
     mode: 0755

@@ -1,3 +1,0 @@
----
-wireguard_exporter_url: "https://mdlayher.nyc3.digitaloceanspaces.com/bin/wireguard_exporter_mips64"
-wireguard_exporter_sha256: "4a49b28a7661f964c2f2f9030fdb53c1171f228e1602c2a3c95b77c6ad824f47"
