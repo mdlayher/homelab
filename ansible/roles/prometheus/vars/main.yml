@@ -24,6 +24,10 @@ prometheus_jobs:
     scrape_interval: "5s"
     targets:
       - "servnerr-3:9090"
+  - job: "rtorrent"
+    scrape_interval: "30s"
+    targets:
+      - "servnerr-3:9135"
   - job: "snmp_exporter"
     targets:
       - "servnerr-3:9116"
