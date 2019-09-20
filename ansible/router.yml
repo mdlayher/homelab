@@ -1,0 +1,6 @@
+---
+- hosts: router
+  become: true
+  become_user: root
+  roles:
+    - wireguard_exporter

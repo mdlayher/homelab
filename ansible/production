@@ -4,5 +4,8 @@ servnerr-3
 [workstation]
 matt@nerr-3
 
+[router]
+routnerr-1
+
 [unifi]
 unifi.servnerr.com

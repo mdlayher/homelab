@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus wireguard exporter
+Documentation=https://github.com/mdlayher/wireguard_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=wireguard_exporter
+Group=wireguard_exporter
+Type=simple
+ExecStart=/usr/bin/wireguard_exporter
+
+[Install]
+WantedBy=multi-user.target
