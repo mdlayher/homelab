@@ -33,13 +33,19 @@
   tags:
     - kvm
   blockinfile:
-    dest: "/etc/network/interfaces"
-    marker: "# {mark} ansible-managed /etc/network/interfaces KVM br0 template"
+    dest: "/etc/netplan/01-netcfg.yaml"
+    marker: "# {mark} ansible-managed KVM br0 template"
     block: |
-      {{ '#' }} Set primary network interface to manual, add it in place of eth0, and restart networking.
-      {{ '#' }} auto br0
-      {{ '#' }} iface br0 inet dhcp
-      {{ '#' }}     bridge_ports   eth0
-      {{ '#' }}     bridge_stp     off
-      {{ '#' }}     bridge_fd      0
-      {{ '#' }}     bridge_maxwait 0
+      {{ '#' }} # Replace Ethernet interface name as appropriate.
+      {{ '# '}} # ethernets:
+      {{ '#' }} #   eth0:
+      {{ '#' }} #     dhcp4: false
+      {{ '#' }} #     dhcp6: false
+      {{ '#' }} #     optional: true
+      {{ '#' }} #   bridges:
+      {{ '#' }} #     br0:
+      {{ '#' }} #       interfaces: [eth0]
+      {{ '#' }} #       dhcp4: true
+      {{ '#' }} #       dhcp6: true
+      {{ '#' }} #       accept-ra: true
+      {{ '#' }} #       optional: true
