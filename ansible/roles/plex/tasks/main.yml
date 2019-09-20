@@ -1,25 +1,25 @@
 ---
-- name: download and checksum plex debian package
+- name: add plex apt key
   tags:
     - plex
-  get_url:
-    url: "{{ plex_url }}"
-    dest: "{{ plex_deb }}"
-    checksum: "sha256:{{ plex_sha256 }}"
+  apt_key:
+    url: "https://downloads.plex.tv/plex-keys/PlexSign.key"
+    state: present
+
+- name: add plex apt repository
+  tags:
+    - plex
+  apt_repository:
+    repo: "deb https://downloads.plex.tv/repo/deb public main"
+    state: present
 
 - name: install plex
   tags:
     - plex
   apt:
-    deb: "{{ plex_deb }}"
-    state: installed
-
-- name: remove temporary plex debian package
-  tags:
-    - plex
-  file:
-    path: "{{ plex_deb }}"
-    state: absent
+    pkg: plexmediaserver
+    state: present
+    update_cache: true
 
 - name: start plex service
   tags:
