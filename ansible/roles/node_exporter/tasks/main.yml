@@ -94,7 +94,7 @@
   cron:
     name: PATH
     env: true
-    job: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    job: "/usr/local/sbin:{{ bin_path }}:/usr/sbin:/usr/bin:/sbin:/bin"
 
 - name: enable textfile collector cronjobs
   tags:

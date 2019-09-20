@@ -30,16 +30,16 @@
     name: hdhomerun_exporter
     state: stopped
 
-- name: copy hdhomerun_exporter binary to /usr/local/bin
+- name: copy hdhomerun_exporter binary to {{ bin_path }}
   tags:
     - hdhomerun_exporter
-  command: "cp /tmp/hdhomerun_exporter /usr/local/bin/"
+  command: "cp /tmp/hdhomerun_exporter {{ bin_path }}/"
 
 - name: set permissions on hdhomerun_exporter binary
   tags:
     - hdhomerun_exporter
   file:
-    path: "/usr/local/bin/hdhomerun_exporter"
+    path: "{{ bin_path }}/hdhomerun_exporter"
     owner: hdhomerun_exporter
     group: hdhomerun_exporter
     mode: 0755

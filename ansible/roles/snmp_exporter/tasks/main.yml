@@ -38,16 +38,16 @@
     name: snmp_exporter
     state: stopped
 
-- name: copy snmp_exporter binary to /usr/local/bin
+- name: copy snmp_exporter binary to {{ bin_path }}
   tags:
     - snmp_exporter
-  command: "cp /tmp/{{ snmp_exporter_dir }}/snmp_exporter /usr/local/bin/"
+  command: "cp /tmp/{{ snmp_exporter_dir }}/snmp_exporter {{ bin_path }}/"
 
 - name: set permissions on snmp_exporter binary
   tags:
     - snmp_exporter
   file:
-    path: "/usr/local/bin/snmp_exporter"
+    path: "{{ bin_path }}/snmp_exporter"
     owner: snmp_exporter
     group: snmp_exporter
     mode: 0755

@@ -30,16 +30,16 @@
     name: traefik
     state: stopped
 
-- name: copy traefik binary to /usr/local/bin
+- name: copy traefik binary to {{ bin_path }}
   tags:
     - traefik
-  command: "cp {{ traefik_tmp }} /usr/local/bin/traefik"
+  command: "cp {{ traefik_tmp }} {{ bin_path }}/traefik"
 
 - name: grant capabilities to traefik binary
   tags:
     - traefik
   capabilities:
-    path: "/usr/local/bin/traefik"
+    path: "{{ bin_path }}/traefik"
     capability: "cap_net_bind_service+ep"
     state: present
 
@@ -47,7 +47,7 @@
   tags:
     - traefik
   file:
-    path: "/usr/local/bin/traefik"
+    path: "{{ bin_path }}/traefik"
     owner: traefik
     group: traefik
     mode: 0755

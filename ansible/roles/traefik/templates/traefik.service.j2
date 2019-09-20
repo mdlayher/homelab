@@ -9,7 +9,7 @@ After=network-online.target
 User=traefik
 Group=traefik
 Type=simple
-ExecStart=/usr/local/bin/traefik \
+ExecStart={{ bin_path }}/traefik \
 	-c {{ traefik_config_dir }}/traefik.toml
 
 [Install]

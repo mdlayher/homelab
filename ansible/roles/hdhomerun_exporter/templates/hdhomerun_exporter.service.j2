@@ -9,7 +9,7 @@ After=network-online.target
 User=hdhomerun_exporter
 Group=hdhomerun_exporter
 Type=simple
-ExecStart=/usr/local/bin/hdhomerun_exporter
+ExecStart={{ bin_path }}/hdhomerun_exporter
 
 [Install]
 WantedBy=multi-user.target
