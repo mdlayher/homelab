@@ -1,3 +1,3 @@
-# homelab [![Build Status](https://travis-ci.org/mdlayher/homelab.svg?branch=master)](https://travis-ci.org/mdlayher/homelab)
+# homelab  [![builds.sr.ht status](https://builds.sr.ht/~mdlayher/wgipam.svg)](https://builds.sr.ht/~mdlayher/wgipam?)
 
 Configuration management for Matt Layher's machines. MIT Licensed.
