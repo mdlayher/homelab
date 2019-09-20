@@ -1,5 +1,5 @@
 ---
-- name: download and checksum node_exporter binary
+- name: download and checksum node_exporter {{ node_exporter_arch }} binary
   tags:
     - node_exporter
   get_url:
@@ -38,16 +38,16 @@
     name: node_exporter
     state: stopped
 
-- name: copy node_exporter binary to /usr/local/bin
+- name: copy node_exporter binary to {{ bin_path }}
   tags:
     - node_exporter
-  command: "cp /tmp/{{ node_exporter_dir }}/node_exporter /usr/local/bin/"
+  command: "cp /tmp/{{ node_exporter_dir }}/node_exporter {{ bin_path }}/"
 
 - name: set permissions on node_exporter binary
   tags:
     - node_exporter
   file:
-    path: "/usr/local/bin/node_exporter"
+    path: "{{ bin_path }}/node_exporter"
     owner: node_exporter
     group: node_exporter
     mode: 0755
@@ -67,6 +67,7 @@
 - name: create node_exporter textfile collector directory
   tags:
     - node_exporter
+  when: node_exporter_use_textfile
   file:
     path: "{{ node_exporter_textfile_dir }}"
     state: directory
@@ -77,6 +78,7 @@
 - name: download textfile collector scripts
   tags:
     - node_exporter
+  when: node_exporter_use_textfile
   get_url:
     url: "{{ item }}"
     dest: "{{ node_exporter_textfile_dir }}/"
@@ -88,6 +90,7 @@
 - name: set cron PATH entries for scripts
   tags:
     - node_exporter
+  when: node_exporter_use_textfile
   cron:
     name: PATH
     env: true
@@ -96,6 +99,7 @@
 - name: enable textfile collector cronjobs
   tags:
     - node_exporter
+  when: node_exporter_use_textfile
   cron:
     name: "{{ item }}"
     minute: "*"

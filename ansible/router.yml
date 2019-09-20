@@ -3,4 +3,5 @@
   become: true
   become_user: root
   roles:
+    - node_exporter
     - wireguard_exporter

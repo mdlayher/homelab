@@ -1,0 +1,25 @@
+---
+server:
+  hosts:
+    servnerr-3:
+      bin_path: "/usr/local/bin"
+      node_exporter_arch: "amd64"
+      node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
+      node_exporter_use_textfile: true
+workstation:
+  hosts:
+    nerr-3:
+      bin_path: "/usr/local/bin"
+      node_exporter_arch: "amd64"
+      node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
+      node_exporter_use_textfile: true
+router:
+  hosts:
+    routnerr-1:
+      bin_path: "/usr/bin"
+      node_exporter_arch: "mips64"
+      node_exporter_sha256: "c2721c1b85e3024e61f37fb2dc44a57f6d4eed8cc0576185a1dedea20e36fb31"
+      node_exporter_use_textfile: false
+unifi:
+  hosts:
+    unifi.servnerr.com:
