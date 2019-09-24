@@ -17,9 +17,10 @@ prometheus_jobs:
     relabel_target: "servnerr-3:9137"
   - job: "node"
     targets:
-      - "servnerr-3:9100"
+      - "monitnerr-1:9100"
       - "nerr-3:9100"
       - "routnerr-1:9100"
+      - "servnerr-3:9100"
   - job: "prometheus"
     scrape_interval: "5s"
     targets:
