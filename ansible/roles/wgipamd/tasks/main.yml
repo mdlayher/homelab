@@ -30,18 +30,10 @@
     name: wgipamd
     state: stopped
 
-- name: copy wgipamd binary to {{ host_bin_path }}
-  tags:
-    - wgipamd
-  command: "cp /tmp/wgipamd {{ host_bin_path }}/"
-
 - name: grant capabilities to wgipamd binary
   tags:
     - wgipamd
-  capabilities:
-    path: "{{ host_bin_path }}/wgipamd"
-    capability: "cap_net_bind_service+ep"
-    state: present
+  command: "setcap cap_net_bind_service+ep {{host_bin_path}}/wgipamd"
 
 - name: set permissions on wgipamd binary
   tags:
