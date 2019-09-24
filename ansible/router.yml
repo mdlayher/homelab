@@ -5,3 +5,4 @@
   roles:
     - node_exporter
     - wireguard_exporter
+    - wgipamd

@@ -1,0 +1,20 @@
+---
+# {{ ansible_managed }}
+#
+# The storage backend for IP address allocations and leases.
+#
+# If none specified, ephemeral in-memory storage will be used.
+storage:
+  # Store data files within the specified folder.
+  file: "{{ wgipamd_data }}"
+# Specify one or more WireGuard interfaces to listen on for IP
+# assignment requests.
+{{ wgipamd_interfaces | to_yaml }}
+# Enable or disable the debug HTTP server for facilities such as Prometheus
+# metrics and pprof support.
+#
+# Warning: do not expose pprof on an untrusted network!
+debug:
+  address: ":9475"
+  prometheus: true
+  pprof: true

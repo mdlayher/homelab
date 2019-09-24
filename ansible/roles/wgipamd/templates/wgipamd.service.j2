@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=wgipamd WireGuard IP Address Management (IPAM) daemon
+Documentation=https://github.com/mdlayher/wgipam
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=wgipamd
+Group=wgipamd
+Type=simple
+ExecStart={{ host_bin_path }}/wgipamd \
+    -c {{ wgipamd_config }}/wgipamd.yaml
+
+[Install]
+WantedBy=multi-user.target
