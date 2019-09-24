@@ -9,8 +9,7 @@ After=network-online.target
 User=node_exporter
 Group=node_exporter
 Type=simple
-ExecStart={{ host_bin_path }}/node_exporter \
-{% if node_exporter_use_textfile is sameas true %}	--collector.textfile.directory {{ node_exporter_textfile_dir }} {% endif %}
+ExecStart={{ host_bin_path }}/node_exporter {% if node_exporter_use_textfile is sameas true %}--collector.textfile.directory {{ node_exporter_textfile_dir }}{% endif %}
 
 [Install]
 WantedBy=multi-user.target

@@ -17,6 +17,13 @@ workstation:
   hosts:
     nerr-3:
       apcupsd_battery_date: "11/29/2016"
+monitor:
+  hosts:
+    monitnerr-1:
+      host_bin_path: "/usr/local/bin"
+      host_golang_arch: "armv7"
+      node_exporter_sha256: "5de85067f44b42b22d62b2789cb1a379ff5559649b99795cd1ba0c144b512ad0"
+      node_exporter_use_textfile: false
 router:
   hosts:
     routnerr-1:
