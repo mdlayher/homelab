@@ -32,9 +32,9 @@ router:
         interfaces:
           - name: "wg0"
             subnets:
-              - "192.168.20.2-192.168.20.10"
-              - "2604:6c4a:787f:d220::2-2604:6c4a:787f:d220::10"
-      wgipamd_sha256: "71b2d067a9150255e72d33f710eae6040b29acdfdff685be24ebde8d3939fe9e"
+              - "192.168.20.0/24"
+              - "2604:6c4a:787f:d220::/64"
+      wgipamd_sha256: "c192e61dca4e7710167aa0a6a6e2f4ee6a74a04a6a13f7798761e37c170d3789"
       wireguard_exporter_sha256: "4a49b28a7661f964c2f2f9030fdb53c1171f228e1602c2a3c95b77c6ad824f47"
 unifi:
   hosts:
