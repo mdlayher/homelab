@@ -30,10 +30,10 @@
     name: wgipamd
     state: stopped
 
-- name: grant capabilities to wgipamd binary
+- name: copy wgipamd binary to {{ host_bin_path }}
   tags:
     - wgipamd
-  command: "setcap cap_net_bind_service+ep {{host_bin_path}}/wgipamd"
+  command: "cp /tmp/wgipamd {{ host_bin_path }}/"
 
 - name: set permissions on wgipamd binary
   tags:
@@ -43,6 +43,14 @@
     owner: wgipamd
     group: wgipamd
     mode: 0755
+
+- name: grant capabilities to wgipamd binary
+  tags:
+    - wgipamd
+  capabilities:
+    path: "{{ host_bin_path }}/wgipamd"
+    capability: "cap_net_bind_service+ep"
+    state: present
 
 - name: create wgipamd config and data directories
   tags:
@@ -84,3 +92,10 @@
     name: wgipamd
     state: started
     enabled: true
+
+- name: remove temporary files
+  tags:
+    - wgipamd
+  file:
+    path: "/tmp/wgipamd"
+    state: absent

@@ -32,10 +32,9 @@ router:
         interfaces:
           - name: "wg0"
             subnets:
-              # In this early testing phase, support a single machine lease.
-              - "192.168.20.10/32"
-              - "2604:6c4a:787f:d220::10/128"
-      wgipamd_sha256: "5c7600ee81b2c05b2fbd7993cbf5df0c7788729387197ad75c7cb2fa420a3a93"
+              - "192.168.20.2-192.168.20.10"
+              - "2604:6c4a:787f:d220::2-2604:6c4a:787f:d220::10"
+      wgipamd_sha256: "71b2d067a9150255e72d33f710eae6040b29acdfdff685be24ebde8d3939fe9e"
       wireguard_exporter_sha256: "4a49b28a7661f964c2f2f9030fdb53c1171f228e1602c2a3c95b77c6ad824f47"
 unifi:
   hosts:
