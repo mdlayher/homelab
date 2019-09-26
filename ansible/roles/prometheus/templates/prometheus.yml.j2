@@ -36,3 +36,7 @@ scrape_configs:
       replacement: "{{ job.relabel_target }}"
 {% endif %}
 {% endfor %}
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: {{ prometheus_alertmanagers | to_yaml }}
