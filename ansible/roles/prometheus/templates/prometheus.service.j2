@@ -13,7 +13,8 @@ ExecStart={{ host_bin_path }}/prometheus \
 	--config.file {{ prometheus_config }}/prometheus.yml \
 	--storage.tsdb.path {{ prometheus_data }} \
 	--storage.tsdb.retention.time 180d \
-	--log.level debug
+	--log.level debug \
+	--web.external-url {{ prometheus_external_url }}
 
 [Install]
 WantedBy=multi-user.target
