@@ -11,7 +11,8 @@ Group=alertmanager
 Type=simple
 ExecStart={{ host_bin_path }}/alertmanager \
 	--config.file {{ alertmanager_config }}/alertmanager.yml \
-	--storage.path {{ alertmanager_data }}
+	--storage.path {{ alertmanager_data }} \
+	--web.external-url {{ alertmanager_external_url }}
 
 [Install]
 WantedBy=multi-user.target
