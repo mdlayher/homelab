@@ -22,6 +22,7 @@ monitor:
     monitnerr-1:
       host_bin_path: "/usr/local/bin"
       host_golang_arch: "armv7"
+      alertmanager_sha256: "d0db8003279ca8cdb74150ebcf90dae6c9974bc5ac3aa7c220dcf5ea430636a2"
       node_exporter_sha256: "5de85067f44b42b22d62b2789cb1a379ff5559649b99795cd1ba0c144b512ad0"
       node_exporter_use_textfile: false
 router:

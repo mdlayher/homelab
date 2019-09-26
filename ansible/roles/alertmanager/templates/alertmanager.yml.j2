@@ -1,0 +1,23 @@
+---
+# {{ ansible_managed }}
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+receivers:
+- name: 'default'
+  pushover_configs:
+    - user_key: "{{ alertmanager_pushover_user_key }}"
+      token: "{{ alertmanager_pushover_token }}"
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']

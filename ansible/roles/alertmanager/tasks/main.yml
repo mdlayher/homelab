@@ -1,0 +1,145 @@
+---
+- name: check if installing a different version of alertmanager
+  tags:
+    - alertmanager
+  shell: "cat {{ alertmanager_config }}/.sha256"
+  ignore_errors: true
+  register: checksum
+
+- name: determine if alertmanager {{ alertmanager_version}} should be installed
+  tags:
+    - alertmanager
+  set_fact:
+    alertmanager_install: (checksum.stdout.find(alertmanager_sha256) == -1) or (alertmanager_force is defined)
+
+- name: download and checksum alertmanager {{ alertmanager_version }} {{host_golang_arch }} tarball
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  get_url:
+    url: "{{ alertmanager_url }}"
+    dest: "{{ alertmanager_tgz }}"
+    checksum: "sha256:{{ alertmanager_sha256 }}"
+
+- name: unpack alertmanager tarball
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  unarchive:
+    src: "{{ alertmanager_tgz }}"
+    dest: "/tmp/"
+    copy: false
+
+- name: create alertmanager user
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  user:
+    name: alertmanager
+    shell: "/bin/false"
+    comment: "alertmanager service user"
+
+- name: check if alertmanager service exists
+  tags:
+    - alertmanager
+  stat:
+    path: "/etc/systemd/system/alertmanager.service"
+  register: svccheck
+
+- name: stop alertmanager service if it exists
+  tags:
+    - alertmanager
+  when: svccheck.stat.exists
+  service:
+    name: alertmanager
+    state: stopped
+
+- name: copy alertmanager binaries to {{ host_bin_path }}
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  command: "cp {{ alertmanager_tmp }}/{{ item }} {{ host_bin_path }}/"
+  with_items:
+    - "alertmanager"
+    - "amtool"
+
+- name: set permissions on alertmanager binaries
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  file:
+    path: "{{ host_bin_path }}/{{ item }}"
+    owner: alertmanager
+    group: alertmanager
+    mode: 0755
+  with_items:
+    - "alertmanager"
+    - "amtool"
+
+- name: create alertmanager config directory
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  file:
+    path: "{{ alertmanager_config }}"
+    state: directory
+    owner: alertmanager
+    group: alertmanager
+    mode: 0755
+
+- name: create alertmanager configuration
+  tags:
+    - alertmanager
+  template:
+    src: alertmanager.yml.j2
+    dest: "{{ alertmanager_config }}/alertmanager.yml"
+
+- name: create alertmanager data directory
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  file:
+    path: "{{ alertmanager_data }}"
+    state: directory
+    owner: alertmanager
+    group: alertmanager
+    mode: 0755
+
+- name: create alertmanager systemd unit
+  tags:
+    - alertmanager
+  template:
+    src: alertmanager.service.j2
+    dest: "/etc/systemd/system/alertmanager.service"
+
+- name: reload systemd configurations
+  tags:
+    - alertmanager
+  command: "systemctl daemon-reload"
+
+- name: start alertmanager service
+  tags:
+    - alertmanager
+  service:
+    name: alertmanager
+    state: started
+    enabled: true
+
+- name: remove temporary alertmanager files
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ alertmanager_tmp }}"
+    - "{{ alertmanager_tgz }}"
+
+- name: create checksum file for alertmanager {{ alertmanager_version }}
+  tags:
+    - alertmanager
+  when: alertmanager_install
+  template:
+    src: sha256.j2
+    dest: "{{ alertmanager_config }}/.sha256"

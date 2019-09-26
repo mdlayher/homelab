@@ -9,4 +9,4 @@ tasks:
       # Sanity check all YAML files:
       #   - ignore line-length lint
       #   - ignore ansible vault-encrypted files
-      diff -u <(echo -n) <(yamllint -f parsable ./ansible | grep -v "line-length" | grep -E -v "[rtorrent_exporter,traefik]/vars/main.yml")
+      diff -u <(echo -n) <(yamllint -f parsable ./ansible | grep -v "line-length" | grep -E -v "[alertmanager,rtorrent_exporter,traefik]/vars/main.yml")
