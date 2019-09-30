@@ -1,0 +1,9 @@
+---
+# blackbox_exporter version configuration.
+blackbox_exporter_version: "0.15.1"
+# Static configuration.
+blackbox_exporter_config: "/etc/blackbox_exporter"
+blackbox_exporter_dir: "blackbox_exporter-{{ blackbox_exporter_version }}.linux-{{ host_golang_arch }}"
+blackbox_exporter_tmp: "/tmp/{{ blackbox_exporter_dir }}"
+blackbox_exporter_url: "https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/{{ blackbox_exporter_dir }}.tar.gz"
+blackbox_exporter_tgz: "/tmp/blackbox_exporter.tar.gz"

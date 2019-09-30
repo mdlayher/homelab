@@ -4,4 +4,5 @@
   become_user: root
   roles:
     - node_exporter
+    - blackbox_exporter
     - alertmanager
