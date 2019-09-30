@@ -11,6 +11,40 @@ prometheus_jobs:
     targets:
       - "servnerr-3:9162"
       - "nerr-3:9162"
+  - job: "blackbox_http"
+    path: "/probe"
+    params:
+      module: [http_2xx]
+    targets:
+      - "https://mdlayher.com"
+      - "https://routnerr-1.wan.servnerr.com"
+      - "https://alertmanager.servnerr.com"
+      - "https://grafana.servnerr.com"
+      - "https://plex.servnerr.com"
+      - "https://prometheus.servnerr.com"
+    relabel_target: "monitnerr-1:9115"
+  - job: "blackbox_ssh"
+    path: "/probe"
+    params:
+      module: [ssh_banner]
+    targets:
+      - "monitnerr-1:22"
+      - "nerr-3:22"
+      - "routnerr-1:22"
+      - "servnerr-3:22"
+      - "unifi.servnerr.com:22"
+    relabel_target: "monitnerr-1:9115"
+  - job: "blackbox_tcp"
+    path: "/probe"
+    params:
+      module: [tcp_connect]
+    targets:
+      - "servnerr-3:8080"
+      - "unifi.servnerr.com:8443"
+    relabel_target: "monitnerr-1:9115"
+  - job: "blackbox_exporter"
+    targets:
+      - "monitnerr-1:9115"
   - job: "hdhomerun"
     targets:
       - "hdhomerun"
