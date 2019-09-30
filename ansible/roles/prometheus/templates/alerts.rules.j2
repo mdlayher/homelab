@@ -13,3 +13,14 @@ groups:
       summary: "Instance {{ $labels.instance }} is down."
       description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
 {% endraw %}
+  # Alert for any service on an always-on machine that is unreachable for 1 minute.
+  - alert: ServiceDown
+    expr: probe_success{instance!~"nerr-3.*"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+{% raw %}
+      summary: "Service {{ $labels.instance }} is down."
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+{% endraw %}
