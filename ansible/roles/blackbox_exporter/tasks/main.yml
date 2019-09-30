@@ -69,7 +69,7 @@
     owner: blackbox_exporter
     group: blackbox_exporter
     mode: 0755
-  
+
 - name: grant capabilities to blackbox_exporter binary
   tags:
     - blackbox_exporter
