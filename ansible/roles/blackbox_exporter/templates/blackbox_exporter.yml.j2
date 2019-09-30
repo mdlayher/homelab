@@ -3,6 +3,11 @@
 modules:
   http_2xx:
     prober: http
+  http_401:
+    prober: http
+    http:
+      valid_status_codes:
+        - 401
   http_post_2xx:
     prober: http
     http:

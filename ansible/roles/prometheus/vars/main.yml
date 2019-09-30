@@ -11,15 +11,21 @@ prometheus_jobs:
     targets:
       - "servnerr-3:9162"
       - "nerr-3:9162"
-  - job: "blackbox_http"
+  - job: "blackbox_http_2xx"
     path: "/probe"
     params:
       module: [http_2xx]
     targets:
       - "https://mdlayher.com"
       - "https://routnerr-1.wan.servnerr.com"
-      - "https://alertmanager.servnerr.com"
       - "https://grafana.servnerr.com"
+    relabel_target: "monitnerr-1:9115"
+  - job: "blackbox_http_401"
+    path: "/probe"
+    params:
+      module: [http_401]
+    targets:
+      - "https://alertmanager.servnerr.com"
       - "https://plex.servnerr.com"
       - "https://prometheus.servnerr.com"
     relabel_target: "monitnerr-1:9115"
