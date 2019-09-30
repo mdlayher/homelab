@@ -35,14 +35,6 @@
     - wireguard_exporter
   command: "cp /tmp/wireguard_exporter {{ host_bin_path }}/"
 
-- name: grant capabilities to wireguard_exporter binary
-  tags:
-    - wireguard_exporter
-  capabilities:
-    path: "{{ host_bin_path }}/wireguard_exporter"
-    capability: "cap_net_admin+ep"
-    state: present
-
 - name: set permissions on wireguard_exporter binary
   tags:
     - wireguard_exporter
@@ -51,6 +43,14 @@
     owner: wireguard_exporter
     group: wireguard_exporter
     mode: 0755
+
+- name: grant capabilities to wireguard_exporter binary
+  tags:
+    - wireguard_exporter
+  capabilities:
+    path: "{{ host_bin_path }}/wireguard_exporter"
+    capability: "cap_net_admin+ep"
+    state: present
 
 - name: create wireguard_exporter systemd unit
   tags:
