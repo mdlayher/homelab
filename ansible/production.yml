@@ -6,6 +6,8 @@ amd64:
   vars:
     host_bin_path: "/usr/local/bin"
     host_golang_arch: "amd64"
+    base_disk_monitoring: true
+    base_dist_upgrade: true
     node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
     node_exporter_use_textfile: true
     promtail_sha256: "0354e2298b154c81286075c44dfbceda801c362de98e03a2c94e9edf22fd86ae"
@@ -24,6 +26,8 @@ monitor:
     monitnerr-1:
       host_bin_path: "/usr/local/bin"
       host_golang_arch: "armv7"
+      base_disk_monitoring: false
+      base_dist_upgrade: true
       alertmanager_sha256: "d0db8003279ca8cdb74150ebcf90dae6c9974bc5ac3aa7c220dcf5ea430636a2"
       blackbox_exporter_sha256: "1aa3934b1bcd03ae5c206b4788dff3c931a0c8643459f276205e86ef0f056bfc"
       node_exporter_sha256: "5de85067f44b42b22d62b2789cb1a379ff5559649b99795cd1ba0c144b512ad0"
@@ -33,6 +37,9 @@ router:
     routnerr-1:
       host_bin_path: "/usr/bin"
       host_golang_arch: "mips64"
+      # No disk hardware to monitor, cannot run dist-upgrade on Ubiquiti gear.
+      base_disk_monitoring: false
+      base_dist_upgrade: true
       node_exporter_sha256: "c2721c1b85e3024e61f37fb2dc44a57f6d4eed8cc0576185a1dedea20e36fb31"
       node_exporter_use_textfile: false
       # /config persists between firmware upgrades.
@@ -50,3 +57,5 @@ router:
 unifi:
   hosts:
     unifi.servnerr.com:
+      base_disk_monitoring: false
+      base_dist_upgrade: true

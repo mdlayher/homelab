@@ -17,14 +17,22 @@
     - tmux
     - tree
     - lm-sensors
+    - yamllint
+
+- name: install additional disk monitoring packages
+  tags:
+    - base
+  when: base_disk_monitoring
+  apt: pkg={{ item }} state=present
+  with_items:
     - zfsutils-linux
     - hddtemp
     - smartmontools
     - nvme-cli
-    - yamllint
 
 - name: upgrade all packages
   tags:
     - base
+  when: base_dist_upgrade
   apt:
     upgrade: dist
