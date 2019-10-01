@@ -8,10 +8,12 @@ amd64:
     host_golang_arch: "amd64"
     node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
     node_exporter_use_textfile: true
+    promtail_sha256: "0354e2298b154c81286075c44dfbceda801c362de98e03a2c94e9edf22fd86ae"
 server:
   hosts:
     servnerr-3:
       apcupsd_battery_date: "05/19/17"
+      loki_sha256: "e6e48ed3d7b92f9ed657078743cee80a25559fb977d00203d1b1676ad63c5d38"
       rtorrent_exporter_sha256: "7b143833b5a41e3e93938902ba96d6c2643a6b50b80cfcb54eba0c88846b7eb1"
 workstation:
   hosts:

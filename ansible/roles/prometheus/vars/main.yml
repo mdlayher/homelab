@@ -55,6 +55,9 @@ prometheus_jobs:
     targets:
       - "hdhomerun"
     relabel_target: "servnerr-3:9137"
+  - job: "loki"
+    targets:
+      - "servnerr-3:3100"
   - job: "node"
     targets:
       - "monitnerr-1:9100"
@@ -65,6 +68,9 @@ prometheus_jobs:
     scrape_interval: "5s"
     targets:
       - "servnerr-3:9090"
+  - job: "promtail"
+    targets:
+      - "servnerr-3:9080"
   - job: "rtorrent"
     scrape_interval: "30s"
     targets:

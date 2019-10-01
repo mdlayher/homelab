@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=promtail Loki logging agent
+Documentation=https://grafana.com/oss/loki
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=promtail
+Group=promtail
+Type=simple
+ExecStart={{ host_bin_path }}/promtail \
+	--config.file {{ promtail_config }}/promtail.yml
+
+[Install]
+WantedBy=multi-user.target

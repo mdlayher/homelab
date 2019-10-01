@@ -1,0 +1,5 @@
+---
+promtail_loki: "http://servnerr-3:3100"
+# Static configuration.
+promtail_config: "/etc/promtail"
+promtail_data: "/var/lib/promtail"

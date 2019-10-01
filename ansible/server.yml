@@ -11,9 +11,11 @@
     - grafana
     - hdhomerun_exporter
     - kvm
+    - loki
     - node_exporter
     - plex
     - prometheus
+    - promtail
     - snmp_exporter
     - traefik
     - nfs

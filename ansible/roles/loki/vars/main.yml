@@ -1,0 +1,4 @@
+---
+# Static configuration.
+loki_config: "/etc/loki"
+loki_data: "/var/lib/loki"
