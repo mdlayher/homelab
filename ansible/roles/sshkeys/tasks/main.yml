@@ -7,5 +7,4 @@
     key: "{{ item }}"
     state: present
   with_file:
-    - public_keys/nerr_servnerr_rsa.pub
-    - public_keys/matt_servnerr_rsa.pub
+    - public_keys/mdlayher_ed25519.pub
