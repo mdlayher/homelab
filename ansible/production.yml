@@ -53,7 +53,12 @@ router:
               - "192.168.20.0/24"
               - "2604:6c4a:787f:d220::/64"
       wgipamd_sha256: "c192e61dca4e7710167aa0a6a6e2f4ee6a74a04a6a13f7798761e37c170d3789"
-      wireguard_exporter_sha256: "4a49b28a7661f964c2f2f9030fdb53c1171f228e1602c2a3c95b77c6ad824f47"
+      wireguard_exporter_peer_names:
+        # This could probably be a list of dictionaries, but this makes the
+        # jinja templating much easier for now.
+        - "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=:nerr-3"
+        - "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=:mdlayher-fastly"
+      wireguard_exporter_sha256: "a974dae8a5d1ddf6d2ea86441ba1c5be720840f4b9f86b879129bff725b003cc"
 unifi:
   hosts:
     unifi.servnerr.com:
