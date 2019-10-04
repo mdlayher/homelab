@@ -2,25 +2,23 @@
 groups:
 - name: default
   rules:
-  # Alert for any instance on an always-on machine that is unreachable for 1 minute.
   - alert: InstanceDown
     expr: up{instance!~"nerr-3.*"} == 0
-    for: 1m
+    for: 2m
     labels:
       severity: critical
     annotations:
 {% raw %}
       summary: "Instance {{ $labels.instance }} is down."
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
 {% endraw %}
-  # Alert for any service on an always-on machine that is unreachable for 1 minute.
   - alert: ServiceDown
     expr: probe_success{instance!~"nerr-3.*"} == 0
-    for: 1m
+    for: 2m
     labels:
       severity: critical
     annotations:
 {% raw %}
       summary: "Service {{ $labels.instance }} is down."
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
 {% endraw %}
