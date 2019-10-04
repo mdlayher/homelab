@@ -16,9 +16,11 @@ prometheus_jobs:
     params:
       module: [http_2xx]
     targets:
+      - "http://servnerr-3:8080"
       - "https://mdlayher.com"
       - "https://routnerr-1.wan.servnerr.com"
       - "https://grafana.servnerr.com"
+      - "https://homeassistant.servnerr.com"
     relabel_target: "monitnerr-1:9115"
   - job: "blackbox_http_401"
     path: "/probe"
@@ -39,14 +41,6 @@ prometheus_jobs:
       - "routnerr-1:22"
       - "servnerr-3:22"
       - "unifi.servnerr.com:22"
-    relabel_target: "monitnerr-1:9115"
-  - job: "blackbox_tcp"
-    path: "/probe"
-    params:
-      module: [tcp_connect]
-    targets:
-      - "servnerr-3:8080"
-      - "unifi.servnerr.com:8443"
     relabel_target: "monitnerr-1:9115"
   - job: "blackbox_exporter"
     targets:
