@@ -70,6 +70,13 @@
     dest: "{{ traefik_config_dir }}/traefik.toml"
   with_items: "{{ traefik_config }}"
 
+- name: remove traefik acme.json to force certificate renewal
+  tags:
+    - traefik
+  file:
+    path: "{{ traefik_config_dir }}/acme.json"
+    state: absent
+
 - name: create traefik systemd unit
   tags:
     - traefik
