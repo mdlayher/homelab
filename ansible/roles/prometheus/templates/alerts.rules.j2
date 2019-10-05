@@ -3,7 +3,8 @@ groups:
 - name: default
   rules:
   - alert: InstanceDown
-    expr: up{instance!~"nerr-3.*"} == 0
+    # rtorrent can be flappy and needs a longer interval.
+    expr: up{instance!~"nerr-3.*",job!="rtorrent"} == 0
     for: 2m
     labels:
       severity: critical
@@ -21,4 +22,15 @@ groups:
 {% raw %}
       summary: "Service {{ $labels.instance }} is down."
       description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+{% endraw %}
+  - alert: RtorrentDown
+    # rtorrent can be flappy and needs a longer interval.
+    expr: up{job="rtorrent"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+{% raw %}
+      summary: "rTorrent {{ $labels.instance }} is down."
+      description: "{{ $labels.instance }} rTorrent has been down for more than 5 minutes."
 {% endraw %}
