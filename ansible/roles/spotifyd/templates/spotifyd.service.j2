@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=A spotify playing daemon
+Documentation=https://github.com/Spotifyd/spotifyd
+Wants=sound.target
+After=sound.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart={{ host_bin_path }}/spotifyd --no-daemon --config-path {{ spotifyd_config }}/spotifyd.conf
+Restart=always
+RestartSec=12
+
+[Install]
+WantedBy=default.target

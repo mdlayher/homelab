@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[global]
+username = {{ spotifyd_username }}
+password = {{ spotifyd_password }}
+backend = alsa
+device = pulse
+mixer = PCM
+volume_controller = alsa
+device_name = {{ inventory_hostname }}
+bitrate = 320
+cache_path = {{ spotifyd_data }}
+no_audio_cache = false
+volume_normalisation = true
+normalisation_pregain = -10
