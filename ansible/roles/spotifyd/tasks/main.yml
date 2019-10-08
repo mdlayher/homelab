@@ -44,8 +44,8 @@
   become: true
   become_user: matt
   environment:
-    XDG_RUNTIME_DIR: "/run/user/1000"
-  service:
+    XDG_RUNTIME_DIR: "{{ host_xdg }}"
+  systemd:
     name: spotifyd
     state: stopped
     user: true
@@ -105,24 +105,16 @@
     src: spotifyd.service.j2
     dest: "/etc/systemd/user/spotifyd.service"
 
-- name: reload systemd configurations
-  tags:
-    - spotifyd
-  become: true
-  become_user: matt
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/1000"
-  command: "systemctl --user daemon-reload"
-
 - name: start spotifyd service
   tags:
     - spotifyd
   become: true
   become_user: matt
   environment:
-    XDG_RUNTIME_DIR: "/run/user/1000"
-  service:
+    XDG_RUNTIME_DIR: "{{ host_xdg }}"
+  systemd:
     name: spotifyd
+    daemon_reload: true
     state: started
     enabled: true
     user: true

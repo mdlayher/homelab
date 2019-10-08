@@ -6,6 +6,7 @@ amd64:
   vars:
     host_bin_path: "/usr/local/bin"
     host_golang_arch: "amd64"
+    host_xdg: "/run/user/1000"
     base_disk_monitoring: true
     base_dist_upgrade: true
     node_exporter_sha256: "b2503fd932f85f4e5baf161268854bf5d22001869b84f00fd2d1f57b51b72424"
