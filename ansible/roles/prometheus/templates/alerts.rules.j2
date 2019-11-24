@@ -26,11 +26,19 @@ groups:
   - alert: RtorrentDown
     # rtorrent can be flappy and needs a longer interval.
     expr: up{job="rtorrent"} == 0
-    for: 5m
+    for: 120m
     labels:
       severity: critical
     annotations:
 {% raw %}
       summary: "rTorrent {{ $labels.instance }} is down."
-      description: "{{ $labels.instance }} rTorrent has been down for more than 5 minutes."
+{% endraw %}
+  - alert: TLSCertificateNearExpiration
+    expr: probe_ssl_earliest_cert_expiry - time() < 60 * 60 * 24 * 2
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+{% raw %}
+      summary: "TLS certificate for {{ $labels.instance }} will expire in less than 2 days."
 {% endraw %}
