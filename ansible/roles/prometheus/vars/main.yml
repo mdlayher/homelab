@@ -1,7 +1,7 @@
 ---
 # Prometheus version and checksum configuration.
-prometheus_version: "2.13.0"
-prometheus_sha256: "af9dea0a130b1b5eddf9f5c2d186e19e0b5493f6d8dde5aa897b46c7437942c7"
+prometheus_version: "2.14.0"
+prometheus_sha256: "ddf47223ec716594254df110ee26ad52e66d7d4471ae8edbf9020087396861e5"
 # Prometheus alerting configuration.
 prometheus_alertmanagers:
   - "monitnerr-1:9093"
