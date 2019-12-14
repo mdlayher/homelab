@@ -38,7 +38,7 @@ prometheus_jobs:
     targets:
       - "monitnerr-1:22"
       - "nerr-3:22"
-      - "routnerr-1:22"
+      - "routnerr-2:22"
       - "servnerr-3:22"
       - "unifi.servnerr.com:22"
     relabel_target: "monitnerr-1:9115"
@@ -59,7 +59,7 @@ prometheus_jobs:
     targets:
       - "monitnerr-1:9100"
       - "nerr-3:9100"
-      - "routnerr-1:9100"
+      - "routnerr-2:9100"
       - "servnerr-3:9100"
   - job: "prometheus"
     scrape_interval: "5s"
@@ -80,7 +80,6 @@ prometheus_jobs:
     params:
       module: [if_mib]
     targets:
-      - "routnerr-1"
       - "switch-livingroom01"
       - "switch-office01"
       - "ap-livingroom01"
@@ -90,7 +89,7 @@ prometheus_jobs:
       - "servnerr-3:8080"
   - job: "wireguard"
     targets:
-      - "routnerr-1:9586"
+      - "routnerr-2:9586"
 # Static configuration.
 prometheus_config: "/etc/prometheus"
 prometheus_data: "/var/lib/prometheus"
