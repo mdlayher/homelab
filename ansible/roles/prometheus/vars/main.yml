@@ -45,6 +45,9 @@ prometheus_jobs:
   - job: "blackbox_exporter"
     targets:
       - "monitnerr-1:9115"
+  - job: "coredns"
+    targets:
+      - "routnerr-2:9153"
   - job: "hdhomerun"
     targets:
       - "hdhomerun"
