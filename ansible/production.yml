@@ -33,33 +33,6 @@ monitor:
       blackbox_exporter_sha256: "1aa3934b1bcd03ae5c206b4788dff3c931a0c8643459f276205e86ef0f056bfc"
       node_exporter_sha256: "5de85067f44b42b22d62b2789cb1a379ff5559649b99795cd1ba0c144b512ad0"
       node_exporter_use_textfile: false
-router:
-  hosts:
-    routnerr-1:
-      host_bin_path: "/usr/bin"
-      host_golang_arch: "mips64"
-      # No disk hardware to monitor, cannot run dist-upgrade on Ubiquiti gear.
-      base_disk_monitoring: false
-      base_dist_upgrade: true
-      node_exporter_sha256: "c2721c1b85e3024e61f37fb2dc44a57f6d4eed8cc0576185a1dedea20e36fb31"
-      node_exporter_use_textfile: false
-      # /config persists between firmware upgrades.
-      wgipamd_config: "/config/user-data/wgipamd"
-      wgipamd_data: "/config/user-data/wgipamd"
-      # Interface address serving configurations.
-      wgipamd_interfaces:
-        interfaces:
-          - name: "wg0"
-            subnets:
-              - "192.168.20.0/24"
-              - "2604:6c4a:787f:d220::/64"
-      wgipamd_sha256: "c192e61dca4e7710167aa0a6a6e2f4ee6a74a04a6a13f7798761e37c170d3789"
-      wireguard_exporter_peer_names:
-        # This could probably be a list of dictionaries, but this makes the
-        # jinja templating much easier for now.
-        - "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=:nerr-3"
-        - "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=:mdlayher-fastly"
-      wireguard_exporter_sha256: "a974dae8a5d1ddf6d2ea86441ba1c5be720840f4b9f86b879129bff725b003cc"
 unifi:
   hosts:
     unifi.servnerr.com:
