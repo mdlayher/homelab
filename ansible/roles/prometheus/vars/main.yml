@@ -19,7 +19,8 @@ prometheus_jobs:
       - "http://servnerr-3:8080"
       - "https://mdlayher.com"
       - "https://grafana.servnerr.com"
-      - "https://homeassistant.servnerr.com"
+      # TODO: move onto server and re-enable.
+      # - "https://homeassistant.servnerr.com"
     relabel_target: "monitnerr-1:9115"
   - job: "blackbox_http_401"
     path: "/probe"
