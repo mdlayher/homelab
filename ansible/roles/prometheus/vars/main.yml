@@ -90,6 +90,9 @@ prometheus_jobs:
   - job: "traefik"
     targets:
       - "servnerr-3:8080"
+  - job: "wgipamd"
+    targets:
+      - "routnerr-2:9475"
 # TODO: temporarily disabled while I get this working on NixOS.
 #  - job: "wireguard"
 #    targets:
