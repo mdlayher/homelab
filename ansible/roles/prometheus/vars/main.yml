@@ -48,6 +48,9 @@ prometheus_jobs:
   - job: "coredns"
     targets:
       - "routnerr-2:9153"
+  - job: "corerad"
+    targets:
+      - "routnerr-2:9430"
   - job: "hdhomerun"
     targets:
       - "hdhomerun"
