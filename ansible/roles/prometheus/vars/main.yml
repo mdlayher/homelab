@@ -17,7 +17,8 @@ prometheus_jobs:
       module: [http_2xx]
     targets:
       - "http://servnerr-3:8080"
-      - "https://mdlayher.com"
+      # Netlify loads the index very slowly at the moment.
+      - "https://mdlayher.com/talks"
       - "https://grafana.servnerr.com"
       # TODO: move onto server and re-enable.
       # - "https://homeassistant.servnerr.com"
