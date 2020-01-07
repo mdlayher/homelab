@@ -92,6 +92,7 @@ in {
     htop
     iftop
     lm_sensors
+    ndisc6
     nixfmt
     tcpdump
     tmux
