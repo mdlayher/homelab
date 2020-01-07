@@ -91,6 +91,7 @@ in {
     git
     htop
     iftop
+    jq
     lm_sensors
     ndisc6
     nixfmt
