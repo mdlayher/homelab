@@ -32,7 +32,7 @@ in {
   config = mkIf cfg.enable {
     systemd.services.corerad = {
       description = "CoreRAD IPv6 NDP RA daemon";
-      after = [ "network.target" ];
+      after = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         PermissionsStartOnly = true;
