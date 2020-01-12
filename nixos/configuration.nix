@@ -93,6 +93,7 @@ in {
     iftop
     jq
     lm_sensors
+    lshw
     ndisc6
     nixfmt
     tcpdump
