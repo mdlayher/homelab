@@ -105,6 +105,8 @@ in {
   services = {
     apcupsd = { enable = true; };
 
+    fwupd = { enable = true; };
+
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
