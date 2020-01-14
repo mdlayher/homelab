@@ -36,6 +36,7 @@ in {
       name = "${lab0.name}"
       send_advertisements = true
       default_lifetime = "0s"
+      unicast_only = true
 
         [[interfaces.plugins]]
         name = "prefix"
