@@ -4,26 +4,23 @@ with lib;
 
 let
   cfg = config.services.corerad;
-  configFile = pkgs.writeText "corerad.toml" cfg.config;
 in {
+  meta = {
+    maintainers = with maintainers; [ mdlayher ];
+  };
+
   options.services.corerad = {
     enable = mkEnableOption "CoreRAD IPv6 NDP RA daemon";
 
-    config = mkOption {
-      default = "";
-      example = ''
-        [[interfaces]]
-        name = "eth0"
-        send_advertisements = true
-      '';
-      type = types.lines;
-      description = ''
-        Verbatim CoreRAD TOML configuration. See <link xlink:href="https://github.com/mdlayher/corerad/blob/master/internal/config/default.toml"/> for details.'';
+    configFile = mkOption {
+      type = types.path;
+      example = literalExample "\"\${pkgs.corerad}/etc/corerad/corerad.toml\"";
+      description = "Path to CoreRAD TOML configuration file.";
     };
 
     package = mkOption {
       default = pkgs.corerad;
-      defaultText = "pkgs.corerad";
+      defaultText = literalExample "pkgs.corerad";
       type = types.package;
       description = "CoreRAD package to use.";
     };
@@ -35,14 +32,13 @@ in {
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        PermissionsStartOnly = true;
         LimitNPROC = 512;
         LimitNOFILE = 1048576;
-        CapabilityBoundingSet = "cap_net_raw cap_net_admin";
-        AmbientCapabilities = "cap_net_raw cap_net_admin";
+        CapabilityBoundingSet = "CAP_NET_ADMIN CAP_NET_RAW";
+        AmbientCapabilities = "CAP_NET_ADMIN CAP_NET_RAW";
         NoNewPrivileges = true;
         DynamicUser = true;
-        ExecStart = "${getBin cfg.package}/bin/corerad -c=${configFile}";
+        ExecStart = "${getBin cfg.package}/bin/corerad -c=${cfg.configFile}";
         Restart = "on-failure";
       };
     };

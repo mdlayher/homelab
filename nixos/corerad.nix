@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 let
   vars = import ./vars.nix;
@@ -11,7 +11,7 @@ let
 in {
   services.corerad = {
     enable = true;
-    config = ''
+    configFile = pkgs.writeText "corerad.toml" ''
       # CoreRAD vALPHA configuration file.
 
       # Primary LAN.
