@@ -63,7 +63,7 @@ in {
         prefix = "::/64"
 
       [debug]
-      address = "[${lan0.ipv6.ula}]:9430"
+      address = ":9430"
       prometheus = true
       pprof = true
           '';
