@@ -92,6 +92,7 @@ in {
     git
     htop
     iftop
+    iperf3
     jq
     lm_sensors
     lshw
