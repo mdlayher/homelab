@@ -2,6 +2,7 @@
 
 let
   vars = import ./vars.nix;
+  unstable = import <unstable> {};
 
   guest0 = vars.interfaces.guest0;
   iot0 = vars.interfaces.iot0;
@@ -11,6 +12,8 @@ let
 in {
   services.corerad = {
     enable = true;
+    # Use unstable package until CoreRAD reaches stable.
+    package = unstable.corerad;
     configFile = pkgs.writeText "corerad.toml" ''
       # CoreRAD vALPHA configuration file.
 

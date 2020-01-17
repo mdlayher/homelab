@@ -4,7 +4,9 @@
 
 { config, lib, pkgs, ... }:
 
-let vars = import ./vars.nix;
+let
+  vars = import ./vars.nix;
+  unstable = import <unstable> {};
 
 in {
   imports = [
@@ -21,17 +23,15 @@ in {
     ./dhcpd4.nix
     ./wgipamd.nix
 
-    # Modules which are not in nixpkgs.
-    ./modules/corerad.nix
+    # Unstable modules.
+    <unstable/nixos/modules/services/networking/corerad.nix>
+
+    # Out-of-tree modules.
     ./modules/wgipamd.nix
   ];
 
   nixpkgs.overlays = [
     (self: super: {
-      # Packages which are not in nixpkgs.
-      corerad = super.callPackage ./pkgs/corerad.nix {
-        buildGoModule = super.buildGo113Module;
-      };
       wgipamd = super.callPackage ./pkgs/wgipamd.nix {
         buildGoModule = super.buildGo113Module;
       };
@@ -80,6 +80,7 @@ in {
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    # Stable packages.
     bind
     byobu
     cbfstool
@@ -100,6 +101,9 @@ in {
     tmux
     wget
     wireguard-tools
+
+    # Unstable packages.
+    unstable.corerad
   ];
 
   services = {
