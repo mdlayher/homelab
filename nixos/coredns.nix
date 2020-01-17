@@ -35,7 +35,7 @@ in {
           success 8192
           denial 4096
         }
-        prometheus [${lan0.ipv6.ula}]:9153
+        prometheus :9153
         import dns_forward
       }
 
