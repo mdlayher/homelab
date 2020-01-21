@@ -107,6 +107,17 @@ in {
     unstable.corerad
   ];
 
+  # Automatic Nix GC.
+  nix = {
+    gc = {
+      automatic = true;
+      dates = "weekly";
+    };
+    extraOptions = ''
+      min-free = ${toString (500 * 1024 * 1024)}
+    '';
+  };
+
   services = {
     apcupsd = { enable = true; };
 
