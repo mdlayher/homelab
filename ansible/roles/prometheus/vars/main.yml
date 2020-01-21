@@ -17,8 +17,6 @@ prometheus_jobs:
       module: [http_2xx]
     targets:
       - "http://servnerr-3:8080"
-      # Netlify loads the index very slowly at the moment.
-      - "https://mdlayher.com/talks"
       - "https://grafana.servnerr.com"
       # TODO: move onto server and re-enable.
       # - "https://homeassistant.servnerr.com"
@@ -32,7 +30,18 @@ prometheus_jobs:
       - "https://plex.servnerr.com"
       - "https://prometheus.servnerr.com"
     relabel_target: "monitnerr-1:9115"
+  - job: "blackbox_mdlayhercom"
+    # Netlify can be flappy at times, so check this less often.
+    scrape_interval: "1m"
+    path: "/probe"
+    params:
+      module: [http_2xx]
+    targets:
+      - "https://mdlayher.com"
+    relabel_target: "monitnerr-1:9115"
   - job: "blackbox_ssh"
+    # This generates a lot of noise in OpenSSH logs, so do it less often.
+    scrape_interval: "1m"
     path: "/probe"
     params:
       module: [ssh_banner]
