@@ -15,7 +15,7 @@ groups:
 {% endraw %}
   - alert: ServiceDown
     expr: probe_success{instance!~"nerr-3.*"} == 0
-    for: 2m
+    for: 10m
     labels:
       severity: critical
     annotations:
