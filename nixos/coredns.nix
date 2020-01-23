@@ -2,6 +2,7 @@
 
 let
   vars = import ./vars.nix;
+  domain = vars.domain;
 
   guest0 = vars.interfaces.guest0;
   iot0 = vars.interfaces.iot0;
@@ -47,13 +48,30 @@ in {
       }
 
       # Internal DNS.
-      ${vars.domain} {
+      ${domain} {
         bind ${vars.localhost.ipv4} ${vars.localhost.ipv6} ${lan0.ipv4} ${lan0.ipv6.ula} ${wg0.ipv4} ${wg0.ipv6.ula}
         cache 3600 {
           success 8192
           denial 4096
         }
-        hosts ${vars.cfg}/coredns.hosts ${vars.domain} servnerr.com
+        hosts ${vars.domain} {
+          ${lan0.ipv4}     routnerr-2.${domain}
+          ${lan0.ipv6.ula} routnerr-2.${domain}
+
+          ${vars.hosts.monitnerr-1.ipv4}     monitnerr-1.${domain}
+          ${vars.hosts.monitnerr-1.ipv6.ula} monitnerr-1.${domain}
+
+          ${vars.hosts.nerr-3.ipv4}     nerr-3.${domain}
+          ${vars.hosts.nerr-3.ipv6.ula} nerr-3.${domain}
+
+          ${vars.hosts.servnerr-3.ipv4}     servnerr-3.${domain}
+          ${vars.hosts.servnerr-3.ipv6.ula} servnerr-3.${domain}
+
+          192.168.1.2 switch-livingroom01.${domain}
+          192.168.1.3 switch-office01.${domain}
+          192.168.1.5 ap-livingroom01.${domain}
+          192.168.1.8 hdhomerun.${domain}
+        }
       }
     '';
   };
