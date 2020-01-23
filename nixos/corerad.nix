@@ -22,16 +22,13 @@ in {
       name = "${lan0.name}"
       send_advertisements = true
 
-        [[interfaces.plugins]]
-        name = "prefix"
+        [[interfaces.prefix]]
         prefix = "::/64"
 
-        [[interfaces.plugins]]
-        name = "rdnss"
+        [[interfaces.rdnss]]
         servers = ["${lan0.ipv6.ula}"]
 
-        [[interfaces.plugins]]
-        name = "dnssl"
+        [[interfaces.dnssl]]
         domain_names = ["${vars.domain}"]
 
       # Lab LAN.
@@ -41,8 +38,7 @@ in {
       default_lifetime = "0s"
       unicast_only = true
 
-        [[interfaces.plugins]]
-        name = "prefix"
+        [[interfaces.prefix]]
         prefix = "::/64"
 
       # Secondary LANs.
@@ -50,16 +46,14 @@ in {
       name = "${guest0.name}"
       send_advertisements = true
 
-        [[interfaces.plugins]]
-        name = "prefix"
+        [[interfaces.prefix]]
         prefix = "::/64"
 
       [[interfaces]]
       name = "${iot0.name}"
       send_advertisements = true
 
-        [[interfaces.plugins]]
-        name = "prefix"
+        [[interfaces.prefix]]
         prefix = "::/64"
 
       [debug]
