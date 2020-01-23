@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   vars = import ./vars.nix;
@@ -17,49 +17,31 @@ in {
     configFile = pkgs.writeText "corerad.toml" ''
       # CoreRAD vALPHA configuration file.
 
-      # Primary LAN.
-      [[interfaces]]
-      name = "${lan0.name}"
-      send_advertisements = true
-
-        [[interfaces.prefix]]
-        prefix = "::/64"
-
-        [[interfaces.rdnss]]
-        servers = ["${lan0.ipv6.ula}"]
-
-        [[interfaces.dnssl]]
-        domain_names = ["${vars.domain}"]
-
-      # Lab LAN.
-      [[interfaces]]
-      name = "${lab0.name}"
-      send_advertisements = true
-      default_lifetime = "0s"
-      unicast_only = true
-
-        [[interfaces.prefix]]
-        prefix = "::/64"
-
-      # Secondary LANs.
-      [[interfaces]]
-      name = "${guest0.name}"
-      send_advertisements = true
-
-        [[interfaces.prefix]]
-        prefix = "::/64"
-
-      [[interfaces]]
-      name = "${iot0.name}"
-      send_advertisements = true
-
-        [[interfaces.prefix]]
-        prefix = "::/64"
-
       [debug]
       address = ":9430"
       prometheus = true
       pprof = true
+
+      ${lib.concatMapStrings (ifi: ''
+        [[interfaces]]
+        name = "${ifi.name}"
+        send_advertisements = true
+
+          [[interfaces.prefix]]
+          prefix = "::/64"
+
+          [[interfaces.rdnss]]
+          servers = ["${ifi.ipv6.ula}"]
+
+              ${
+              # Configure DNS search for the primary internal LAN.
+                if ifi.internal_domain then ''
+                  [[interfaces.dnssl]]
+                  domain_names = ["${vars.domain}"]
+                '' else
+                  ""
+              }
+              '') [ lan0 guest0 iot0 lab0 ]}
           '';
   };
 }
