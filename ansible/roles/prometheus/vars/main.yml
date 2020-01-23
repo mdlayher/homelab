@@ -16,7 +16,6 @@ prometheus_jobs:
     params:
       module: [http_2xx]
     targets:
-      - "http://servnerr-3:8080"
       - "https://grafana.servnerr.com"
       # TODO: move onto server and re-enable.
       # - "https://homeassistant.servnerr.com"
@@ -99,7 +98,7 @@ prometheus_jobs:
     relabel_target: "servnerr-3:9116"
   - job: "traefik"
     targets:
-      - "servnerr-3:8080"
+      - "routnerr-2:8080"
   - job: "wgipamd"
     targets:
       - "routnerr-2:9475"
