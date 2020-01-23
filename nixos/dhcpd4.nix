@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 let
   vars = import ./vars.nix;
@@ -50,71 +50,34 @@ in {
         ipAddress = "192.168.1.8";
       }
     ];
-    # Assumes /24 subnets.
     extraConfig = ''
       ddns-update-style none;
 
-      option space ubnt;
-      option ubnt.unifi-address code 1 = ip-address;
+      default-lease-time 86400;
+      max-lease-time 86400;
 
-      class "ubnt" {
-        match if substring (option vendor-class-identifier, 0, 4) = "ubnt";
-        option vendor-class-identifier "ubnt";
-        vendor-option-space ubnt;
-      }
+      ${lib.concatMapStrings (ifi:
+        # Since dhcpd4 doesn't speak CIDR notation, trim off the final octet of
+        # the router's address for our "/24" prefix.
+        let pfx = lib.removeSuffix ".1" ifi.ipv4;
+        in ''
+          subnet ${pfx}.0 netmask 255.255.255.0 {
+            option subnet-mask 255.255.255.0;
+            option broadcast-address ${pfx}.255;
+            option routers ${ifi.ipv4};
+            option domain-name-servers ${ifi.ipv4};
+            range ${pfx}.20 ${pfx}.240;
 
-      # Trusted LANs.
-      subnet ${lan0.dhcp_24}.0 netmask 255.255.255.0 {
-        default-lease-time 86400;
-        max-lease-time 86400;
-
-        option subnet-mask 255.255.255.0;
-        option broadcast-address ${lan0.dhcp_24}.255;
-        option routers ${lan0.ipv4};
-        option domain-name-servers ${lan0.ipv4};
-        option domain-search "${vars.domain}";
-        option domain-name "${vars.domain}";
-
-        option ubnt.unifi-address 138.197.144.228;
-
-        range ${lan0.dhcp_24}.20 ${lan0.dhcp_24}.240;
-      }
-
-      subnet ${lab0.dhcp_24}.0 netmask 255.255.255.0 {
-        default-lease-time 86400;
-        max-lease-time 86400;
-
-        option subnet-mask 255.255.255.0;
-        option broadcast-address ${lab0.dhcp_24}.255;
-        option routers ${lab0.ipv4};
-        option domain-name-servers ${lab0.ipv4};
-
-        range ${lab0.dhcp_24}.20 ${lab0.dhcp_24}.240;
-      }
-
-      # Untrusted LANs.
-      subnet ${guest0.dhcp_24}.0 netmask 255.255.255.0 {
-        # Guest devices should have short leases.
-        default-lease-time 3600;
-        max-lease-time 3600;
-
-        option subnet-mask 255.255.255.0;
-        option broadcast-address ${guest0.dhcp_24}.255;
-        option routers ${guest0.ipv4};
-        option domain-name-servers ${guest0.ipv4};
-        range ${guest0.dhcp_24}.20 ${guest0.dhcp_24}.240;
-      }
-
-      subnet ${iot0.dhcp_24}.0 netmask 255.255.255.0 {
-        default-lease-time 86400;
-        max-lease-time 86400;
-
-        option subnet-mask 255.255.255.0;
-        option broadcast-address ${iot0.dhcp_24}.255;
-        option routers ${iot0.ipv4};
-        option domain-name-servers ${iot0.ipv4};
-        range ${iot0.dhcp_24}.20 ${iot0.dhcp_24}.240;
-      }
+            ${
+            # Configure DNS search for the primary internal LAN.
+              if ifi.internal_domain then ''
+                option domain-search "${vars.domain}";
+                  option domain-name "${vars.domain}";
+              '' else
+                ""
+            }
+          }
+            '') [ lan0 guest0 iot0 lab0 ]}
     '';
   };
 }

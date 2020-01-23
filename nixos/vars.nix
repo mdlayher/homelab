@@ -31,7 +31,7 @@
     };
     lan0 = {
       name = "enp2s0";
-      dhcp_24 = "192.168.1";
+      internal_domain = true;
       ipv4 = "192.168.1.1";
       ipv6 = {
         lla = "fe80::20d:b9ff:fe53:eacd";
@@ -40,7 +40,7 @@
     };
     guest0 = {
       name = "guest0";
-      dhcp_24 = "192.168.9";
+      internal_domain = false;
       ipv4 = "192.168.9.1";
       ipv6 = {
         lla = "fe80::20d:b9ff:fe53:eacd";
@@ -49,7 +49,7 @@
     };
     iot0 = {
       name = "iot0";
-      dhcp_24 = "192.168.66";
+      internal_domain = false;
       ipv4 = "192.168.66.1";
       ipv6 = {
         lla = "fe80::20d:b9ff:fe53:eacd";
@@ -58,7 +58,7 @@
     };
     lab0 = {
       name = "lab0";
-      dhcp_24 = "192.168.2";
+      internal_domain = false;
       ipv4 = "192.168.2.1";
       ipv6 = {
         lla = "fe80::20d:b9ff:fe53:eacd";
