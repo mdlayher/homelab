@@ -2,7 +2,7 @@
 
 let
   vars = import ./vars.nix;
-  unstable = import <unstable> {};
+  unstable = import <unstable> { };
 
   guest0 = vars.interfaces.guest0;
   iot0 = vars.interfaces.iot0;

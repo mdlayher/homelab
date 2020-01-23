@@ -98,6 +98,8 @@ in {
 
           # router TCP
           tcp dport {
+            ${ports.http},
+            ${ports.https},
             ${ports.ssh},
           } counter accept comment "router WAN TCP"
 
@@ -270,18 +272,6 @@ in {
             ${server.ipv6.gua},
           } tcp dport ${ports.ssh} counter accept comment "IPv6 SSH"
 
-          # server TCPv4
-          ip daddr ${server.ipv4} tcp dport {
-            ${ports.http},
-            ${ports.https},
-          } counter accept comment "server TCPv4"
-
-          # server TCPv6
-          ip6 daddr ${server.ipv6.gua} tcp dport {
-            ${ports.http},
-            ${ports.https},
-          } counter accept comment "server TCPv6"
-
           counter reject
         }
 
@@ -303,8 +293,6 @@ in {
 
         chain prerouting_wan0 {
           tcp dport {
-            ${ports.http},
-            ${ports.https},
             ${ports.plex},
           } dnat ${server.ipv4} comment "server TCPv4 DNAT"
 

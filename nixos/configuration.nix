@@ -6,7 +6,7 @@
 
 let
   vars = import ./vars.nix;
-  unstable = import <unstable> {};
+  unstable = import <unstable> { };
 
 in {
   imports = [
@@ -21,6 +21,7 @@ in {
     ./coredns.nix
     ./corerad.nix
     ./dhcpd4.nix
+    ./traefik.nix
     ./wgipamd.nix
 
     # Unstable modules.
