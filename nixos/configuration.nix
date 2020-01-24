@@ -132,6 +132,11 @@ in {
     };
 
     prometheus = { exporters = { node = { enable = true; }; }; };
+
+    tftpd = {
+      enable = true;
+      path = "/var/lib/tftp";
+    };
   };
 
   users.users.matt = {
