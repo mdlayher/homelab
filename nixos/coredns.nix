@@ -62,7 +62,7 @@ in {
             lib.concatMapStrings (host: ''
               ${host.ipv4}     ${host.name}.${domain}
               ${host.ipv6.ula} ${host.name}.${domain}
-            '') [ vars.hosts.desktop vars.hosts.monitor vars.hosts.server ]
+            '') vars.hosts.servers
           }
 
           192.168.1.2 switch-livingroom01.${domain}

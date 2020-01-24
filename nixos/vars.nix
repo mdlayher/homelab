@@ -1,31 +1,45 @@
-{
+# Variables referenced two or more places in the configuration.
+let
+  server_ipv4 = "192.168.1.4";
+  server_ipv6 = "2600:6c4a:787f:d100:4cb:90ff:fe4d:a259";
+
+# Configuration variables which are used to build out configs elsewhere.
+in {
+  server_ipv4 = server_ipv4;
+  server_ipv6 = server_ipv6;
   cfg = "/home/matt/cfg";
   domain = "lan.servnerr.com";
   hosts = {
-    monitor = {
-      name = "monitnerr-1";
-      ipv4 = "192.168.1.11";
-      ipv6 = {
-        gua = "2600:6c4a:787f:d100:dea6:32ff:fe1e:6694";
-        ula = "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694";
-      };
-    };
-    desktop = {
-      name = "nerr-3";
-      ipv4 = "192.168.1.9";
-      ipv6 = {
-        gua = "2600:6c4a:787f:d100:6d9:f5ff:fe7e:1c47";
-        ula = "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47";
-      };
-    };
-    server = {
-      name = "servnerr-3";
-      ipv4 = "192.168.1.4";
-      ipv6 = {
-        gua = "2600:6c4a:787f:d100:4cb:90ff:fe4d:a259";
-        ula = "fd9e:1a04:f01d:0:4cb:90ff:fe4d:a259";
-      };
-    };
+    # Machines that are remotely accessible and run services.
+    servers = [
+      {
+        name = "monitnerr-1";
+        ipv4 = "192.168.1.11";
+        ipv6 = {
+          gua = "2600:6c4a:787f:d100:dea6:32ff:fe1e:6694";
+          ula = "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694";
+        };
+        mac = "dc:a6:32:1e:66:94";
+      }
+      {
+        name = "nerr-3";
+        ipv4 = "192.168.1.9";
+        ipv6 = {
+          gua = "2600:6c4a:787f:d100:6d9:f5ff:fe7e:1c47";
+          ula = "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47";
+        };
+        mac = "04:d9:f5:7e:1c:47";
+      }
+      {
+        name = "servnerr-3";
+        ipv4 = server_ipv4;
+        ipv6 = {
+          gua = server_ipv6;
+          ula = "fd9e:1a04:f01d:0:4cb:90ff:fe4d:a259";
+        };
+        mac = "06:cb:90:4d:a2:59";
+      }
+    ];
   };
   interfaces = {
     wan0 = {

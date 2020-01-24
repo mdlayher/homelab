@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 let
   vars = import ./vars.nix;
@@ -9,10 +9,6 @@ let
   lan0 = vars.interfaces.lan0;
   wan0 = vars.interfaces.wan0;
   wg0 = vars.interfaces.wg0;
-
-  desktop = vars.hosts.desktop;
-  monitor = vars.hosts.monitor;
-  server = vars.hosts.server;
 
   ports = {
     dns = "53";
@@ -267,10 +263,12 @@ in {
 
           # SSH for internal machines.
           ip6 daddr {
-            ${desktop.ipv6.gua},
-            ${monitor.ipv6.gua},
-            ${server.ipv6.gua},
+            ${lib.concatMapStrings (host: "${host.ipv6.gua}, ") vars.hosts.servers}
           } tcp dport ${ports.ssh} counter accept comment "IPv6 SSH"
+
+          # Plex running on server.
+          ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
+          ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
 
           counter reject
         }
@@ -294,7 +292,7 @@ in {
         chain prerouting_wan0 {
           tcp dport {
             ${ports.plex},
-          } dnat ${server.ipv4} comment "server TCPv4 DNAT"
+          } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
 
           udp dport {
             ${ports.dns},
