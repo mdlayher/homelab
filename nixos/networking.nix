@@ -10,6 +10,25 @@ let
   wan0 = vars.interfaces.wan0;
   wg0 = vars.interfaces.wg0;
 
+  # Produces the configuration for a LAN interface.
+  mkInterface = (ifi: {
+    ipv4.addresses = [{
+      address = "${ifi.ipv4}";
+      prefixLength = 24;
+    }];
+    ipv6.addresses = [
+      {
+        address = "${ifi.ipv6.lla}";
+        prefixLength = 64;
+      }
+      {
+        address = "${ifi.ipv6.ula}";
+        prefixLength = 64;
+      }
+    ];
+    preferTempAddress = false;
+  });
+
 in {
   # LAN interface.
   networking = {
@@ -37,76 +56,10 @@ in {
     };
 
     interfaces = {
-      # Trusted LANs.
-      ${lan0.name} = {
-        ipv4.addresses = [{
-          address = "${lan0.ipv4}";
-          prefixLength = 24;
-        }];
-        ipv6.addresses = [
-          {
-            address = "${lan0.ipv6.lla}";
-            prefixLength = 64;
-          }
-          {
-            address = "${lan0.ipv6.ula}";
-            prefixLength = 64;
-          }
-        ];
-        preferTempAddress = false;
-      };
-      ${lab0.name} = {
-        ipv4.addresses = [{
-          address = "${lab0.ipv4}";
-          prefixLength = 24;
-        }];
-        ipv6.addresses = [
-          {
-            address = "${lab0.ipv6.lla}";
-            prefixLength = 64;
-          }
-          {
-            address = "${lab0.ipv6.ula}";
-            prefixLength = 64;
-          }
-        ];
-        preferTempAddress = false;
-      };
-      # Untrusted LANs.
-      ${guest0.name} = {
-        ipv4.addresses = [{
-          address = "${guest0.ipv4}";
-          prefixLength = 24;
-        }];
-        ipv6.addresses = [
-          {
-            address = "${guest0.ipv6.lla}";
-            prefixLength = 64;
-          }
-          {
-            address = "${guest0.ipv6.ula}";
-            prefixLength = 64;
-          }
-        ];
-        preferTempAddress = false;
-      };
-      ${iot0.name} = {
-        ipv4.addresses = [{
-          address = "${iot0.ipv4}";
-          prefixLength = 24;
-        }];
-        ipv6.addresses = [
-          {
-            address = "${iot0.ipv6.lla}";
-            prefixLength = 64;
-          }
-          {
-            address = "${iot0.ipv6.ula}";
-            prefixLength = 64;
-          }
-        ];
-        preferTempAddress = false;
-      };
+      ${lan0.name} = mkInterface lan0;
+      ${lab0.name} = mkInterface lab0;
+      ${guest0.name} = mkInterface guest0;
+      ${iot0.name} = mkInterface iot0;
     };
 
     vlans = {
