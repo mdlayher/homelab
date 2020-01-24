@@ -10,9 +10,9 @@ let
   wan0 = vars.interfaces.wan0;
   wg0 = vars.interfaces.wg0;
 
-  desktop = vars.hosts.nerr-3;
-  monitor = vars.hosts.monitnerr-1;
-  server = vars.hosts.servnerr-3;
+  desktop = vars.hosts.desktop;
+  monitor = vars.hosts.monitor;
+  server = vars.hosts.server;
 
   ports = {
     dns = "53";

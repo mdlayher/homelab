@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 let
   vars = import ./vars.nix;
@@ -58,14 +58,12 @@ in {
           ${lan0.ipv4}     routnerr-2.${domain}
           ${lan0.ipv6.ula} routnerr-2.${domain}
 
-          ${vars.hosts.monitnerr-1.ipv4}     monitnerr-1.${domain}
-          ${vars.hosts.monitnerr-1.ipv6.ula} monitnerr-1.${domain}
-
-          ${vars.hosts.nerr-3.ipv4}     nerr-3.${domain}
-          ${vars.hosts.nerr-3.ipv6.ula} nerr-3.${domain}
-
-          ${vars.hosts.servnerr-3.ipv4}     servnerr-3.${domain}
-          ${vars.hosts.servnerr-3.ipv6.ula} servnerr-3.${domain}
+          ${
+            lib.concatMapStrings (host: ''
+              ${host.ipv4}     ${host.name}.${domain}
+              ${host.ipv6.ula} ${host.name}.${domain}
+            '') [ vars.hosts.desktop vars.hosts.monitor vars.hosts.server ]
+          }
 
           192.168.1.2 switch-livingroom01.${domain}
           192.168.1.3 switch-office01.${domain}

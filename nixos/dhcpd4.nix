@@ -17,17 +17,17 @@ in {
       {
         hostName = "monitnerr-1";
         ethernetAddress = "dc:a6:32:1e:66:94";
-        ipAddress = "${vars.hosts.monitnerr-1.ipv4}";
+        ipAddress = "${vars.hosts.monitor.ipv4}";
       }
       {
         hostName = "nerr-3";
         ethernetAddress = "04:d9:f5:7e:1c:47";
-        ipAddress = "${vars.hosts.nerr-3.ipv4}";
+        ipAddress = "${vars.hosts.desktop.ipv4}";
       }
       {
         hostName = "servnerr-3";
         ethernetAddress = "06:cb:90:4d:a2:59";
-        ipAddress = "${vars.hosts.servnerr-3.ipv4}";
+        ipAddress = "${vars.hosts.server.ipv4}";
       }
       {
         hostName = "switch-livingroom01";

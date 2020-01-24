@@ -2,21 +2,24 @@
   cfg = "/home/matt/cfg";
   domain = "lan.servnerr.com";
   hosts = {
-    monitnerr-1 = {
+    monitor = {
+      name = "monitnerr-1";
       ipv4 = "192.168.1.11";
       ipv6 = {
         gua = "2600:6c4a:787f:d100:dea6:32ff:fe1e:6694";
         ula = "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694";
       };
     };
-    nerr-3 = {
+    desktop = {
+      name = "nerr-3";
       ipv4 = "192.168.1.9";
       ipv6 = {
         gua = "2600:6c4a:787f:d100:6d9:f5ff:fe7e:1c47";
         ula = "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47";
       };
     };
-    servnerr-3 = {
+    server = {
+      name = "servnerr-3";
       ipv4 = "192.168.1.4";
       ipv6 = {
         gua = "2600:6c4a:787f:d100:4cb:90ff:fe4d:a259";
