@@ -3,13 +3,7 @@
 let
   vars = import ./vars.nix;
 
-  guest0 = vars.interfaces.guest0;
-  iot0 = vars.interfaces.iot0;
-  lab0 = vars.interfaces.lab0;
-  lan0 = vars.interfaces.lan0;
-  wan0 = vars.interfaces.wan0;
-  wg0 = vars.interfaces.wg0;
-
+  # Port definitions.
   ports = {
     dns = "53";
     dhcp4_server = "67";
@@ -26,6 +20,17 @@ let
     ssh = "22";
     wireguard = "51820";
   };
+
+  # Produces a CSV list of interface names.
+  mkCSV = lib.concatMapStrings (ifi: "${ifi.name}, ");
+
+  # WAN interface.
+  wan0 = vars.interfaces.wan0.name;
+
+  # LAN interfaces, segmented into trusted, limited, and untrusted groups.
+  trusted_lans = [ vars.interfaces.lan0 vars.interfaces.lab0 vars.interfaces.wg0 ];
+  limited_lans = [ vars.interfaces.guest0 ];
+  untrusted_lans = [ vars.interfaces.iot0 ];
 
 in {
   networking.nftables = {
@@ -66,7 +71,7 @@ in {
           } counter accept
 
           # Allow WAN to selectively communicate with the router.
-          iifname ${wan0.name} jump input_wan
+          iifname ${wan0} jump input_wan
 
           # Always allow router solicitation from any LAN.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-solicit counter accept
@@ -74,16 +79,14 @@ in {
           # Allow localhost and trusted LANs to communicate with router.
           iifname {
             lo,
-            ${lan0.name},
-            ${lab0.name},
-            ${wg0.name},
-          } counter accept
+            ${mkCSV trusted_lans}
+          } counter accept comment "localhost and trusted LANs to router"
 
-          # Limit the communication abilities of untrusted LANs.
+          # Limit the communication abilities of limited and untrusted LANs.
           iifname {
-            ${guest0.name},
-            ${iot0.name},
-          } jump input_untrusted
+            ${mkCSV limited_lans}
+            ${mkCSV untrusted_lans}
+          } jump input_limited_untrusted
 
           counter reject
         }
@@ -110,24 +113,21 @@ in {
           counter reject
         }
 
-        chain input_untrusted {
+        chain input_limited_untrusted {
           # Handle DHCP early due to need for broadcast.
           udp dport ${ports.dhcp4_server} udp sport ${ports.dhcp4_client} counter accept comment "router untrusted DHCPv4"
 
           # Drop traffic trying to cross VLANs or broadcast.
-          iifname ${guest0.name} ip daddr != ${guest0.ipv4} counter drop comment "Guest leaving IPv4 VLAN"
+          ${
+            lib.concatMapStrings (ifi: ''
+              iifname ${ifi.name} ip daddr != ${ifi.ipv4} counter drop comment "${ifi.name} traffic leaving IPv4 VLAN"
 
-          iifname ${guest0.name} ip6 daddr != {
-            ${guest0.ipv6.lla},
-            ${guest0.ipv6.ula},
-          } counter drop comment "Guest leaving IPv6 VLAN"
-
-          iifname ${iot0.name} ip daddr != ${iot0.ipv4} counter drop comment "IoT leaving IPv4 VLAN"
-
-          iifname ${iot0.name} ip6 daddr != {
-            ${iot0.ipv6.lla},
-            ${iot0.ipv6.ula},
-          } counter drop comment "IoT leaving IPv6 VLAN"
+              iifname ${ifi.name} ip6 daddr != {
+                ${ifi.ipv6.lla},
+                ${ifi.ipv6.ula},
+              } counter drop comment "${ifi.name} traffic leaving IPv6 VLAN"
+            '') (limited_lans ++ untrusted_lans)
+          }
 
           # Allow only necessary router-provided services.
           tcp dport {
@@ -171,58 +171,40 @@ in {
             parameter-problem,
           } counter accept
 
-          # WireGuard tunnel is treated as a trusted LAN.
-
           # Trusted LANs to WAN.
           iifname {
-            ${lan0.name},
-            ${lab0.name},
-            ${wg0.name},
-          } oifname ${wan0.name} jump forward_trusted_lan_wan
+            ${mkCSV trusted_lans}
+          } oifname ${wan0} counter accept;
 
           # Limited/guest LANs to WAN.
           iifname {
-            ${guest0.name},
-          } oifname ${wan0.name} jump forward_limited_lan_wan
+            ${mkCSV limited_lans}
+          } oifname ${wan0} jump forward_limited_lan_wan
 
           # Untrusted LANs to WAN.
           iifname {
-            ${iot0.name},
-          } oifname ${wan0.name} jump forward_untrusted_lan_wan
+            ${mkCSV untrusted_lans}
+          } oifname ${wan0} jump forward_untrusted_lan_wan
 
           # Trusted bidirectional LAN.
           iifname {
-            ${lan0.name},
-            ${lab0.name},
-            ${wg0.name},
+            ${mkCSV trusted_lans}
           } oifname {
-            ${lan0.name},
-            ${lab0.name},
-            ${wg0.name},
-          } jump forward_trusted_lan_lan
+            ${mkCSV trusted_lans}
+          } counter accept;
 
           # WAN to trusted LANs.
-          iifname ${wan0.name} oifname {
-            ${lan0.name},
-            ${lab0.name},
-            ${wg0.name},
+          iifname ${wan0} oifname {
+            ${mkCSV trusted_lans}
           } jump forward_wan_trusted_lan
 
-          # WAN to untrusted LANs.
-          iifname ${wan0.name} oifname {
-            ${guest0.name},
-            ${iot0.name},
-          } jump forward_wan_untrusted_lan
+          # WAN to limited/untrusted LANs.
+          iifname ${wan0} oifname {
+            ${mkCSV limited_lans}
+            ${mkCSV untrusted_lans}
+          } jump forward_wan_limited_untrusted_lan
 
           counter reject
-        }
-
-        chain forward_trusted_lan_lan {
-          counter accept
-        }
-
-        chain forward_trusted_lan_wan {
-          counter accept
         }
 
         chain forward_limited_lan_wan {
@@ -276,7 +258,7 @@ in {
           counter reject
         }
 
-        chain forward_wan_untrusted_lan {
+        chain forward_wan_limited_untrusted_lan {
           ct state {established, related} counter accept
           ct state invalid counter drop
 
@@ -288,7 +270,7 @@ in {
         chain prerouting {
           type nat hook prerouting priority 0
 
-          iifname ${wan0.name} jump prerouting_wan0
+          iifname ${wan0} jump prerouting_wan0
           accept
         }
 
@@ -306,7 +288,7 @@ in {
 
         chain postrouting {
           type nat hook postrouting priority 0
-          oifname ${wan0.name} masquerade
+          oifname ${wan0} masquerade
         }
       }
 
@@ -314,7 +296,7 @@ in {
         chain prerouting {
           type nat hook prerouting priority 0
 
-          iifname ${wan0.name} udp dport {
+          iifname ${wan0} udp dport {
             ${ports.dns},
           } redirect to ${ports.wireguard} comment "router IPv6 WireGuard DNAT"
 
