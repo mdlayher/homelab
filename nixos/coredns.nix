@@ -59,16 +59,16 @@ in {
           ${lan0.ipv6.ula} routnerr-2.${domain}
 
           ${
+          # Write out internal DNS records for each of the configured hosts.
+          # If the host does not have an IPv6 ULA address, omit it.
             lib.concatMapStrings (host: ''
-              ${host.ipv4}     ${host.name}.${domain}
-              ${host.ipv6.ula} ${host.name}.${domain}
-            '') vars.hosts.servers
+              ${host.ipv4} ${host.name}.${domain}
+              ${if host.ipv6.ula != "" then ''
+                ${host.ipv6.ula} ${host.name}.${domain}
+              '' else
+                ""}
+            '') (vars.hosts.servers ++ vars.hosts.infra)
           }
-
-          192.168.1.2 switch-livingroom01.${domain}
-          192.168.1.3 switch-office01.${domain}
-          192.168.1.5 ap-livingroom01.${domain}
-          192.168.1.8 hdhomerun.${domain}
         }
       }
     '';

@@ -3,7 +3,7 @@ let
   server_ipv4 = "192.168.1.4";
   server_ipv6 = "2600:6c4a:787f:d100:4cb:90ff:fe4d:a259";
 
-# Configuration variables which are used to build out configs elsewhere.
+  # Configuration variables which are used to build out configs elsewhere.
 in {
   server_ipv4 = server_ipv4;
   server_ipv6 = server_ipv6;
@@ -38,6 +38,34 @@ in {
           ula = "fd9e:1a04:f01d:0:4cb:90ff:fe4d:a259";
         };
         mac = "06:cb:90:4d:a2:59";
+      }
+    ];
+    # Machines which are considered network infrastructure and not exposed
+    # externally.
+    infra = [
+      {
+        name = "switch-livingroom01";
+        ipv4 = "192.168.1.2";
+        ipv6.ula = "fd9e:1a04:f01d:0:f29f:c2ff:fe0b:28ca";
+        mac = "f0:9f:c2:0b:28:ca";
+      }
+      {
+        name = "switch-office01";
+        ipv4 = "192.168.1.3";
+        ipv6.ula = "fd9e:1a04:f01d:0:f29f:c2ff:fece:7ee1";
+        mac = "f0:9f:c2:ce:7e:e1";
+      }
+      {
+        name = "ap-livingroom01";
+        ipv4 = "192.168.1.5";
+        ipv6.ula = "fd9e:1a04:f01d::46d9:e7ff:fe02:2a56";
+        mac = "44:d9:e7:02:2a:56";
+      }
+      {
+        name = "hdhomerun";
+        ipv4 = "192.168.1.8";
+        ipv6.ula = ""; # No IPv6 support unfortunately.
+        mac = "00:18:dd:32:52:c0";
       }
     ];
   };

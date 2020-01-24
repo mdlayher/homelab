@@ -8,39 +8,19 @@ let
   lab0 = vars.interfaces.lab0;
   lan0 = vars.interfaces.lan0;
 
+  # Produces a compatible object for the dhcpd4 machines array.
+  mkHost = (host: {
+    hostName = host.name;
+    ethernetAddress = host.mac;
+    ipAddress = host.ipv4;
+  });
+
 in {
   services.dhcpd4 = {
     interfaces =
       [ "${lan0.name}" "${guest0.name}" "${iot0.name}" "${lab0.name}" ];
     enable = true;
-    machines = [
-      {
-        hostName = "switch-livingroom01";
-        ethernetAddress = "f0:9f:c2:0b:28:ca";
-        ipAddress = "192.168.1.2";
-      }
-      {
-        hostName = "switch-office01";
-        ethernetAddress = "f0:9f:c2:ce:7e:e1";
-        ipAddress = "192.168.1.3";
-      }
-      {
-        hostName = "ap-livingroom01";
-        ethernetAddress = "44:d9:e7:02:2a:56";
-        ipAddress = "192.168.1.5";
-      }
-      {
-        hostName = "hdhomerun";
-        ethernetAddress = "00:18:dd:32:52:c0";
-        ipAddress = "192.168.1.8";
-      }
-    ] ++ lib.forEach vars.hosts.servers (host:
-      {
-        hostName = host.name;
-        ethernetAddress = host.mac;
-        ipAddress = host.ipv4;
-      }
-    );
+    machines = lib.forEach (vars.hosts.infra ++ vars.hosts.servers) mkHost;
     extraConfig = ''
       ddns-update-style none;
 

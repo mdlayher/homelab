@@ -263,7 +263,10 @@ in {
 
           # SSH for internal machines.
           ip6 daddr {
-            ${lib.concatMapStrings (host: "${host.ipv6.gua}, ") vars.hosts.servers}
+            ${
+              lib.concatMapStrings (host: "${host.ipv6.gua}, ")
+              vars.hosts.servers
+            }
           } tcp dport ${ports.ssh} counter accept comment "IPv6 SSH"
 
           # Plex running on server.
