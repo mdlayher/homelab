@@ -13,6 +13,7 @@ let
     http = "80";
     https = "443";
     imaps = "993";
+    mdns = "5353";
     ntp = "123";
     pop3s = "995";
     plex = "32400";
@@ -28,7 +29,8 @@ let
   wan0 = vars.interfaces.wan0.name;
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  trusted_lans = [ vars.interfaces.lan0 vars.interfaces.lab0 vars.interfaces.wg0 ];
+  trusted_lans =
+    [ vars.interfaces.lan0 vars.interfaces.lab0 vars.interfaces.wg0 ];
   limited_lans = [ vars.interfaces.guest0 ];
   untrusted_lans = [ vars.interfaces.iot0 ];
 
@@ -114,8 +116,10 @@ in {
         }
 
         chain input_limited_untrusted {
-          # Handle DHCP early due to need for broadcast.
+          # Handle some services early due to need for multicast/broadcast.
           udp dport ${ports.dhcp4_server} udp sport ${ports.dhcp4_client} counter accept comment "router untrusted DHCPv4"
+
+          udp dport ${ports.mdns} udp sport ${ports.mdns} counter accept comment "router untrusted mDNS"
 
           # Drop traffic trying to cross VLANs or broadcast.
           ${
@@ -141,10 +145,17 @@ in {
           counter drop
         }
 
-        # Allow all outgoing router connections.
         chain output {
           type filter hook output priority 0
           policy accept
+
+          # Generally allow all outgoing router connections, except in cases
+          # where software does not provide fine-grained control over traffic.
+
+          oifname {
+            ${mkCSV limited_lans},
+            ${mkCSV untrusted_lans},
+          } udp sport ${ports.mdns} counter drop comment "Drop mDNS reflection to untrusted LANs"
 
           counter accept
         }
@@ -152,6 +163,17 @@ in {
         chain forward {
           type filter hook forward priority 0
           policy drop
+
+          # Untrusted/limited LANs to trusted LANs.
+          iifname {
+            ${mkCSV limited_lans}
+            ${mkCSV untrusted_lans}
+          } oifname {
+            ${mkCSV trusted_lans}
+          } jump forward_limited_untrusted_lan_trusted_lan
+
+          # We still want to allow limited/untrusted LANs to have working ICMP
+          # to the internet as a whole, just not to any trusted LANs.
 
           # ICMP
           ip6 nexthdr icmpv6 icmpv6 type {
@@ -171,10 +193,20 @@ in {
             parameter-problem,
           } counter accept
 
-          # Trusted LANs to WAN.
+          # Forwarding between different interface groups.
+
+          # Trusted source LANs.
           iifname {
             ${mkCSV trusted_lans}
-          } oifname ${wan0} counter accept;
+          } oifname ${wan0} counter accept comment "Allow trusted LANs to WAN";
+
+          iifname {
+            ${mkCSV trusted_lans}
+          } oifname {
+            ${mkCSV trusted_lans},
+            ${mkCSV limited_lans},
+            ${mkCSV untrusted_lans},
+          } counter accept comment "Allow trusted LANs to reach all LANs";
 
           # Limited/guest LANs to WAN.
           iifname {
@@ -185,13 +217,6 @@ in {
           iifname {
             ${mkCSV untrusted_lans}
           } oifname ${wan0} jump forward_untrusted_lan_wan
-
-          # Trusted bidirectional LAN.
-          iifname {
-            ${mkCSV trusted_lans}
-          } oifname {
-            ${mkCSV trusted_lans}
-          } counter accept;
 
           # WAN to trusted LANs.
           iifname ${wan0} oifname {
@@ -235,6 +260,14 @@ in {
             ${ports.http},
             ${ports.https},
           } counter accept comment "untrusted TCP HTTP(S)"
+
+          counter drop
+        }
+
+        chain forward_limited_untrusted_lan_trusted_lan {
+          # Only allow established connections from trusted LANs.
+          ct state {established, related} counter accept
+          ct state invalid counter drop
 
           counter drop
         }

@@ -120,6 +120,17 @@ in {
   };
 
   services = {
+    # Allow mDNS to reflect between VLANs where necessary for devices such as
+    # Google Home and Chromecast.
+    avahi = {
+      enable = true;
+      interfaces =
+        [ "${vars.interfaces.lan0.name}" "${vars.interfaces.iot0.name}" ];
+      ipv4 = true;
+      ipv6 = true;
+      reflector = true;
+    };
+
     apcupsd = { enable = true; };
 
     fwupd = { enable = true; };
