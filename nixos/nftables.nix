@@ -152,11 +152,6 @@ in {
           # Generally allow all outgoing router connections, except in cases
           # where software does not provide fine-grained control over traffic.
 
-          oifname {
-            ${mkCSV limited_lans},
-            ${mkCSV untrusted_lans},
-          } udp sport ${ports.mdns} counter drop comment "Drop mDNS reflection to untrusted LANs"
-
           counter accept
         }
 
