@@ -31,7 +31,7 @@ in {
 
       # Trusted DNS.
       . {
-        bind ${vars.localhost.ipv4} ${vars.localhost.ipv6} ${lan0.ipv4} ${lan0.ipv6.ula} ${wg0.ipv4} ${wg0.ipv6.ula}
+        bind ${vars.localhost.ipv4} ${vars.localhost.ipv6} ${lab0.ipv4} ${lab0.ipv6.ula} ${lan0.ipv4} ${lan0.ipv6.ula} ${wg0.ipv4} ${wg0.ipv6.ula}
         cache 3600 {
           success 8192
           denial 4096

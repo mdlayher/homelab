@@ -39,15 +39,15 @@ in {
             option domain-name-servers ${ifi.ipv4};
             range ${pfx}.20 ${pfx}.240;
 
+            allow booting;
+            next-server ${ifi.ipv4};
+            option bootfile-name "netboot.xyz.kpxe";
+
             ${
             # Configure additional options for the primary internal LAN.
               if ifi.internal_domain then ''
                 option domain-search "${vars.domain}";
                   option domain-name "${vars.domain}";
-
-                  allow booting;
-                  next-server ${ifi.ipv4};
-                  option bootfile-name "netboot.xyz.kpxe";
               '' else
                 ""
             }

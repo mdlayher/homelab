@@ -1,7 +1,7 @@
 # Variables referenced two or more places in the configuration.
 let
   server_ipv4 = "192.168.1.4";
-  server_ipv6 = "2600:6c4a:787f:d100:4cb:90ff:fe4d:a259";
+  server_ipv6 = "2600:6c4a:787f:d100:1e1b:dff:feea:830f";
 
   # Configuration variables which are used to build out configs elsewhere.
 in {
@@ -35,9 +35,9 @@ in {
         ipv4 = server_ipv4;
         ipv6 = {
           gua = server_ipv6;
-          ula = "fd9e:1a04:f01d:0:4cb:90ff:fe4d:a259";
+          ula = "fd9e:1a04:f01d:0:1e1b:dff:feea:830f";
         };
-        mac = "06:cb:90:4d:a2:59";
+        mac = "1c:1b:0d:ea:83:0f";
       }
     ];
     # Machines which are considered network infrastructure and not exposed
