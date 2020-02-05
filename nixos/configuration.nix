@@ -99,6 +99,7 @@ in {
     lshw
     ndisc6
     nixfmt
+    nmap
     tcpdump
     tmux
     wget
