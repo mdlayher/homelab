@@ -34,6 +34,26 @@ let
   limited_lans = [ vars.interfaces.guest0 ];
   untrusted_lans = [ vars.interfaces.iot0 ];
 
+  # ICMP filtering.
+  icmp_rules = ''
+    ip6 nexthdr icmpv6 icmpv6 type {
+      echo-request,
+      destination-unreachable,
+      packet-too-big,
+      time-exceeded,
+      parameter-problem,
+      nd-neighbor-solicit,
+      nd-neighbor-advert,
+    } counter accept
+
+    ip protocol icmp icmp type {
+      echo-request,
+      destination-unreachable,
+      time-exceeded,
+      parameter-problem,
+    } counter accept
+  '';
+
 in {
   networking.nftables = {
     enable = true;
@@ -54,23 +74,8 @@ in {
             222.184.0.0/13,
           } counter drop comment "malicious subnets"
 
-          # ICMP
-          ip6 nexthdr icmpv6 icmpv6 type {
-            echo-request,
-            destination-unreachable,
-            packet-too-big,
-            time-exceeded,
-            parameter-problem,
-            nd-neighbor-solicit,
-            nd-neighbor-advert,
-          } counter accept
-
-          ip protocol icmp icmp type {
-            echo-request,
-            destination-unreachable,
-            time-exceeded,
-            parameter-problem,
-          } counter accept
+          # ICMPv4/6.
+          ${icmp_rules}
 
           # Allow WAN to selectively communicate with the router.
           iifname ${wan0} jump input_wan
@@ -169,24 +174,7 @@ in {
 
           # We still want to allow limited/untrusted LANs to have working ICMP
           # to the internet as a whole, just not to any trusted LANs.
-
-          # ICMP
-          ip6 nexthdr icmpv6 icmpv6 type {
-            echo-request,
-            destination-unreachable,
-            packet-too-big,
-            time-exceeded,
-            parameter-problem,
-            nd-neighbor-solicit,
-            nd-neighbor-advert,
-          } counter accept
-
-          ip protocol icmp icmp type {
-            echo-request,
-            destination-unreachable,
-            time-exceeded,
-            parameter-problem,
-          } counter accept
+          ${icmp_rules}
 
           # Forwarding between different interface groups.
 
