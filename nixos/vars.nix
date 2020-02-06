@@ -63,7 +63,7 @@ in {
       }
       {
         name = "hdhomerun";
-        ipv4 = "192.168.1.8";
+        ipv4 = "192.168.66.10";
         ipv6.ula = ""; # No IPv6 support unfortunately.
         mac = "00:18:dd:32:52:c0";
       }
