@@ -56,10 +56,10 @@ in {
         mac = "f0:9f:c2:ce:7e:e1";
       }
       {
-        name = "ap-livingroom01";
+        name = "ap-livingroom02";
         ipv4 = "192.168.1.5";
-        ipv6.ula = "fd9e:1a04:f01d::46d9:e7ff:fe02:2a56";
-        mac = "44:d9:e7:02:2a:56";
+        ipv6.ula = "fd9e:1a04:f01d::7683:c2ff:fe7a:c615";
+        mac = "74:83:c2:7a:c6:15";
       }
       {
         name = "hdhomerun";
