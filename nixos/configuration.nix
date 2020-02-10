@@ -100,6 +100,7 @@ in {
     ndisc6
     nixfmt
     nmap
+    screenfetch
     tcpdump
     tmux
     wget
