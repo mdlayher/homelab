@@ -133,9 +133,9 @@ in {
       reflector = true;
     };
 
-    apcupsd = { enable = true; };
-
-    fwupd = { enable = true; };
+    apcupsd.enable = true;
+    fwupd.enable = true;
+    lldpd.enable = true;
 
     # Enable the OpenSSH daemon.
     openssh = {
