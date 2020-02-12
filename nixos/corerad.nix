@@ -26,6 +26,7 @@ in {
         [[interfaces]]
         name = "${ifi.name}"
         send_advertisements = true
+        other_config = true
 
           [[interfaces.prefix]]
           prefix = "::/64"

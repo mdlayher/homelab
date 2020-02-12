@@ -21,6 +21,7 @@ in {
     ./coredns.nix
     ./corerad.nix
     ./dhcpd4.nix
+    ./dhcpd6.nix
     ./traefik.nix
     ./wgipamd.nix
 
