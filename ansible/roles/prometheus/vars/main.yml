@@ -94,7 +94,7 @@ prometheus_jobs:
     targets:
       - "switch-livingroom01"
       - "switch-office01"
-      - "ap-livingroom01"
+      - "ap-livingroom02"
     relabel_target: "servnerr-3:9116"
   - job: "traefik"
     targets:
