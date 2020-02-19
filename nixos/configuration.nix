@@ -10,7 +10,8 @@ let
 
 in {
   imports = [
-    # Include the results of the hardware scan.
+    # Hardware configuration and quirks.
+    <nixos-hardware/pcengines/apu>
     ./hardware-configuration.nix
 
     # Base router networking.
@@ -59,8 +60,6 @@ in {
         "net.ipv6.conf.${vars.interfaces.wan0.name}.use_tempaddr" = 1;
       };
     };
-    # Enable serial console support.
-    kernelParams = [ "console=ttyS0,115200n8" ];
     # Use GRUB in MBR mode.
     loader.grub = {
       enable = true;
