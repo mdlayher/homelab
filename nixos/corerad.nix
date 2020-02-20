@@ -15,7 +15,7 @@ in {
     # Use unstable package until CoreRAD reaches stable.
     package = unstable.corerad;
     configFile = pkgs.writeText "corerad.toml" ''
-      # CoreRAD vALPHA configuration file.
+      # CoreRAD v0.2.1 (BETA) configuration file.
 
       [debug]
       address = ":9430"
@@ -25,7 +25,7 @@ in {
       ${lib.concatMapStrings (ifi: ''
         [[interfaces]]
         name = "${ifi.name}"
-        send_advertisements = true
+        advertise = true
         other_config = true
 
           [[interfaces.prefix]]
