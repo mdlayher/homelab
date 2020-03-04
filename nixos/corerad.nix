@@ -28,6 +28,13 @@ in {
         advertise = true
         other_config = true
 
+        ${
+        # Treat the primary LAN as higher priority for machines on multiple LANs.
+        if ifi.name == lan0.name then ''
+          preference = "high"
+        '' else
+          ""}
+
           [[interfaces.prefix]]
           prefix = "::/64"
 
