@@ -78,6 +78,9 @@ in {
   # Set your time zone.
   time.timeZone = "America/Detroit";
 
+  # This is a headless machine.
+  environment.noXlibs = true;
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
@@ -100,9 +103,11 @@ in {
     ndisc6
     nixfmt
     nmap
+    pciutils
     screenfetch
     tcpdump
     tmux
+    usbutils
     wget
     wireguard-tools
 
