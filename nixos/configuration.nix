@@ -119,7 +119,8 @@ in {
   nix = {
     gc = {
       automatic = true;
-      dates = "weekly";
+      dates = "04:00";
+      options = "--delete-older-than 7d";
     };
     extraOptions = ''
       min-free = ${toString (500 * 1024 * 1024)}
