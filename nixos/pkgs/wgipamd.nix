@@ -13,7 +13,7 @@ buildGoModule rec {
     sha256 = "1kc4ynqxyg1qvwbs9lcwqmv9hczzjw195axfxi2mbvqy54z25za1";
   };
 
-  modSha256 = "05nw4nfyml5r12qwh3kj1ml2njjwx12z471hlv5h51fb5f141iih";
+  modSha256 = "099mdpfy7sd1cwdfzcgp6yl03liw3kzfwl5ivfavm23w0v9pg16p";
 
   meta = with stdenv.lib; {
     homepage = "https://github.com/mdlayher/wgipam";
