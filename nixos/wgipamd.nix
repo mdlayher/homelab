@@ -4,7 +4,7 @@ let vars = import ./vars.nix;
 
 in {
   services.wgipamd = {
-    enable = true;
+    enable = false;
     # TODO: templating.
     config = ''
       # wgipamd vALPHA configuration file
