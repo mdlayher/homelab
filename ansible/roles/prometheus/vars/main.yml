@@ -99,9 +99,10 @@ prometheus_jobs:
   - job: "traefik"
     targets:
       - "routnerr-2:8080"
-  - job: "wgipamd"
-    targets:
-      - "routnerr-2:9475"
+# TODO: disabled until wg-dynamic work continues.
+#  - job: "wgipamd"
+#    targets:
+#      - "routnerr-2:9475"
 # TODO: temporarily disabled while I get this working on NixOS.
 #  - job: "wireguard"
 #    targets:
