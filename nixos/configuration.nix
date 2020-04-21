@@ -26,9 +26,6 @@ in {
     ./traefik.nix
     ./wgipamd.nix
 
-    # Unstable modules.
-    <unstable/nixos/modules/services/networking/corerad.nix>
-
     # Out-of-tree modules.
     ./modules/wgipamd.nix
   ];
@@ -68,52 +65,58 @@ in {
     };
   };
 
-  # Select internationalisation properties.
-  i18n = {
-    consoleFont = "Lat2-Terminus16";
-    consoleKeyMap = "us";
-    defaultLocale = "en_US.UTF-8";
+  # Console and i18n properties.
+  console = {
+    font = "Lat2-Terminus16";
+    keyMap = "us";
   };
+
+  i18n.defaultLocale = "en_US.UTF-8";
 
   # Set your time zone.
   time.timeZone = "America/Detroit";
 
-  # This is a headless machine.
-  environment.noXlibs = true;
+  environment = {
+    # Put ~/bin in PATH.
+    homeBinInPath = true;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    # Stable packages.
-    bind
-    byobu
-    cbfstool
-    dmidecode
-    ethtool
-    flashrom
-    gcc
-    go
-    git
-    htop
-    iftop
-    iperf3
-    jq
-    lm_sensors
-    lshw
-    ndisc6
-    nixfmt
-    nmap
-    pciutils
-    screenfetch
-    tcpdump
-    tmux
-    usbutils
-    wget
-    wireguard-tools
+    # This is a headless machine.
+    noXlibs = true;
 
-    # Unstable packages.
-    unstable.corerad
-  ];
+    # List packages installed in system profile. To search, run:
+    # $ nix search wget
+    systemPackages = with pkgs; [
+      # Stable packages.
+      bind
+      byobu
+      cbfstool
+      dmidecode
+      ethtool
+      flashrom
+      gcc
+      go
+      git
+      htop
+      iftop
+      iperf3
+      jq
+      lm_sensors
+      lshw
+      ndisc6
+      nixfmt
+      nmap
+      pciutils
+      screenfetch
+      tcpdump
+      tmux
+      usbutils
+      wget
+      wireguard-tools
+
+      # Unstable packages.
+      unstable.corerad
+    ];
+  };
 
   # Automatic Nix GC.
   nix = {
@@ -140,7 +143,11 @@ in {
     };
 
     apcupsd.enable = true;
-    fwupd.enable = true;
+
+    # TODO: figure out if fwupd can be enabled without pulling in tons of
+    # dependencies that require compilation.
+    # fwupd.enable = true;
+
     lldpd.enable = true;
 
     # Enable the OpenSSH daemon.

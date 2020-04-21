@@ -12,10 +12,10 @@ let
 in {
   services.corerad = {
     enable = true;
-    # Use unstable package until CoreRAD reaches stable.
+    # Use unstable package until CoreRAD v0.2.4 lands in 20.03 stable.
     package = unstable.corerad;
     configFile = pkgs.writeText "corerad.toml" ''
-      # CoreRAD v0.2.1 (BETA) configuration file.
+      # CoreRAD v0.2.4 (BETA) configuration file.
 
       [debug]
       address = ":9430"

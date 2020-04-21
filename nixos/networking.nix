@@ -26,7 +26,7 @@ let
         prefixLength = 64;
       }
     ];
-    preferTempAddress = false;
+    tempAddress = "disabled";
   });
 
 in {
