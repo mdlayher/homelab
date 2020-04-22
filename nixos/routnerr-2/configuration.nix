@@ -110,8 +110,8 @@ in {
     ];
   };
 
-  # Automatic Nix GC.
   nix = {
+    # Automatic Nix GC.
     gc = {
       automatic = true;
       dates = "04:00";
@@ -120,6 +120,9 @@ in {
     extraOptions = ''
       min-free = ${toString (500 * 1024 * 1024)}
     '';
+
+    # Automatic store optimization.
+    autoOptimiseStore = true;
   };
 
   services = {
@@ -175,6 +178,6 @@ in {
     # compatible, in order to avoid breaking some software such as database
     # servers. You should change this only after NixOS release notes say you
     # should.
-    stateVersion = "19.09"; # Did you read the comment?
+    stateVersion = "20.03"; # Did you read the comment?
   };
 }
