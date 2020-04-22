@@ -27,12 +27,12 @@ in {
     ./wgipamd.nix
 
     # Out-of-tree modules.
-    ./modules/wgipamd.nix
+    ../modules/wgipamd.nix
   ];
 
   nixpkgs.overlays = [
     (self: super: {
-      wgipamd = super.callPackage ./pkgs/wgipamd.nix {
+      wgipamd = super.callPackage ../pkgs/wgipamd.nix {
         buildGoModule = super.buildGo113Module;
       };
     })
