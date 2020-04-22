@@ -1,2 +1,2 @@
 *.retry
-nixos/secrets.nix
+secrets.nix

@@ -27,15 +27,7 @@ in {
     ./wgipamd.nix
 
     # Out-of-tree modules.
-    ../modules/wgipamd.nix
-  ];
-
-  nixpkgs.overlays = [
-    (self: super: {
-      wgipamd = super.callPackage ../pkgs/wgipamd.nix {
-        buildGoModule = super.buildGo113Module;
-      };
-    })
+    ./lib/modules/wgipamd.nix
   ];
 
   # Use the GRUB 2 boot loader with MBR.
