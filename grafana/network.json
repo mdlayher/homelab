@@ -23,15 +23,17 @@
             "bars": false,
             "dashLength": 10,
             "dashes": false,
+            "datasource": null,
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
-                "w": 12,
+                "h": 10,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
-            "id": 2,
+            "hiddenSeries": false,
+            "id": 9,
             "legend": {
                 "alignAsTable": true,
                 "avg": false,
@@ -62,29 +64,40 @@
                 }
             ],
             "spaceLength": 10,
-            "stack": false,
+            "stack": true,
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "rate(ifInOctets{ifAlias=~\"WAN|wg0\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
+                    "expr": "irate(node_network_receive_bytes_total{instance=~\"routnerr.*\",device!~\"lo|docker.*|virbr.*\"}[1m]) * 8",
                     "format": "time_series",
+                    "hide": false,
                     "intervalFactor": 1,
-                    "legendFormat": "receive: {{ifAlias}}",
+                    "legendFormat": "receive: {{device}}",
                     "refId": "A"
                 },
                 {
-                    "expr": "rate(ifOutOctets{ifAlias=~\"WAN|wg0\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
+                    "expr": "irate(node_network_transmit_bytes_total{instance=~\"routnerr.*\",device!~\"lo|docker.*|virbr.*\"}[1m]) * 8",
                     "format": "time_series",
                     "intervalFactor": 1,
-                    "legendFormat": "transmit: {{ifAlias}}",
+                    "legendFormat": "transmit: {{device}}",
                     "refId": "B"
+                },
+                {
+                    "expr": "irate(wireguard_peer_receive_bytes_total{instance=~\"routnerr.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info * 8",
+                    "legendFormat": "receive: {{device}}: {{name}}",
+                    "refId": "C"
+                },
+                {
+                    "expr": "irate(wireguard_peer_transmit_bytes_total{instance=~\"routnerr.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info * 8",
+                    "legendFormat": "transmit: {{device}}: {{name}}",
+                    "refId": "D"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "WAN Bandwidth I/O",
+            "title": "WAN",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -126,324 +139,16 @@
             "bars": false,
             "dashLength": 10,
             "dashes": false,
+            "datasource": null,
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 0
-            },
-            "id": 4,
-            "legend": {
-                "alignAsTable": true,
-                "avg": false,
-                "current": true,
-                "max": false,
-                "min": false,
-                "rightSide": true,
-                "show": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "nullPointMode": "null",
-            "options": {
-                "dataLinks": []
-            },
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "alias": "/transmit/",
-                    "stack": "B",
-                    "transform": "negative-Y"
-                }
-            ],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "expr": "rate(ifInUcastPkts{ifAlias=~\"WAN|wg0\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "receive unicast: {{ifAlias}}",
-                    "refId": "A"
-                },
-                {
-                    "expr": "rate(ifOutUcastPkts{ifAlias=~\"WAN|wg0\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "transmit unicast: {{ifAlias}}",
-                    "refId": "B"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "WAN Packet I/O",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "format": "pps",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                },
-                {
-                    "format": "pps",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "description": "",
-            "fill": 1,
-            "fillGradient": 0,
-            "gridPos": {
-                "h": 8,
-                "w": 12,
+                "h": 11,
+                "w": 24,
                 "x": 0,
-                "y": 8
+                "y": 10
             },
-            "id": 3,
-            "legend": {
-                "alignAsTable": true,
-                "avg": false,
-                "current": true,
-                "max": false,
-                "min": false,
-                "rightSide": true,
-                "show": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "nullPointMode": "null",
-            "options": {
-                "dataLinks": []
-            },
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "alias": "/transmit/",
-                    "stack": "B",
-                    "transform": "negative-Y"
-                }
-            ],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "expr": "rate(ifInOctets{ifAlias!~\"WAN|lo|eth2|wg.*|imq.*\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "transmit: LAN to {{ifAlias}}",
-                    "refId": "A"
-                },
-                {
-                    "expr": "rate(ifOutOctets{ifAlias!~\"WAN|lo|eth2|wg.*|imq.*\",instance=\"routnerr-1\",job=\"snmp\"}[1m])",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "receive: {{ifAlias}} from LAN",
-                    "refId": "B"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "LAN Bandwidth I/O",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "format": "bps",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                },
-                {
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "fill": 1,
-            "fillGradient": 0,
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 8
-            },
-            "id": 6,
-            "legend": {
-                "alignAsTable": true,
-                "avg": false,
-                "current": true,
-                "max": false,
-                "min": false,
-                "rightSide": true,
-                "show": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "links": [],
-            "nullPointMode": "null",
-            "options": {
-                "dataLinks": []
-            },
-            "percentage": false,
-            "pointradius": 5,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "alias": "/to/",
-                    "stack": "B",
-                    "transform": "negative-Y"
-                }
-            ],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "expr": "rate(ifInOctets{ifAlias!=\"\",instance=\"switch-office01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "from: {{ifAlias}}",
-                    "refId": "A"
-                },
-                {
-                    "expr": "rate(ifOutOctets{ifAlias!=\"\",instance=\"switch-office01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2",
-                    "format": "time_series",
-                    "intervalFactor": 1,
-                    "legendFormat": "to: {{ifAlias}}",
-                    "refId": "B"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "Office switch",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "format": "bps",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                },
-                {
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "fill": 1,
-            "fillGradient": 0,
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 16
-            },
+            "hiddenSeries": false,
             "id": 7,
             "legend": {
                 "alignAsTable": true,
@@ -479,14 +184,14 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "rate(ifInOctets{ifAlias!=\"\",instance=\"switch-livingroom01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2",
+                    "expr": "rate(ifInOctets{ifAlias!=\"\",instance=\"switch-livingroom01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2 * 8",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "legendFormat": "from: {{ifAlias}}",
                     "refId": "A"
                 },
                 {
-                    "expr": "rate(ifOutOctets{ifAlias!=\"\",instance=\"switch-livingroom01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2",
+                    "expr": "rate(ifOutOctets{ifAlias!=\"\",instance=\"switch-livingroom01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2 * 8",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "legendFormat": "to: {{ifAlias}}",
@@ -533,9 +238,114 @@
                 "align": false,
                 "alignLevel": null
             }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": null,
+            "fill": 1,
+            "fillGradient": 0,
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "hiddenSeries": false,
+            "id": 6,
+            "legend": {
+                "alignAsTable": true,
+                "avg": false,
+                "current": true,
+                "max": false,
+                "min": false,
+                "rightSide": true,
+                "show": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 1,
+            "links": [],
+            "nullPointMode": "null",
+            "options": {
+                "dataLinks": []
+            },
+            "percentage": false,
+            "pointradius": 5,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [
+                {
+                    "alias": "/to/",
+                    "stack": "B",
+                    "transform": "negative-Y"
+                }
+            ],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "expr": "rate(ifInOctets{ifAlias!=\"\",instance=\"switch-office01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2 * 8",
+                    "format": "time_series",
+                    "intervalFactor": 1,
+                    "legendFormat": "from: {{ifAlias}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "rate(ifOutOctets{ifAlias!=\"\",instance=\"switch-office01\",job=\"snmp\"}[1m]) and on(instance, job, ifName) ifAdminStatus != 2 * 8",
+                    "format": "time_series",
+                    "intervalFactor": 1,
+                    "legendFormat": "to: {{ifAlias}}",
+                    "refId": "B"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "Office switch",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "format": "bps",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                },
+                {
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
         }
     ],
-    "schemaVersion": 19,
+    "schemaVersion": 22,
     "style": "dark",
     "tags": [],
     "templating": {
@@ -573,5 +383,8 @@
     "timezone": "",
     "title": "Network",
     "uid": "e1K4fWrmz",
-    "version": 8
+    "variables": {
+        "list": []
+    },
+    "version": 17
 }

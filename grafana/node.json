@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 0,
     "id": 2,
-    "iteration": 1569986967332,
+    "iteration": 1587508261254,
     "links": [],
     "panels": [
         {
@@ -29,7 +29,7 @@
                 "#d44a3a"
             ],
             "datasource": null,
-            "decimals": null,
+            "decimals": 2,
             "format": "s",
             "gauge": {
                 "maxValue": 100,
@@ -40,7 +40,7 @@
             },
             "gridPos": {
                 "h": 7,
-                "w": 4,
+                "w": 3,
                 "x": 0,
                 "y": 0
             },
@@ -61,7 +61,6 @@
             "maxDataPoints": 100,
             "nullPointMode": "connected",
             "nullText": null,
-            "options": {},
             "postfix": "",
             "postfixFontSize": "50%",
             "prefix": "",
@@ -84,6 +83,7 @@
                 {
                     "expr": "time() - node_boot_time_seconds{instance=~\"$instance.*\",job=\"node\"}",
                     "format": "time_series",
+                    "instant": true,
                     "intervalFactor": 1,
                     "legendFormat": "",
                     "refId": "A"
@@ -112,10 +112,11 @@
             "fillGradient": 0,
             "gridPos": {
                 "h": 7,
-                "w": 10,
-                "x": 4,
+                "w": 7,
+                "x": 3,
                 "y": 0
             },
+            "hiddenSeries": false,
             "id": 14,
             "legend": {
                 "alignAsTable": true,
@@ -151,7 +152,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "irate(node_network_receive_bytes_total{instance=~\"$instance.*\",device=~\"enp.*|eth.*|tun.*\"}[1m])",
+                    "expr": "irate(node_network_receive_bytes_total{instance=~\"$instance.*\",device!~\"lo|docker.*|virbr.*\"}[1m]) * 8",
                     "format": "time_series",
                     "hide": false,
                     "intervalFactor": 1,
@@ -159,19 +160,19 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "irate(node_network_transmit_bytes_total{instance=~\"$instance.*\",device=~\"enp.*|eth.*|tun.*\"}[1m])",
+                    "expr": "irate(node_network_transmit_bytes_total{instance=~\"$instance.*\",device!~\"lo|docker.*|virbr.*\"}[1m]) * 8",
                     "format": "time_series",
                     "intervalFactor": 1,
                     "legendFormat": "transmit: {{device}}",
                     "refId": "B"
                 },
                 {
-                    "expr": "irate(wireguard_peer_receive_bytes_total{instance=~\"$instance.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info",
+                    "expr": "irate(wireguard_peer_receive_bytes_total{instance=~\"$instance.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info * 8",
                     "legendFormat": "receive: {{device}}: {{name}}",
                     "refId": "C"
                 },
                 {
-                    "expr": "irate(wireguard_peer_transmit_bytes_total{instance=~\"$instance.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info",
+                    "expr": "irate(wireguard_peer_transmit_bytes_total{instance=~\"$instance.*\"}[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info * 8",
                     "legendFormat": "transmit: {{device}}: {{name}}",
                     "refId": "D"
                 }
@@ -227,10 +228,11 @@
             "fillGradient": 0,
             "gridPos": {
                 "h": 7,
-                "w": 10,
-                "x": 14,
+                "w": 7,
+                "x": 10,
                 "y": 0
             },
+            "hiddenSeries": false,
             "id": 16,
             "legend": {
                 "alignAsTable": true,
@@ -267,10 +269,10 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "node_hwmon_temp_celsius{instance=~\"$instance.*\",job=\"node\"} * on (chip) group_left(chip_name) node_hwmon_chip_names{instance=~\"$instance.*\",job=\"node\"}",
+                    "expr": "node_hwmon_temp_celsius{instance=~\"$instance.*\",job=\"node\"} * on (instance, chip) group_left(chip_name) node_hwmon_chip_names * on (instance, chip, sensor) group_left(label) node_hwmon_sensor_label",
                     "format": "time_series",
                     "intervalFactor": 1,
-                    "legendFormat": "{{chip_name}}: {{sensor}}",
+                    "legendFormat": "{{chip_name}}: {{label}} ({{sensor}})",
                     "refId": "B"
                 },
                 {
@@ -329,11 +331,109 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
+                "w": 7,
+                "x": 17,
+                "y": 0
+            },
+            "hiddenSeries": false,
+            "id": 20,
+            "legend": {
+                "alignAsTable": true,
+                "avg": false,
+                "current": true,
+                "max": false,
+                "min": false,
+                "rightSide": true,
+                "show": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 1,
+            "links": [],
+            "nullPointMode": "null",
+            "options": {
+                "dataLinks": []
+            },
+            "percentage": false,
+            "pointradius": 5,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "expr": "node_hwmon_power_watt{instance=~\"$instance.*\",job=\"node\"} * on (instance, chip) group_left(chip_name) node_hwmon_chip_names * on (instance, chip, sensor) group_left(label) node_hwmon_sensor_label",
+                    "format": "time_series",
+                    "intervalFactor": 1,
+                    "legendFormat": "{{chip_name}}: {{label}} ({{sensor}})",
+                    "refId": "B"
+                },
+                {
+                    "expr": "node_hwmon_power_average_watt{instance=~\"$instance.*\",job=\"node\"} * on (instance, chip) group_left(chip_name) node_hwmon_chip_names",
+                    "legendFormat": "{{chip_name}}: {{sensor}} (average)",
+                    "refId": "A"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "Device power consumption",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "format": "watt",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                },
+                {
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": null,
+            "fill": 1,
+            "fillGradient": 0,
+            "gridPos": {
+                "h": 7,
                 "w": 8,
                 "x": 0,
                 "y": 7
             },
+            "hiddenSeries": false,
             "id": 13,
             "legend": {
                 "alignAsTable": true,
@@ -420,11 +520,12 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
                 "w": 8,
                 "x": 8,
                 "y": 7
             },
+            "hiddenSeries": false,
             "id": 17,
             "legend": {
                 "alignAsTable": false,
@@ -511,11 +612,12 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
                 "w": 8,
                 "x": 16,
                 "y": 7
             },
+            "hiddenSeries": false,
             "id": 9,
             "legend": {
                 "alignAsTable": true,
@@ -623,11 +725,12 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
                 "w": 8,
                 "x": 0,
-                "y": 15
+                "y": 14
             },
+            "hiddenSeries": false,
             "id": 10,
             "legend": {
                 "alignAsTable": true,
@@ -728,11 +831,12 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
                 "w": 8,
                 "x": 8,
-                "y": 15
+                "y": 14
             },
+            "hiddenSeries": false,
             "id": 15,
             "legend": {
                 "alignAsTable": false,
@@ -826,11 +930,12 @@
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
-                "h": 8,
+                "h": 7,
                 "w": 8,
                 "x": 16,
-                "y": 15
+                "y": 14
             },
+            "hiddenSeries": false,
             "id": 11,
             "legend": {
                 "alignAsTable": true,
@@ -908,10 +1013,39 @@
                 "align": false,
                 "alignLevel": null
             }
+        },
+        {
+            "datasource": "servnerr-3 Loki",
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "id": 19,
+            "options": {
+                "showLabels": false,
+                "showTime": false,
+                "sortOrder": "Descending",
+                "wrapLogMessage": true
+            },
+            "repeat": null,
+            "repeatDirection": "h",
+            "targets": [
+                {
+                    "expr": "{filename=\"/var/log/auth.log\",job=\"varlogs\"} Connection closed",
+                    "live": false,
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "SSH connection failures",
+            "type": "logs"
         }
     ],
     "refresh": false,
-    "schemaVersion": 20,
+    "schemaVersion": 22,
     "style": "dark",
     "tags": [
         "node"
@@ -921,7 +1055,6 @@
             {
                 "allValue": null,
                 "current": {
-                    "selected": true,
                     "text": "servnerr-3",
                     "value": "servnerr-3"
                 },
@@ -929,6 +1062,7 @@
                 "definition": "",
                 "hide": 0,
                 "includeAll": false,
+                "index": -1,
                 "label": null,
                 "multi": false,
                 "name": "instance",
@@ -947,7 +1081,7 @@
         ]
     },
     "time": {
-        "from": "now-2d",
+        "from": "now-24h",
         "to": "now"
     },
     "timepicker": {
@@ -978,5 +1112,8 @@
     "timezone": "",
     "title": "Node",
     "uid": "0y2T6Tnmk",
-    "version": 49
+    "variables": {
+        "list": []
+    },
+    "version": 62
 }
