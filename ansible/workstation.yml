@@ -3,7 +3,6 @@
   become: true
   become_user: root
   roles:
-    - base
     - sshkeys
     - golang
     - node_exporter
