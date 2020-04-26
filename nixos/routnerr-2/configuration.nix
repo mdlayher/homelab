@@ -140,10 +140,6 @@ in {
 
     apcupsd.enable = true;
 
-    # TODO: figure out if fwupd can be enabled without pulling in tons of
-    # dependencies that require compilation.
-    # fwupd.enable = true;
-
     lldpd.enable = true;
 
     # Enable the OpenSSH daemon.
