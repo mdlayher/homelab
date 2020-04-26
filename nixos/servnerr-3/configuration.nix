@@ -86,67 +86,6 @@
     plex.enable = true;
   };
 
-  # TODO: move into own prometheus.nix file.
-  services.prometheus = {
-    enable = true;
-    exporters = {
-      node.enable = true;
-
-      # SNMP exporter with data file from release 0.17.0.
-      snmp = {
-        enable = true;
-        configurationPath = builtins.fetchurl {
-          url =
-            "https://raw.githubusercontent.com/prometheus/snmp_exporter/f0ad4551a5c2023e383bc8dde2222f47dc760b83/snmp.yml";
-          sha256 =
-            "5c1febe100ce9140c8c59cf3c2a6346a1219dd0966d5cd2926498e88dcd69997";
-        };
-      };
-    };
-
-    alertmanagers =
-      [{ static_configs = [{ targets = [ "monitnerr-1:9093" ]; }]; }];
-
-    scrapeConfigs = [
-      {
-        job_name = "node";
-        static_configs = [{
-          targets = [
-            "monitnerr-1:9100"
-            "nerr-3:9100"
-            "routnerr-2:9100"
-            "servnerr-3:9100"
-          ];
-        }];
-      }
-      {
-        job_name = "snmp";
-        metrics_path = "/snmp";
-        params = { module = [ "if_mib" ]; };
-        relabel_configs = [
-          {
-            source_labels = [ "__address__" ];
-            target_label = "__param_target";
-          }
-          {
-            source_labels = [ "__param_target__" ];
-            target_label = "instance";
-          }
-          {
-            target_label = "__address__";
-            replacement = "servnerr-3:9116";
-          }
-        ];
-        static_configs = [{
-          targets =
-            [ "switch-livingroom01" "switch-office01" "ap-livingroom02" ];
-        }];
-      }
-    ];
-
-    webExternalUrl = "https://prometheus.servnerr.com";
-  };
-
   # root SSH key for remote builds.
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOnN7NbaDhuuBQYPtlLtoUyyS6Q3cjJ/VPrw2IQ31R6F NixOS distributed build"
