@@ -124,6 +124,17 @@ in {
 
     # Automatic store optimization.
     autoOptimiseStore = true;
+
+    # Use server as a remote builder.
+    buildMachines = [{
+      hostName = "servnerr-3";
+      system = "x86_64-linux";
+      maxJobs = 8;
+      cores = 2;
+      speedFactor = 2;
+      supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
+    }];
+    distributedBuilds = true;
   };
 
   services = {
