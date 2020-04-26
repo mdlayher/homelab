@@ -15,6 +15,7 @@ in {
     ./hardware-configuration.nix
 
     # Base system configuration.
+    ./lib/nix.nix
     ./lib/system.nix
     ./lib/users.nix
 
@@ -73,21 +74,9 @@ in {
     unstable.corerad
   ];
 
+  # Use server as a remote builder.
   nix = {
-    # Automatic Nix GC.
-    gc = {
-      automatic = true;
-      dates = "04:00";
-      options = "--delete-older-than 7d";
-    };
-    extraOptions = ''
-      min-free = ${toString (500 * 1024 * 1024)}
-    '';
-
-    # Automatic store optimization.
-    autoOptimiseStore = true;
-
-    # Use server as a remote builder.
+    distributedBuilds = true;
     buildMachines = [{
       hostName = "servnerr-3";
       system = "x86_64-linux";
@@ -96,7 +85,6 @@ in {
       speedFactor = 2;
       supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
     }];
-    distributedBuilds = true;
   };
 
   services = {

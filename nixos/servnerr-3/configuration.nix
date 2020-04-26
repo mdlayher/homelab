@@ -10,6 +10,7 @@
     ./hardware-configuration.nix
 
     # Base system configuration.
+    ./lib/nix.nix
     ./lib/system.nix
     ./lib/users.nix
   ];
@@ -51,21 +52,6 @@
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
   environment.systemPackages = with pkgs; [ zfs ];
-
-  nix = {
-    # Automatic Nix GC.
-    gc = {
-      automatic = true;
-      dates = "04:00";
-      options = "--delete-older-than 30d";
-    };
-    extraOptions = ''
-      min-free = ${toString (500 * 1024 * 1024)}
-    '';
-
-    # Automatic store optimization.
-    autoOptimiseStore = true;
-  };
 
   services = {
     fwupd.enable = true;
