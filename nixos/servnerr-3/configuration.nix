@@ -81,6 +81,14 @@
       addr = "";
     };
 
+    # Export ZFS pool via NFS to trusted LAN.
+    nfs.server = {
+      enable = true;
+      exports = ''
+       /primary 192.168.1.0/24(rw,sync,no_subtree_check,crossmnt) fd9e:1a04:f01d::/64(rw,sync,no_subtree_check,crossmnt)
+      '';
+    };
+
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
