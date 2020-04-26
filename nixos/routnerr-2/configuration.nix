@@ -15,6 +15,7 @@ in {
     ./hardware-configuration.nix
 
     # Base system configuration.
+    ./lib/system.nix
     ./lib/users.nix
 
     # Base router networking.
@@ -60,59 +61,40 @@ in {
     };
   };
 
-  # Console and i18n properties.
-  console = {
-    font = "Lat2-Terminus16";
-    keyMap = "us";
-  };
+  # List packages installed in system profile. To search, run:
+  # $ nix search wget
+  environment.systemPackages = with pkgs; [
+    # Stable packages.
+    bind
+    byobu
+    cbfstool
+    dmidecode
+    ethtool
+    flashrom
+    gcc
+    go
+    git
+    htop
+    iftop
+    iperf3
+    jq
+    lm_sensors
+    lshw
+    ndisc6
+    neofetch
+    nethogs
+    nixfmt
+    nmap
+    pciutils
+    tcpdump
+    tmux
+    usbutils
+    wget
+    wireguard-tools
 
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  # Set your time zone.
-  time.timeZone = "America/Detroit";
-
-  environment = {
-    # Put ~/bin in PATH.
-    homeBinInPath = true;
-
-    # This is a headless machine.
-    noXlibs = true;
-
-    # List packages installed in system profile. To search, run:
-    # $ nix search wget
-    systemPackages = with pkgs; [
-      # Stable packages.
-      bind
-      byobu
-      cbfstool
-      dmidecode
-      ethtool
-      flashrom
-      gcc
-      go
-      git
-      htop
-      iftop
-      iperf3
-      jq
-      lm_sensors
-      lshw
-      ndisc6
-      neofetch
-      nethogs
-      nixfmt
-      nmap
-      pciutils
-      tcpdump
-      tmux
-      usbutils
-      wget
-      wireguard-tools
-
-      # Unstable packages.
-      unstable.corerad
-    ];
-  };
+    # Unstable packages.
+    unstable.corerad
+  ];
 
   nix = {
     # Automatic Nix GC.
@@ -169,16 +151,5 @@ in {
       enable = true;
       path = "/var/lib/tftp";
     };
-  };
-
-  system = {
-    # Automatic upgrades.
-    autoUpgrade = { enable = true; };
-
-    # This value determines the NixOS release with which your system is to be
-    # compatible, in order to avoid breaking some software such as database
-    # servers. You should change this only after NixOS release notes say you
-    # should.
-    stateVersion = "20.03"; # Did you read the comment?
   };
 }

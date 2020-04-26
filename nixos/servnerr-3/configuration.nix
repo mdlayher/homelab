@@ -10,6 +10,7 @@
     ./hardware-configuration.nix
 
     # Base system configuration.
+    ./lib/system.nix
     ./lib/users.nix
   ];
 
@@ -47,32 +48,21 @@
   # Allow the use of Plex.
   nixpkgs.config.allowUnfree = true;
 
-  # Set your time zone.
-  time.timeZone = "America/Detroit";
-
-  environment = {
-    # Put ~/bin in PATH.
-    homeBinInPath = true;
-
-    # This is a headless machine.
-    noXlibs = true;
-
-    # List packages installed in system profile. To search, run:
-    # $ nix search wget
-    systemPackages = with pkgs; [
-      byobu
-      git
-      htop
-      jq
-      lm_sensors
-      lshw
-      nixfmt
-      screenfetch
-      tmux
-      wget
-      zfs
-    ];
-  };
+  # List packages installed in system profile. To search, run:
+  # $ nix search wget
+  environment.systemPackages = with pkgs; [
+    byobu
+    git
+    htop
+    jq
+    lm_sensors
+    lshw
+    nixfmt
+    screenfetch
+    tmux
+    wget
+    zfs
+  ];
 
   nix = {
     # Automatic Nix GC.
@@ -134,12 +124,4 @@
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOnN7NbaDhuuBQYPtlLtoUyyS6Q3cjJ/VPrw2IQ31R6F NixOS distributed build"
   ];
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "20.03"; # Did you read the comment?
 }
