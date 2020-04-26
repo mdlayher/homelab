@@ -11,8 +11,8 @@
       [{ static_configs = [{ targets = [ "monitnerr-1:9093" ]; }]; }];
 
     exporters = {
-      node.enable = true;
-
+      # Node exporter already enabled on all machines.
+      
       # SNMP exporter with data file from release 0.17.0.
       snmp = {
         enable = true;
