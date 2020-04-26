@@ -41,9 +41,21 @@
       efi.canTouchEfiVariables = true;
     };
 
-    # Enable and tune ZFS (24GiB ARC).
+    # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
-    kernelParams = [ "zfs.zfs_arc_max=25769803776" ];
+
+    kernelParams = [
+      # Enable serial console.
+      "console=ttyS0,115200n8"
+      # 24GiB ZFS ARC.
+      "zfs.zfs_arc_max=25769803776"
+    ];
+  };
+
+  # Start getty over serial console.
+  systemd.services."serial-getty@ttyS0" = {
+    enable = true;
+    wantedBy = [ "multi-user.target" ];
   };
 
   # Allow the use of Plex.
