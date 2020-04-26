@@ -8,6 +8,9 @@
   imports = [
     # Hardware configuration.
     ./hardware-configuration.nix
+
+    # Base system configuration.
+    ./lib/users.nix
   ];
 
   networking = {
@@ -127,22 +130,10 @@
     webExternalUrl = "https://prometheus.servnerr.com";
   };
 
-  users.users = {
-    matt = {
-      isNormalUser = true;
-      uid = 1000;
-      extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
-
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)"
-      ];
-    };
-
-    # root SSH key for remote builds.
-    root.openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOnN7NbaDhuuBQYPtlLtoUyyS6Q3cjJ/VPrw2IQ31R6F NixOS distributed build"
-    ];
-  };
+  # root SSH key for remote builds.
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOnN7NbaDhuuBQYPtlLtoUyyS6Q3cjJ/VPrw2IQ31R6F NixOS distributed build"
+  ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
