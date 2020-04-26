@@ -48,21 +48,9 @@
   # Allow the use of Plex.
   nixpkgs.config.allowUnfree = true;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    byobu
-    git
-    htop
-    jq
-    lm_sensors
-    lshw
-    nixfmt
-    screenfetch
-    tmux
-    wget
-    zfs
-  ];
+  # Packages specific to this machine. The base package set is defined in
+  # lib/system.nix.
+  environment.systemPackages = with pkgs; [ zfs ];
 
   nix = {
     # Automatic Nix GC.

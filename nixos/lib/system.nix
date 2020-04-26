@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 {
   # Console configuration.
@@ -18,6 +18,33 @@
     # Assume all NixOS machines are headless.
     # TODO: factor out if I ever switch my desktop.
     noXlibs = true;
+
+    # Packages which should be installed on every machine.
+    systemPackages = with pkgs; [
+      byobu
+      dmidecode
+      ethtool
+      gcc
+      go
+      git
+      htop
+      iftop
+      iperf3
+      jq
+      lm_sensors
+      lshw
+      ndisc6
+      neofetch
+      nethogs
+      nixfmt
+      nmap
+      pciutils
+      tcpdump
+      tmux
+      usbutils
+      wget
+      wireguard-tools
+    ];
   };
 
   system = {

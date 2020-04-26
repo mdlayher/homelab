@@ -61,36 +61,13 @@ in {
     };
   };
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
+  # Packages specific to this machine. The base package set is defined in
+  # lib/system.nix.
   environment.systemPackages = with pkgs; [
     # Stable packages.
     bind
-    byobu
     cbfstool
-    dmidecode
-    ethtool
     flashrom
-    gcc
-    go
-    git
-    htop
-    iftop
-    iperf3
-    jq
-    lm_sensors
-    lshw
-    ndisc6
-    neofetch
-    nethogs
-    nixfmt
-    nmap
-    pciutils
-    tcpdump
-    tmux
-    usbutils
-    wget
-    wireguard-tools
 
     # Unstable packages.
     unstable.corerad
