@@ -95,10 +95,11 @@ in {
       lm_sensors
       lshw
       ndisc6
+      neofetch
+      nethogs
       nixfmt
       nmap
       pciutils
-      screenfetch
       tcpdump
       tmux
       usbutils
