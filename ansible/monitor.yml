@@ -3,8 +3,6 @@
   become: true
   become_user: root
   roles:
-    - base
     - sshkeys
     - node_exporter
-    - blackbox_exporter
     - alertmanager
