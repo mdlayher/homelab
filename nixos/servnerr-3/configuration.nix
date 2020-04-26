@@ -55,7 +55,12 @@
   # Start getty over serial console.
   systemd.services."serial-getty@ttyS0" = {
     enable = true;
+    # Make sure agetty spawns at boot and always restarts whenever it
+    # exits due to user logout.
     wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Restart = "always";
+    };
   };
 
   # Allow the use of Plex.
