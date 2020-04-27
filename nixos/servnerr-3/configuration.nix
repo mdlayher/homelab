@@ -73,6 +73,8 @@
   environment.systemPackages = with pkgs; [ zfs ];
 
   services = {
+    apcupsd.enable = true;
+
     fwupd.enable = true;
 
     grafana = {
