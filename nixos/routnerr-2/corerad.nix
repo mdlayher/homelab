@@ -4,11 +4,6 @@ let
   vars = import ./vars.nix;
   unstable = import <unstable> { };
 
-  guest0 = vars.interfaces.guest0;
-  iot0 = vars.interfaces.iot0;
-  lab0 = vars.interfaces.lab0;
-  lan0 = vars.interfaces.lan0;
-
 in {
   services.corerad = {
     enable = true;
@@ -22,7 +17,8 @@ in {
       prometheus = true
       pprof = true
 
-      ${lib.concatMapStrings (ifi: ''
+      ${with vars.interfaces;
+      lib.concatMapStrings (ifi: ''
         [[interfaces]]
         name = "${ifi.name}"
         advertise = true
