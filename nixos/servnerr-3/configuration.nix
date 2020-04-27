@@ -98,6 +98,8 @@
     };
 
     plex.enable = true;
+
+    zfs.autoScrub.enable = true;
   };
 
   virtualisation.libvirtd.enable = true;
