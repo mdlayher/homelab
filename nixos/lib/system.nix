@@ -37,6 +37,7 @@
       neofetch
       nethogs
       nixfmt
+      nix-linter
       nmap
       pciutils
       tcpdump
