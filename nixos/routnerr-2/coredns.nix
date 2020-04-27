@@ -1,14 +1,10 @@
-{ config, lib, ... }:
+{ lib, ... }:
 
 let
   vars = import ./vars.nix;
   domain = vars.domain;
 
-  guest0 = vars.interfaces.guest0;
-  iot0 = vars.interfaces.iot0;
-  lab0 = vars.interfaces.lab0;
   lan0 = vars.interfaces.lan0;
-  wan0 = vars.interfaces.wan0;
   wg0 = vars.interfaces.wg0;
 
 in {

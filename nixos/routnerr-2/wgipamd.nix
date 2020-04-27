@@ -1,8 +1,6 @@
-{ config, ... }:
+{ ... }:
 
-let vars = import ./vars.nix;
-
-in {
+{
   services.wgipamd = {
     enable = false;
     # TODO: templating.

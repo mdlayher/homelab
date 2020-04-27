@@ -5,8 +5,9 @@ let
 
   # Configuration variables which are used to build out configs elsewhere.
 in {
-  server_ipv4 = server_ipv4;
-  server_ipv6 = server_ipv6;
+  inherit server_ipv4;
+  inherit server_ipv6;
+
   cfg = "/home/matt/cfg";
   domain = "lan.servnerr.com";
   hosts = {

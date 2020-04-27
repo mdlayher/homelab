@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 let
   vars = import ./vars.nix;

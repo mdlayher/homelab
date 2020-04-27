@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 {
   # Set up matt's account, enable sudo and SSH login.
