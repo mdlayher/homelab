@@ -6,8 +6,7 @@
 {
   imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
 
-  boot.initrd.availableKernelModules =
-    [ "nvme" "xhci_pci" "ahci" "usbhid" "usb_storage" "sd_mod" ];
+  boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
@@ -22,7 +21,33 @@
     fsType = "vfat";
   };
 
-  swapDevices = [ ];
+  fileSystems."/primary" = {
+    device = "primary";
+    fsType = "zfs";
+  };
+
+  fileSystems."/primary/media" = {
+    device = "primary/media";
+    fsType = "zfs";
+  };
+
+  fileSystems."/primary/archive" = {
+    device = "primary/archive";
+    fsType = "zfs";
+  };
+
+  fileSystems."/primary/misc" = {
+    device = "primary/misc";
+    fsType = "zfs";
+  };
+
+  fileSystems."/primary/text" = {
+    device = "primary/text";
+    fsType = "zfs";
+  };
+
+  swapDevices =
+    [{ device = "/dev/disk/by-uuid/51302f97-4b06-4bc1-8200-13217440af0f"; }];
 
   nix.maxJobs = lib.mkDefault 16;
 }
