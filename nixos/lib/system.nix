@@ -33,6 +33,7 @@
       jq
       lm_sensors
       lshw
+      mtr
       ndisc6
       neofetch
       nethogs
