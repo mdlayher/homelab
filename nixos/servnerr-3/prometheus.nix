@@ -1,9 +1,9 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 let
   # Scrape a target with the specified module, interval, and list of targets.
-  blackboxScrape = (module: interval: targets:
-    blackboxScrapeJobName module module interval targets);
+  blackboxScrape = (module:
+    blackboxScrapeJobName module module);
 
   # Same as blackboxScrape, but allow customizing the job name.
   blackboxScrapeJobName = (job: module: interval: targets: {
@@ -13,7 +13,7 @@ let
     params = { module = [ "${module}" ]; };
     # blackbox_exporter location is hardcoded.
     relabel_configs = relabelTarget "servnerr-3:9115";
-    static_configs = [{ targets = targets; }];
+    static_configs = [{ inherit targets; }];
   });
 
   # Produces a relabeling configuration that replaces the instance label with
