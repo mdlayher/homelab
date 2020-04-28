@@ -5,7 +5,7 @@ let
   server_ipv6 = "2600:6c4a:7880:3200:1e1b:dff:feea:830f";
 
   # Import computed host/interface data from vars.json.
-  gen = builtins.fromJSON(builtins.readFile ./vars.json);
+  gen = builtins.fromJSON (builtins.readFile ./vars.json);
   hosts = gen.hosts;
   interfaces = gen.interfaces;
 in {

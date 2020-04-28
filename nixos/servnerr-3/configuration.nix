@@ -4,8 +4,7 @@
 
 { pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
+let vars = import ./lib/vars.nix;
 
 in {
   imports = [

@@ -2,8 +2,7 @@
 
 let
   # Scrape a target with the specified module, interval, and list of targets.
-  blackboxScrape = (module:
-    blackboxScrapeJobName module module);
+  blackboxScrape = (module: blackboxScrapeJobName module module);
 
   # Same as blackboxScrape, but allow customizing the job name.
   blackboxScrapeJobName = (job: module: interval: targets: {
