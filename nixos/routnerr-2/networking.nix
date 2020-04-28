@@ -88,7 +88,7 @@ in {
             "${wg0.ipv6.ula}/64"
             "${wg0.ipv6.lla}/64"
           ];
-          privateKeyFile = "${vars.cfg}/wg0.key";
+          privateKeyFile = "/var/lib/wireguard/wg0.key";
           peers = [
             # mdlayher-fastly
             {
