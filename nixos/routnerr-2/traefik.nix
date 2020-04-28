@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  secrets = import ./secrets.nix;
+  secrets = import ./lib/secrets.nix;
   vars = import ./vars.nix;
 
 in {

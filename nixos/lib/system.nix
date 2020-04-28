@@ -33,6 +33,7 @@
       jq
       lm_sensors
       lshw
+      mkpasswd
       mtr
       ndisc6
       neofetch
