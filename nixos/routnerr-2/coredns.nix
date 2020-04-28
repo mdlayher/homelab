@@ -1,22 +1,17 @@
 { lib, ... }:
 
-let
-  vars = import ./vars.nix;
-  domain = vars.domain;
-
-  lan0 = vars.interfaces.lan0;
-  wg0 = vars.interfaces.wg0;
+let vars = import ./vars.nix;
 
 in {
-  systemd.services.coredns = {
+  systemd.services.coredns = with vars.interfaces.wg0; {
     # Delay CoreDNS startup until after WireGuard tunnel device is created.
-    requires = [ "wireguard-${wg0.name}.service" ];
-    after = [ "wireguard-${wg0.name}.service" ];
+    requires = [ "wireguard-${name}.service" ];
+    after = [ "wireguard-${name}.service" ];
   };
 
   services.coredns = {
     enable = true;
-    config = ''
+    config = with vars; ''
       # Root zone.
       . {
         cache 3600 {
@@ -45,10 +40,10 @@ in {
                 ${host.ipv6.ula} ${host.name}.ipv6.${domain}
               '' else
                 ""}
-            '') (vars.hosts.servers ++ vars.hosts.infra ++ [{
+            '') (hosts.servers ++ hosts.infra ++ [{
               name = "routnerr-2";
-              ipv4 = lan0.ipv4;
-              ipv6.ula = lan0.ipv6.ula;
+              ipv4 = interfaces.lan0.ipv4;
+              ipv6.ula = interfaces.lan0.ipv6.ula;
             }])
           }
         }

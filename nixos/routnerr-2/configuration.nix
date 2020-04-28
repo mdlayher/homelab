@@ -39,7 +39,7 @@ in {
   # Use the GRUB 2 boot loader with MBR.
   boot = {
     kernel = {
-      sysctl = {
+      sysctl = with vars.interfaces.wan0; {
         # Forward on all interfaces.
         "net.ipv4.conf.all.forwarding" = true;
         "net.ipv6.conf.all.forwarding" = true;
@@ -50,9 +50,9 @@ in {
         "net.ipv6.conf.all.use_tempaddr" = 0;
 
         # On WAN, allow IPv6 autoconfiguration and tempory address use.
-        "net.ipv6.conf.${vars.interfaces.wan0.name}.accept_ra" = 2;
-        "net.ipv6.conf.${vars.interfaces.wan0.name}.autoconf" = 1;
-        "net.ipv6.conf.${vars.interfaces.wan0.name}.use_tempaddr" = 1;
+        "net.ipv6.conf.${name}.accept_ra" = 2;
+        "net.ipv6.conf.${name}.autoconf" = 1;
+        "net.ipv6.conf.${name}.use_tempaddr" = 1;
       };
     };
     # Use GRUB in MBR mode.
@@ -93,8 +93,7 @@ in {
     # Google Home and Chromecast.
     avahi = {
       enable = true;
-      interfaces =
-        [ "${vars.interfaces.lan0.name}" "${vars.interfaces.iot0.name}" ];
+      interfaces = with vars.interfaces; [ "${lan0.name}" "${iot0.name}" ];
       ipv4 = true;
       ipv6 = true;
       reflector = true;

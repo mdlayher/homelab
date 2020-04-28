@@ -109,7 +109,7 @@ in {
       ipv4 = "192.168.20.1";
       ipv6 = {
         # TODO try to get prefix delegation ordering working.
-        gua = "2600:6c4a:7880:3202::1";
+        gua = "2600:6c4a:7880:3220::1";
         lla = "fe80::";
         ula = "fd9e:1a04:f01d:20::1";
       };
