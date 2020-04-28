@@ -1,14 +1,13 @@
 # Variables referenced two or more places in the configuration.
 let
   server_ipv4 = "192.168.1.4";
-  server_ipv6 = "2600:6c4a:787f:d100:1e1b:dff:feea:830f";
+  server_ipv6 = "2600:6c4a:7880:3200:1e1b:dff:feea:830f";
 
   # Configuration variables which are used to build out configs elsewhere.
 in {
   inherit server_ipv4;
   inherit server_ipv6;
 
-  cfg = "/home/matt/cfg";
   domain = "lan.servnerr.com";
   hosts = {
     # Machines that are remotely accessible and run services.
@@ -17,7 +16,7 @@ in {
         name = "monitnerr-1";
         ipv4 = "192.168.1.11";
         ipv6 = {
-          gua = "2600:6c4a:787f:d100:dea6:32ff:fe1e:6694";
+          gua = "2600:6c4a:7880:3200:dea6:32ff:fe1e:6694";
           ula = "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694";
         };
         mac = "dc:a6:32:1e:66:94";
@@ -26,7 +25,7 @@ in {
         name = "nerr-3";
         ipv4 = "192.168.1.9";
         ipv6 = {
-          gua = "2600:6c4a:787f:d100:6d9:f5ff:fe7e:1c47";
+          gua = "2600:6c4a:7880:3200:6d9:f5ff:fe7e:1c47";
           ula = "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47";
         };
         mac = "04:d9:f5:7e:1c:47";
@@ -61,12 +60,6 @@ in {
         ipv4 = "192.168.1.5";
         ipv6.ula = "fd9e:1a04:f01d::7683:c2ff:fe7a:c615";
         mac = "74:83:c2:7a:c6:15";
-      }
-      {
-        name = "hdhomerun";
-        ipv4 = "192.168.66.10";
-        ipv6.ula = ""; # No IPv6 support unfortunately.
-        mac = "00:18:dd:32:52:c0";
       }
     ];
   };
@@ -116,7 +109,7 @@ in {
       ipv4 = "192.168.20.1";
       ipv6 = {
         # TODO try to get prefix delegation ordering working.
-        gua = "2600:6c4a:787f:d120::1";
+        gua = "2600:6c4a:7880:3202::1";
         lla = "fe80::";
         ula = "fd9e:1a04:f01d:20::1";
       };
