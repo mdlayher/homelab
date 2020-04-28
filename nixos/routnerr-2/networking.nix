@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  vars = import ./vars.nix;
+  vars = import ./lib/vars.nix;
 
   # Produces the configuration for a LAN interface.
   mkInterface = (ifi: {

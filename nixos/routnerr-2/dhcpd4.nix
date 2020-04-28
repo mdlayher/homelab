@@ -1,7 +1,7 @@
 { lib, ... }:
 
 let
-  vars = import ./vars.nix;
+  vars = import ./lib/vars.nix;
 
   # Produces a compatible object for the dhcpd4 machines array.
   mkHost = (host: {

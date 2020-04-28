@@ -1,6 +1,6 @@
 { lib, ... }:
 
-let vars = import ./vars.nix;
+let vars = import ./lib/vars.nix;
 
 in {
   services.dhcpd6 = {

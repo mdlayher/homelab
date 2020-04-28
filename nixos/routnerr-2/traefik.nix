@@ -2,7 +2,7 @@
 
 let
   secrets = import ./lib/secrets.nix;
-  vars = import ./vars.nix;
+  vars = import ./lib/vars.nix;
 
 in {
   services.traefik = {

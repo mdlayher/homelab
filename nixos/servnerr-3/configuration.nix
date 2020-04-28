@@ -4,7 +4,10 @@
 
 { pkgs, ... }:
 
-{
+let
+  vars = import ./lib/vars.nix;
+
+in {
   imports = [
     # Hardware configuration.
     ./hardware-configuration.nix
@@ -86,8 +89,8 @@
     # Export ZFS pool via NFS to trusted LAN.
     nfs.server = {
       enable = true;
-      exports = ''
-        /primary 192.168.1.0/24(rw,sync,no_subtree_check,crossmnt) fd9e:1a04:f01d::/64(rw,sync,no_subtree_check,crossmnt)
+      exports = with vars.interfaces.lan0; ''
+        /primary ${ipv4_subnet}(rw,sync,no_subtree_check,crossmnt) ${ipv6.ula_subnet}(rw,sync,no_subtree_check,crossmnt)
       '';
     };
 

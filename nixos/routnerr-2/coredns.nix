@@ -1,6 +1,6 @@
 { lib, ... }:
 
-let vars = import ./vars.nix;
+let vars = import ./lib/vars.nix;
 
 in {
   systemd.services.coredns = with vars.interfaces.wg0; {

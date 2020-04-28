@@ -1,7 +1,7 @@
 { lib, ... }:
 
 let
-  vars = import ./vars.nix;
+  vars = import ./lib/vars.nix;
 
   # Port definitions.
   ports = {

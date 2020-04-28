@@ -72,9 +72,11 @@ in {
       name = "enp2s0";
       internal_domain = true;
       ipv4 = "192.168.1.1";
+      ipv4_subnet = "192.168.1.0/24";
       ipv6 = {
         lla = "fe80::20d:b9ff:fe53:eacd";
         ula = "fd9e:1a04:f01d::1";
+        ula_subnet = "fd9e:1a04:f01d::/64";
       };
     };
     guest0 = {

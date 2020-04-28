@@ -1,7 +1,7 @@
 { lib, pkgs, ... }:
 
 let
-  vars = import ./vars.nix;
+  vars = import ./lib/vars.nix;
   unstable = import <unstable> { };
 
 in {
