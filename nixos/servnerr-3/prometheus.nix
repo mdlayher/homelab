@@ -131,6 +131,10 @@ in {
             [ "switch-livingroom01" "switch-office01" "ap-livingroom02" ];
         }];
       }
+      {
+        job_name = "wireguard";
+        static_configs = [{ targets = [ "routnerr-2:9586" ]; }];
+      }
     ];
   };
 }
