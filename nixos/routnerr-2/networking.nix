@@ -89,6 +89,15 @@ in {
                 "fe80::10/128"
               ];
             }
+            # nerr-3
+            {
+              publicKey = "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=";
+              allowedIPs = [
+                "192.168.20.0/24"
+                "2600:6c4a:7880:3220::/64"
+                "fd9e:1a04:f01d:20::/64"
+              ];
+            }
           ];
         };
       };
