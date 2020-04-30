@@ -33,7 +33,16 @@ in {
     ./wgipamd.nix
 
     # Out-of-tree modules.
+    ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
+  ];
+
+  # Overlays for out-of-tree packages.
+  nixpkgs.overlays = [
+    (self: super: {
+      wireguard_exporter =
+        super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
+    })
   ];
 
   # Use the GRUB 2 boot loader with MBR.
@@ -71,8 +80,9 @@ in {
     cbfstool
     flashrom
 
-    # Unstable packages.
+    # Unstable and out-of-tree packages.
     unstable.corerad
+    wireguard_exporter
   ];
 
   # Use server as a remote builder.

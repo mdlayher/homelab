@@ -106,4 +106,19 @@ in {
     nat.enable = false;
     firewall.enable = false;
   };
+
+  # Enable Prometheus exporter and set up peer key/name mappings.
+  # TODO: nixify the configuration.
+  services.wireguard_exporter = {
+    enable = true;
+    config = ''
+      [[peer]]
+      public_key = "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="
+      name = "mdlayher-fastly"
+
+      [[peer]]
+      public_key = "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="
+      name = "nerr-3"
+    '';
+  };
 }
