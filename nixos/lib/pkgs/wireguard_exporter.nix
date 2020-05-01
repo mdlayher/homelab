@@ -2,7 +2,7 @@
 
 buildGoModule rec {
   pname = "wireguard_exporter";
-  version = "0.1.1";
+  version = "0.1.2";
 
   goPackagePath = "github.com/mdlayher/wireguard_exporter";
 
@@ -10,7 +10,7 @@ buildGoModule rec {
     owner = "mdlayher";
     repo = "wireguard_exporter";
     rev = "v${version}";
-    sha256 = "06hh65c5qn7sbhcm23mgww44mc51kf37iv73hjxcmg4yac4fi65h";
+    sha256 = "0mmrkdxh1q8n4zbj0gdx8qbrga78qg1zzyi71qk5ywl8vz0a05n0";
   };
 
   modSha256 = "065a8jnkjbs57fyr9493b2m66ajq4wr6hsbl54s9yw0gj6jpn5w4";
