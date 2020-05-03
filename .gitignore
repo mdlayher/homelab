@@ -1,2 +1,4 @@
 *.retry
+*.bak
 secrets.nix
+obs/profiles/Programming/service.json
