@@ -1,0 +1,8 @@
+{
+    "settings": {
+        "key": "nope.",
+        "server": "auto",
+        "service": "Twitch"
+    },
+    "type": "rtmp_common"
+}
