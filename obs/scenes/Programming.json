@@ -123,7 +123,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": true,
-                "cx": 3386,
+                "cx": 3228,
                 "cy": 1327,
                 "id_counter": 0,
                 "items": [
@@ -432,7 +432,7 @@
             "settings": {
                 "custom_size": true,
                 "cx": 4148,
-                "cy": 109,
+                "cy": 78,
                 "id_counter": 0,
                 "items": [
                     {
@@ -453,7 +453,7 @@
                         "name": "Background: Banner",
                         "pos": {
                             "x": 0.0,
-                            "y": 0.0
+                            "y": 4.0292129516601562
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -481,8 +481,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 15.999993324279785,
-                            "y": 4.472412109375
+                            "x": 20.320827484130859,
+                            "y": 0.0
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -763,13 +763,7 @@
             "name": "Fade"
         }
     ],
-    "saved_projectors": [
-        {
-            "geometry": "AdnQywADAAAAAAAVAAAHzAAACF8AAA6tAAAAFQAAB/EAAAhfAAAOrQAAAAIAAAAACHAAAAAVAAAH8QAACF8AAA6t",
-            "monitor": -1,
-            "type": 4
-        }
-    ],
+    "saved_projectors": [],
     "scaling_enabled": false,
     "scaling_level": 0,
     "scaling_off_x": 0.0,
@@ -914,8 +908,8 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2091.62353515625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -943,8 +937,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 14.811951637268066,
-                            "y": 2064.30224609375
+                            "x": 18.811952590942383,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -972,8 +966,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1308,8 +1302,8 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2091.62353515625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1337,8 +1331,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 14.811951637268066,
-                            "y": 2064.30224609375
+                            "x": 18.811952590942383,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1366,8 +1360,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1809,8 +1803,8 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2091.62353515625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1838,8 +1832,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 14.811951637268066,
-                            "y": 2064.30224609375
+                            "x": 18.811952590942383,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1867,8 +1861,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1969,7 +1963,7 @@
                 "font": {
                     "face": "Sans Serif",
                     "flags": 0,
-                    "size": 200,
+                    "size": 160,
                     "style": ""
                 },
                 "from_file": true,
@@ -2002,7 +1996,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "color": 4278190080,
-                "height": 100,
+                "height": 68,
                 "width": 3840
             },
             "sync": 0,
@@ -2198,8 +2192,8 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2091.62353515625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2227,8 +2221,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 14.811951637268066,
-                            "y": 2064.30224609375
+                            "x": 18.811952590942383,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2256,8 +2250,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2463,8 +2457,8 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2091.62353515625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2492,8 +2486,8 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 14.811951637268066,
-                            "y": 2064.30224609375
+                            "x": 18.811952590942383,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2521,8 +2515,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 0.0,
-                            "y": 2060.16796875
+                            "x": 5.8207605402316176e-11,
+                            "y": 2087.899169921875
                         },
                         "private_settings": {},
                         "rot": 0.0,
