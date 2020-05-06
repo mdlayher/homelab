@@ -77,8 +77,6 @@ in {
   services = {
     apcupsd.enable = true;
 
-    fwupd.enable = true;
-
     grafana = {
       enable = true;
       # Bind to all interfaces.
