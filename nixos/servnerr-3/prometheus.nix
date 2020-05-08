@@ -123,6 +123,10 @@ in {
           ];
         }];
       }
+      {
+        job_name = "obs";
+        static_configs = [{ targets = [ "nerr-3:9407" ]; }];
+      }
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       {
