@@ -70,6 +70,9 @@ in {
   # Allow the use of Plex.
   nixpkgs.config.allowUnfree = true;
 
+  # Scale down CPU frequency when load is low.
+  powerManagement.cpuFreqGovernor = "ondemand";
+
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
   environment.systemPackages = with pkgs; [ zfs ];
