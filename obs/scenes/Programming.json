@@ -861,7 +861,7 @@
             },
             "sync": 0,
             "versioned_id": "pulse_input_capture",
-            "volume": 1.7782794237136841
+            "volume": 1.0
         },
         {
             "balance": 0.5,
@@ -2734,6 +2734,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "Exposure, Auto": 5557561106012987725,
+                "Focus, Auto": false,
                 "Power Line Frequency": 7234307546238118212,
                 "device_id": "/dev/video0",
                 "framerate": 65566,
