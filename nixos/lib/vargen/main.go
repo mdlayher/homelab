@@ -167,26 +167,26 @@ func newInterface(s subnet) iface {
 	}
 
 	// Router always has a .1 or ::1 suffix.
-	ip4 := s.IPv4.IPNet().IP
-	ip4[3] = 1
+	ip4 := s.IPv4.IP.As16()
+	ip4[15] = 1
 
-	gua := s.IPv6.GUA.IPNet().IP
+	gua := s.IPv6.GUA.IP.As16()
 	gua[15] = 1
 
-	ula := s.IPv6.ULA.IPNet().IP
+	ula := s.IPv6.ULA.IP.As16()
 	ula[15] = 1
 
-	lla := s.IPv6.LLA.IPNet().IP
+	lla := s.IPv6.LLA.IP.As16()
 	lla[15] = 1
 
 	return iface{
 		Name:           s.Name,
 		InternalDomain: internal,
-		IPv4:           mustStdIP(ip4),
+		IPv4:           netaddr.IPFrom16(ip4),
 		IPv6: ipv6Addresses{
-			GUA: mustStdIP(gua),
-			ULA: mustStdIP(ula),
-			LLA: mustStdIP(lla),
+			GUA: netaddr.IPFrom16(gua),
+			ULA: netaddr.IPFrom16(ula),
+			LLA: netaddr.IPFrom16(lla),
 		},
 	}
 }
