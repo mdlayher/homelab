@@ -38,9 +38,7 @@ in {
     enable = true;
     webExternalUrl = "https://prometheus.servnerr.com";
 
-    extraFlags = [
-      "--storage.tsdb.retention=365d"
-    ];
+    extraFlags = [ "--storage.tsdb.retention=365d" ];
 
     # Use alertmanager running on monitoring machine.
     alertmanagers =
