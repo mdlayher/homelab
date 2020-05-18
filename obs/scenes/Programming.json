@@ -861,7 +861,7 @@
             },
             "sync": 0,
             "versioned_id": "pulse_input_capture",
-            "volume": 1.7782794237136841
+            "volume": 1.0
         },
         {
             "balance": 0.5,
@@ -1476,14 +1476,14 @@
                         "locked": true,
                         "name": "Source: Audio/Video Fullscreen",
                         "pos": {
-                            "x": 3159.82275390625,
-                            "y": 1720.0
+                            "x": 3136.0,
+                            "y": 1632.970703125
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.20364584028720856,
-                            "y": 0.20370370149612427
+                            "x": 0.32509449124336243,
+                            "y": 0.32532677054405212
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1496,23 +1496,25 @@
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
-                        "crop_bottom": 0,
-                        "crop_left": 0,
-                        "crop_right": 0,
-                        "crop_top": 0,
+                        "crop_bottom": 70,
+                        "crop_left": 120,
+                        "crop_right": 120,
+                        "crop_top": 40,
                         "group_item_backup": false,
                         "id": 22,
                         "locked": true,
                         "name": "Scene: Audio/Video Corner",
                         "pos": {
-                            "x": 3159.82275390625,
-                            "y": 1720.0
+                            "x": 3136.0,
+                            "y": 1632.970703125
                         },
-                        "private_settings": {},
+                        "private_settings": {
+                            "collapsed": false
+                        },
                         "rot": 0.0,
                         "scale": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 1.5963718891143799,
+                            "y": 1.5970587730407715
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1890,14 +1892,14 @@
                         "locked": true,
                         "name": "Source: Audio/Video Fullscreen",
                         "pos": {
-                            "x": 3159.82275390625,
-                            "y": 1720.0
+                            "x": 3136.0,
+                            "y": 1632.970703125
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.20364584028720856,
-                            "y": 0.20370370149612427
+                            "x": 0.32509449124336243,
+                            "y": 0.32532677054405212
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1910,23 +1912,23 @@
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
-                        "crop_bottom": 0,
-                        "crop_left": 0,
-                        "crop_right": 0,
-                        "crop_top": 0,
+                        "crop_bottom": 70,
+                        "crop_left": 120,
+                        "crop_right": 120,
+                        "crop_top": 40,
                         "group_item_backup": false,
                         "id": 34,
                         "locked": true,
                         "name": "Scene: Audio/Video Corner",
                         "pos": {
-                            "x": 3159.82275390625,
-                            "y": 1720.0
+                            "x": 3136.0,
+                            "y": 1632.970703125
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 1.5963718891143799,
+                            "y": 1.5970587730407715
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -2732,8 +2734,8 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "Exposure, Auto": 5557561106012987725,
+                "Focus, Auto": false,
                 "Power Line Frequency": 7234307546238118212,
-                "Zoom, Absolute": 120,
                 "device_id": "/dev/video0",
                 "framerate": 65566,
                 "input": 0,

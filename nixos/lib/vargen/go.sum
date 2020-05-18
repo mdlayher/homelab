@@ -1,4 +1,4 @@
 github.com/mdlayher/eui64 v0.0.0-20191004205636-300b7bde793c h1:758I75uwYgVtX8fzyn0dvHQEUGNA60284ujMT7a0q2Y=
 github.com/mdlayher/eui64 v0.0.0-20191004205636-300b7bde793c/go.mod h1:1Po4lSpd7AjxFUNZbEut0MJQ4gT4MDn2ZuBiNfitUDI=
-inet.af/netaddr v0.0.0-20200425195807-ed91f5d53cc9 h1:UtE0zzcV/h1n5gUsYwK5IWHXF85HZoWhhVzuc8ZxSAQ=
-inet.af/netaddr v0.0.0-20200425195807-ed91f5d53cc9/go.mod h1:qqYzz/2whtrbWJvt+DNWQyvekNN4ePQZcg2xc2/Yjww=
+inet.af/netaddr v0.0.0-20200512140312-d37a9e0a2dd4 h1:2Lj2bqi5EmgZSyJSaLoniH93rP/IhuWr6BTdgAJuiYA=
+inet.af/netaddr v0.0.0-20200512140312-d37a9e0a2dd4/go.mod h1:qqYzz/2whtrbWJvt+DNWQyvekNN4ePQZcg2xc2/Yjww=
