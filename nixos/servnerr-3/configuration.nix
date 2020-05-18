@@ -50,6 +50,10 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
+    # Latest Linux kernel for better hwmon support.
+    kernelPackages = pkgs.linuxPackages_latest;
+    kernelModules = [ "drivetemp" ];
+
     kernelParams = [
       # Enable serial console.
       "console=ttyS0,115200n8"
