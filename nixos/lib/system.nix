@@ -42,8 +42,10 @@
       nix-linter
       nmap
       pciutils
+      smartmontools
       tcpdump
       tmux
+      unixtools.xxd
       usbutils
       wget
       wireguard-tools
