@@ -134,13 +134,100 @@ in {
         relabel_configs = relabelTarget "servnerr-3:9116";
         static_configs = [{
           targets =
-            [ "switch-livingroom01" "switch-office01" "ap-livingroom02" ];
+            [ "switch-livingroom01" "switch-office01" "ap-livingroom02.ipv4" ];
         }];
       }
       {
         job_name = "wireguard";
         static_configs = [{ targets = [ "routnerr-2:9586" ]; }];
       }
+    ];
+
+    # Desktop PC is excluded from alerts as it isn't running 24/7.
+    rules = [
+      (builtins.toJSON ({
+        groups = [{
+          name = "default";
+          rules = [
+            {
+              alert = "InstanceDown";
+              expr = ''up{instance!~"nerr-3.*"} == 0'';
+              for = "2m";
+              annotations.summary =
+                "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
+            }
+            {
+              alert = "ServiceDown";
+              expr = ''probe_success{instance!~"nerr-3.*"} == 0'';
+              for = "2m";
+              annotations.summary =
+                "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
+            }
+            {
+              alert = "TLSCertificateNearExpiration";
+              expr =
+                ''probe_ssl_earliest_cert_expiry - time() < 60 * 60 * 24 * 2'';
+              for = "1m";
+              annotations.summary =
+                "TLS certificate for {{ $labels.instance }} will expire in less than 2 days.";
+            }
+            {
+              alert = "DiskUsageHigh";
+              expr = ''
+                (1 - node_filesystem_free_bytes{fstype=~"ext4|vfat"} / node_filesystem_size_bytes) > 0.75'';
+              for = "1m";
+              annotations.summary =
+                "Disk usage on {{ $labels.instance }}:{{ $labels.mountpoint }} ({{ $labels.device }}) exceeds 75%.";
+            }
+            # All CoreRAD interfaces should be advertising, forwarding IPv6 traffic,
+            # and have IPv6 autoconfiguration disabled.
+            {
+              alert = "CoreRADInterfaceMisconfigured";
+              expr =
+                ''(corerad_interface_advertising == 0) or (corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1)'';
+              for = "1m";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
+            }
+            # All CoreRAD interfaces should multicast IPv6 RAs on a regular basis
+            # so hosts don't drop their default route.
+            {
+              alert = "CoreRADNotMulticastAdvertising";
+              expr = ''
+                rate(corerad_advertiser_router_advertisements_total{type="multicast"}[20m]) == 0'';
+              for = "1m";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not sent a multicast router advertisment in more than 20 minutes.";
+            }
+            # Monitor for inconsistent advertisements from hosts on the LAN.
+            {
+              alert = "CoreRADReceivedInconsistentRouterAdvertisement";
+              expr =
+                ''rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0'';
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} received an IPv6 router advertisement with inconsistent configuration compared to its own.";
+            }
+            # We are advertising 2 prefixes per interface out of GUA /56 and ULA /48.
+            {
+              alert = "CoreRADMissingPrefix";
+              expr = ''
+                count by (instance, interface) (corerad_advertiser_router_advertisement_prefix_autonomous{prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != 2'';
+              for = "1m";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is advertising an incorrect number of IPv6 prefixes for SLAAC.";
+            }
+            # All IPv6 prefixes are advertised with SLAAC.
+            {
+              alert = "CoreRADPrefixNotAutonomous";
+              expr =
+                ''corerad_advertiser_router_advertisement_prefix_autonomous == 0'';
+              for = "1m";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
+            }
+          ];
+        }];
+      }))
     ];
   };
 }
