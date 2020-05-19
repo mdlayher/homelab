@@ -39,6 +39,8 @@ in {
         plex.servers.plex.url = "http://servnerr-3.${vars.domain}:32400";
         prometheus.servers.prometheus.url =
           "http://servnerr-3.${vars.domain}:9090";
+        promlens.servers.promlens.url =
+          "http://servnerr-3.${vars.domain}:9091";
       };
 
       frontends = {
@@ -60,6 +62,11 @@ in {
           basicAuth = [ "${secrets.traefik.prometheus_auth}" ];
           routes.prometheus.rule = "Host:prometheus.servnerr.com";
         };
+        promlens = {
+          backend = "promlens";
+          basicAuth = [ "${secrets.traefik.promlens_auth}" ];
+          routes.prometheus.rule = "Host:promlens.servnerr.com";
+        };
       };
 
       acme = {
@@ -77,6 +84,7 @@ in {
           { main = "grafana.servnerr.com"; }
           { main = "plex.servnerr.com"; }
           { main = "prometheus.servnerr.com"; }
+          { main = "promlens.servnerr.com"; }
         ];
       };
     };
