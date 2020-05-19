@@ -109,10 +109,23 @@ in {
     zfs.autoScrub.enable = true;
   };
 
-  virtualisation.libvirtd.enable = true;
+  virtualisation = {
+    docker.enable = true;
+    libvirtd.enable = true;
+  };
 
   # root SSH key for remote builds.
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3+HUx05h15g95ID/lWbU5uvF6TLr2XESmthQjU7qvR NixOS distributed build"
   ];
+
+  docker-containers = {
+    # promlens running on TCP/9091 adjacent to Prometheus.
+    promlens = {
+      image = "promlabs/promlens";
+      cmd = ["-shared-links-sqlite-file=/var/lib/promlens/promlens-links.db"];
+      ports = ["9091:8080"];
+      volumes = ["/var/lib/promlens:/var/lib/promlens"];
+    };
+  };
 }
