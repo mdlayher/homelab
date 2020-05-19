@@ -39,8 +39,7 @@ in {
         plex.servers.plex.url = "http://servnerr-3.${vars.domain}:32400";
         prometheus.servers.prometheus.url =
           "http://servnerr-3.${vars.domain}:9090";
-        promlens.servers.promlens.url =
-          "http://servnerr-3.${vars.domain}:9091";
+        promlens.servers.promlens.url = "http://servnerr-3.${vars.domain}:9091";
       };
 
       frontends = {
