@@ -260,20 +260,6 @@ type ipv6Prefixes struct {
 	LLA netaddr.IPPrefix `json:"lla"`
 }
 
-func (p ipv6Prefixes) MarshalJSON() ([]byte, error) {
-	// TODO: consider moving IPPrefix marshaling code into netaddr.
-	v := struct {
-		GUA string `json:"gua"`
-		ULA string `json:"ula"`
-		LLA string `json:"lla"`
-	}{
-		GUA: p.GUA.String(),
-		ULA: p.ULA.String(),
-		LLA: p.LLA.String(),
-	}
-
-	return json.Marshal(v)
-}
 
 func mustStdIP(ip net.IP) netaddr.IP {
 	out, ok := netaddr.FromStdIP(ip)
