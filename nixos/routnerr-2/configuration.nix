@@ -78,6 +78,7 @@ in {
     # Stable packages.
     bind
     cbfstool
+    cmatrix
     flashrom
 
     # Unstable and out-of-tree packages.
