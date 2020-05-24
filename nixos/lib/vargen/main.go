@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/mdlayher/eui64"
+	"github.com/mdlayher/netx/eui64"
 	"inet.af/netaddr"
 )
 

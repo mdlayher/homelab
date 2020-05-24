@@ -3,6 +3,6 @@ module github.com/mdlayher/homelab/nixos/lib/vargen
 go 1.14
 
 require (
-	github.com/mdlayher/eui64 v0.0.0-20191004205636-300b7bde793c
+	github.com/mdlayher/netx v0.0.0-20200512211805-669a06fde734
 	inet.af/netaddr v0.0.0-20200512140312-d37a9e0a2dd4
 )
