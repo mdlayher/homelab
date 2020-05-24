@@ -20,6 +20,7 @@ func main() {
 
 	// The primary subnet: all servers and network infrastructure live here.
 	var (
+		// TODO: renumber to "0"?
 		enp2s0 = subnet{
 			Name: "enp2s0",
 			IPv4: prefix("192.168.1.0/24"),
@@ -80,26 +81,12 @@ func main() {
 	}
 
 	// Attach interface definitions from subnet definitions.
-	// TODO: compute interface properties from subnets instead.
 	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
-
 	out.addInterface("guest0", newSubnet("guest0", 9))
-
 	out.addInterface("iot0", newSubnet("iot0", 66))
-
 	out.addInterface("lab0", newSubnet("lab0", 2))
-
-	out.addInterface("tengb0", subnet{
-		Name: "tengb0",
-		IPv4: prefix("192.168.100.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:32a0::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d:100::/64"),
-		},
-	})
-
+	out.addInterface("tengb0", newSubnet("tengb0", 100))
 	out.addInterface("wg0", newSubnet("wg0", 20))
 
 	// TODO: wan0 is a special case but should probably live in its own
@@ -146,8 +133,8 @@ func newSubnet(iface string, vlan int) subnet {
 	if vlan < 99 {
 		gua = prefix(fmt.Sprintf("2600:6c4a:7880:32%02d::/64", vlan))
 	} else {
-		// a0 -> "100"
-		panic("TODO!")
+		// Too large for decimal due to /56, so use hex.
+		gua = prefix(fmt.Sprintf("2600:6c4a:7880:32%02x::/64", vlan))
 	}
 
 	return subnet{
