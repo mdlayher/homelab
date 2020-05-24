@@ -116,6 +116,16 @@
 				"lla": "fe80::1"
 			}
 		},
+		"tengb0": {
+			"name": "tengb0",
+			"internal_domain": false,
+			"ipv4": "192.168.100.1",
+			"ipv6": {
+				"gua": "2600:6c4a:7880:32a0::1",
+				"ula": "fd9e:1a04:f01d:100::1",
+				"lla": "fe80::1"
+			}
+		},
 		"wan0": {
 			"name": "enp1s0",
 			"internal_domain": false,

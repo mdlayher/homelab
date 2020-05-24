@@ -18,6 +18,7 @@ in {
       "${guest0.name}"
       "${iot0.name}"
       "${lab0.name}"
+      "${tengb0.name}"
     ];
     enable = true;
     machines = with vars.hosts; lib.forEach (infra ++ servers) mkHost;
@@ -58,7 +59,7 @@ in {
                 ""
             }
           }
-            '') [ enp2s0 lan0 guest0 iot0 lab0 ]}
+            '') [ enp2s0 lan0 guest0 iot0 lab0 tengb0 ]}
     '';
   };
 }

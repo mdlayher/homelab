@@ -122,6 +122,16 @@ func main() {
 		},
 	})
 
+	out.addInterface("tengb0", subnet{
+		Name: "tengb0",
+		IPv4: prefix("192.168.100.0/24"),
+		IPv6: ipv6Prefixes{
+			GUA: prefix("2600:6c4a:7880:32a0::/64"),
+			LLA: lla,
+			ULA: prefix("fd9e:1a04:f01d:100::/64"),
+		},
+	})
+
 	out.addInterface("wg0", subnet{
 		Name: "wg0",
 		IPv4: prefix("192.168.20.0/24"),

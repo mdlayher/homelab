@@ -21,6 +21,7 @@
 
     # Packages which should be installed on every machine.
     systemPackages = with pkgs; [
+      bc
       byobu
       dmidecode
       ethtool

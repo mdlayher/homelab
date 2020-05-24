@@ -7,10 +7,10 @@ let
 in {
   services.corerad = {
     enable = true;
-    # Use unstable package until CoreRAD v0.2.4 lands in 20.03 stable.
+    # Use unstable package until CoreRAD BETA lands in 20.03 stable.
     package = unstable.corerad;
     configFile = pkgs.writeText "corerad.toml" ''
-      # CoreRAD v0.2.4 (BETA) configuration file.
+      # CoreRAD BETA configuration file.
 
       [debug]
       address = ":9430"
@@ -45,7 +45,7 @@ in {
                 '' else
                   ""
               }
-              '') [ enp2s0 lan0 guest0 iot0 lab0 ]}
+              '') [ enp2s0 lan0 guest0 iot0 lab0 tengb0 ]}
           '';
   };
 }
