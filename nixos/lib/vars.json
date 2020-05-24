@@ -66,6 +66,16 @@
 		]
 	},
 	"interfaces": {
+		"enp2s0": {
+			"name": "enp2s0",
+			"internal_domain": true,
+			"ipv4": "192.168.1.1",
+			"ipv6": {
+				"gua": "2600:6c4a:7880:3200::1",
+				"ula": "fd9e:1a04:f01d::1",
+				"lla": "fe80::1"
+			}
+		},
 		"guest0": {
 			"name": "guest0",
 			"internal_domain": false,
@@ -97,12 +107,12 @@
 			}
 		},
 		"lan0": {
-			"name": "enp2s0",
+			"name": "lan0",
 			"internal_domain": true,
-			"ipv4": "192.168.1.1",
+			"ipv4": "192.168.10.1",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3200::1",
-				"ula": "fd9e:1a04:f01d::1",
+				"gua": "2600:6c4a:7880:3210::1",
+				"ula": "fd9e:1a04:f01d:10::1",
 				"lla": "fe80::1"
 			}
 		},

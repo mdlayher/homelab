@@ -13,6 +13,7 @@ let
 in {
   services.dhcpd4 = {
     interfaces = with vars.interfaces; [
+      "${enp2s0.name}"
       "${lan0.name}"
       "${guest0.name}"
       "${iot0.name}"
@@ -57,7 +58,7 @@ in {
                 ""
             }
           }
-            '') [ lan0 guest0 iot0 lab0 ]}
+            '') [ enp2s0 lan0 guest0 iot0 lab0 ]}
     '';
   };
 }

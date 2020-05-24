@@ -19,15 +19,27 @@ func main() {
 	lla := prefix("fe80::/64")
 
 	// The primary subnet: all servers and network infrastructure live here.
-	lan0 := subnet{
-		Name: "enp2s0",
-		IPv4: prefix("192.168.1.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:3200::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d::/64"),
-		},
-	}
+	var (
+		enp2s0 = subnet{
+			Name: "enp2s0",
+			IPv4: prefix("192.168.1.0/24"),
+			IPv6: ipv6Prefixes{
+				GUA: prefix("2600:6c4a:7880:3200::/64"),
+				LLA: lla,
+				ULA: prefix("fd9e:1a04:f01d::/64"),
+			},
+		}
+
+		lan0 = subnet{
+			Name: "lan0",
+			IPv4: prefix("192.168.10.0/24"),
+			IPv6: ipv6Prefixes{
+				GUA: prefix("2600:6c4a:7880:3210::/64"),
+				LLA: lla,
+				ULA: prefix("fd9e:1a04:f01d:10::/64"),
+			},
+		}
+	)
 
 	// Set up the output structure and create host/infra records.
 	out := output{
@@ -35,19 +47,19 @@ func main() {
 			Servers: []host{
 				newHost(
 					"servnerr-3",
-					lan0,
+					enp2s0,
 					ip("192.168.1.4"),
 					mac("1c:1b:0d:ea:83:0f"),
 				),
 				newHost(
 					"nerr-3",
-					lan0,
+					enp2s0,
 					ip("192.168.1.9"),
 					mac("04:d9:f5:7e:1c:47"),
 				),
 				newHost(
 					"monitnerr-1",
-					lan0,
+					enp2s0,
 					ip("192.168.1.11"),
 					mac("dc:a6:32:1e:66:94"),
 				),
@@ -55,19 +67,19 @@ func main() {
 			Infra: []host{
 				newHost(
 					"switch-livingroom01",
-					lan0,
+					enp2s0,
 					ip("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
 				newHost(
 					"switch-office01",
-					lan0,
+					enp2s0,
 					ip("192.168.1.3"),
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
 				newHost(
 					"ap-livingroom02",
-					lan0,
+					enp2s0,
 					ip("192.168.1.5"),
 					mac("74:83:c2:7a:c6:15"),
 				),
@@ -77,6 +89,7 @@ func main() {
 
 	// Attach interface definitions from subnet definitions.
 	// TODO: compute interface properties from subnets instead.
+	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
 
 	out.addInterface("guest0", subnet{
@@ -160,9 +173,9 @@ type ipv6Addresses struct {
 
 func newInterface(s subnet) iface {
 	// TODO: this is a hack, come up with another convention to denote the
-	// management VLAN.
+	// primary VLAN.
 	var internal bool
-	if s.Name == "enp2s0" {
+	if s.Name == "lan0" || s.Name == "enp2s0" {
 		internal = true
 	}
 
