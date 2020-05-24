@@ -30,15 +30,7 @@ func main() {
 			},
 		}
 
-		lan0 = subnet{
-			Name: "lan0",
-			IPv4: prefix("192.168.10.0/24"),
-			IPv6: ipv6Prefixes{
-				GUA: prefix("2600:6c4a:7880:3210::/64"),
-				LLA: lla,
-				ULA: prefix("fd9e:1a04:f01d:10::/64"),
-			},
-		}
+		lan0 = newSubnet("lan0", 10)
 	)
 
 	// Set up the output structure and create host/infra records.
@@ -92,35 +84,11 @@ func main() {
 	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
 
-	out.addInterface("guest0", subnet{
-		Name: "guest0",
-		IPv4: prefix("192.168.9.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:3209::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d:9::/64"),
-		},
-	})
+	out.addInterface("guest0", newSubnet("guest0", 9))
 
-	out.addInterface("iot0", subnet{
-		Name: "iot0",
-		IPv4: prefix("192.168.66.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:3266::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d:66::/64"),
-		},
-	})
+	out.addInterface("iot0", newSubnet("iot0", 66))
 
-	out.addInterface("lab0", subnet{
-		Name: "lab0",
-		IPv4: prefix("192.168.2.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:3202::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d:2::/64"),
-		},
-	})
+	out.addInterface("lab0", newSubnet("lab0", 2))
 
 	out.addInterface("tengb0", subnet{
 		Name: "tengb0",
@@ -132,15 +100,7 @@ func main() {
 		},
 	})
 
-	out.addInterface("wg0", subnet{
-		Name: "wg0",
-		IPv4: prefix("192.168.20.0/24"),
-		IPv6: ipv6Prefixes{
-			GUA: prefix("2600:6c4a:7880:3220::/64"),
-			LLA: lla,
-			ULA: prefix("fd9e:1a04:f01d:20::/64"),
-		},
-	})
+	out.addInterface("wg0", newSubnet("wg0", 20))
 
 	// TODO: wan0 is a special case but should probably live in its own
 	// section as it has different rules.
@@ -179,6 +139,26 @@ type ipv6Addresses struct {
 	GUA netaddr.IP `json:"gua"`
 	ULA netaddr.IP `json:"ula"`
 	LLA netaddr.IP `json:"lla"`
+}
+
+func newSubnet(iface string, vlan int) subnet {
+	var gua netaddr.IPPrefix
+	if vlan < 99 {
+		gua = prefix(fmt.Sprintf("2600:6c4a:7880:32%02d::/64", vlan))
+	} else {
+		// a0 -> "100"
+		panic("TODO!")
+	}
+
+	return subnet{
+		Name: iface,
+		IPv4: prefix(fmt.Sprintf("192.168.%d.0/24", vlan)),
+		IPv6: ipv6Prefixes{
+			GUA: gua,
+			LLA: prefix("fe80::/64"),
+			ULA: prefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
+		},
+	}
 }
 
 func newInterface(s subnet) iface {
@@ -259,7 +239,6 @@ type ipv6Prefixes struct {
 	ULA netaddr.IPPrefix `json:"ula"`
 	LLA netaddr.IPPrefix `json:"lla"`
 }
-
 
 func mustStdIP(ip net.IP) netaddr.IP {
 	out, ok := netaddr.FromStdIP(ip)
