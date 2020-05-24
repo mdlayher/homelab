@@ -166,7 +166,7 @@ in {
             {
               alert = "TLSCertificateNearExpiration";
               expr =
-                ''probe_ssl_earliest_cert_expiry - time() < 60 * 60 * 24 * 2'';
+                "probe_ssl_earliest_cert_expiry - time() < 60 * 60 * 24 * 2";
               for = "1m";
               annotations.summary =
                 "TLS certificate for {{ $labels.instance }} will expire in less than 2 days.";
@@ -184,7 +184,7 @@ in {
             {
               alert = "CoreRADInterfaceMisconfigured";
               expr =
-                ''(corerad_interface_advertising == 0) or (corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1)'';
+                "(corerad_interface_advertising == 0) or (corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1)";
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
@@ -203,7 +203,7 @@ in {
             {
               alert = "CoreRADReceivedInconsistentRouterAdvertisement";
               expr =
-                ''rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0'';
+                "rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} received an IPv6 router advertisement with inconsistent configuration compared to its own.";
             }
@@ -220,7 +220,7 @@ in {
             {
               alert = "CoreRADPrefixNotAutonomous";
               expr =
-                ''corerad_advertiser_router_advertisement_prefix_autonomous == 0'';
+                "corerad_advertiser_router_advertisement_prefix_autonomous == 0";
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
