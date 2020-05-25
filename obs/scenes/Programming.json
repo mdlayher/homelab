@@ -123,7 +123,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": true,
-                "cx": 3228,
+                "cx": 3386,
                 "cy": 1327,
                 "id_counter": 0,
                 "items": [
@@ -431,15 +431,15 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": true,
-                "cx": 4148,
-                "cy": 78,
+                "cx": 4719,
+                "cy": 84,
                 "id_counter": 0,
                 "items": [
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -453,13 +453,13 @@
                         "name": "Background: Banner",
                         "pos": {
                             "x": 0.0,
-                            "y": 4.0292129516601562
+                            "y": 0.0
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 1.0802080631256104,
-                            "y": 1.0800000429153442
+                            "x": 1.2289062738418579,
+                            "y": 1.2352941036224365
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -467,8 +467,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -481,14 +481,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 20.320827484130859,
+                            "x": 10.0,
                             "y": 0.0
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.34976762533187866,
-                            "y": 0.34951451420783997
+                            "x": 0.33630606532096863,
+                            "y": 0.33838382363319397
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -838,6 +838,33 @@
             "deinterlace_field_order": 0,
             "deinterlace_mode": 0,
             "enabled": true,
+            "filters": [
+                {
+                    "balance": 0.5,
+                    "deinterlace_field_order": 0,
+                    "deinterlace_mode": 0,
+                    "enabled": true,
+                    "flags": 0,
+                    "hotkeys": {},
+                    "id": "noise_suppress_filter",
+                    "mixers": 255,
+                    "monitoring_type": 0,
+                    "muted": false,
+                    "name": "Noise Suppression",
+                    "prev_ver": 419430406,
+                    "private_settings": {},
+                    "push-to-mute": false,
+                    "push-to-mute-delay": 0,
+                    "push-to-talk": false,
+                    "push-to-talk-delay": 0,
+                    "settings": {
+                        "suppress_level": -20
+                    },
+                    "sync": 0,
+                    "versioned_id": "noise_suppress_filter",
+                    "volume": 1.0
+                }
+            ],
             "flags": 2,
             "hotkeys": {
                 "libobs.mute": [],
@@ -851,7 +878,9 @@
             "muted": false,
             "name": "Microphone",
             "prev_ver": 419430406,
-            "private_settings": {},
+            "private_settings": {
+                "volume_locked": true
+            },
             "push-to-mute": false,
             "push-to-mute-delay": 0,
             "push-to-talk": false,
@@ -894,8 +923,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -908,14 +937,14 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2091.62353515625
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.9999997615814209,
-                            "y": 0.99831938743591309
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -923,8 +952,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -937,14 +966,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 18.811952590942383,
-                            "y": 2087.899169921875
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.32379645109176636,
-                            "y": 0.32308065891265869
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -966,8 +995,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2087.899169921875
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1288,8 +1317,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -1302,14 +1331,14 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2091.62353515625
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.9999997615814209,
-                            "y": 0.99831938743591309
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1317,8 +1346,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -1331,14 +1360,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 18.811952590942383,
-                            "y": 2087.899169921875
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.32379645109176636,
-                            "y": 0.32308065891265869
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1360,8 +1389,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2087.899169921875
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1791,8 +1820,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -1805,14 +1834,14 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2091.62353515625
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.9999997615814209,
-                            "y": 0.99831938743591309
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1820,8 +1849,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -1834,14 +1863,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 18.811952590942383,
-                            "y": 2087.899169921875
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.32379645109176636,
-                            "y": 0.32308065891265869
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -1863,8 +1892,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2087.899169921875
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -1924,7 +1953,9 @@
                             "x": 3136.0,
                             "y": 1632.970703125
                         },
-                        "private_settings": {},
+                        "private_settings": {
+                            "collapsed": false
+                        },
                         "rot": 0.0,
                         "scale": {
                             "x": 1.5963718891143799,
@@ -2180,8 +2211,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -2194,14 +2225,14 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2091.62353515625
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.9999997615814209,
-                            "y": 0.99831938743591309
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -2209,8 +2240,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -2223,14 +2254,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 18.811952590942383,
-                            "y": 2087.899169921875
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.32379645109176636,
-                            "y": 0.32308065891265869
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -2252,8 +2283,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2087.899169921875
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2370,12 +2401,14 @@
                 "libobs.unmute": []
             },
             "id": "pulse_output_capture",
-            "mixers": 255,
+            "mixers": 253,
             "monitoring_type": 0,
-            "muted": true,
+            "muted": false,
             "name": "PC Output",
             "prev_ver": 419430406,
-            "private_settings": {},
+            "private_settings": {
+                "volume_locked": true
+            },
             "push-to-mute": false,
             "push-to-mute-delay": 0,
             "push-to-talk": false,
@@ -2383,7 +2416,7 @@
             "settings": {},
             "sync": 0,
             "versioned_id": "pulse_output_capture",
-            "volume": 1.0
+            "volume": 0.17782793939113617
         },
         {
             "balance": 0.5,
@@ -2445,8 +2478,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -2459,14 +2492,14 @@
                         "locked": true,
                         "name": "Background: Banner",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2091.62353515625
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.9999997615814209,
-                            "y": 0.99831938743591309
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -2474,8 +2507,8 @@
                     {
                         "align": 5,
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "bounds_align": 0,
                         "bounds_type": 0,
@@ -2488,14 +2521,14 @@
                         "locked": true,
                         "name": "Text: Banner File",
                         "pos": {
-                            "x": 18.811952590942383,
-                            "y": 2087.899169921875
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
                         "scale": {
-                            "x": 0.32379645109176636,
-                            "y": 0.32308065891265869
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
                         },
                         "scale_filter": "disable",
                         "visible": true
@@ -2517,8 +2550,8 @@
                         "locked": true,
                         "name": "Banner: Text File",
                         "pos": {
-                            "x": 5.8207605402316176e-11,
-                            "y": 2087.899169921875
+                            "x": 0.0,
+                            "y": 2089.748291015625
                         },
                         "private_settings": {},
                         "rot": 0.0,
@@ -2561,7 +2594,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": false,
-                "id_counter": 7,
+                "id_counter": 8,
                 "items": [
                     {
                         "align": 5,
