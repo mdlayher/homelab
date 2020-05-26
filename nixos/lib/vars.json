@@ -72,6 +72,16 @@
 					"lla": "fe80::7683:c2ff:fe7a:c615"
 				},
 				"mac": "74:83:c2:7a:c6:15"
+			},
+			{
+				"name": "keylight",
+				"ipv4": "192.168.66.10",
+				"ipv6": {
+					"gua": "2600:6c4a:7880:3266:3e6a:9dff:fe12:c4dc",
+					"ula": "fd9e:1a04:f01d:66:3e6a:9dff:fe12:c4dc",
+					"lla": "fe80::3e6a:9dff:fe12:c4dc"
+				},
+				"mac": "3c:6a:9d:12:c4:dc"
 			}
 		]
 	},

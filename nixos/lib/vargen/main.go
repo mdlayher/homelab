@@ -32,6 +32,7 @@ func main() {
 		}
 
 		lan0   = newSubnet("lan0", 10)
+		iot0   = newSubnet("iot0", 66)
 		tengb0 = newSubnet("tengb0", 100)
 	)
 
@@ -83,6 +84,12 @@ func main() {
 					ip("192.168.1.5"),
 					mac("74:83:c2:7a:c6:15"),
 				),
+				newHost(
+					"keylight",
+					iot0,
+					ip("192.168.66.10"),
+					mac("3c:6a:9d:12:c4:dc"),
+				),
 			},
 		},
 	}
@@ -91,7 +98,7 @@ func main() {
 	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
 	out.addInterface("guest0", newSubnet("guest0", 9))
-	out.addInterface("iot0", newSubnet("iot0", 66))
+	out.addInterface("iot0", iot0)
 	out.addInterface("lab0", newSubnet("lab0", 2))
 	out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", newSubnet("wg0", 20))
