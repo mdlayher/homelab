@@ -31,7 +31,8 @@ func main() {
 			},
 		}
 
-		lan0 = newSubnet("lan0", 10)
+		lan0   = newSubnet("lan0", 10)
+		tengb0 = newSubnet("tengb0", 100)
 	)
 
 	// Set up the output structure and create host/infra records.
@@ -71,6 +72,12 @@ func main() {
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
 				newHost(
+					"switch-office02",
+					tengb0,
+					ip("192.168.100.2"),
+					mac("c4:ad:34:ba:40:82"),
+				),
+				newHost(
 					"ap-livingroom02",
 					enp2s0,
 					ip("192.168.1.5"),
@@ -86,7 +93,7 @@ func main() {
 	out.addInterface("guest0", newSubnet("guest0", 9))
 	out.addInterface("iot0", newSubnet("iot0", 66))
 	out.addInterface("lab0", newSubnet("lab0", 2))
-	out.addInterface("tengb0", newSubnet("tengb0", 100))
+	out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", newSubnet("wg0", 20))
 
 	// TODO: wan0 is a special case but should probably live in its own
