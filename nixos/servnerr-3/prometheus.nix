@@ -134,7 +134,7 @@ in {
         relabel_configs = relabelTarget "servnerr-3:9116";
         static_configs = [{
           targets =
-            [ "switch-livingroom01" "switch-office01" "ap-livingroom02.ipv4" ];
+            [ "switch-livingroom01" "switch-office01" "switch-office02.ipv4" "ap-livingroom02.ipv4" ];
         }];
       }
       {
