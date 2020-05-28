@@ -111,6 +111,11 @@ in {
         static_configs = [{ targets = [ "routnerr-2:9430" ]; }];
       }
       {
+        job_name = "keylight";
+        relabel_configs = relabelTarget "servnerr-3:9288";
+        static_configs = [{ targets = [ "keylight" ]; }];
+      }
+      {
         job_name = "node";
         static_configs = [{
           targets = [
@@ -133,8 +138,12 @@ in {
         params = { module = [ "if_mib" ]; };
         relabel_configs = relabelTarget "servnerr-3:9116";
         static_configs = [{
-          targets =
-            [ "switch-livingroom01" "switch-office01" "switch-office02.ipv4" "ap-livingroom02.ipv4" ];
+          targets = [
+            "switch-livingroom01"
+            "switch-office01"
+            "switch-office02.ipv4"
+            "ap-livingroom02.ipv4"
+          ];
         }];
       }
       {
@@ -230,4 +239,7 @@ in {
       }))
     ];
   };
+
+  # Out-of-tree exporters.
+  services.keylight_exporter.enable = true;
 }

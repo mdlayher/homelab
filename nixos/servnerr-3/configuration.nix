@@ -19,6 +19,17 @@ in {
 
     # Service configuration.
     ./prometheus.nix
+
+    # Out-of-tree modules.
+    ./lib/modules/keylight_exporter.nix
+  ];
+
+  # Overlays for out-of-tree packages.
+  nixpkgs.overlays = [
+    (self: super: {
+      keylight_exporter =
+        super.callPackage ./lib/pkgs/keylight_exporter.nix { };
+    })
   ];
 
   networking = {
