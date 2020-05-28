@@ -46,7 +46,13 @@ in {
     # Use DHCP for all interfaces, but force the deprecated global setting off.
     useDHCP = false;
     interfaces = {
+      # 1GbE on management.
       enp5s0.useDHCP = true;
+
+      # 10GbE VLAN.
+      enp11s0.useDHCP = true;
+
+      # 1GbE on Lab VLAN.
       br0.useDHCP = false;
     };
   };
