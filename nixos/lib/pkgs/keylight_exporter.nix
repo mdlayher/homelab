@@ -2,7 +2,7 @@
 
 buildGoModule rec {
   pname = "keylight_exporter";
-  version = "0.1.0";
+  version = "0.1.1";
 
   goPackagePath = "github.com/mdlayher/keylight_exporter";
 
@@ -10,7 +10,7 @@ buildGoModule rec {
     owner = "mdlayher";
     repo = "keylight_exporter";
     rev = "v${version}";
-    sha256 = "082176cf0y9dx9ks1qdw1mn9b12m7q1vjnmgi9119jnq0yv9lnvy";
+    sha256 = "141npawcnxj3sz2xqsnyf06r4x1azk3g55941i8gjr7pwcla34r7";
   };
 
   modSha256 = "0idvwp8r48nzxygw60yrcrcjw6vmjrjqi3ranc2lx89p4lrky5r3";
