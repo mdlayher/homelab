@@ -185,20 +185,20 @@
 				"name": "mdlayher-fastly",
 				"public_key": "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=",
 				"allowed_ips": [
-					"192.168.20.10/24",
-					"2600:6c4a:7880:3220::a/64",
-					"fd9e:1a04:f01d:20::a/64",
-					"fe80::a/64"
+					"192.168.20.10/32",
+					"2600:6c4a:7880:3220::a/128",
+					"fd9e:1a04:f01d:20::a/128",
+					"fe80::a/128"
 				]
 			},
 			{
 				"name": "nerr-3",
 				"public_key": "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=",
 				"allowed_ips": [
-					"192.168.20.11/24",
-					"2600:6c4a:7880:3220::b/64",
-					"fd9e:1a04:f01d:20::b/64",
-					"fe80::b/64"
+					"192.168.20.11/32",
+					"2600:6c4a:7880:3220::b/128",
+					"fd9e:1a04:f01d:20::b/128",
+					"fe80::b/128"
 				]
 			}
 		]

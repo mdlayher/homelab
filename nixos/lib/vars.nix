@@ -13,6 +13,7 @@ in {
   inherit server_ipv6;
   inherit hosts;
   inherit interfaces;
+  inherit wireguard;
 
   domain = "lan.servnerr.com";
   localhost = {

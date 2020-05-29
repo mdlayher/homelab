@@ -299,9 +299,14 @@ func (wg *wireguard) addPeer(name, publicKey string) {
 		arr := ipp.IP.As16()
 		arr[15] = byte(offset + wg.idx)
 
+		bits := 32
+		if ipp.IP.Is6() {
+			bits = 128
+		}
+
 		ips = append(ips, netaddr.IPPrefix{
 			IP:   netaddr.IPFrom16(arr),
-			Bits: ipp.Bits,
+			Bits: uint8(bits),
 		}.String())
 	}
 

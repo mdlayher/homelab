@@ -91,7 +91,7 @@ in {
         ${name} = {
           listenPort = 51820;
           ips = with subnet;
-            [ "${ipv4}/24" "${ipv6.gua}/64" "${ipv6.ula}/64" "${ipv6.lla}/64" ];
+            [ "${ipv4}" "${ipv6.gua}" "${ipv6.ula}" "${ipv6.lla}" ];
           privateKeyFile = "/var/lib/wireguard/${name}.key";
           peers = lib.forEach peers mkPeer;
         };
@@ -112,7 +112,7 @@ in {
       [[peer]]
       public_key = "${peer.public_key}"
       name = "${peer.name}"
-      '') [ vars.wireguard.peers ]}
+      '') vars.wireguard.peers }
     '';
   };
 }
