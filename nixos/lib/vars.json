@@ -13,13 +13,13 @@
 			},
 			{
 				"name": "nerr-3",
-				"ipv4": "192.168.1.9",
+				"ipv4": "192.168.100.6",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3200:6d9:f5ff:fe7e:1c47",
-					"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
-					"lla": "fe80::6d9:f5ff:fe7e:1c47"
+					"gua": "2600:6c4a:7880:3264:92e2:baff:fe23:1a3a",
+					"ula": "fd9e:1a04:f01d:100:92e2:baff:fe23:1a3a",
+					"lla": "fe80::92e2:baff:fe23:1a3a"
 				},
-				"mac": "04:d9:f5:7e:1c:47"
+				"mac": "90:e2:ba:23:1a:3a"
 			},
 			{
 				"name": "monitnerr-1",

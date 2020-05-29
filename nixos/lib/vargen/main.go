@@ -48,9 +48,9 @@ func main() {
 				),
 				newHost(
 					"nerr-3",
-					enp2s0,
-					ip("192.168.1.9"),
-					mac("04:d9:f5:7e:1c:47"),
+					tengb0,
+					ip("192.168.100.6"),
+					mac("90:e2:ba:23:1a:3a"),
 				),
 				newHost(
 					"monitnerr-1",
