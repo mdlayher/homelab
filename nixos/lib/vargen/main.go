@@ -74,8 +74,8 @@ func main() {
 				),
 				newHost(
 					"switch-office02",
-					tengb0,
-					ip("192.168.100.2"),
+					enp2s0,
+					ip("192.168.1.4"),
 					mac("c4:ad:34:ba:40:82"),
 				),
 				newHost(
