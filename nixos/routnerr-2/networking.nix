@@ -90,8 +90,12 @@ in {
       interfaces = {
         ${name} = {
           listenPort = 51820;
-          ips = with subnet;
-            [ "${ipv4}" "${ipv6.gua}" "${ipv6.ula}" "${ipv6.lla}" ];
+          ips = with subnet; [
+            "${ipv4}"
+            "${ipv6.gua}"
+            "${ipv6.ula}"
+            "${ipv6.lla}"
+          ];
           privateKeyFile = "/var/lib/wireguard/${name}.key";
           peers = lib.forEach peers mkPeer;
         };
@@ -107,12 +111,11 @@ in {
   services.wireguard_exporter = {
     enable = true;
     config = ''
-      ${
-        lib.concatMapStrings (peer: ''
-      [[peer]]
-      public_key = "${peer.public_key}"
-      name = "${peer.name}"
-      '') vars.wireguard.peers }
+      ${lib.concatMapStrings (peer: ''
+        [[peer]]
+        public_key = "${peer.public_key}"
+        name = "${peer.name}"
+      '') vars.wireguard.peers}
     '';
   };
 }
