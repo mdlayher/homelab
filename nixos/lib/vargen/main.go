@@ -4,9 +4,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/mdlayher/netx/eui64"
 	"inet.af/netaddr"
@@ -34,18 +37,23 @@ func main() {
 		lan0   = newSubnet("lan0", 10)
 		iot0   = newSubnet("iot0", 66)
 		tengb0 = newSubnet("tengb0", 100)
+
+		server = newHost(
+			"servnerr-3",
+			tengb0,
+			ip("192.168.100.5"),
+			mac("90:e2:ba:5b:99:80"),
+		)
 	)
 
 	// Set up the output structure and create host/infra records.
 	out := output{
+		// TODO: this is a hack, we should make a Service type or similar.
+		ServerIPv4: server.IPv4,
+		ServerIPv6: server.IPv6.GUA,
 		Hosts: hosts{
 			Servers: []host{
-				newHost(
-					"servnerr-3",
-					tengb0,
-					ip("192.168.100.5"),
-					mac("90:e2:ba:5b:99:80"),
-				),
+				server,
 				newHost(
 					"nerr-3",
 					tengb0,
@@ -107,8 +115,7 @@ func main() {
 	// section as it has different rules.
 	out.Interfaces["wan0"] = iface{
 		Name: "enp1s0",
-		// TODO: compute WAN addresses automatically?
-		IPv4: ip("24.176.57.23"),
+		IPv4: wanIPv4(),
 	}
 
 	// Marshal human-readable JSON for nicer git diffs.
@@ -119,7 +126,24 @@ func main() {
 	}
 }
 
+func wanIPv4() netaddr.IP {
+	res, err := http.Get("https://ipv4.icanhazip.com")
+	if err != nil {
+		log.Fatalf("failed to perform HTTP request: %v", err)
+	}
+	defer res.Body.Close()
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("failed to read HTTP body: %v", err)
+	}
+
+	return ip(strings.TrimSpace(string(b)))
+}
+
 type output struct {
+	ServerIPv4 netaddr.IP       `json:"server_ipv4"`
+	ServerIPv6 netaddr.IP       `json:"server_ipv6"`
 	Hosts      hosts            `json:"hosts"`
 	Interfaces map[string]iface `json:"interfaces"`
 }
