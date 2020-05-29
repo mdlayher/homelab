@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 
 let
   vars = import ./lib/vars.nix;
@@ -20,6 +20,11 @@ let
       }
     ];
     tempAddress = "disabled";
+  });
+
+  mkPeer = (peer: {
+    publicKey = peer.public_key;
+    allowedIPs = peer.allowed_ips;
   });
 
 in {
@@ -80,35 +85,15 @@ in {
       };
     };
 
-    wireguard = with vars.interfaces.wg0; {
+    wireguard = with vars.wireguard; {
       enable = true;
       interfaces = {
         ${name} = {
           listenPort = 51820;
-          ips =
+          ips = with subnet;
             [ "${ipv4}/24" "${ipv6.gua}/64" "${ipv6.ula}/64" "${ipv6.lla}/64" ];
           privateKeyFile = "/var/lib/wireguard/${name}.key";
-          peers = [
-            # mdlayher-fastly
-            {
-              publicKey = "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=";
-              allowedIPs = [
-                "192.168.20.0/24"
-                "2600:6c4a:7880:3220::/64"
-                "fd9e:1a04:f01d:20::/64"
-                "fe80::10/128"
-              ];
-            }
-            # nerr-3
-            {
-              publicKey = "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=";
-              allowedIPs = [
-                "192.168.20.0/24"
-                "2600:6c4a:7880:3220::/64"
-                "fd9e:1a04:f01d:20::/64"
-              ];
-            }
-          ];
+          peers = lib.forEach peers mkPeer;
         };
       };
     };
@@ -122,13 +107,12 @@ in {
   services.wireguard_exporter = {
     enable = true;
     config = ''
+      ${
+        lib.concatMapStrings (peer: ''
       [[peer]]
-      public_key = "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="
-      name = "mdlayher-fastly"
-
-      [[peer]]
-      public_key = "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="
-      name = "nerr-3"
+      public_key = "${peer.public_key}"
+      name = "${peer.name}"
+      '') [ vars.wireguard.peers ]}
     '';
   };
 }
