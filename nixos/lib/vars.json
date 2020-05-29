@@ -3,13 +3,13 @@
 		"servers": [
 			{
 				"name": "servnerr-3",
-				"ipv4": "192.168.1.4",
+				"ipv4": "192.168.100.5",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3200:1e1b:dff:feea:830f",
-					"ula": "fd9e:1a04:f01d:0:1e1b:dff:feea:830f",
-					"lla": "fe80::1e1b:dff:feea:830f"
+					"gua": "2600:6c4a:7880:3264:92e2:baff:fe5b:9980",
+					"ula": "fd9e:1a04:f01d:100:92e2:baff:fe5b:9980",
+					"lla": "fe80::92e2:baff:fe5b:9980"
 				},
-				"mac": "1c:1b:0d:ea:83:0f"
+				"mac": "90:e2:ba:5b:99:80"
 			},
 			{
 				"name": "nerr-3",
@@ -138,7 +138,7 @@
 		},
 		"tengb0": {
 			"name": "tengb0",
-			"internal_domain": false,
+			"internal_domain": true,
 			"ipv4": "192.168.100.1",
 			"ipv6": {
 				"gua": "2600:6c4a:7880:3264::1",

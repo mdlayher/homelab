@@ -25,9 +25,10 @@ in {
         other_config = true
 
         ${
-        # Treat the primary LAN as higher priority for machines on multiple LANs.
-        if ifi.name == lan0.name then ''
+        # Special configuration for the 10GbE LAN.
+        if ifi.name == tengb0.name then ''
           preference = "high"
+          mtu = 9000
         '' else
           ""}
 

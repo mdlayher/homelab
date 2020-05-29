@@ -42,9 +42,9 @@ func main() {
 			Servers: []host{
 				newHost(
 					"servnerr-3",
-					enp2s0,
-					ip("192.168.1.4"),
-					mac("1c:1b:0d:ea:83:0f"),
+					tengb0,
+					ip("192.168.100.5"),
+					mac("90:e2:ba:5b:99:80"),
 				),
 				newHost(
 					"nerr-3",
@@ -166,7 +166,7 @@ func newInterface(s subnet) iface {
 	// TODO: this is a hack, come up with another convention to denote the
 	// primary VLAN.
 	var internal bool
-	if s.Name == "lan0" || s.Name == "enp2s0" {
+	if s.Name == "lan0" || s.Name == "enp2s0" || s.Name == "tengb0" {
 		internal = true
 	}
 
