@@ -37,6 +37,7 @@ func main() {
 		lan0   = newSubnet("lan0", 10)
 		iot0   = newSubnet("iot0", 66)
 		tengb0 = newSubnet("tengb0", 100)
+		wg0    = newSubnet("wg0", 20)
 
 		server = newHost(
 			"servnerr-3",
@@ -45,6 +46,13 @@ func main() {
 			mac("90:e2:ba:5b:99:80"),
 		)
 	)
+
+	wg := wireguard{
+		Name:   "wg0",
+		Subnet: wg0,
+	}
+	wg.addPeer("mdlayher-fastly", "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=")
+	wg.addPeer("nerr-3", "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=")
 
 	// Set up the output structure and create host/infra records.
 	out := output{
@@ -100,6 +108,7 @@ func main() {
 				),
 			},
 		},
+		WireGuard: wg,
 	}
 
 	// Attach interface definitions from subnet definitions.
@@ -109,7 +118,7 @@ func main() {
 	out.addInterface("iot0", iot0)
 	out.addInterface("lab0", newSubnet("lab0", 2))
 	out.addInterface("tengb0", tengb0)
-	out.addInterface("wg0", newSubnet("wg0", 20))
+	out.addInterface("wg0", wg0)
 
 	// TODO: wan0 is a special case but should probably live in its own
 	// section as it has different rules.
@@ -146,6 +155,7 @@ type output struct {
 	ServerIPv6 netaddr.IP       `json:"server_ipv6"`
 	Hosts      hosts            `json:"hosts"`
 	Interfaces map[string]iface `json:"interfaces"`
+	WireGuard  wireguard        `json:"wireguard"`
 }
 
 type hosts struct {
@@ -263,6 +273,49 @@ type ipv6Prefixes struct {
 	GUA netaddr.IPPrefix `json:"gua"`
 	ULA netaddr.IPPrefix `json:"ula"`
 	LLA netaddr.IPPrefix `json:"lla"`
+}
+
+type wireguard struct {
+	Name   string   `json:"name"`
+	Subnet subnet   `json:"subnet"`
+	Peers  []wgPeer `json:"peers"`
+
+	idx int
+}
+
+func (wg *wireguard) addPeer(name, publicKey string) {
+	defer func() { wg.idx++ }()
+
+	const offset = 10
+
+	var ips []string
+	for _, ipp := range []netaddr.IPPrefix{
+		wg.Subnet.IPv4,
+		wg.Subnet.IPv6.GUA,
+		wg.Subnet.IPv6.ULA,
+		wg.Subnet.IPv6.LLA,
+	} {
+		// Router always has a .1 or ::1 suffix.
+		arr := ipp.IP.As16()
+		arr[15] = byte(offset + wg.idx)
+
+		ips = append(ips, netaddr.IPPrefix{
+			IP:   netaddr.IPFrom16(arr),
+			Bits: ipp.Bits,
+		}.String())
+	}
+
+	wg.Peers = append(wg.Peers, wgPeer{
+		Name:       name,
+		PublicKey:  publicKey,
+		AllowedIPs: ips,
+	})
+}
+
+type wgPeer struct {
+	Name       string   `json:"name"`
+	PublicKey  string   `json:"public_key"`
+	AllowedIPs []string `json:"allowed_ips"`
 }
 
 func mustStdIP(ip net.IP) netaddr.IP {

@@ -6,6 +6,7 @@ let
   server_ipv6 = gen.server_ipv6;
   hosts = gen.hosts;
   interfaces = gen.interfaces;
+  wireguard = gen.wireguard;
 
 in {
   inherit server_ipv4;
