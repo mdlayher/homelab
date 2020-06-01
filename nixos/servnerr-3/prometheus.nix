@@ -190,12 +190,13 @@ in {
               annotations.summary =
                 "Disk usage on {{ $labels.instance }}:{{ $labels.mountpoint }} ({{ $labels.device }}) exceeds 75%.";
             }
-            # All CoreRAD interfaces should be advertising, forwarding IPv6 traffic,
-            # and have IPv6 autoconfiguration disabled.
+            # All advertising interfaces should be forwarding IPv6 traffic, and
+            # have IPv6 autoconfiguration disabled.
+            # TODO: equivalent alert for monitoring interfaces.
             {
-              alert = "CoreRADInterfaceMisconfigured";
+              alert = "CoreRADAdvertisingInterfaceMisconfigured";
               expr =
-                "(corerad_interface_advertising == 0) or (corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1)";
+                "(corerad_interface_advertising == 1) and ((corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1))";
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
