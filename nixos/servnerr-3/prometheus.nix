@@ -221,7 +221,8 @@ in {
             }
             # Monitor for inconsistent advertisements from hosts on the LAN.
             {
-              alert = "CoreRADAdvertiserReceivedInconsistentRouterAdvertisement";
+              alert =
+                "CoreRADAdvertiserReceivedInconsistentRouterAdvertisement";
               expr =
                 "rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0";
               annotations.summary =
@@ -248,8 +249,8 @@ in {
             # Expect continuous upstream router advertisements.
             {
               alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
-              expr =
-                ''rate(corerad_monitor_messages_received_total{message="router advertisement"}[5m]) == 0'';
+              expr = ''
+                rate(corerad_monitor_messages_received_total{message="router advertisement"}[5m]) == 0'';
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.router }} in more than 5 minutes.";
             }
