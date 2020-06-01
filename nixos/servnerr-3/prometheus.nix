@@ -192,7 +192,6 @@ in {
             }
             # All advertising interfaces should be forwarding IPv6 traffic, and
             # have IPv6 autoconfiguration disabled.
-            # TODO: equivalent alert for monitoring interfaces.
             {
               alert = "CoreRADAdvertisingInterfaceMisconfigured";
               expr =
@@ -201,10 +200,19 @@ in {
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
             }
+            # All monitoring interfaces should be forwarding IPv6 traffic.
+            {
+              alert = "CoreRADMonitoringInterfaceMisconfigured";
+              expr =
+                "(corerad_interface_monitoring == 1) and (corerad_interface_forwarding == 0)";
+              for = "1m";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for monitoring upstream IPv6 NDP traffic.";
+            }
             # All CoreRAD interfaces should multicast IPv6 RAs on a regular basis
             # so hosts don't drop their default route.
             {
-              alert = "CoreRADNotMulticastAdvertising";
+              alert = "CoreRADAdvertiserNotMulticasting";
               expr = ''
                 rate(corerad_advertiser_router_advertisements_total{type="multicast"}[20m]) == 0'';
               for = "1m";
@@ -213,7 +221,7 @@ in {
             }
             # Monitor for inconsistent advertisements from hosts on the LAN.
             {
-              alert = "CoreRADReceivedInconsistentRouterAdvertisement";
+              alert = "CoreRADAdvertiserReceivedInconsistentRouterAdvertisement";
               expr =
                 "rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0";
               annotations.summary =
@@ -221,7 +229,7 @@ in {
             }
             # We are advertising 2 prefixes per interface out of GUA /56 and ULA /48.
             {
-              alert = "CoreRADMissingPrefix";
+              alert = "CoreRADAdvertiserMissingPrefix";
               expr = ''
                 count by (instance, interface) (corerad_advertiser_router_advertisement_prefix_autonomous{prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != 2'';
               for = "1m";
@@ -230,12 +238,28 @@ in {
             }
             # All IPv6 prefixes are advertised with SLAAC.
             {
-              alert = "CoreRADPrefixNotAutonomous";
+              alert = "CoreRADAdvertiserPrefixNotAutonomous";
               expr =
                 "corerad_advertiser_router_advertisement_prefix_autonomous == 0";
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
+            }
+            # Expect continuous upstream router advertisements.
+            {
+              alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
+              expr =
+                ''rate(corerad_monitor_messages_received_total{message="router advertisement"}[5m]) == 0'';
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.router }} in more than 5 minutes.";
+            }
+            # Expect continuous upstream router advertisements.
+            {
+              alert = "CoreRADMonitorDefaultRouteExpiring";
+              expr =
+                "corerad_monitor_default_route_expiration_time - time() < 2*60*60";
+              annotations.summary =
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to {{ $labels.router }} in less than 2 hours.";
             }
           ];
         }];
