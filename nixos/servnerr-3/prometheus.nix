@@ -252,7 +252,7 @@ in {
               expr = ''
                 rate(corerad_monitor_messages_received_total{message="router advertisement"}[5m]) == 0'';
               annotations.summary =
-                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.router }} in more than 5 minutes.";
+                "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 5 minutes.";
             }
             # Expect continuous upstream router advertisements.
             {
