@@ -152,24 +152,30 @@ in {
         job_name = "wireguard";
         static_configs = [{ targets = [ "routnerr-2:9586" ]; }];
       }
+      # Lab-only jobs must be prefixed with lab- to avoid alerting.
+      {
+        job_name = "lab-corerad";
+        static_configs = [{ targets = [ "routnerr-2:9431" ]; }];
+      }
     ];
 
-    # Desktop PC is excluded from alerts as it isn't running 24/7.
     rules = [
       (builtins.toJSON ({
         groups = [{
           name = "default";
           rules = [
+            # Desktop PC is excluded from alerts as it isn't running 24/7, and
+            # lab-* jobs are excluded due to their experimental nature.
             {
               alert = "InstanceDown";
-              expr = ''up{instance!~"nerr-3.*"} == 0'';
+              expr = ''up{instance!~"nerr-3.*",job!~"lab-.*"} == 0'';
               for = "2m";
               annotations.summary =
                 "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
             }
             {
               alert = "ServiceDown";
-              expr = ''probe_success{instance!~"nerr-3.*"} == 0'';
+              expr = ''probe_success{instance!~"nerr-3.*",job!~"lab-.*"} == 0'';
               for = "2m";
               annotations.summary =
                 "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
@@ -194,8 +200,8 @@ in {
             # have IPv6 autoconfiguration disabled.
             {
               alert = "CoreRADAdvertisingInterfaceMisconfigured";
-              expr =
-                "(corerad_interface_advertising == 1) and ((corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1))";
+              expr = ''
+                (corerad_interface_advertising{job="corerad"} == 1) and ((corerad_interface_forwarding == 0) or (corerad_interface_autoconfiguration == 1))'';
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
@@ -203,8 +209,8 @@ in {
             # All monitoring interfaces should be forwarding IPv6 traffic.
             {
               alert = "CoreRADMonitoringInterfaceMisconfigured";
-              expr =
-                "(corerad_interface_monitoring == 1) and (corerad_interface_forwarding == 0)";
+              expr = ''
+                (corerad_interface_monitoring{job="corerad"} == 1) and (corerad_interface_forwarding == 0)'';
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for monitoring upstream IPv6 NDP traffic.";
@@ -214,7 +220,7 @@ in {
             {
               alert = "CoreRADAdvertiserNotMulticasting";
               expr = ''
-                rate(corerad_advertiser_router_advertisements_total{type="multicast"}[20m]) == 0'';
+                rate(corerad_advertiser_router_advertisements_total{job="corerad",type="multicast"}[20m]) == 0'';
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not sent a multicast router advertisment in more than 20 minutes.";
@@ -223,8 +229,8 @@ in {
             {
               alert =
                 "CoreRADAdvertiserReceivedInconsistentRouterAdvertisement";
-              expr =
-                "rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0";
+              expr = ''
+                rate(corerad_advertiser_router_advertisement_inconsistencies_total{job="corerad"}[5m]) > 0'';
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} received an IPv6 router advertisement with inconsistent configuration compared to its own.";
             }
@@ -232,7 +238,7 @@ in {
             {
               alert = "CoreRADAdvertiserMissingPrefix";
               expr = ''
-                count by (instance, interface) (corerad_advertiser_router_advertisement_prefix_autonomous{prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != 2'';
+                count by (instance, interface) (corerad_advertiser_router_advertisement_prefix_autonomous{job="corerad",prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != 2'';
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is advertising an incorrect number of IPv6 prefixes for SLAAC.";
@@ -240,8 +246,8 @@ in {
             # All IPv6 prefixes are advertised with SLAAC.
             {
               alert = "CoreRADAdvertiserPrefixNotAutonomous";
-              expr =
-                "corerad_advertiser_router_advertisement_prefix_autonomous == 0";
+              expr = ''
+                corerad_advertiser_router_advertisement_prefix_autonomous{job="corerad"} == 0'';
               for = "1m";
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
@@ -250,15 +256,15 @@ in {
             {
               alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
               expr = ''
-                rate(corerad_monitor_messages_received_total{message="router advertisement"}[5m]) == 0'';
+                rate(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[5m]) == 0'';
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 5 minutes.";
             }
             # Expect continuous upstream router advertisements.
             {
               alert = "CoreRADMonitorDefaultRouteExpiring";
-              expr =
-                "corerad_monitor_default_route_expiration_time - time() < 2*60*60";
+              expr = ''
+                corerad_monitor_default_route_expiration_time{job="corerad"} - time() < 2*60*60'';
               annotations.summary =
                 "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to {{ $labels.router }} in less than 2 hours.";
             }
