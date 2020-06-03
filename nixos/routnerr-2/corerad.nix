@@ -46,7 +46,7 @@ in {
                 '' else
                   ""
               }
-              '') [ enp2s0 lan0 guest0 iot0 lab0 tengb0 ]}
+              '') [ enp2s0 lan0 guest0 iot0 tengb0 ]}
           '';
   };
 }
