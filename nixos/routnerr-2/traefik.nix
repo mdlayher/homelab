@@ -34,7 +34,7 @@ in {
 
       backends = {
         alertmanager.servers.alertmanager.url =
-          "http://monitnerr-1.${vars.domain}:9093";
+          "http://servnerr-3.${vars.domain}:9093";
         grafana.servers.grafana.url = "http://servnerr-3.${vars.domain}:3000";
         plex.servers.plex.url = "http://servnerr-3.${vars.domain}:32400";
         prometheus.servers.prometheus.url =
