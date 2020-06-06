@@ -140,7 +140,6 @@ in {
     # promlens running on TCP/9091 adjacent to Prometheus.
     promlens = {
       image = "promlabs/promlens";
-      cmd = [ "-shared-links-sqlite-file=/var/lib/promlens/promlens-links.db" ];
       ports = [ "9091:8080" ];
       volumes = [ "/var/lib/promlens:/var/lib/promlens" ];
     };
