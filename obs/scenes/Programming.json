@@ -123,7 +123,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": true,
-                "cx": 3228,
+                "cx": 3386,
                 "cy": 1327,
                 "id_counter": 0,
                 "items": [
@@ -795,6 +795,9 @@
         },
         {
             "name": "Source: Audio/Video Fullscreen"
+        },
+        {
+            "name": "Co-streaming"
         }
     ],
     "sources": [
@@ -877,7 +880,7 @@
             },
             "id": "pulse_input_capture",
             "mixers": 255,
-            "monitoring_type": 0,
+            "monitoring_type": 2,
             "muted": false,
             "name": "Microphone",
             "prev_ver": 419430406,
@@ -889,7 +892,7 @@
             "push-to-talk": false,
             "push-to-talk-delay": 0,
             "settings": {
-                "device_id": "default"
+                "device_id": "alsa_input.usb-Focusrite_Scarlett_2i2_USB_Y8ACD9A9B866B7-00.analog-stereo"
             },
             "sync": 0,
             "versioned_id": "pulse_input_capture",
@@ -2416,10 +2419,12 @@
             "push-to-mute-delay": 0,
             "push-to-talk": false,
             "push-to-talk-delay": 0,
-            "settings": {},
+            "settings": {
+                "device_id": "alsa_output.usb-Schiit_Audio_Schiit_Modi_Uber-00.analog-stereo.monitor"
+            },
             "sync": 0,
             "versioned_id": "pulse_output_capture",
-            "volume": 0.31260812282562256
+            "volume": 0.31622776389122009
         },
         {
             "balance": 0.5,
@@ -2986,6 +2991,154 @@
             },
             "sync": 0,
             "versioned_id": "xcomposite_input",
+            "volume": 1.0
+        },
+        {
+            "balance": 0.5,
+            "deinterlace_field_order": 0,
+            "deinterlace_mode": 0,
+            "enabled": true,
+            "flags": 0,
+            "hotkeys": {
+                "OBSBasic.SelectScene": [],
+                "libobs.hide_scene_item.Scene: Audio/Video Corner": [],
+                "libobs.hide_scene_item.Video Capture Device (V4L2)": [],
+                "libobs.show_scene_item.Scene: Audio/Video Corner": [],
+                "libobs.show_scene_item.Video Capture Device (V4L2)": []
+            },
+            "id": "scene",
+            "mixers": 0,
+            "monitoring_type": 0,
+            "muted": false,
+            "name": "Co-streaming",
+            "prev_ver": 419430406,
+            "private_settings": {},
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "settings": {
+                "custom_size": false,
+                "id_counter": 4,
+                "items": [
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 0,
+                        "crop_right": 0,
+                        "crop_top": 0,
+                        "group_item_backup": false,
+                        "id": 1,
+                        "locked": true,
+                        "name": "Video Capture Device (V4L2)",
+                        "pos": {
+                            "x": 284.0,
+                            "y": 320.0
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 2.0,
+                            "y": 2.0
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 150,
+                        "crop_right": 350,
+                        "crop_top": 0,
+                        "group_item_backup": true,
+                        "id": 33,
+                        "locked": true,
+                        "name": "Source: Audio/Video Fullscreen",
+                        "pos": {
+                            "x": 3136.0,
+                            "y": 1632.970703125
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 0.32509449124336243,
+                            "y": 0.32532677054405212
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 70,
+                        "crop_left": 120,
+                        "crop_right": 120,
+                        "crop_top": 40,
+                        "group_item_backup": false,
+                        "id": 4,
+                        "locked": true,
+                        "name": "Scene: Audio/Video Corner",
+                        "pos": {
+                            "x": 3136.0,
+                            "y": 1632.970703125
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 1.5963718891143799,
+                            "y": 1.5970587730407715
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    }
+                ]
+            },
+            "sync": 0,
+            "versioned_id": "scene",
+            "volume": 1.0
+        },
+        {
+            "balance": 0.5,
+            "deinterlace_field_order": 0,
+            "deinterlace_mode": 0,
+            "enabled": true,
+            "flags": 0,
+            "hotkeys": {},
+            "id": "v4l2_input",
+            "mixers": 0,
+            "monitoring_type": 0,
+            "muted": false,
+            "name": "Video Capture Device (V4L2)",
+            "prev_ver": 419430406,
+            "private_settings": {},
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "settings": {
+                "device_id": "/dev/video11",
+                "input": 0,
+                "pixelformat": 842093913
+            },
+            "sync": 0,
+            "versioned_id": "v4l2_input",
             "volume": 1.0
         }
     ],
