@@ -270,6 +270,9 @@ in {
           ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
           ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
 
+          # Streaming RTP6 on desktop.
+          ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
+
           counter reject
         }
 

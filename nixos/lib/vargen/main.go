@@ -45,6 +45,13 @@ func main() {
 			ip("192.168.100.5"),
 			mac("90:e2:ba:5b:99:80"),
 		)
+
+		desktop = newHost(
+			"nerr-3",
+			tengb0,
+			ip("192.168.100.6"),
+			mac("90:e2:ba:23:1a:3a"),
+		)
 	)
 
 	wg := wireguard{
@@ -57,17 +64,13 @@ func main() {
 	// Set up the output structure and create host/infra records.
 	out := output{
 		// TODO: this is a hack, we should make a Service type or similar.
-		ServerIPv4: server.IPv4,
-		ServerIPv6: server.IPv6.GUA,
+		ServerIPv4:  server.IPv4,
+		ServerIPv6:  server.IPv6.GUA,
+		DesktopIPv6: desktop.IPv6.GUA,
 		Hosts: hosts{
 			Servers: []host{
 				server,
-				newHost(
-					"nerr-3",
-					tengb0,
-					ip("192.168.100.6"),
-					mac("90:e2:ba:23:1a:3a"),
-				),
+				desktop,
 				newHost(
 					"monitnerr-1",
 					enp2s0,
@@ -151,11 +154,12 @@ func wanIPv4() netaddr.IP {
 }
 
 type output struct {
-	ServerIPv4 netaddr.IP       `json:"server_ipv4"`
-	ServerIPv6 netaddr.IP       `json:"server_ipv6"`
-	Hosts      hosts            `json:"hosts"`
-	Interfaces map[string]iface `json:"interfaces"`
-	WireGuard  wireguard        `json:"wireguard"`
+	ServerIPv4  netaddr.IP       `json:"server_ipv4"`
+	ServerIPv6  netaddr.IP       `json:"server_ipv6"`
+	DesktopIPv6 netaddr.IP       `json:"desktop_ipv6"`
+	Hosts       hosts            `json:"hosts"`
+	Interfaces  map[string]iface `json:"interfaces"`
+	WireGuard   wireguard        `json:"wireguard"`
 }
 
 type hosts struct {
