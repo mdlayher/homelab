@@ -123,7 +123,7 @@
             "push-to-talk-delay": 0,
             "settings": {
                 "custom_size": true,
-                "cx": 3386,
+                "cx": 3228,
                 "cy": 1327,
                 "id_counter": 0,
                 "items": [
@@ -780,6 +780,9 @@
         },
         {
             "name": "Audio/Video with Banner"
+        },
+        {
+            "name": "Terminal/Camera Side-by-Side"
         },
         {
             "name": "Private"
@@ -2403,7 +2406,7 @@
             "id": "pulse_output_capture",
             "mixers": 253,
             "monitoring_type": 0,
-            "muted": false,
+            "muted": true,
             "name": "PC Output",
             "prev_ver": 419430406,
             "private_settings": {
@@ -2416,7 +2419,7 @@
             "settings": {},
             "sync": 0,
             "versioned_id": "pulse_output_capture",
-            "volume": 0.17782793939113617
+            "volume": 0.31260812282562256
         },
         {
             "balance": 0.5,
@@ -2777,6 +2780,212 @@
             },
             "sync": 0,
             "versioned_id": "v4l2_input",
+            "volume": 1.0
+        },
+        {
+            "balance": 0.5,
+            "deinterlace_field_order": 0,
+            "deinterlace_mode": 0,
+            "enabled": true,
+            "flags": 0,
+            "hotkeys": {
+                "OBSBasic.SelectScene": [],
+                "libobs.hide_scene_item.Banner: Text File": [],
+                "libobs.hide_scene_item.Source: Audio/Video Fullscreen": [],
+                "libobs.hide_scene_item.Window: Terminal": [],
+                "libobs.show_scene_item.Banner: Text File": [],
+                "libobs.show_scene_item.Source: Audio/Video Fullscreen": [],
+                "libobs.show_scene_item.Window: Terminal": []
+            },
+            "id": "scene",
+            "mixers": 0,
+            "monitoring_type": 0,
+            "muted": false,
+            "name": "Terminal/Camera Side-by-Side",
+            "prev_ver": 419430406,
+            "private_settings": {},
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "settings": {
+                "custom_size": false,
+                "id_counter": 5,
+                "items": [
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 800,
+                        "crop_right": 800,
+                        "crop_top": 0,
+                        "group_item_backup": false,
+                        "id": 4,
+                        "locked": true,
+                        "name": "Source: Audio/Video Fullscreen",
+                        "pos": {
+                            "x": 2050.0,
+                            "y": 162.0
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 0.7991071343421936,
+                            "y": 0.79907405376434326
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 0,
+                        "crop_right": 0,
+                        "crop_top": 0,
+                        "group_item_backup": false,
+                        "id": 5,
+                        "locked": true,
+                        "name": "Window: Terminal",
+                        "pos": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 1.0687500238418579,
+                            "y": 1.0687777996063232
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 0,
+                        "crop_right": 0,
+                        "crop_top": 0,
+                        "group_item_backup": true,
+                        "id": 21,
+                        "locked": true,
+                        "name": "Background: Banner",
+                        "pos": {
+                            "x": 0.0,
+                            "y": 2089.748291015625
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 1.1376566886901855,
+                            "y": 1.1418684720993042
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 0,
+                        "crop_right": 0,
+                        "crop_top": 0,
+                        "group_item_backup": true,
+                        "id": 14,
+                        "locked": true,
+                        "name": "Text: Banner File",
+                        "pos": {
+                            "x": 9.2574729919433594,
+                            "y": 2089.748291015625
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 0.31133443117141724,
+                            "y": 0.31279176473617554
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    },
+                    {
+                        "align": 5,
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_align": 0,
+                        "bounds_type": 0,
+                        "crop_bottom": 0,
+                        "crop_left": 0,
+                        "crop_right": 0,
+                        "crop_top": 0,
+                        "group_item_backup": false,
+                        "id": 2,
+                        "locked": true,
+                        "name": "Banner: Text File",
+                        "pos": {
+                            "x": 0.0,
+                            "y": 2089.748291015625
+                        },
+                        "private_settings": {},
+                        "rot": 0.0,
+                        "scale": {
+                            "x": 0.9257473349571228,
+                            "y": 0.92436975240707397
+                        },
+                        "scale_filter": "disable",
+                        "visible": true
+                    }
+                ]
+            },
+            "sync": 0,
+            "versioned_id": "scene",
+            "volume": 1.0
+        },
+        {
+            "balance": 0.5,
+            "deinterlace_field_order": 0,
+            "deinterlace_mode": 0,
+            "enabled": true,
+            "flags": 0,
+            "hotkeys": {},
+            "id": "xcomposite_input",
+            "mixers": 0,
+            "monitoring_type": 0,
+            "muted": false,
+            "name": "Window: Terminal",
+            "prev_ver": 419430406,
+            "private_settings": {},
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "settings": {
+                "capture_window": "46137350\r\nmatt@nerr-3 (192.168.1.9) - byobu\r\ngnome-terminal-server"
+            },
+            "sync": 0,
+            "versioned_id": "xcomposite_input",
             "volume": 1.0
         }
     ],
