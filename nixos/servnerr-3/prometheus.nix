@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 let
+  secrets = import ./lib/secrets.nix;
+
   # Scrape a target with the specified module, interval, and list of targets.
   blackboxScrape = (module: blackboxScrapeJobName module module);
 
@@ -42,9 +44,28 @@ in {
 
     extraFlags = [ "--storage.tsdb.retention=365d" ];
 
+    alertmanager = {
+      enable = true;
+      webExternalUrl = "https://alertmanager.servnerr.com";
+
+      configuration = {
+        route = {
+          group_by = ["alertname"];
+          group_wait = "10s";
+          group_interval = "10s";
+          repeat_interval = "1h";
+          receiver = "default";
+        };
+        receivers = [{
+          name = "default";
+          pushover_configs = secrets.alertmanager.pushover;
+        }];
+      };
+    };
+
     # Use alertmanager running on monitoring machine.
     alertmanagers =
-      [{ static_configs = [{ targets = [ "monitnerr-1:9093" ]; }]; }];
+      [{ static_configs = [{ targets = [ "servnerr-3:9093" ]; }]; }];
 
     exporters = {
       # Node exporter already enabled on all machines.
