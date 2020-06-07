@@ -18,6 +18,16 @@ in {
       pprof = true
 
       ${with vars.interfaces;
+      # Set up upstream monitoring interfaces.
+      lib.concatMapStrings (ifi: ''
+        [[interfaces]]
+        name = "${ifi.name}"
+        monitor = true
+      '') [ wan0 ]}
+
+      ${with vars.interfaces;
+      # Set up downstream advertising interfaces, with the notable exception of
+      # lab0 which runs its own build and config for CoreRAD.
       lib.concatMapStrings (ifi: ''
         [[interfaces]]
         name = "${ifi.name}"
