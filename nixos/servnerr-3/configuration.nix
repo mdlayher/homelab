@@ -50,7 +50,10 @@ in {
       enp5s0.useDHCP = true;
 
       # 10GbE VLAN.
-      enp11s0.useDHCP = true;
+      enp11s0 = {
+        mtu = 9000;
+        useDHCP = true;
+      };
 
       # 1GbE on Lab VLAN.
       br0.useDHCP = false;
