@@ -102,6 +102,10 @@ in {
 
     # TODO: template out hostnames or consider DNSSD.
     scrapeConfigs = [
+      {
+        job_name = "apcupsd";
+        static_configs = [{ targets = [ "nerr-3:9162" ]; }];
+      }
       # Blackbox exporter and associated targets.
       {
         job_name = "blackbox";
