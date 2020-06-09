@@ -38,7 +38,6 @@ in {
         # Special configuration for the 10GbE LAN.
         if ifi.name == tengb0.name then ''
           preference = "high"
-          mtu = 9000
         '' else
           ""}
 
