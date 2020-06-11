@@ -3,12 +3,6 @@
 let vars = import ./lib/vars.nix;
 
 in {
-  systemd.services.coredns = with vars.interfaces.wg0; {
-    # Delay CoreDNS startup until after WireGuard tunnel device is created.
-    requires = [ "wireguard-${name}.service" ];
-    after = [ "wireguard-${name}.service" ];
-  };
-
   services.coredns = {
     enable = true;
     config = with vars; ''
