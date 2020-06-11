@@ -5,4 +5,3 @@
   roles:
     - sshkeys
     - node_exporter
-    - alertmanager

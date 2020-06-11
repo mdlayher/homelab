@@ -1,4 +1,0 @@
----
-- hosts: unifi
-  roles:
-    - unifi

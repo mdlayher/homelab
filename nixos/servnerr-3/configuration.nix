@@ -147,4 +147,19 @@ in {
       volumes = [ "/var/lib/promlens:/var/lib/promlens" ];
     };
   };
+
+  containers = {
+    # UniFi controller running containerized and on unstable for faster updates.
+    unifi = {
+      autoStart = true;
+      config = { config, pkgs, ... }:
+      let unstable = import <unstable> { config.allowUnfree = true; };
+      in {
+        services.unifi = {
+          enable = true;
+          unifiPackage = unstable.unifi;
+        };
+      };
+    };
+  };
 }
