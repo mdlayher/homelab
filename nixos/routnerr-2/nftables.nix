@@ -19,6 +19,9 @@ let
     plex = "32400";
     smtp = "587";
     ssh = "22";
+    unifi_device = "8080";
+    unifi_stun = "3478";
+    unifi_web = "8443";
     wireguard = "51820";
   };
 
@@ -270,6 +273,22 @@ in {
           ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
           ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
 
+          # Remote site access to UniFi controller running on server.
+          #
+          # TODO: template these values out.
+          ip saddr 98.209.181.132 tcp dport {${ports.unifi_device}, ${ports.unifi_web}} counter accept comment "server TCPv4 UniFi"
+          ip saddr 98.209.181.132 udp dport ${ports.unifi_stun} counter accept comment "server UDPv4 UniFi"
+
+          ip6 saddr {
+            2001:558:6007:72:9ee:4b74:e017:875b/128,
+            2601:405:8500:f600::/64,
+          } ip6 daddr ${vars.server_ipv6} tcp dport {${ports.unifi_device}, ${ports.unifi_web}} counter accept comment "server TCPv6 UniFi"
+
+          ip6 saddr {
+            2001:558:6007:72:9ee:4b74:e017:875b/128,
+            2601:405:8500:f600::/64,
+          } ip6 daddr ${vars.server_ipv6} udp dport ${ports.unifi_stun} counter accept comment "server UDPv6 UniFi"
+
           # Streaming RTP6 on desktop.
           ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
 
@@ -295,7 +314,13 @@ in {
         chain prerouting_wan0 {
           tcp dport {
             ${ports.plex},
+            ${ports.unifi_device},
+            ${ports.unifi_web},
           } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
+
+          udp dport {
+            ${ports.unifi_stun},
+          } dnat ${vars.server_ipv4} comment "server UDPv4 DNAT"
 
           udp dport {
             ${ports.dns},
