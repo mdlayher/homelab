@@ -29,6 +29,7 @@
       gcc
       go
       git
+      gnumake
       htop
       iftop
       iperf3
