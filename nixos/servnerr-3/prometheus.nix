@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   secrets = import ./lib/secrets.nix;
@@ -14,6 +14,12 @@ let
     params = { module = [ "${module}" ]; };
     # blackbox_exporter location is hardcoded.
     relabel_configs = relabelTarget "servnerr-3:9115";
+    static_configs = [{ inherit targets; }];
+  });
+
+  # Scrape a list of static targets for a job.
+  staticScrape = (job: targets: {
+    job_name = job;
     static_configs = [{ inherit targets; }];
   });
 
@@ -101,15 +107,25 @@ in {
 
     # TODO: template out hostnames or consider DNSSD.
     scrapeConfigs = [
-      {
-        job_name = "apcupsd";
-        static_configs = [{ targets = [ "nerr-3:9162" ]; }];
-      }
+      # Simple, static scrape jobs.
+      (staticScrape "apcupsd" [ "nerr-3:9162" ])
+      (staticScrape "coredns" [ "routnerr-2:9153" ])
+      (staticScrape "corerad" [ "routnerr-2:9430" ])
+      (lib.mkMerge [
+        (staticScrape "keylight" [ "keylight" ])
+        { relabel_configs = relabelTarget "servnerr-3:9288"; }
+      ])
+      (staticScrape "node" [
+        "monitnerr-1:9100"
+        "nerr-3:9100"
+        "routnerr-2:9100"
+        "servnerr-3:9100"
+      ])
+      (staticScrape "obs" [ "nerr-3:9407" ])
+      (staticScrape "wireguard" [ "routnerr-2:9586" ])
+
       # Blackbox exporter and associated targets.
-      {
-        job_name = "blackbox";
-        static_configs = [{ targets = [ "servnerr-3:9115" ]; }];
-      }
+      (staticScrape "blackbox" [ "servnerr-3:9115" ])
       (blackboxScrape "http_2xx" "15s" [ "https://grafana.servnerr.com" ])
       # Netlify can occasionally be flappy, so check it less often.
       (blackboxScrapeJobName "http_2xx_mdlayhercom" "http_2xx" "1m"
@@ -127,59 +143,25 @@ in {
         "routnerr-2:22"
         "servnerr-3:22"
       ])
-      {
-        job_name = "coredns";
-        static_configs = [{ targets = [ "routnerr-2:9153" ]; }];
-      }
-      {
-        job_name = "corerad";
-        static_configs = [{ targets = [ "routnerr-2:9430" ]; }];
-      }
-      {
-        job_name = "keylight";
-        relabel_configs = relabelTarget "servnerr-3:9288";
-        static_configs = [{ targets = [ "keylight" ]; }];
-      }
-      {
-        job_name = "node";
-        static_configs = [{
-          targets = [
-            "monitnerr-1:9100"
-            "nerr-3:9100"
-            "routnerr-2:9100"
-            "servnerr-3:9100"
-          ];
-        }];
-      }
-      {
-        job_name = "obs";
-        static_configs = [{ targets = [ "nerr-3:9407" ]; }];
-      }
+
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
-      {
-        job_name = "snmp";
-        metrics_path = "/snmp";
-        params = { module = [ "if_mib" ]; };
-        relabel_configs = relabelTarget "servnerr-3:9116";
-        static_configs = [{
-          targets = [
-            "switch-livingroom01"
-            "switch-office01"
-            "switch-office02.ipv4"
-            "ap-livingroom02.ipv4"
-          ];
-        }];
-      }
-      {
-        job_name = "wireguard";
-        static_configs = [{ targets = [ "routnerr-2:9586" ]; }];
-      }
+      (lib.mkMerge [
+        (staticScrape "snmp" [
+          "switch-livingroom01"
+          "switch-office01"
+          "switch-office02.ipv4"
+          "ap-livingroom02.ipv4"
+        ])
+        {
+          metrics_path = "/snmp";
+          params = { module = [ "if_mib" ]; };
+          relabel_configs = relabelTarget "servnerr-3:9116";
+        }
+      ])
+
       # Lab-only jobs must be prefixed with lab- to avoid alerting.
-      {
-        job_name = "lab-corerad";
-        static_configs = [{ targets = [ "routnerr-2:9431" ]; }];
-      }
+      (staticScrape "lab-corerad" [ "routnerr-2:9431" ])
     ];
 
     rules = [
