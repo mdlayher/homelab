@@ -76,6 +76,8 @@ in {
     exporters = {
       # Node exporter already enabled on all machines.
 
+      apcupsd.enable = true;
+
       blackbox = {
         enable = true;
         configFile = pkgs.writeText "blackbox.yml" (builtins.toJSON ({
@@ -110,7 +112,7 @@ in {
     # TODO: template out hostnames or consider DNSSD.
     scrapeConfigs = [
       # Simple, static scrape jobs.
-      (staticScrape "apcupsd" [ "nerr-3:9162" ])
+      (staticScrape "apcupsd" [ "nerr-3:9162" "routnerr-2:9162" "servnerr-3:9162" ])
       (staticScrape "coredns" [ "routnerr-2:9153" ])
       (staticScrape "corerad" [ "routnerr-2:9430" ])
       (lib.mkMerge [
