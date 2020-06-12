@@ -98,9 +98,6 @@ in {
     serviceConfig = { Restart = "always"; };
   };
 
-  # Allow the use of Plex.
-  nixpkgs.config.allowUnfree = true;
-
   # Scale down CPU frequency when load is low.
   powerManagement.cpuFreqGovernor = "ondemand";
 
@@ -131,8 +128,6 @@ in {
       passwordAuthentication = false;
     };
 
-    plex.enable = true;
-
     zfs.autoScrub.enable = true;
   };
 
@@ -156,6 +151,31 @@ in {
   };
 
   containers = {
+    # Plex server running containerized and on unstable for faster updates.
+    plex = {
+      autoStart = true;
+      bindMounts = {
+        # Mount the existing data directory.
+        "/var/lib/plex" = {
+          hostPath = "/var/lib/plex";
+          isReadOnly = false;
+        };
+        # Mount the ZFS pool as read-only.
+        "/primary/media" = {
+          hostPath = "/primary/media";
+          isReadOnly = true;
+        };
+      };
+      config = { config, pkgs, ... }:
+        let unstable = import <unstable> { config.allowUnfree = true; };
+        in {
+          services.plex = {
+            enable = true;
+            package = unstable.plex;
+          };
+        };
+    };
+
     # UniFi controller running containerized and on unstable for faster updates.
     unifi = {
       autoStart = true;
