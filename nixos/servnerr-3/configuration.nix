@@ -35,6 +35,10 @@ in {
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (self: super: {
+      # 20.03 packages Prometheus 2.15 which is pretty out of date.
+      prometheus = unstable.prometheus;
+
+      # Exporter packages which aren't yet in stable.
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       prometheus-keylight-exporter = unstable.prometheus-keylight-exporter;
     })
