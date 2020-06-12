@@ -127,7 +127,6 @@ in {
         "nerr-3:22"
         "routnerr-2:22"
         "servnerr-3:22"
-        "unifi.servnerr.com:22"
       ])
       {
         job_name = "coredns";
