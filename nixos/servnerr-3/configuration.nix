@@ -153,13 +153,13 @@ in {
     unifi = {
       autoStart = true;
       config = { config, pkgs, ... }:
-      let unstable = import <unstable> { config.allowUnfree = true; };
-      in {
-        services.unifi = {
-          enable = true;
-          unifiPackage = unstable.unifi;
+        let unstable = import <unstable> { config.allowUnfree = true; };
+        in {
+          services.unifi = {
+            enable = true;
+            unifiPackage = unstable.unifi;
+          };
         };
-      };
     };
   };
 }

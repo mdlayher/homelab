@@ -50,7 +50,7 @@ in {
 
       configuration = {
         route = {
-          group_by = ["alertname"];
+          group_by = [ "alertname" ];
           group_wait = "10s";
           group_interval = "10s";
           repeat_interval = "1h";
@@ -72,20 +72,19 @@ in {
 
       blackbox = {
         enable = true;
-        configFile = pkgs.writeText "blackbox.yml" ''
-          modules:
-            http_2xx:
-              prober: http
-            http_401:
-              prober: http
-              http:
-                valid_status_codes: [401]
-            ssh_banner:
-              prober: tcp
-              tcp:
-                query_response:
-                - expect: "^SSH-2.0-"
-                  '';
+        configFile = pkgs.writeText "blackbox.yml" (builtins.toJSON ({
+          modules = {
+            http_2xx.prober = "http";
+            http_401 = {
+              prober = "http";
+              http.valid_status_codes = [ 401 ];
+            };
+            ssh_banner = {
+              prober = "tcp";
+              tcp.query_response = [{ expect = "^SSH-2.0-"; }];
+            };
+          };
+        }));
       };
 
       # SNMP exporter with data file from release 0.17.0.
