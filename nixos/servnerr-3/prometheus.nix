@@ -97,14 +97,14 @@ in {
 
       keylight.enable = true;
 
-      # SNMP exporter with data file from release 0.17.0.
+      # SNMP exporter with data file from release 0.18.0.
       snmp = {
         enable = true;
         configurationPath = builtins.fetchurl {
           url =
-            "https://raw.githubusercontent.com/prometheus/snmp_exporter/f0ad4551a5c2023e383bc8dde2222f47dc760b83/snmp.yml";
+            "https://raw.githubusercontent.com/prometheus/snmp_exporter/9a2ff257dd2e8cdb2a4c88b18df668e2008c2cd6/snmp.yml";
           sha256 =
-            "5c1febe100ce9140c8c59cf3c2a6346a1219dd0966d5cd2926498e88dcd69997";
+            "10pvs9b49p5xnh7q2dfm268mhx5q3d7xp6j8qaljipcrsls8ddfm";
         };
       };
     };
