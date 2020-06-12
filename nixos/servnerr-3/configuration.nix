@@ -4,9 +4,16 @@
 
 { pkgs, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
+  unstable = import <unstable> { };
 
 in {
+  disabledModules = [
+    # Replaced with unstable for additional exporters.
+    "services/monitoring/prometheus/exporters.nix"
+  ];
+
   imports = [
     # Hardware configuration.
     ./hardware-configuration.nix
@@ -20,15 +27,14 @@ in {
     # Service configuration.
     ./prometheus.nix
 
-    # Out-of-tree modules.
-    ./lib/modules/keylight_exporter.nix
+    # Unstable or out-of-tree modules.
+    <unstable/nixos/modules/services/monitoring/prometheus/exporters.nix>
   ];
 
-  # Overlays for out-of-tree packages.
+  # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (self: super: {
-      keylight_exporter =
-        super.callPackage ./lib/pkgs/keylight_exporter.nix { };
+      prometheus-keylight-exporter = unstable.prometheus-keylight-exporter;
     })
   ];
 

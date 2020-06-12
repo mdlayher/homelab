@@ -93,6 +93,8 @@ in {
         }));
       };
 
+      keylight.enable = true;
+
       # SNMP exporter with data file from release 0.17.0.
       snmp = {
         enable = true;
@@ -278,7 +280,4 @@ in {
       }))
     ];
   };
-
-  # Out-of-tree exporters.
-  services.keylight_exporter.enable = true;
 }
