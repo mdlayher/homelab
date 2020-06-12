@@ -9,6 +9,11 @@ let
   unstable = import <unstable> { };
 
 in {
+  disabledModules = [
+    # Replaced with unstable for additional exporters.
+    "services/monitoring/prometheus/exporters.nix"
+  ];
+
   imports = [
     # Hardware configuration and quirks.
     <nixos-hardware/pcengines/apu>
@@ -32,14 +37,16 @@ in {
     ./traefik.nix
     ./wgipamd.nix
 
-    # Out-of-tree modules.
+    # Unstable or out-of-tree modules.
+    <unstable/nixos/modules/services/monitoring/prometheus/exporters.nix>
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
 
-  # Overlays for out-of-tree packages.
+  # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (self: super: {
+      prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
     })
@@ -82,7 +89,6 @@ in {
     flashrom
 
     # Unstable and out-of-tree packages.
-    unstable.corerad
     wireguard_exporter
   ];
 
@@ -120,6 +126,8 @@ in {
       passwordAuthentication = false;
       permitRootLogin = "no";
     };
+
+    prometheus.exporters.apcupsd.enable = true;
 
     tftpd = {
       enable = true;
