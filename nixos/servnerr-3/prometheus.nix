@@ -48,7 +48,7 @@ in {
 
     globalConfig.scrape_interval = "15s";
 
-    extraFlags = [ "--storage.tsdb.retention=365d" ];
+    extraFlags = [ "--storage.tsdb.retention=365d" "--web.enable-admin-api" ];
 
     alertmanager = {
       enable = true;
@@ -103,8 +103,7 @@ in {
         configurationPath = builtins.fetchurl {
           url =
             "https://raw.githubusercontent.com/prometheus/snmp_exporter/9a2ff257dd2e8cdb2a4c88b18df668e2008c2cd6/snmp.yml";
-          sha256 =
-            "10pvs9b49p5xnh7q2dfm268mhx5q3d7xp6j8qaljipcrsls8ddfm";
+          sha256 = "10pvs9b49p5xnh7q2dfm268mhx5q3d7xp6j8qaljipcrsls8ddfm";
         };
       };
     };
