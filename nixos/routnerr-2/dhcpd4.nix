@@ -2,27 +2,18 @@
 
 let
   vars = import ./lib/vars.nix;
-
-  # Produces a compatible object for the dhcpd4 machines array.
-  mkHost = (host: {
-    hostName = host.name;
-    ethernetAddress = host.mac;
-    ipAddress = host.ipv4;
-  });
+  lans = with vars.interfaces; [ enp2s0 lan0 corp0 guest0 iot0 lab0 tengb0 ];
 
 in {
   services.dhcpd4 = {
-    interfaces = with vars.interfaces; [
-      "${enp2s0.name}"
-      "${lan0.name}"
-      "${corp0.name}"
-      "${guest0.name}"
-      "${iot0.name}"
-      "${lab0.name}"
-      "${tengb0.name}"
-    ];
+    interfaces = lib.forEach lans (lan: toString lan.name);
     enable = true;
-    machines = with vars.hosts; lib.forEach (infra ++ servers) mkHost;
+    machines = with vars.hosts;
+      lib.forEach (infra ++ servers) (host: {
+        hostName = host.name;
+        ethernetAddress = host.mac;
+        ipAddress = host.ipv4;
+      });
     extraConfig = ''
       ddns-update-style none;
 
@@ -60,7 +51,7 @@ in {
                 ""
             }
           }
-            '') [ enp2s0 lan0 corp0 guest0 iot0 lab0 tengb0 ]}
+            '') lans}
     '';
   };
 }
