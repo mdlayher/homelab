@@ -33,8 +33,8 @@ let
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   trusted_lans = with vars.interfaces; [ enp2s0 lan0 lab0 tengb0 wg0 ];
-  limited_lans = [ vars.interfaces.guest0 ];
-  untrusted_lans = [ vars.interfaces.iot0 ];
+  limited_lans = with vars.interfaces; [ corp0 guest0 ];
+  untrusted_lans = with vars.interfaces; [ iot0 ];
 
   # ICMP filtering.
   icmp_rules = ''
@@ -196,7 +196,7 @@ in {
           # Limited/guest LANs to WAN.
           iifname {
             ${mkCSV limited_lans}
-          } oifname ${wan0} jump forward_limited_lan_wan
+          } oifname ${wan0} counter accept comment "Allow limited LANs to reach WAN";
 
           # Untrusted LANs to WAN.
           iifname {
@@ -215,28 +215,6 @@ in {
           } jump forward_wan_limited_untrusted_lan
 
           counter reject
-        }
-
-        chain forward_limited_lan_wan {
-          # Forward typical network services.
-
-          tcp dport {
-            ${ports.dns},
-            ${ports.http},
-            ${ports.https},
-            ${ports.imaps},
-            ${ports.pop3s},
-            ${ports.smtp},
-            ${ports.ssh},
-          } counter accept comment "limited TCP"
-
-          udp dport {
-            ${ports.dns},
-            ${ports.ntp},
-            ${ports.wireguard},
-          } counter accept comment "limited UDP"
-
-          counter drop
         }
 
         chain forward_untrusted_lan_wan {

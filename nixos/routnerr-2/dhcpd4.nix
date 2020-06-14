@@ -15,6 +15,7 @@ in {
     interfaces = with vars.interfaces; [
       "${enp2s0.name}"
       "${lan0.name}"
+      "${corp0.name}"
       "${guest0.name}"
       "${iot0.name}"
       "${lab0.name}"
@@ -59,7 +60,7 @@ in {
                 ""
             }
           }
-            '') [ enp2s0 lan0 guest0 iot0 lab0 tengb0 ]}
+            '') [ enp2s0 lan0 corp0 guest0 iot0 lab0 tengb0 ]}
     '';
   };
 }

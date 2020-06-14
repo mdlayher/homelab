@@ -116,6 +116,7 @@ func main() {
 
 	// Attach interface definitions from subnet definitions.
 	out.addInterface("enp2s0", enp2s0)
+	out.addInterface("corp0", newSubnet("corp0", 30))
 	out.addInterface("lan0", lan0)
 	out.addInterface("guest0", newSubnet("guest0", 9))
 	out.addInterface("iot0", iot0)

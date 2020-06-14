@@ -44,7 +44,7 @@ in {
           ipv6rs
           # DHCPv6-PD.
           ia_na 0
-          ia_pd 1/::/56 ${enp2s0.name}/0/64 ${lab0.name}/2/64 ${guest0.name}/9/64 ${lan0.name}/10/64 ${iot0.name}/66/64 ${tengb0.name}/100/64
+          ia_pd 1/::/56 ${enp2s0.name}/0/64 ${lab0.name}/2/64 ${guest0.name}/9/64 ${lan0.name}/10/64 ${corp0.name}/30/64 ${iot0.name}/66/64 ${tengb0.name}/100/64
 
           # IPv4 DHCP ISP settings overrides.
           static domain_name_servers=${vars.localhost.ipv4}
@@ -56,6 +56,7 @@ in {
     interfaces = with vars.interfaces; {
       ${enp2s0.name} = mkInterface enp2s0;
       ${lan0.name} = mkInterface lan0;
+      ${corp0.name} = mkInterface corp0;
       ${lab0.name} = mkInterface lab0;
       ${guest0.name} = mkInterface guest0;
       ${iot0.name} = mkInterface iot0;
@@ -73,6 +74,10 @@ in {
       };
       ${lan0.name} = {
         id = 10;
+        interface = "${enp2s0.name}";
+      };
+      ${corp0.name} = {
+        id = 30;
         interface = "${enp2s0.name}";
       };
       ${iot0.name} = {
