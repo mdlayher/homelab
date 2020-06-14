@@ -10,8 +10,11 @@ let
 
 in {
   disabledModules = [
-    # Replaced with unstable for additional exporters.
+    # Allow the use of additional exporters.
     "services/monitoring/prometheus/exporters.nix"
+
+    # Allow the use of the settings Nix attribute set.
+    "services/networking/corerad.nix"
   ];
 
   imports = [
@@ -39,6 +42,7 @@ in {
 
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
+    <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
@@ -46,6 +50,7 @@ in {
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (self: super: {
+      go-toml = unstable.go-toml;
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
