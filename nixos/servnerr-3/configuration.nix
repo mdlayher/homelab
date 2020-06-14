@@ -6,7 +6,7 @@
 
 let
   vars = import ./lib/vars.nix;
-  unstable = import <unstable> { };
+  unstable = import <nixos-unstable-small> { };
 
 in {
   disabledModules = [
@@ -29,7 +29,7 @@ in {
     ./prometheus.nix
 
     # Unstable or out-of-tree modules.
-    <unstable/nixos/modules/services/monitoring/prometheus/exporters.nix>
+    <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
   ];
 
   # Overlays for unstable and out-of-tree packages.

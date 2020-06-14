@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 
-let unstable = import <unstable> { };
+let unstable = import <nixos-unstable-small> { };
 
 in {
   containers = {
@@ -15,7 +15,7 @@ in {
         };
       };
       config = { config, pkgs, ... }:
-        let unstable = import <unstable> { config.allowUnfree = true; };
+        let unstable = import <nixos-unstable-small> { config.allowUnfree = true; };
         in {
           services.plex = {
             enable = true;
@@ -28,7 +28,7 @@ in {
     unifi = {
       autoStart = true;
       config = { config, pkgs, ... }:
-        let unstable = import <unstable> { config.allowUnfree = true; };
+        let unstable = import <nixos-unstable-small> { config.allowUnfree = true; };
         in {
           services.unifi = {
             enable = true;
