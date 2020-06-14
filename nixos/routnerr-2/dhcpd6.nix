@@ -1,17 +1,12 @@
 { lib, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
+  lans = with vars.interfaces; [ enp2s0 lan0 corp0 guest0 iot0 lab0 tengb0 ];
 
 in {
   services.dhcpd6 = {
-    interfaces = with vars.interfaces; [
-      "${enp2s0.name}"
-      "${lan0.name}"
-      "${guest0.name}"
-      "${iot0.name}"
-      "${lab0.name}"
-      "${tengb0.name}"
-    ];
+    interfaces = lib.forEach lans (lan: toString lan.name);
     enable = true;
     extraConfig = ''
       ddns-update-style none;
@@ -48,7 +43,7 @@ in {
                 ""
             }
           }
-            '') [ enp2s0 lan0 corp0 guest0 iot0 lab0 tengb0 ]}
+            '') lans}
     '';
   };
 }
