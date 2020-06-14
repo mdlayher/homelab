@@ -2,7 +2,7 @@
 
 let
   vars = import ./lib/vars.nix;
-  unstable = import <unstable> { };
+  unstable = import <nixos-unstable-small> { };
 
 in {
   services.corerad = {

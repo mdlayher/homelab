@@ -6,7 +6,7 @@
 
 let
   vars = import ./lib/vars.nix;
-  unstable = import <unstable> { };
+  unstable = import <nixos-unstable-small> { };
 
 in {
   disabledModules = [
@@ -38,7 +38,7 @@ in {
     ./wgipamd.nix
 
     # Unstable or out-of-tree modules.
-    <unstable/nixos/modules/services/monitoring/prometheus/exporters.nix>
+    <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
