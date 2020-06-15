@@ -77,6 +77,12 @@ func main() {
 					ip("192.168.1.11"),
 					mac("dc:a6:32:1e:66:94"),
 				),
+				newHost(
+					"theatnerr-1",
+					lan0,
+					ip("192.168.10.10"),
+					mac("94:de:80:6c:0e:ef"),
+				),
 			},
 			Infra: []host{
 				newHost(
