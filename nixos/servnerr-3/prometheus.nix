@@ -129,6 +129,7 @@ in {
         "servnerr-3:9100"
       ])
       (staticScrape "obs" [ "nerr-3:9407" ])
+      (staticScrape "windows" [ "theatnerr-1:9182" ])
       (staticScrape "wireguard" [ "routnerr-2:9586" ])
 
       # Blackbox exporter and associated targets.
