@@ -92,6 +92,8 @@ in {
     cbfstool
     cmatrix
     flashrom
+    libmbim
+    libqmi
 
     # Unstable and out-of-tree packages.
     wireguard_exporter

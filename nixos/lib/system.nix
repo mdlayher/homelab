@@ -36,6 +36,7 @@
       jq
       lm_sensors
       lshw
+      minicom
       mkpasswd
       mtr
       ndisc6
@@ -49,6 +50,7 @@
       tcpdump
       tmux
       unixtools.xxd
+      unzip
       usbutils
       wget
       wireguard-tools
