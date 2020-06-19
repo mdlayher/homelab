@@ -2,11 +2,11 @@
   groups = [{
     name = "default";
     rules = [
-      # Desktop PC is excluded from alerts as it isn't running 24/7, and
-      # lab-* jobs are excluded due to their experimental nature.
+      # PCs which don't run 24/7 are excluded from alerts, and lab-* jobs are
+      # excluded due to their experimental nature.
       {
         alert = "InstanceDown";
-        expr = ''up{instance!~"nerr-3.*",job!~"lab-.*"} == 0'';
+        expr = ''up{instance!~"(nerr-3.*|theatnerr-1.*)",job!~"lab-.*"} == 0'';
         for = "2m";
         annotations.summary =
           "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
