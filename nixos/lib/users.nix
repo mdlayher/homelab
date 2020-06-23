@@ -11,7 +11,7 @@ in {
     users.matt = {
       isNormalUser = true;
       uid = 1000;
-      extraGroups = [ "wheel" ];
+      extraGroups = [ "dialout" "wheel" ];
       hashedPassword = secrets.users.matt_password_hash;
 
       openssh.authorizedKeys.keys = [
