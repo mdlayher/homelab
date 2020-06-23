@@ -34,22 +34,23 @@ func main() {
 			},
 		}
 
-		lan0   = newSubnet("lan0", 10)
-		iot0   = newSubnet("iot0", 66)
-		tengb0 = newSubnet("tengb0", 100)
+		lan0 = newSubnet("lan0", 10)
+		iot0 = newSubnet("iot0", 66)
+		// TODO: eventually fix the switch VLAN as well.
+		tengb0 = newSubnet("tengb0", 110)
 		wg0    = newSubnet("wg0", 20)
 
 		server = newHost(
 			"servnerr-3",
 			tengb0,
-			ip("192.168.100.5"),
+			ip("192.168.110.5"),
 			mac("90:e2:ba:5b:99:80"),
 		)
 
 		desktop = newHost(
 			"nerr-3",
 			tengb0,
-			ip("192.168.100.6"),
+			ip("192.168.110.6"),
 			mac("90:e2:ba:23:1a:3a"),
 		)
 	)
