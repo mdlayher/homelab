@@ -43,6 +43,7 @@ in {
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
     <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
+    ./lib/modules/mbim-network.nix
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
@@ -126,6 +127,9 @@ in {
     apcupsd.enable = true;
 
     lldpd.enable = true;
+
+    # Configure the LTE modem for use with Project Fi.
+    mbim-network.devices."/dev/cdc-wdm0".apn = "h2g2";
 
     # Enable the OpenSSH daemon.
     openssh = {
