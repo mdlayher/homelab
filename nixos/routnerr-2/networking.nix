@@ -53,6 +53,13 @@ in {
       '';
     };
 
+    iproute2 = {
+      enable = true;
+      rttablesExtraConfig = ''
+        10 wwan0
+      '';
+    };
+
     interfaces = with vars.interfaces; {
       ${enp2s0.name} = mkInterface enp2s0;
       ${lan0.name} = mkInterface lan0;
@@ -61,6 +68,13 @@ in {
       ${guest0.name} = mkInterface guest0;
       ${iot0.name} = mkInterface iot0;
       ${tengb0.name} = mkInterface tengb0;
+      "backup0" = {
+        ipv4.addresses = [{
+          address = "192.168.40.1";
+          prefixLength = 24;
+        }];
+        tempAddress = "disabled";
+      };
     };
 
     vlans = with vars.interfaces; {
@@ -78,6 +92,10 @@ in {
       };
       ${corp0.name} = {
         id = 30;
+        interface = "${enp2s0.name}";
+      };
+      "backup0" = {
+        id = 40;
         interface = "${enp2s0.name}";
       };
       ${iot0.name} = {
