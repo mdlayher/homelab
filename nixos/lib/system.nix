@@ -46,6 +46,7 @@
       nix-linter
       nmap
       pciutils
+      pkg-config
       smartmontools
       tcpdump
       tmux
