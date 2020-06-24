@@ -11,6 +11,8 @@ let
 
   makeSystemdUnit = dcfg: name:
     let
+      path = getBin pkgs.libmbim;
+
       # Config file format defined in 'man 1 mbim-network'.
       configFile = with dcfg;
         pkgs.writeText "${cleanName name}.conf" ''
@@ -23,17 +25,12 @@ let
 
       # Mimic the format of the commands run by mbim-network, including the
       # optional use of mbim-proxy.
-      cliCmd = "${getBin pkgs.libmbim}/bin/mbimcli -d ${name}${
-          optionalString cfg.proxy " --device-open-proxy"
-        }";
-
-      netCmd = "${
-          getBin pkgs.libmbim
-        }/bin/mbim-network --profile ${configFile} ${name}";
+      cliCmd = "${path}/bin/mbimcli -d ${name}${optionalString cfg.proxy " --device-open-proxy"}";
+      netCmd = "${path}/bin/mbim-network --profile ${configFile} ${name}";
     in {
       description = "mbim-network for '${name}'";
       wantedBy = [ "multi-user.target" ];
-      path = [ "${getBin pkgs.libmbim}" ];
+      path = [ path ];
 
       serviceConfig = {
         # 'mbim-network start' is a one-shot command which establishes the proper
@@ -58,7 +55,12 @@ in {
     # Allow configuring zero or more MBIM devices with differing configurations.
     devices = mkOption {
       default = { };
-      example = literalExample ''"/dev/cdc-wdm0".apn = "internet";'';
+      example = { "/dev/cdc-wdm0".apn = "internet"; };
+      description = ''
+        Each attribute of this option specifies an MBIM device (example:
+        "/dev/cdc-wdm0") which will be managed by a systemd unit (example:
+        "mbim-network-dev-cdc-wdm0".
+      '';
       type = with types;
         attrsOf (submodule {
           options = {
@@ -84,8 +86,11 @@ in {
               type = types.str;
               default = "";
               example = "password";
-              description =
-                "An optional password to use for APN authentication.";
+              description = ''
+                An optional password to use for APN authentication. Note that any
+                password specified here will be persisted world-readable in
+                the Nix store.
+              '';
             };
 
             apnAuth = mkOption {
@@ -115,8 +120,5 @@ in {
     systemd.services = listToAttrs (mapAttrsFlatten
       (name: value: nameValuePair (cleanName name) (makeSystemdUnit value name))
       cfg.devices);
-
-    # TODO: consider adding systemd timers or similar to check the status of the
-    # connection on an ongoing basis and to restart this unit if need be.
   };
 }
