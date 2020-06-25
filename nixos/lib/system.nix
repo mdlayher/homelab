@@ -15,10 +15,6 @@
     # Put ~/bin in PATH.
     homeBinInPath = true;
 
-    # Assume all NixOS machines are headless.
-    # TODO: factor out if I ever switch my desktop.
-    noXlibs = true;
-
     # Packages which should be installed on every machine.
     systemPackages = with pkgs; [
       bandwhich
