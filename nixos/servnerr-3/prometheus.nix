@@ -123,7 +123,6 @@ in {
         { relabel_configs = relabelTarget "servnerr-3:9288"; }
       ])
       (staticScrape "node" [
-        "monitnerr-1:9100"
         "nerr-3:9100"
         "routnerr-2:9100"
         "servnerr-3:9100"
@@ -146,7 +145,6 @@ in {
       # The SSH banner check produces a fair amount of log spam, so only scrape
       # it once a minute.
       (blackboxScrape "ssh_banner" "1m" [
-        "monitnerr-1:22"
         "nerr-3:22"
         "routnerr-2:22"
         "servnerr-3:22"
