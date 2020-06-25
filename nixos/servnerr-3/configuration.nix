@@ -82,8 +82,8 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
-    # Latest Linux kernel for better hwmon support.
-    kernelPackages = pkgs.linuxPackages_latest;
+    # Linux kernel 5.6 for better hwmon support.
+    kernelPackages = pkgs.linuxPackages_5_6;
     kernelModules = [ "drivetemp" ];
 
     kernelParams = [
