@@ -127,6 +127,13 @@ in {
 
     nat.enable = false;
     firewall.enable = false;
+
+    # TODO: enable when ready to untangle NetworkManager and other Nix networking configs.
+    networkmanager = {
+      enable = false;
+      dns = "none";
+      unmanaged = ["*,except:type:gsm"];
+    };
   };
 
   # Enable Prometheus exporter and set up peer key/name mappings.
