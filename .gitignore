@@ -1,4 +1,5 @@
 *.retry
 *.bak
 secrets.nix
+gokrazy/breakglass.tar
 obs/profiles/Programming/service.json
