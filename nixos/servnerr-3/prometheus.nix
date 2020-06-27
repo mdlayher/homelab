@@ -123,6 +123,7 @@ in {
         { relabel_configs = relabelTarget "servnerr-3:9288"; }
       ])
       (staticScrape "node" [
+        "monitnerr-1:9100"
         "nerr-3:9100"
         "routnerr-2:9100"
         "servnerr-3:9100"
