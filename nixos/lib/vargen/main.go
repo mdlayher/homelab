@@ -73,16 +73,22 @@ func main() {
 				server,
 				desktop,
 				newHost(
-					"monitnerr-1",
-					enp2s0,
-					ip("192.168.1.11"),
-					mac("dc:a6:32:1e:66:94"),
-				),
-				newHost(
 					"theatnerr-1",
 					lan0,
 					ip("192.168.10.10"),
 					mac("94:de:80:6c:0e:ef"),
+				),
+				newHost(
+					"monitnerr-1",
+					lan0,
+					ip("192.168.10.11"),
+					mac("dc:a6:32:1e:66:94"),
+				),
+				newHost(
+					"monitnerr-2",
+					lan0,
+					ip("192.168.10.12"),
+					mac("dc:a6:32:7e:b6:fe"),
 				),
 			},
 			Infra: []host{

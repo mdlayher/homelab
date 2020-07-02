@@ -25,16 +25,6 @@
 				"mac": "90:e2:ba:23:1a:3a"
 			},
 			{
-				"name": "monitnerr-1",
-				"ipv4": "192.168.1.11",
-				"ipv6": {
-					"gua": "2600:6c4a:7880:3200:dea6:32ff:fe1e:6694",
-					"ula": "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694",
-					"lla": "fe80::dea6:32ff:fe1e:6694"
-				},
-				"mac": "dc:a6:32:1e:66:94"
-			},
-			{
 				"name": "theatnerr-1",
 				"ipv4": "192.168.10.10",
 				"ipv6": {
@@ -43,6 +33,26 @@
 					"lla": "fe80::96de:80ff:fe6c:eef"
 				},
 				"mac": "94:de:80:6c:0e:ef"
+			},
+			{
+				"name": "monitnerr-1",
+				"ipv4": "192.168.10.11",
+				"ipv6": {
+					"gua": "2600:6c4a:7880:3210:dea6:32ff:fe1e:6694",
+					"ula": "fd9e:1a04:f01d:10:dea6:32ff:fe1e:6694",
+					"lla": "fe80::dea6:32ff:fe1e:6694"
+				},
+				"mac": "dc:a6:32:1e:66:94"
+			},
+			{
+				"name": "monitnerr-2",
+				"ipv4": "192.168.10.12",
+				"ipv6": {
+					"gua": "2600:6c4a:7880:3210:dea6:32ff:fe7e:b6fe",
+					"ula": "fd9e:1a04:f01d:10:dea6:32ff:fe7e:b6fe",
+					"lla": "fe80::dea6:32ff:fe7e:b6fe"
+				},
+				"mac": "dc:a6:32:7e:b6:fe"
 			}
 		],
 		"infra": [
