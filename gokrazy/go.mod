@@ -12,3 +12,6 @@ require (
 	github.com/mdlayher/consrv v0.0.0-20200702215744-aa49555e5745 // indirect
 	github.com/prometheus/node_exporter v1.0.1 // indirect
 )
+
+// TODO: remove when https://github.com/gokrazy/kernel/pull/273 is merged.
+replace github.com/gokrazy/kernel => /home/matt/src/github.com/gokrazy/kernel
