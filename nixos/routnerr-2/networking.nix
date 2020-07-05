@@ -61,6 +61,10 @@ in {
     };
 
     interfaces = with vars.interfaces; {
+      # WAN interface: allow dhcpcd and NM to coexist.
+      ${wan0.name}.useDHCP = true;
+
+      # LAN interfaces.
       ${enp2s0.name} = mkInterface enp2s0;
       ${lan0.name} = mkInterface lan0;
       ${corp0.name} = mkInterface corp0;
@@ -128,12 +132,18 @@ in {
     nat.enable = false;
     firewall.enable = false;
 
-    # TODO: enable when ready to untangle NetworkManager and other Nix networking configs.
+    # Use NM/MM only to manage the LTE modem.
     networkmanager = {
-      enable = false;
+      enable = true;
       dns = "none";
       unmanaged = ["*,except:type:gsm"];
     };
+  };
+
+  # Bring up MM with NM.
+  systemd.services.ModemManager = {
+    enable = true;
+    wantedBy = [ "NetworkManager.service" ];
   };
 
   # Enable Prometheus exporter and set up peer key/name mappings.

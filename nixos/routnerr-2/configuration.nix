@@ -73,7 +73,6 @@ in {
         # On WAN, allow IPv6 autoconfiguration and tempory address use.
         "net.ipv6.conf.${name}.accept_ra" = 2;
         "net.ipv6.conf.${name}.autoconf" = 1;
-        "net.ipv6.conf.${name}.use_tempaddr" = 1;
       };
     };
     # Use GRUB in MBR mode.
