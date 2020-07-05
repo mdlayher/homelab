@@ -219,6 +219,8 @@ github.com/mdlayher/consrv v0.0.0-20200703203319-2782a2d5e4f5 h1:ZDOXjAZLQus62qe
 github.com/mdlayher/consrv v0.0.0-20200703203319-2782a2d5e4f5/go.mod h1:KCgMyqxVmf768DtW+goLBbkLOW45x4N+RcIln7PUhzc=
 github.com/mdlayher/consrv v0.0.0-20200705184902-06fd2aad0cbb h1:3d9XSCh6YO4LRjCu/+JdMR2OjiR1MQXVFW/D8AS8RXw=
 github.com/mdlayher/consrv v0.0.0-20200705184902-06fd2aad0cbb/go.mod h1:+ySscceuWp1UnllZ7fPZMW0sSvw8Jwa6GLcMSSQUGCs=
+github.com/mdlayher/consrv v0.0.0-20200705205916-7486254a831a h1:rrMhxXstIBUG5aHPiCl8QHYSA3hlXl+d9JcCuqRilsQ=
+github.com/mdlayher/consrv v0.0.0-20200705205916-7486254a831a/go.mod h1:ZLPPgcsiy6jigGTyBK8t96B3o1JOL8pXsbJQGomT7A0=
 github.com/mdlayher/genetlink v1.0.0 h1:OoHN1OdyEIkScEmRgxLEe2M9U8ClMytqA5niynLtfj0=
 github.com/mdlayher/genetlink v1.0.0/go.mod h1:0rJ0h4itni50A86M2kHcgS85ttZazNt7a8H2a2cw0Gc=
 github.com/mdlayher/metricslite v0.0.0-20200705182329-f8b577e97896 h1:djVxW0T4zIZbgtddHiEyhxbOjIP/POvyBAFlOtw6MJI=
