@@ -137,11 +137,14 @@ func main() {
 	out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", wg0)
 
-	// TODO: wan0 is a special case but should probably live in its own
-	// section as it has different rules.
+	// TODO: WANs are special cases and should probably live in their own
+	// section with different rules.
 	out.Interfaces["wan0"] = iface{
 		Name: "enp1s0",
 		IPv4: wanIPv4(),
+	}
+	out.Interfaces["wwan0"] = iface{
+		Name: "wwp0s19u1u3i12",
 	}
 
 	// Marshal human-readable JSON for nicer git diffs.

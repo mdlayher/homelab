@@ -28,8 +28,10 @@ let
   # Produces a CSV list of interface names.
   mkCSV = lib.concatMapStrings (ifi: "${ifi.name}, ");
 
-  # WAN interface.
-  wan0 = vars.interfaces.wan0.name;
+  # WAN interfaces.
+  metered_wans = with vars.interfaces; [ wwan0 ];
+  unmetered_wans = with vars.interfaces; [ wan0 ];
+  all_wans = with vars.interfaces; [ wan0 wwan0 ];
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   trusted_lans = with vars.interfaces; [ enp2s0 lan0 lab0 tengb0 wg0 ];
@@ -79,8 +81,10 @@ in {
           # ICMPv4/6.
           ${icmp_rules}
 
-          # Allow WAN to selectively communicate with the router.
-          iifname ${wan0} jump input_wan
+          # Allow all WANs to selectively communicate with the router.
+          iifname {
+            ${mkCSV all_wans}
+          } jump input_wan
 
           # Always allow router solicitation from any LAN.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-solicit counter accept
@@ -183,7 +187,16 @@ in {
           # Trusted source LANs.
           iifname {
             ${mkCSV trusted_lans}
-          } oifname ${wan0} counter accept comment "Allow trusted LANs to WAN";
+          } oifname {
+            ${mkCSV unmetered_wans}
+          } counter accept comment "Allow trusted LANs to unmetered WANs";
+
+          # Forward certain trusted LAN traffic to metered WANs.
+          iifname {
+            ${mkCSV trusted_lans}
+          } oifname {
+            ${mkCSV metered_wans}
+          } jump forward_trusted_lan_metered_wan
 
           iifname {
             ${mkCSV trusted_lans}
@@ -196,23 +209,40 @@ in {
           # Limited/guest LANs to WAN.
           iifname {
             ${mkCSV limited_lans}
-          } oifname ${wan0} counter accept comment "Allow limited LANs to reach WAN";
+          } oifname {
+            ${mkCSV unmetered_wans}
+          } counter accept comment "Allow limited LANs to unmetered WANs";
 
           # Untrusted LANs to WAN.
           iifname {
             ${mkCSV untrusted_lans}
-          } oifname ${wan0} jump forward_untrusted_lan_wan
+          } oifname {
+            ${mkCSV unmetered_wans}
+          } jump forward_untrusted_lan_wan
 
-          # WAN to trusted LANs.
-          iifname ${wan0} oifname {
+          # All WANs to trusted LANs.
+          iifname {
+            ${mkCSV all_wans}
+          } oifname {
             ${mkCSV trusted_lans}
           } jump forward_wan_trusted_lan
 
-          # WAN to limited/untrusted LANs.
-          iifname ${wan0} oifname {
+          # Unmetered WANs only to limited/untrusted LANs.
+          iifname {
+            ${mkCSV unmetered_wans}
+          } oifname {
             ${mkCSV limited_lans}
             ${mkCSV untrusted_lans}
           } jump forward_wan_limited_untrusted_lan
+
+          counter reject
+        }
+
+        chain forward_trusted_lan_metered_wan {
+          # Allow only specific devices to reach metered WANs.
+          ip saddr {
+            ${vars.server_ipv4},
+          } counter accept comment "trusted LAN devices to metered WANs"
 
           counter reject
         }
@@ -285,11 +315,14 @@ in {
         chain prerouting {
           type nat hook prerouting priority 0
 
-          iifname ${wan0} jump prerouting_wan0
+          # NAT IPv4 to all WANs.
+          iifname {
+            ${mkCSV all_wans}
+          } jump prerouting_wans
           accept
         }
 
-        chain prerouting_wan0 {
+        chain prerouting_wans {
           tcp dport {
             ${ports.plex},
             ${ports.unifi_device},
@@ -309,7 +342,10 @@ in {
 
         chain postrouting {
           type nat hook postrouting priority 0
-          oifname ${wan0} masquerade
+          # Masquerade IPv4 to all WANs.
+          oifname {
+            ${mkCSV all_wans}
+          } masquerade
         }
       }
 
@@ -317,7 +353,10 @@ in {
         chain prerouting {
           type nat hook prerouting priority 0
 
-          iifname ${wan0} udp dport {
+          # NAT WireGuard alternate port IPv6 from all WANs.
+          iifname {
+            ${mkCSV all_wans}
+          } udp dport {
             ${ports.dns},
           } redirect to ${ports.wireguard} comment "router IPv6 WireGuard DNAT"
 
