@@ -34,6 +34,7 @@ let
   all_wans = with vars.interfaces; [ wan0 wwan0 ];
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
+  metered_lans = with vars.interfaces; [ enp2s0 tengb0 ];
   trusted_lans = with vars.interfaces; [ enp2s0 lan0 lab0 tengb0 wg0 ];
   limited_lans = with vars.interfaces; [ corp0 guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
@@ -159,10 +160,6 @@ in {
         chain output {
           type filter hook output priority 0
           policy accept
-
-          # Generally allow all outgoing router connections, except in cases
-          # where software does not provide fine-grained control over traffic.
-
           counter accept
         }
 
@@ -193,10 +190,10 @@ in {
 
           # Forward certain trusted LAN traffic to metered WANs.
           iifname {
-            ${mkCSV trusted_lans}
+            ${mkCSV metered_lans}
           } oifname {
             ${mkCSV metered_wans}
-          } jump forward_trusted_lan_metered_wan
+          } counter accept comment "trusted LAN devices to metered WANs"
 
           iifname {
             ${mkCSV trusted_lans}
@@ -234,15 +231,6 @@ in {
             ${mkCSV limited_lans}
             ${mkCSV untrusted_lans}
           } jump forward_wan_limited_untrusted_lan
-
-          counter reject
-        }
-
-        chain forward_trusted_lan_metered_wan {
-          # Allow only specific devices to reach metered WANs.
-          ip saddr {
-            ${vars.server_ipv4},
-          } counter accept comment "trusted LAN devices to metered WANs"
 
           counter reject
         }
