@@ -25,7 +25,6 @@ in {
     ./lib/nix.nix
     ./lib/system.nix
     ./lib/users.nix
-    ./lib/node_exporter.nix
 
     # Service configuration.
     ./containers.nix

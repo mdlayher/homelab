@@ -54,6 +54,9 @@
     ];
   };
 
+  # Run node_exporter everywhere.
+  services.prometheus.exporters.node.enable = true;
+
   system = {
     # Automatic upgrades.
     autoUpgrade = { enable = true; };

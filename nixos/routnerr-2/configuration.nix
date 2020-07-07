@@ -26,7 +26,6 @@ in {
     ./lib/nix.nix
     ./lib/system.nix
     ./lib/users.nix
-    ./lib/node_exporter.nix
 
     # Base router networking.
     ./networking.nix
