@@ -33,6 +33,18 @@
         annotations.summary =
           "Disk usage on {{ $labels.instance }}:{{ $labels.mountpoint }} ({{ $labels.device }}) exceeds 75%.";
       }
+      {
+        alert = "APCUPSOnBattery";
+        expr = "apcupsd_battery_time_on_seconds > 0";
+        annotations.summary =
+          "UPS on {{ $labels.instance }} is running on battery power.";
+      }
+      {
+        alert = "APCUPSBatteryTimeLeft";
+        expr = "apcupsd_battery_time_left_seconds < 30*60";
+        annotations.summary =
+          "UPS on {{ $labels.instance }} has less than 30 minutes of remaining battery runtime.";
+      }
       # All advertising interfaces should be forwarding IPv6 traffic, and
       # have IPv6 autoconfiguration disabled.
       {
