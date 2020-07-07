@@ -18,13 +18,9 @@ in {
   ];
 
   imports = [
-    # Hardware configuration.
+    # Hardware and base system configuration.
     ./hardware-configuration.nix
-
-    # Base system configuration.
-    ./lib/nix.nix
     ./lib/system.nix
-    ./lib/users.nix
 
     # Service configuration.
     ./containers.nix

@@ -18,14 +18,10 @@ in {
   ];
 
   imports = [
-    # Hardware configuration and quirks.
+    # Hardware and base system configuration.
     <nixos-hardware/pcengines/apu>
     ./hardware-configuration.nix
-
-    # Base system configuration.
-    ./lib/nix.nix
     ./lib/system.nix
-    ./lib/users.nix
 
     # Base router networking.
     ./networking.nix
