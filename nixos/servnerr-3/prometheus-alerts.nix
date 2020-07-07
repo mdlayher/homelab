@@ -43,15 +43,6 @@
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for sending IPv6 router advertisements.";
       }
-      # All monitoring interfaces should be forwarding IPv6 traffic.
-      {
-        alert = "CoreRADMonitoringInterfaceMisconfigured";
-        expr = ''
-          (corerad_interface_monitoring{job="corerad"} == 1) and (corerad_interface_forwarding == 0)'';
-        for = "1m";
-        annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is misconfigured for monitoring upstream IPv6 NDP traffic.";
-      }
       # All CoreRAD interfaces should multicast IPv6 RAs on a regular basis
       # so hosts don't drop their default route.
       {
@@ -88,13 +79,13 @@
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
       }
-      # Expect continuous upstream router advertisements.
+      # Expect regular upstream router advertisements.
       {
         alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
         expr = ''
-          rate(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[5m]) == 0'';
+          changes(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[10m]) == 0'';
         annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 5 minutes.";
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 10 minutes.";
       }
       # Expect continuous upstream router advertisements.
       {
