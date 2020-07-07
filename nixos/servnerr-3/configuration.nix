@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   vars = import ./lib/vars.nix;
@@ -12,6 +12,9 @@ in {
   disabledModules = [
     # Replaced with unstable for additional exporters.
     "services/monitoring/prometheus/exporters.nix"
+
+    # Allow the use of the settings Nix attribute set.
+    "services/networking/corerad.nix"
   ];
 
   imports = [
@@ -30,11 +33,15 @@ in {
 
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
+    <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
   ];
 
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (self: super: {
+      # Required by CoreRAD.
+      go-toml = unstable.go-toml;
+
       # 20.03 packages Prometheus 2.15 which is pretty out of date.
       prometheus = unstable.prometheus;
 
@@ -112,6 +119,24 @@ in {
 
   services = {
     apcupsd.enable = true;
+
+    # Deploy CoreRAD monitor mode on all interfaces.
+    corerad = {
+      enable = true;
+      package = unstable.corerad;
+      settings = {
+        debug = {
+          address = ":9430";
+          prometheus = true;
+          pprof = true;
+        };
+
+        interfaces = lib.forEach [ "br0" "enp5s0" "enp11s0" ] (ifi: {
+          name = ifi;
+          monitor = true;
+        });
+      };
+    };
 
     grafana = {
       enable = true;

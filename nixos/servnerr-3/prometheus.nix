@@ -118,7 +118,7 @@ in {
       ])
       (staticScrape "consrv" [ "monitnerr-1:9288" "monitnerr-2:9288" ])
       (staticScrape "coredns" [ "routnerr-2:9153" ])
-      (staticScrape "corerad" [ "routnerr-2:9430" ])
+      (staticScrape "corerad" [ "routnerr-2:9430" "servnerr-3:9430" ])
       (lib.mkMerge [
         (staticScrape "keylight" [ "keylight" ])
         { relabel_configs = relabelTarget "servnerr-3:9288"; }
