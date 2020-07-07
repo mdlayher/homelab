@@ -41,7 +41,7 @@
       }
       {
         alert = "APCUPSBatteryTimeLeft";
-        expr = "apcupsd_battery_time_left_seconds < 30*60";
+        expr = "apcupsd_battery_time_on_seconds > 0 and apcupsd_battery_time_left_seconds < 30*60";
         annotations.summary =
           "UPS on {{ $labels.instance }} has less than 30 minutes of remaining battery runtime.";
       }
