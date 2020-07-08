@@ -12,12 +12,8 @@ let
     dhcp6_server = "547";
     http = "80";
     https = "443";
-    imaps = "993";
     mdns = "5353";
-    ntp = "123";
-    pop3s = "995";
     plex = "32400";
-    smtp = "587";
     ssh = "22";
     unifi_device = "8080";
     unifi_stun = "3478";
