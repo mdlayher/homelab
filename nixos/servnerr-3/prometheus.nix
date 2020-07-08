@@ -138,8 +138,8 @@ in {
       (staticScrape "blackbox" [ "servnerr-3:9115" ])
       (blackboxScrape "http_2xx" "15s" [ "https://grafana.servnerr.com" ])
       # Netlify can occasionally be flappy, so check it less often.
-      (blackboxScrapeJobName "http_2xx_mdlayhercom" "http_2xx" "1m"
-        [ "https://mdlayher.com" ])
+      (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "1m"
+        [ "https://corerad.net" "https://mdlayher.com" ])
       (blackboxScrape "http_401" "15s" [
         "https://alertmanager.servnerr.com"
         "https://plex.servnerr.com"
