@@ -41,7 +41,8 @@
       }
       {
         alert = "APCUPSBatteryTimeLeft";
-        expr = "apcupsd_battery_time_on_seconds > 0 and apcupsd_battery_time_left_seconds < 30*60";
+        expr =
+          "apcupsd_battery_time_on_seconds > 0 and apcupsd_battery_time_left_seconds < 30*60";
         annotations.summary =
           "UPS on {{ $labels.instance }} has less than 30 minutes of remaining battery runtime.";
       }
@@ -77,7 +78,7 @@
       {
         alert = "CoreRADAdvertiserMissingPrefix";
         expr = ''
-          count by (instance, interface) (corerad_advertiser_router_advertisement_prefix_autonomous{job="corerad",prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != 2'';
+          (count by(instance, interface) (corerad_advertiser_prefix_autonomous{job="corerad",prefix=~"2600:6c4a:7880:32.*|fd9e:1a04:f01d:.*"} == 1) != bool 2) == 1'';
         for = "1m";
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is advertising an incorrect number of IPv6 prefixes for SLAAC.";
@@ -85,8 +86,7 @@
       # All IPv6 prefixes are advertised with SLAAC.
       {
         alert = "CoreRADAdvertiserPrefixNotAutonomous";
-        expr = ''
-          corerad_advertiser_router_advertisement_prefix_autonomous{job="corerad"} == 0'';
+        expr = ''corerad_advertiser_prefix_autonomous{job="corerad"} == 0'';
         for = "1m";
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) prefix {{ $labels.prefix }} on interface {{ $labels.interface }} is not configured for SLAAC.";
@@ -95,17 +95,25 @@
       {
         alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
         expr = ''
-          changes(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[10m]) == 0'';
+          changes(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[15m]) == 0'';
         annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 10 minutes.";
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 15 minutes.";
       }
-      # Expect continuous upstream router advertisements.
+      # Ensure the default route does not expire. The LAN default route uses a
+      # much lower threshold.
       {
-        alert = "CoreRADMonitorDefaultRouteExpiring";
+        alert = "CoreRADMonitorDefaultRouteWANExpiring";
         expr = ''
-          corerad_monitor_default_route_expiration_time{job="corerad"} - time() < 2*60*60'';
+          corerad_monitor_default_route_expiration_timestamp_seconds{instance=~"routnerr-2.*",job="corerad"} - time() < 2*60*60'';
         annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to {{ $labels.router }} in less than 2 hours.";
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to WAN {{ $labels.router }} in less than 2 hours.";
+      }
+      {
+        alert = "CoreRADMonitorDefaultRouteLANExpiring";
+        expr = ''
+          corerad_monitor_default_route_expiration_timestamp_seconds{instance!~"routnerr-2.*",job="corerad"} - time() < 1*60*20'';
+        annotations.summary =
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to LAN {{ $labels.router }} in less than 20 minutes.";
       }
     ];
   }];
