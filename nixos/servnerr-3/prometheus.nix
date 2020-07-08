@@ -18,8 +18,8 @@ let
   });
 
   # Scrape a list of static targets for a job.
-  staticScrape = (job: targets: {
-    job_name = job;
+  staticScrape = (job_name: targets: {
+    inherit job_name;
     static_configs = [{ inherit targets; }];
   });
 

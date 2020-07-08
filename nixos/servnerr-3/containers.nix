@@ -1,8 +1,6 @@
-{ pkgs, lib, ... }:
+{ ... }:
 
-let unstable = import <nixos-unstable-small> { };
-
-in {
+{
   containers = {
     # Plex server running containerized and on unstable for faster updates.
     plex = {
@@ -14,7 +12,7 @@ in {
           isReadOnly = true;
         };
       };
-      config = { config, pkgs, ... }:
+      config = { ... }:
         let
           unstable =
             import <nixos-unstable-small> { config.allowUnfree = true; };
@@ -29,7 +27,7 @@ in {
     # UniFi controller running containerized and on unstable for faster updates.
     unifi = {
       autoStart = true;
-      config = { config, pkgs, ... }:
+      config = { ... }:
         let
           unstable =
             import <nixos-unstable-small> { config.allowUnfree = true; };

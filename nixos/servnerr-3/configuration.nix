@@ -33,7 +33,7 @@ in {
 
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
-    (self: super: {
+    (_self: _super: {
       # Required by CoreRAD.
       go-toml = unstable.go-toml;
 
@@ -126,8 +126,8 @@ in {
           pprof = true;
         };
 
-        interfaces = lib.forEach [ "br0" "enp5s0" "enp11s0" ] (ifi: {
-          name = ifi;
+        interfaces = lib.forEach [ "br0" "enp5s0" "enp11s0" ] (name: {
+          inherit name;
           monitor = true;
         });
       };

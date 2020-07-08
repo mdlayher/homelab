@@ -44,7 +44,7 @@ in {
 
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
-    (self: super: {
+    (_self: super: {
       go-toml = unstable.go-toml;
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
