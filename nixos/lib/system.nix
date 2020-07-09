@@ -43,6 +43,7 @@ in {
       nixfmt
       nix-linter
       nmap
+      nmon
       pciutils
       pkg-config
       smartmontools
