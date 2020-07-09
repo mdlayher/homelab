@@ -78,6 +78,11 @@ in {
     };
   };
 
+  # Make systemd manage the hardware watchdog.
+  systemd.extraConfig = ''
+    RuntimeWatchdogSec=60s
+  '';
+
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
   environment.systemPackages = with pkgs; [
