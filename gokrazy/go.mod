@@ -13,7 +13,7 @@ require (
 	github.com/gokrazy/rpi-eeprom v0.0.0-20200618184116-4854011f5f17
 	github.com/gokrazy/stat v0.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/mdlayher/consrv v0.0.0-20200708183722-296226dd17ef
+	github.com/mdlayher/consrv v0.0.0-20200713134219-99324c7b5234
 	github.com/mdlayher/wifi v0.0.0-20200527114002-84f0b9457fdd // indirect
 	github.com/prometheus/node_exporter v1.0.1
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
