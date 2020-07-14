@@ -125,7 +125,7 @@ in {
     networkmanager = {
       enable = true;
       dns = "none";
-      unmanaged = ["*,except:type:gsm"];
+      unmanaged = [ "*,except:type:gsm" ];
     };
   };
 
