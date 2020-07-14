@@ -96,10 +96,11 @@ github.com/gogo/protobuf v1.2.0/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7a
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe h1:RM0xXdGbYNhPU5Tj5X4LMzbiKcHnzSseWIL3NYgHp4U=
 github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe/go.mod h1:dCkuccBo7C7B66XGPOwL+QDbSJKFvsdBQO38eZlHwBY=
-github.com/gokrazy/firmware v0.0.0-20200702142411-9210213d5bc9 h1:TgtQv8e0ZRltn/duNRVh2hb7V3HjpjCViKe32H5I9qw=
-github.com/gokrazy/firmware v0.0.0-20200702142411-9210213d5bc9/go.mod h1:nax8ajGaY5IjQWQHc0/y+8rUG4SCvl0OK8IKHKoyMDc=
 github.com/gokrazy/firmware v0.0.0-20200713142910-9f312dfad72f h1:CkJSCgA+z9Eso8RiGNIM6fcwG6E0M4Xwk3bx+szhzCk=
 github.com/gokrazy/firmware v0.0.0-20200713142910-9f312dfad72f/go.mod h1:nax8ajGaY5IjQWQHc0/y+8rUG4SCvl0OK8IKHKoyMDc=
+github.com/gokrazy/gokrazy v0.0.0-20190321081644-520b8ca41de7/go.mod h1:YbpshsItGhDXnytFAvMTRvZvGkVSpZV/4mwxQsvqzHg=
+github.com/gokrazy/gokrazy v0.0.0-20200714085714-a4c823dc2bf7 h1:HIf3CLhjZAnnYLeytI+AOoZFq2ztb01fvILrYVU20Dk=
+github.com/gokrazy/gokrazy v0.0.0-20200714085714-a4c823dc2bf7/go.mod h1:MAXBdw3NnYx7LEQrgebujybMDDpROBGLpeeGxgz9KR4=
 github.com/gokrazy/internal v0.0.0-20200527163528-2cb9182fefff/go.mod h1:LA5TQy7LcvYGQOy75tkrYkFUhbV2nl5qEBP47PSi2JA=
 github.com/gokrazy/internal v0.0.0-20200531194636-d96421c60091 h1:gP2Z4WgsQl35mlNf4kqYW0D8KnYMC4kdsczagvVKBbg=
 github.com/gokrazy/internal v0.0.0-20200531194636-d96421c60091/go.mod h1:LA5TQy7LcvYGQOy75tkrYkFUhbV2nl5qEBP47PSi2JA=

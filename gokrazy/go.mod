@@ -7,7 +7,7 @@ require (
 	github.com/ema/qdisc v0.0.0-20200603082823-62d0308e3e00 // indirect
 	github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe
 	github.com/gokrazy/firmware v0.0.0-20200713142910-9f312dfad72f
-	github.com/gokrazy/gokrazy v0.0.0-20200629220445-6739b590288a
+	github.com/gokrazy/gokrazy v0.0.0-20200714085714-a4c823dc2bf7
 	github.com/gokrazy/internal v0.0.0-20200713084155-ab6fc6e02a03 // indirect
 	github.com/gokrazy/kernel v0.0.0-20200713073858-5a6073ec9475
 	github.com/gokrazy/rpi-eeprom v0.0.0-20200618184116-4854011f5f17
@@ -20,5 +20,3 @@ require (
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/text v0.3.3 // indirect
 )
-
-replace github.com/gokrazy/gokrazy => /home/matt/src/github.com/gokrazy/gokrazy
