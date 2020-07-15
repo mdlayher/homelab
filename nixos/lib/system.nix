@@ -94,7 +94,7 @@ in {
     users.matt = {
       isNormalUser = true;
       uid = 1000;
-      extraGroups = [ "dialout" "wheel" ];
+      extraGroups = [ "dialout" "networkmanager" "wheel" ];
       hashedPassword = secrets.users.matt_password_hash;
 
       openssh.authorizedKeys.keys = [
