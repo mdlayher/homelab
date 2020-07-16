@@ -38,6 +38,7 @@ in {
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
     <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
+    ./lib/modules/modemmanager_exporter.nix
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
@@ -46,6 +47,8 @@ in {
   nixpkgs.overlays = [
     (_self: super: {
       go-toml = unstable.go-toml;
+      modemmanager_exporter =
+        super.callPackage ./lib/pkgs/modemmanager_exporter.nix { };
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };

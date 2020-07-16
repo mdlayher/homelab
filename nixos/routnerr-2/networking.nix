@@ -129,13 +129,15 @@ in {
     };
   };
 
-  # Bring up MM with NM.
+  # Bring up MM and exporter with NM.
   systemd.services.ModemManager = {
     enable = true;
     wantedBy = [ "NetworkManager.service" ];
   };
 
-  # Enable Prometheus exporter and set up peer key/name mappings.
+  services.modemmanager_exporter.enable = true;
+
+  # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
   services.wireguard_exporter = {
     enable = true;
