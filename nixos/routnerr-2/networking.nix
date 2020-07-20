@@ -9,16 +9,10 @@ let
       address = "${ifi.ipv4}";
       prefixLength = 24;
     }];
-    ipv6.addresses = [
-      {
-        address = "${ifi.ipv6.lla}";
-        prefixLength = 64;
-      }
-      {
-        address = "${ifi.ipv6.ula}";
-        prefixLength = 64;
-      }
-    ];
+    ipv6.addresses = [{
+      address = "${ifi.ipv6.ula}";
+      prefixLength = 64;
+    }];
     tempAddress = "disabled";
   });
 
