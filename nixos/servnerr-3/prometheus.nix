@@ -123,6 +123,7 @@ in {
         (staticScrape "keylight" [ "keylight" ])
         { relabel_configs = relabelTarget "servnerr-3:9288"; }
       ])
+      (staticScrape "modemmanager" [ "routnerr-2:9539" ])
       (staticScrape "node" [
         "monitnerr-1:9100"
         "monitnerr-2:9100"
