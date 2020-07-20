@@ -5,6 +5,7 @@ let
 
   # Port definitions.
   ports = {
+    consrv = "2222";
     dns = "53";
     dhcp4_server = "67";
     dhcp4_client = "68";
@@ -259,7 +260,7 @@ in {
               lib.concatMapStrings (host: "${host.ipv6.gua}, ")
               vars.hosts.servers
             }
-          } tcp dport ${ports.ssh} counter accept comment "IPv6 SSH"
+          } tcp dport {${ports.ssh}, ${ports.consrv}} counter accept comment "IPv6 SSH"
 
           # Plex running on server.
           ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
@@ -281,8 +282,8 @@ in {
             2601:405:8500:f600::/64,
           } ip6 daddr ${vars.server_ipv6} udp dport ${ports.unifi_stun} counter accept comment "server UDPv6 UniFi"
 
-          # Streaming RTP6 on desktop.
-          ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
+          # Streaming RTP6 on desktop, only enabled when necessary.
+          # ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
 
           counter reject
         }
