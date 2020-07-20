@@ -95,9 +95,9 @@
       {
         alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
         expr = ''
-          changes(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[15m]) == 0'';
+          changes(corerad_monitor_messages_received_total{job="corerad",message="router advertisement"}[30m]) == 0'';
         annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 15 minutes.";
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 30 minutes.";
       }
       # Ensure the default route does not expire. The LAN default route uses a
       # much lower threshold.
@@ -111,9 +111,9 @@
       {
         alert = "CoreRADMonitorDefaultRouteLANExpiring";
         expr = ''
-          corerad_monitor_default_route_expiration_timestamp_seconds{instance!~"routnerr-2.*",job="corerad"} - time() < 1*60*20'';
+          corerad_monitor_default_route_expiration_timestamp_seconds{instance!~"routnerr-2.*",job="corerad"} - time() < 1*60*10'';
         annotations.summary =
-          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to LAN {{ $labels.router }} in less than 20 minutes.";
+          "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to LAN {{ $labels.router }} in less than 10 minutes.";
       }
     ];
   }];
