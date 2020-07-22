@@ -38,7 +38,6 @@ in {
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
     <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
-    ./lib/modules/modemmanager_exporter.nix
     ./lib/modules/wireguard_exporter.nix
     ./lib/modules/wgipamd.nix
   ];
@@ -47,8 +46,7 @@ in {
   nixpkgs.overlays = [
     (_self: super: {
       go-toml = unstable.go-toml;
-      modemmanager_exporter =
-        super.callPackage ./lib/pkgs/modemmanager_exporter.nix { };
+      prometheus-modemmanager-exporter = unstable.prometheus-modemmanager-exporter;
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
@@ -114,6 +112,13 @@ in {
     }];
   };
 
+  # TEMPORARY: required to make MM exporter work.
+  systemd.services.prometheus-modemmanager-exporter.serviceConfig = {
+    DynamicUser = false;
+    User = "modemmanager-exporter";
+  };
+  users.users.modemmanager-exporter.group = "networkmanager";
+
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
     # Google Home and Chromecast.
@@ -136,7 +141,10 @@ in {
       permitRootLogin = "no";
     };
 
-    prometheus.exporters.apcupsd.enable = true;
+    prometheus.exporters = {
+      apcupsd.enable = true;
+      modemmanager.enable = true;
+    };
 
     tftpd = {
       enable = true;

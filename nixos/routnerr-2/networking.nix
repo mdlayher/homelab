@@ -129,8 +129,6 @@ in {
     wantedBy = [ "NetworkManager.service" ];
   };
 
-  services.modemmanager_exporter.enable = true;
-
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
   services.wireguard_exporter = {
