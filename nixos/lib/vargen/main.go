@@ -198,13 +198,7 @@ type ipv6Addresses struct {
 }
 
 func newSubnet(iface string, vlan int) subnet {
-	var gua netaddr.IPPrefix
-	if vlan < 99 {
-		gua = prefix(fmt.Sprintf("2600:6c4a:7880:32%02d::/64", vlan))
-	} else {
-		// Too large for decimal due to /56, so use hex.
-		gua = prefix(fmt.Sprintf("2600:6c4a:7880:32%02x::/64", vlan))
-	}
+	gua := prefix(fmt.Sprintf("2600:6c4a:7880:32%02x::/64", vlan))
 
 	return subnet{
 		Name: iface,

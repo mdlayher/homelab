@@ -28,7 +28,7 @@
 				"name": "theatnerr-1",
 				"ipv4": "192.168.10.10",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3210:96de:80ff:fe6c:eef",
+					"gua": "2600:6c4a:7880:320a:96de:80ff:fe6c:eef",
 					"ula": "fd9e:1a04:f01d:10:96de:80ff:fe6c:eef",
 					"lla": "fe80::96de:80ff:fe6c:eef"
 				},
@@ -38,7 +38,7 @@
 				"name": "monitnerr-1",
 				"ipv4": "192.168.10.11",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3210:dea6:32ff:fe1e:6694",
+					"gua": "2600:6c4a:7880:320a:dea6:32ff:fe1e:6694",
 					"ula": "fd9e:1a04:f01d:10:dea6:32ff:fe1e:6694",
 					"lla": "fe80::dea6:32ff:fe1e:6694"
 				},
@@ -48,7 +48,7 @@
 				"name": "monitnerr-2",
 				"ipv4": "192.168.10.12",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3210:dea6:32ff:fe7e:b6fe",
+					"gua": "2600:6c4a:7880:320a:dea6:32ff:fe7e:b6fe",
 					"ula": "fd9e:1a04:f01d:10:dea6:32ff:fe7e:b6fe",
 					"lla": "fe80::dea6:32ff:fe7e:b6fe"
 				},
@@ -100,7 +100,7 @@
 				"name": "keylight",
 				"ipv4": "192.168.66.10",
 				"ipv6": {
-					"gua": "2600:6c4a:7880:3266:3e6a:9dff:fe12:c4dc",
+					"gua": "2600:6c4a:7880:3242:3e6a:9dff:fe12:c4dc",
 					"ula": "fd9e:1a04:f01d:66:3e6a:9dff:fe12:c4dc",
 					"lla": "fe80::3e6a:9dff:fe12:c4dc"
 				},
@@ -114,7 +114,7 @@
 			"internal_domain": false,
 			"ipv4": "192.168.30.1",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3230::1",
+				"gua": "2600:6c4a:7880:321e::1",
 				"ula": "fd9e:1a04:f01d:30::1",
 				"lla": "fe80::1"
 			}
@@ -144,7 +144,7 @@
 			"internal_domain": false,
 			"ipv4": "192.168.66.1",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3266::1",
+				"gua": "2600:6c4a:7880:3242::1",
 				"ula": "fd9e:1a04:f01d:66::1",
 				"lla": "fe80::1"
 			}
@@ -164,7 +164,7 @@
 			"internal_domain": true,
 			"ipv4": "192.168.10.1",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3210::1",
+				"gua": "2600:6c4a:7880:320a::1",
 				"ula": "fd9e:1a04:f01d:10::1",
 				"lla": "fe80::1"
 			}
@@ -194,7 +194,7 @@
 			"internal_domain": false,
 			"ipv4": "192.168.20.1",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3220::1",
+				"gua": "2600:6c4a:7880:3214::1",
 				"ula": "fd9e:1a04:f01d:20::1",
 				"lla": "fe80::1"
 			}
@@ -216,7 +216,7 @@
 			"name": "wg0",
 			"ipv4": "192.168.20.0/24",
 			"ipv6": {
-				"gua": "2600:6c4a:7880:3220::/64",
+				"gua": "2600:6c4a:7880:3214::/64",
 				"ula": "fd9e:1a04:f01d:20::/64",
 				"lla": "fe80::/64"
 			}
@@ -227,7 +227,7 @@
 				"public_key": "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=",
 				"allowed_ips": [
 					"192.168.20.10/32",
-					"2600:6c4a:7880:3220::a/128",
+					"2600:6c4a:7880:3214::a/128",
 					"fd9e:1a04:f01d:20::a/128",
 					"fe80::a/128"
 				]
@@ -237,7 +237,7 @@
 				"public_key": "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA=",
 				"allowed_ips": [
 					"192.168.20.11/32",
-					"2600:6c4a:7880:3220::b/128",
+					"2600:6c4a:7880:3214::b/128",
 					"fd9e:1a04:f01d:20::b/128",
 					"fe80::b/128"
 				]
