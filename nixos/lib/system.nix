@@ -34,6 +34,7 @@ in {
       jq
       lm_sensors
       lshw
+      lsscsi
       minicom
       mkpasswd
       mtr
