@@ -6,11 +6,11 @@ require (
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/ema/qdisc v0.0.0-20200603082823-62d0308e3e00 // indirect
 	github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe
-	github.com/gokrazy/firmware v0.0.0-20200713142910-9f312dfad72f
-	github.com/gokrazy/gokrazy v0.0.0-20200714085714-a4c823dc2bf7
+	github.com/gokrazy/firmware v0.0.0-20200717143213-6e075226290a
+	github.com/gokrazy/gokrazy v0.0.0-20200719152611-11dacf4264fb
 	github.com/gokrazy/internal v0.0.0-20200713084155-ab6fc6e02a03 // indirect
-	github.com/gokrazy/kernel v0.0.0-20200713073858-5a6073ec9475
-	github.com/gokrazy/rpi-eeprom v0.0.0-20200618184116-4854011f5f17
+	github.com/gokrazy/kernel v0.0.0-20200722180846-d46d911044e9
+	github.com/gokrazy/rpi-eeprom v0.0.0-20200721031804-d786650cf59c
 	github.com/gokrazy/stat v0.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/mdlayher/consrv v0.0.0-20200713134219-99324c7b5234
