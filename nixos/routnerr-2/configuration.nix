@@ -134,6 +134,15 @@ in {
 
     lldpd.enable = true;
 
+    # TEMPORARY: for development of inet.af/nat.
+    miniupnpd = {
+      enable = true;
+      externalInterface = "enp1s0";
+      internalIPs = [ "lan0" "tengb0" ];
+      natpmp = true;
+      upnp = false;
+    };
+
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
