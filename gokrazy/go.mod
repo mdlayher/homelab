@@ -6,7 +6,7 @@ require (
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/ema/qdisc v0.0.0-20200603082823-62d0308e3e00 // indirect
 	github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe
-	github.com/gokrazy/firmware v0.0.0-20200801144227-c3b8ebd32fdd
+	github.com/gokrazy/firmware v0.0.0-20200807144656-e39eac70ce3f
 	github.com/gokrazy/gokrazy v0.0.0-20200801074800-f7c3cb7e0e6a
 	github.com/gokrazy/internal v0.0.0-20200713084155-ab6fc6e02a03 // indirect
 	github.com/gokrazy/kernel v0.0.0-20200803181845-060f90e2be07
@@ -19,6 +19,6 @@ require (
 	github.com/prometheus/node_exporter v1.0.1
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
-	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect
+	golang.org/x/sys v0.0.0-20200806125547-5acd03effb82 // indirect
 	golang.org/x/text v0.3.3 // indirect
 )

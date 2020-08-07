@@ -96,8 +96,8 @@ github.com/gogo/protobuf v1.2.0/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7a
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe h1:RM0xXdGbYNhPU5Tj5X4LMzbiKcHnzSseWIL3NYgHp4U=
 github.com/gokrazy/breakglass v0.0.0-20200527163858-efff2172eebe/go.mod h1:dCkuccBo7C7B66XGPOwL+QDbSJKFvsdBQO38eZlHwBY=
-github.com/gokrazy/firmware v0.0.0-20200801144227-c3b8ebd32fdd h1:YuT2J10moUPdJ8rqiKmNn9noPx7hFso0cxkrBpYn0Lc=
-github.com/gokrazy/firmware v0.0.0-20200801144227-c3b8ebd32fdd/go.mod h1:nax8ajGaY5IjQWQHc0/y+8rUG4SCvl0OK8IKHKoyMDc=
+github.com/gokrazy/firmware v0.0.0-20200807144656-e39eac70ce3f h1:K2YvjBoIe2FKiUS6TxcrJpHxG98w4xAEAwFwxDhDOT0=
+github.com/gokrazy/firmware v0.0.0-20200807144656-e39eac70ce3f/go.mod h1:nax8ajGaY5IjQWQHc0/y+8rUG4SCvl0OK8IKHKoyMDc=
 github.com/gokrazy/gokrazy v0.0.0-20190321081644-520b8ca41de7/go.mod h1:YbpshsItGhDXnytFAvMTRvZvGkVSpZV/4mwxQsvqzHg=
 github.com/gokrazy/gokrazy v0.0.0-20200801074800-f7c3cb7e0e6a h1:p/pMUGI4GdWyQG6HfQPgIseILKAEpsGeVrhx2JCI7ns=
 github.com/gokrazy/gokrazy v0.0.0-20200801074800-f7c3cb7e0e6a/go.mod h1:MAXBdw3NnYx7LEQrgebujybMDDpROBGLpeeGxgz9KR4=
@@ -466,8 +466,8 @@ golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae h1:Ih9Yo4hSPImZOpfGuA4bR/ORKTAbhZo2AbWNRCnevdo=
 golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 h1:B6caxRw+hozq68X2MY7jEpZh/cr4/aHLv9xU8Kkadrw=
-golang.org/x/sys v0.0.0-20200803210538-64077c9b5642/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200806125547-5acd03effb82 h1:6cBnXxYO+CiRVrChvCosSv7magqTPbyAgz1M8iOv5wM=
+golang.org/x/sys v0.0.0-20200806125547-5acd03effb82/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2 h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=
 golang.org/x/text v0.3.2/go.mod h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk=
