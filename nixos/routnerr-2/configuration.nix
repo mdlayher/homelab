@@ -136,7 +136,7 @@ in {
 
     # TEMPORARY: for development of inet.af/nat.
     miniupnpd = {
-      enable = true;
+      enable = false;
       externalInterface = "enp1s0";
       internalIPs = [ "lan0" "tengb0" ];
       natpmp = true;
