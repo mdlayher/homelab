@@ -18,21 +18,9 @@ import (
 //go:generate /usr/bin/env bash -c "go run main.go > ../vars.json"
 
 func main() {
-	// LLA is always the same.
-	lla := prefix("fe80::/64")
-
 	// The primary subnet: all servers and network infrastructure live here.
 	var (
-		// TODO: renumber to "0"?
-		enp2s0 = subnet{
-			Name: "enp2s0",
-			IPv4: prefix("192.168.1.0/24"),
-			IPv6: ipv6Prefixes{
-				GUA: prefix("2600:6c4a:7880:3200::/64"),
-				LLA: lla,
-				ULA: prefix("fd9e:1a04:f01d::/64"),
-			},
-		}
+		enp2s0 = newSubnet("enp2s0", 0)
 
 		lan0 = newSubnet("lan0", 10)
 		iot0 = newSubnet("iot0", 66)
@@ -198,11 +186,17 @@ type ipv6Addresses struct {
 }
 
 func newSubnet(iface string, vlan int) subnet {
-	gua := prefix(fmt.Sprintf("2600:6c4a:7880:32%02x::/64", vlan))
+	gua := prefix(fmt.Sprintf("2600:6c4a:7880:13%02x::/64", vlan))
+
+	// A hack to continue using 192.168.1.0/24 for the management network.
+	v4Subnet := vlan
+	if vlan == 0 {
+		v4Subnet = 1
+	}
 
 	return subnet{
 		Name: iface,
-		IPv4: prefix(fmt.Sprintf("192.168.%d.0/24", vlan)),
+		IPv4: prefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
 		IPv6: ipv6Prefixes{
 			GUA: gua,
 			LLA: prefix("fe80::/64"),
