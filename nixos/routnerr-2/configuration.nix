@@ -31,9 +31,7 @@ in {
     ./coredns.nix
     ./corerad.nix
     ./dhcpd4.nix
-    ./dhcpd6.nix
     ./traefik.nix
-    ./wgipamd.nix
 
     # Unstable or out-of-tree modules.
     <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
@@ -134,15 +132,6 @@ in {
     apcupsd.enable = true;
 
     lldpd.enable = true;
-
-    # TEMPORARY: for development of inet.af/nat.
-    miniupnpd = {
-      enable = false;
-      externalInterface = "enp1s0";
-      internalIPs = [ "lan0" "tengb0" ];
-      natpmp = true;
-      upnp = false;
-    };
 
     # Enable the OpenSSH daemon.
     openssh = {

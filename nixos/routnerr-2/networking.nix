@@ -47,13 +47,6 @@ in {
       '';
     };
 
-    iproute2 = {
-      enable = true;
-      rttablesExtraConfig = ''
-        10 wwan0
-      '';
-    };
-
     interfaces = with vars.interfaces; {
       # WAN interface: allow dhcpcd and NM to coexist.
       ${wan0.name}.useDHCP = true;
