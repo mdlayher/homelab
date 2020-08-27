@@ -46,7 +46,8 @@ in {
   nixpkgs.overlays = [
     (_self: super: {
       go-toml = unstable.go-toml;
-      prometheus-modemmanager-exporter = unstable.prometheus-modemmanager-exporter;
+      prometheus-modemmanager-exporter =
+        unstable.prometheus-modemmanager-exporter;
       prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
