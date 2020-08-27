@@ -29,9 +29,6 @@ in {
           name = ifi.name;
           advertise = true;
 
-          # Use stateless DHCPv6.
-          other_config = true;
-
           # Configure a higher preference for interfaces with more bandwidth.
           # TODO: factor out this metric so we don't have to match on name.
           preference = if ifi.name == "tengb0" then "high" else "medium";
