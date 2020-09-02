@@ -109,6 +109,12 @@ in {
   # lib/system.nix.
   environment.systemPackages = with pkgs; [ zfs ];
 
+  # Enable gpg for file decryption.
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryFlavor = "curses";
+  };
+
   services = {
     apcupsd.enable = true;
 

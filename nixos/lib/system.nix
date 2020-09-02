@@ -36,6 +36,7 @@ in {
       go
       git
       gnumake
+      gnupg
       htop
       iftop
       iperf3
