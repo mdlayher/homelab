@@ -182,7 +182,7 @@
 		"wan0": {
 			"name": "enp1s0",
 			"internal_domain": false,
-			"ipv4": "174.81.250.254",
+			"ipv4": "24.176.42.50",
 			"ipv6": {
 				"gua": "",
 				"ula": "",
