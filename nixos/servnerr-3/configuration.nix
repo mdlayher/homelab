@@ -6,17 +6,8 @@
 
 let
   vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
 
 in {
-  disabledModules = [
-    # Replaced with unstable for additional exporters.
-    "services/monitoring/prometheus/exporters.nix"
-
-    # Allow the use of the settings Nix attribute set.
-    "services/networking/corerad.nix"
-  ];
-
   imports = [
     # Hardware and base system configuration.
     ./hardware-configuration.nix
@@ -25,25 +16,6 @@ in {
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
-
-    # Unstable or out-of-tree modules.
-    <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
-    <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
-  ];
-
-  # Overlays for unstable and out-of-tree packages.
-  nixpkgs.overlays = [
-    (_self: _super: {
-      # Required by CoreRAD.
-      go-toml = unstable.go-toml;
-
-      # 20.03 packages Prometheus 2.15 which is pretty out of date.
-      prometheus = unstable.prometheus;
-
-      # Exporter packages which aren't yet in stable.
-      prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
-      prometheus-keylight-exporter = unstable.prometheus-keylight-exporter;
-    })
   ];
 
   networking = {
@@ -81,8 +53,9 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
-    # Linux kernel 5.6 for better hwmon support.
-    kernelPackages = pkgs.linuxPackages_5_6;
+    # Linux kernel >=5.6 for better hwmon support, TODO: switch to the next
+    # LTS when possible.
+    kernelPackages = pkgs.linuxPackages_5_8;
     kernelModules = [ "drivetemp" ];
 
     kernelParams = [
@@ -121,7 +94,6 @@ in {
     # Deploy CoreRAD monitor mode on all interfaces.
     corerad = {
       enable = true;
-      package = unstable.corerad;
       settings = {
         debug = {
           address = ":9430";
