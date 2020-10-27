@@ -4,19 +4,9 @@
 
 { pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
+let vars = import ./lib/vars.nix;
 
 in {
-  disabledModules = [
-    # Allow the use of additional exporters.
-    "services/monitoring/prometheus/exporters.nix"
-
-    # Allow the use of the settings Nix attribute set.
-    "services/networking/corerad.nix"
-  ];
-
   imports = [
     # Hardware and base system configuration.
     <nixos-hardware/pcengines/apu>
@@ -34,19 +24,12 @@ in {
     ./traefik.nix
 
     # Unstable or out-of-tree modules.
-    <nixos-unstable-small/nixos/modules/services/monitoring/prometheus/exporters.nix>
-    <nixos-unstable-small/nixos/modules/services/networking/corerad.nix>
     ./lib/modules/wireguard_exporter.nix
-    ./lib/modules/wgipamd.nix
   ];
 
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (_self: super: {
-      go-toml = unstable.go-toml;
-      prometheus-modemmanager-exporter =
-        unstable.prometheus-modemmanager-exporter;
-      prometheus-apcupsd-exporter = unstable.prometheus-apcupsd-exporter;
       wireguard_exporter =
         super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
     })
@@ -105,7 +88,6 @@ in {
       hostName = "servnerr-3";
       system = "x86_64-linux";
       maxJobs = 8;
-      cores = 2;
       speedFactor = 2;
       supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
     }];

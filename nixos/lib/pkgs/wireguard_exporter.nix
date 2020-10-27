@@ -13,7 +13,7 @@ buildGoModule rec {
     sha256 = "0mmrkdxh1q8n4zbj0gdx8qbrga78qg1zzyi71qk5ywl8vz0a05n0";
   };
 
-  modSha256 = "065a8jnkjbs57fyr9493b2m66ajq4wr6hsbl54s9yw0gj6jpn5w4";
+  vendorSha256 = "18jqgjxrmvni1h69lzgnrwjl6b59xyn4qb4rfsd4kmpmg40g85yh";
 
   meta = with stdenv.lib; {
     homepage = "github.com/mdlayher/wireguard_exporter";

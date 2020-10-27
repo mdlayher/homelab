@@ -1,13 +1,10 @@
 { lib, ... }:
 
-let
-  vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
+let vars = import ./lib/vars.nix;
 
 in {
   services.corerad = {
     enable = true;
-    package = unstable.corerad;
     settings = with vars.interfaces; {
       # Base non-interface configuration.
       debug = {

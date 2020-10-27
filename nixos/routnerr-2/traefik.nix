@@ -8,7 +8,7 @@ in {
   services.traefik = {
     enable = true;
 
-    configOptions = {
+    staticConfigOptions = {
       defaultEntrypoints = [ "http" "https" ];
 
       entryPoints = {
