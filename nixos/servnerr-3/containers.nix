@@ -40,12 +40,15 @@
     };
   };
 
-  docker-containers = {
-    # promlens running on TCP/9091 adjacent to Prometheus.
-    promlens = {
-      image = "promlabs/promlens";
-      ports = [ "9091:8080" ];
-      volumes = [ "/var/lib/promlens:/var/lib/promlens" ];
+  virtualisation.oci-containers = {
+    backend = "podman";
+    containers = {
+      # promlens running on TCP/9091 adjacent to Prometheus.
+      promlens = {
+        image = "promlabs/promlens";
+        ports = [ "9091:8080" ];
+        volumes = [ "/var/lib/promlens:/var/lib/promlens" ];
+      };
     };
   };
 }

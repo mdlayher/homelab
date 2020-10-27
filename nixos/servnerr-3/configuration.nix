@@ -4,8 +4,7 @@
 
 { lib, pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
+let vars = import ./lib/vars.nix;
 
 in {
   imports = [
@@ -136,10 +135,7 @@ in {
     RuntimeWatchdogSec=60s
   '';
 
-  virtualisation = {
-    docker.enable = true;
-    libvirtd.enable = true;
-  };
+  virtualisation.libvirtd.enable = true;
 
   # root SSH key for remote builds.
   users.users.root.openssh.authorizedKeys.keys = [
