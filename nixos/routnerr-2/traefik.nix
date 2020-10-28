@@ -9,82 +9,71 @@ in {
     enable = true;
 
     staticConfigOptions = {
-      defaultEntrypoints = [ "http" "https" ];
+      certificatesResolvers.letsencrypt.acme = {
+        email = "mdlayher@gmail.com";
+        storage = "/var/lib/traefik/acme.json";
+        httpChallenge.entryPoint = "http";
+      };
 
       entryPoints = {
         # External entry points.
         http = {
           address = ":80";
-          redirect.entryPoint = "https";
+          http.redirections.entryPoint = {
+            to = "https";
+            scheme = "https";
+          };
         };
-        https = {
-          address = ":443";
-          tls = { };
-        };
-        # Internal entry point for debugging.
-        traefik.address = ":8080";
+        https.address = ":443";
       };
+    };
 
-      # Enable the web interface and Prometheus metrics.
-      api = { };
-      metrics.prometheus = { };
+    dynamicConfigOptions = {
+      http = {
+        routers = {
+          alertmanager = {
+            rule = "Host(`alertmanager.servnerr.com`)";
+            middlewares = [ "alertmanager" ];
+            service = "alertmanager";
+            tls.certResolver = "letsencrypt";
+          };
 
-      # Required for frontends/backends statements to work.
-      file = { };
+          grafana = {
+            rule = "Host(`grafana.servnerr.com`)";
+            service = "grafana";
+            tls.certResolver = "letsencrypt";
+          };
 
-      backends = {
-        alertmanager.servers.alertmanager.url =
-          "http://servnerr-3.${vars.domain}:9093";
-        grafana.servers.grafana.url = "http://servnerr-3.${vars.domain}:3000";
-        plex.servers.plex.url = "http://servnerr-3.${vars.domain}:32400";
-        prometheus.servers.prometheus.url =
-          "http://servnerr-3.${vars.domain}:9090";
-        promlens.servers.promlens.url = "http://servnerr-3.${vars.domain}:9091";
-      };
+          plex = {
+            rule = "Host(`plex.servnerr.com`)";
+            service = "plex";
+            tls.certResolver = "letsencrypt";
+          };
 
-      frontends = {
-        alertmanager = {
-          backend = "alertmanager";
-          basicAuth = [ "${secrets.traefik.alertmanager_auth}" ];
-          routes.alertmanager.rule = "Host:alertmanager.servnerr.com";
+          prometheus = {
+            rule = "Host(`prometheus.servnerr.com`)";
+            middlewares = [ "prometheus" ];
+            service = "prometheus";
+            tls.certResolver = "letsencrypt";
+          };
         };
-        grafana = {
-          backend = "grafana";
-          routes.grafana.rule = "Host:grafana.servnerr.com";
-        };
-        plex = {
-          backend = "plex";
-          routes.plex.rule = "Host:plex.servnerr.com";
-        };
-        prometheus = {
-          backend = "prometheus";
-          basicAuth = [ "${secrets.traefik.prometheus_auth}" ];
-          routes.prometheus.rule = "Host:prometheus.servnerr.com";
-        };
-        promlens = {
-          backend = "promlens";
-          basicAuth = [ "${secrets.traefik.promlens_auth}" ];
-          routes.prometheus.rule = "Host:promlens.servnerr.com";
-        };
-      };
 
-      acme = {
-        email = "mdlayher@gmail.com";
-        storage = "/var/lib/traefik/acme.json";
-        entryPoint = "https";
-        httpChallenge.entryPoint = "http";
+        middlewares = {
+          alertmanager.basicAuth.users =
+            [ "${secrets.traefik.alertmanager_auth}" ];
+          prometheus.basicAuth.users = [ "${secrets.traefik.prometheus_auth}" ];
+        };
 
-        domains = [
-          {
-            main = "servnerr.com";
-            sans = [ "www.servnerr.com" ];
-          }
-          { main = "alertmanager.servnerr.com"; }
-          { main = "grafana.servnerr.com"; }
-          { main = "plex.servnerr.com"; }
-          { main = "prometheus.servnerr.com"; }
-          { main = "promlens.servnerr.com"; }
-        ];
+        services = {
+          alertmanager.loadBalancer.servers =
+            [{ url = "http://servnerr-3.${vars.domain}:9093"; }];
+          grafana.loadBalancer.servers =
+            [{ url = "http://servnerr-3.${vars.domain}:3000"; }];
+          plex.loadBalancer.servers =
+            [{ url = "http://servnerr-3.${vars.domain}:32400"; }];
+          prometheus.loadBalancer.servers =
+            [{ url = "http://servnerr-3.${vars.domain}:9090"; }];
+        };
       };
     };
   };
