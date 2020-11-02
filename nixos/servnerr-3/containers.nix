@@ -47,6 +47,7 @@
               LayMik64 = "68739061-5f17-4c45-bc77-cca4329b4d2d";
               nerrster = "38f8c307-dde4-4774-a969-f4cc69dec50e";
               rothberry = "5d758298-b38b-4e30-8e02-161373b26c01";
+              Son_of_a_Teacher = "42cc4da3-3d2a-4cc3-9b2d-897f93438594";
             };
           };
         };
