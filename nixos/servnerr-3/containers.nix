@@ -35,15 +35,14 @@
               "rcon.password" = secrets.minecraft.rcon;
               pvp = false;
               view-distance = 15;
+              enforce-whitelist = true;
+              white-list = true;
             };
 
             whitelist = {
               DocNastyDub = "d849719b-2438-4ecc-8557-7decc63ad5cb";
               ericthegreat12 = "6853f664-f600-42c5-9d82-934d0ab6df9c";
               HashtagVEGAS = "2dfdd3a5-876b-4042-b2bf-5a49621e998f";
-              Ickalanda = "95a91b05-d9df-4660-b902-505d5bd67317";
-              jimyMIX = "4419ac6d-0fd9-46ed-a69d-95328460a9cd";
-              LayMik64 = "68739061-5f17-4c45-bc77-cca4329b4d2d";
               LazerAtanYarak = "e96db193-235d-40ba-95b3-a01502ef3b90";
               nerrster = "38f8c307-dde4-4774-a969-f4cc69dec50e";
               rothberry = "5d758298-b38b-4e30-8e02-161373b26c01";
