@@ -33,7 +33,7 @@ let
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   metered_lans = with vars.interfaces; [ enp2s0 tengb0 ];
   trusted_lans = with vars.interfaces; [ enp2s0 lan0 lab0 tengb0 wg0 ];
-  limited_lans = with vars.interfaces; [ corp0 guest0 ];
+  limited_lans = with vars.interfaces; [ guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
 
   # ICMP filtering.
