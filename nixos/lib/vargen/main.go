@@ -185,7 +185,7 @@ type ipv6Addresses struct {
 }
 
 func newSubnet(iface string, vlan int) subnet {
-	gua := prefix(fmt.Sprintf("2600:6c4a:787f:4f%02x::/64", vlan))
+	gua := prefix(fmt.Sprintf("2600:6c4a:787f:59%02x::/64", vlan))
 
 	// A hack to continue using 192.168.1.0/24 for the management network.
 	v4Subnet := vlan
