@@ -4,7 +4,9 @@
 
 { lib, pkgs, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
+  unstable = import <nixos-unstable-small> { };
 
 in {
   imports = [
@@ -52,9 +54,9 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
-    # Linux kernel >=5.6 for better hwmon support, TODO: switch to the next
-    # LTS when possible.
-    kernelPackages = pkgs.linuxPackages_5_8;
+    # Linux kernel 5.10 LTS, and explicitly enable drivetemp for SATA drive
+    # temperature reporting in hwmon.
+    kernelPackages = unstable.linuxPackages_5_10;
     kernelModules = [ "drivetemp" ];
 
     kernelParams = [
