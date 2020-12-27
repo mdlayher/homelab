@@ -4,7 +4,9 @@
 
 { pkgs, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
+  unstable = import <nixos-unstable-small> { };
 
 in {
   imports = [
@@ -35,8 +37,12 @@ in {
     })
   ];
 
-  # Use the GRUB 2 boot loader with MBR.
   boot = {
+    # Linux kernel 5.10 LTS, and explicitly enable drivetemp for SATA drive
+    # temperature reporting in hwmon.
+    kernelPackages = unstable.linuxPackages_5_10;
+    kernelModules = [ "drivetemp" ];
+
     kernel = {
       sysctl = with vars.interfaces.wan0; {
         # Forward on all interfaces.
@@ -53,7 +59,8 @@ in {
         "net.ipv6.conf.${name}.autoconf" = 1;
       };
     };
-    # Use GRUB in MBR mode.
+
+    # Use the GRUB 2 boot loader with MBR.
     loader.grub = {
       enable = true;
       version = 2;
