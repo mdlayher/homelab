@@ -17,28 +17,39 @@ import (
 
 //go:generate /usr/bin/env bash -c "go run main.go > ../vars.json"
 
+const (
+	// pdLen is the length of the IPv6 prefix delegated to my router by Charter.
+	pdLen = 56
+)
+
 func main() {
+	// Fetch IPv4 address and IPv6 prefix for use elsewhere.
+	var (
+		wan4 = wanIPv4()
+		gua6 = wanIPv6Prefix()
+	)
+
 	// The primary subnet: all servers and network infrastructure live here.
 	var (
-		enp2s0 = newSubnet("enp2s0", 0)
+		enp2s0 = newSubnet("enp2s0", 0, gua6)
 
-		lan0 = newSubnet("lan0", 10)
-		iot0 = newSubnet("iot0", 66)
+		lan0 = newSubnet("lan0", 10, gua6)
+		iot0 = newSubnet("iot0", 66, gua6)
 		// TODO: eventually fix the switch VLAN as well.
-		tengb0 = newSubnet("tengb0", 110)
-		wg0    = newSubnet("wg0", 20)
+		tengb0 = newSubnet("tengb0", 110, gua6)
+		wg0    = newSubnet("wg0", 20, gua6)
 
 		server = newHost(
 			"servnerr-3",
 			tengb0,
-			ip("192.168.110.5"),
+			netaddr.MustParseIP("192.168.110.5"),
 			mac("90:e2:ba:5b:99:80"),
 		)
 
 		desktop = newHost(
 			"nerr-3",
 			tengb0,
-			ip("192.168.110.6"),
+			netaddr.MustParseIP("192.168.110.6"),
 			mac("90:e2:ba:23:1a:3a"),
 		)
 	)
@@ -63,19 +74,19 @@ func main() {
 				newHost(
 					"theatnerr-1",
 					lan0,
-					ip("192.168.10.10"),
+					netaddr.MustParseIP("192.168.10.10"),
 					mac("94:de:80:6c:0e:ef"),
 				),
 				newHost(
 					"monitnerr-1",
 					lan0,
-					ip("192.168.10.11"),
+					netaddr.MustParseIP("192.168.10.11"),
 					mac("dc:a6:32:1e:66:94"),
 				),
 				newHost(
 					"monitnerr-2",
 					lan0,
-					ip("192.168.10.12"),
+					netaddr.MustParseIP("192.168.10.12"),
 					mac("dc:a6:32:7e:b6:fe"),
 				),
 			},
@@ -83,31 +94,31 @@ func main() {
 				newHost(
 					"switch-livingroom01",
 					enp2s0,
-					ip("192.168.1.2"),
+					netaddr.MustParseIP("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
 				newHost(
 					"switch-office01",
 					enp2s0,
-					ip("192.168.1.3"),
+					netaddr.MustParseIP("192.168.1.3"),
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
 				newHost(
 					"switch-office02",
 					enp2s0,
-					ip("192.168.1.4"),
+					netaddr.MustParseIP("192.168.1.4"),
 					mac("c4:ad:34:ba:40:82"),
 				),
 				newHost(
 					"ap-livingroom02",
 					enp2s0,
-					ip("192.168.1.5"),
+					netaddr.MustParseIP("192.168.1.5"),
 					mac("74:83:c2:7a:c6:15"),
 				),
 				newHost(
 					"keylight",
 					iot0,
-					ip("192.168.66.10"),
+					netaddr.MustParseIP("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
 				),
 			},
@@ -118,9 +129,9 @@ func main() {
 	// Attach interface definitions from subnet definitions.
 	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
-	out.addInterface("guest0", newSubnet("guest0", 9))
+	out.addInterface("guest0", newSubnet("guest0", 9, gua6))
 	out.addInterface("iot0", iot0)
-	out.addInterface("lab0", newSubnet("lab0", 2))
+	out.addInterface("lab0", newSubnet("lab0", 2, gua6))
 	out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", wg0)
 
@@ -128,7 +139,7 @@ func main() {
 	// section with different rules.
 	out.Interfaces["wan0"] = iface{
 		Name: "enp1s0",
-		IPv4: wanIPv4(),
+		IPv4: wan4,
 	}
 	out.Interfaces["wwan0"] = iface{
 		Name: "wwp0s19u1u3i12",
@@ -154,7 +165,31 @@ func wanIPv4() netaddr.IP {
 		log.Fatalf("failed to read HTTP body: %v", err)
 	}
 
-	return ip(strings.TrimSpace(string(b)))
+	return netaddr.MustParseIP(strings.TrimSpace(string(b)))
+}
+
+func wanIPv6Prefix() netaddr.IPPrefix {
+	res, err := http.Get("https://ipv6.icanhazip.com")
+	if err != nil {
+		log.Fatalf("failed to perform HTTP request: %v", err)
+	}
+	defer res.Body.Close()
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("failed to read HTTP body: %v", err)
+	}
+
+	// We want to determine the WAN IPv6 prefix so we can use that elsewhere
+	// when the ISP decides to change it after some period of time. The prefix
+	// length is hardcoded so it can be used elsewhere.
+	ip := netaddr.MustParseIP(strings.TrimSpace(string(b)))
+	pfx, err := ip.Prefix(pdLen)
+	if err != nil {
+		log.Fatalf("failed to create prefix from IP: %v", err)
+	}
+
+	return pfx
 }
 
 type output struct {
@@ -184,8 +219,14 @@ type ipv6Addresses struct {
 	LLA netaddr.IP `json:"lla"`
 }
 
-func newSubnet(iface string, vlan int) subnet {
-	gua := prefix(fmt.Sprintf("2600:6c4a:787f:59%02x::/64", vlan))
+func newSubnet(iface string, vlan int, gua netaddr.IPPrefix) subnet {
+	// The GUA prefix passed is a larger prefix such as a /48 or /56 and must
+	// be combined with the VLAN identifier to create a single /64 subnet for
+	// use with machines.
+	sub6 := gua.IP.As16()
+	sub6[pdLen/8] = byte(vlan)
+	gua.IP = netaddr.IPFrom16(sub6)
+	gua.Bits = 64
 
 	// A hack to continue using 192.168.1.0/24 for the management network.
 	v4Subnet := vlan
@@ -195,11 +236,11 @@ func newSubnet(iface string, vlan int) subnet {
 
 	return subnet{
 		Name: iface,
-		IPv4: prefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
+		IPv4: netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
 		IPv6: ipv6Prefixes{
 			GUA: gua,
-			LLA: prefix("fe80::/64"),
-			ULA: prefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
+			LLA: netaddr.MustParseIPPrefix("fe80::/64"),
+			ULA: netaddr.MustParseIPPrefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
 		},
 	}
 }
@@ -356,24 +397,6 @@ func mac(s string) net.HardwareAddr {
 	}
 
 	return mac
-}
-
-func ip(s string) netaddr.IP {
-	ip, err := netaddr.ParseIP(s)
-	if err != nil {
-		panicf("failed to parse IP: %v", err)
-	}
-
-	return ip
-}
-
-func prefix(s string) netaddr.IPPrefix {
-	ip, err := netaddr.ParseIPPrefix(s)
-	if err != nil {
-		panicf("failed to parse IPPrefix: %v", err)
-	}
-
-	return ip
 }
 
 func panicf(format string, a ...interface{}) {
