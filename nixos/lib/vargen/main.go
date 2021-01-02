@@ -29,15 +29,23 @@ func main() {
 		gua6 = wanIPv6Prefix()
 	)
 
+	const trusted = true
+
 	// The primary subnet: all servers and network infrastructure live here.
 	var (
-		enp2s0 = newSubnet("enp2s0", 0, gua6)
+		// Trusted subnets which will have internal DNS and other services
+		// deployed on them.
+		enp2s0 = newSubnet("enp2s0", 0, gua6, trusted)
+		lan0   = newSubnet("lan0", 10, gua6, trusted)
+		tengb0 = newSubnet("tengb0", 110, gua6, trusted)
+		wg0    = newSubnet("wg0", 20, gua6, trusted)
 
-		lan0 = newSubnet("lan0", 10, gua6)
-		iot0 = newSubnet("iot0", 66, gua6)
-		// TODO: eventually fix the switch VLAN as well.
-		tengb0 = newSubnet("tengb0", 110, gua6)
-		wg0    = newSubnet("wg0", 20, gua6)
+		// Untrusted subnets which do not necessarily, have internal DNS records
+		// and other services deployed on them. The lab subnet is a bit of a
+		// special case but it's probably best to treat it as hostile.
+		lab0   = newSubnet("lab0", 2, gua6, !trusted)
+		guest0 = newSubnet("guest0", 9, gua6, !trusted)
+		iot0   = newSubnet("iot0", 66, gua6, !trusted)
 
 		server = newHost(
 			"servnerr-3",
@@ -129,9 +137,9 @@ func main() {
 	// Attach interface definitions from subnet definitions.
 	out.addInterface("enp2s0", enp2s0)
 	out.addInterface("lan0", lan0)
-	out.addInterface("guest0", newSubnet("guest0", 9, gua6))
+	out.addInterface("guest0", guest0)
 	out.addInterface("iot0", iot0)
-	out.addInterface("lab0", newSubnet("lab0", 2, gua6))
+	out.addInterface("lab0", lab0)
 	out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", wg0)
 
@@ -207,10 +215,10 @@ type hosts struct {
 }
 
 type iface struct {
-	Name           string        `json:"name"`
-	InternalDomain bool          `json:"internal_domain"`
-	IPv4           netaddr.IP    `json:"ipv4"`
-	IPv6           ipv6Addresses `json:"ipv6"`
+	Name        string        `json:"name"`
+	InternalDNS bool          `json:"internal_dns"`
+	IPv4        netaddr.IP    `json:"ipv4"`
+	IPv6        ipv6Addresses `json:"ipv6"`
 }
 
 type ipv6Addresses struct {
@@ -219,7 +227,7 @@ type ipv6Addresses struct {
 	LLA netaddr.IP `json:"lla"`
 }
 
-func newSubnet(iface string, vlan int, gua netaddr.IPPrefix) subnet {
+func newSubnet(iface string, vlan int, gua netaddr.IPPrefix, trusted bool) subnet {
 	// The GUA prefix passed is a larger prefix such as a /48 or /56 and must
 	// be combined with the VLAN identifier to create a single /64 subnet for
 	// use with machines.
@@ -235,8 +243,9 @@ func newSubnet(iface string, vlan int, gua netaddr.IPPrefix) subnet {
 	}
 
 	return subnet{
-		Name: iface,
-		IPv4: netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
+		Name:    iface,
+		Trusted: trusted,
+		IPv4:    netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
 		IPv6: ipv6Prefixes{
 			GUA: gua,
 			LLA: netaddr.MustParseIPPrefix("fe80::/64"),
@@ -246,13 +255,6 @@ func newSubnet(iface string, vlan int, gua netaddr.IPPrefix) subnet {
 }
 
 func newInterface(s subnet) iface {
-	// TODO: this is a hack, come up with another convention to denote the
-	// primary VLAN.
-	var internal bool
-	if s.Name == "lan0" || s.Name == "enp2s0" || s.Name == "tengb0" {
-		internal = true
-	}
-
 	// Router always has a .1 or ::1 suffix.
 	ip4 := s.IPv4.IP.As16()
 	ip4[15] = 1
@@ -267,9 +269,10 @@ func newInterface(s subnet) iface {
 	lla[15] = 1
 
 	return iface{
-		Name:           s.Name,
-		InternalDomain: internal,
-		IPv4:           netaddr.IPFrom16(ip4),
+		Name: s.Name,
+		// Only trusted subnets get internal DNS records.
+		InternalDNS: s.Trusted,
+		IPv4:        netaddr.IPFrom16(ip4),
 		IPv6: ipv6Addresses{
 			GUA: netaddr.IPFrom16(gua),
 			ULA: netaddr.IPFrom16(ula),
@@ -306,9 +309,10 @@ func newHost(hostname string, sub subnet, ip4 netaddr.IP, mac net.HardwareAddr) 
 }
 
 type subnet struct {
-	Name string           `json:"name"`
-	IPv4 netaddr.IPPrefix `json:"ipv4"`
-	IPv6 ipv6Prefixes     `json:"ipv6"`
+	Name    string           `json:"name"`
+	Trusted bool             `json:"trusted"`
+	IPv4    netaddr.IPPrefix `json:"ipv4"`
+	IPv6    ipv6Prefixes     `json:"ipv6"`
 }
 
 type host struct {

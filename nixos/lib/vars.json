@@ -111,7 +111,7 @@
 	"interfaces": {
 		"enp2s0": {
 			"name": "enp2s0",
-			"internal_domain": true,
+			"internal_dns": true,
 			"ipv4": "192.168.1.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5900::1",
@@ -121,7 +121,7 @@
 		},
 		"guest0": {
 			"name": "guest0",
-			"internal_domain": false,
+			"internal_dns": false,
 			"ipv4": "192.168.9.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5909::1",
@@ -131,7 +131,7 @@
 		},
 		"iot0": {
 			"name": "iot0",
-			"internal_domain": false,
+			"internal_dns": false,
 			"ipv4": "192.168.66.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5942::1",
@@ -141,7 +141,7 @@
 		},
 		"lab0": {
 			"name": "lab0",
-			"internal_domain": false,
+			"internal_dns": false,
 			"ipv4": "192.168.2.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5902::1",
@@ -151,7 +151,7 @@
 		},
 		"lan0": {
 			"name": "lan0",
-			"internal_domain": true,
+			"internal_dns": true,
 			"ipv4": "192.168.10.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:590a::1",
@@ -161,7 +161,7 @@
 		},
 		"tengb0": {
 			"name": "tengb0",
-			"internal_domain": true,
+			"internal_dns": true,
 			"ipv4": "192.168.110.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:596e::1",
@@ -171,7 +171,7 @@
 		},
 		"wan0": {
 			"name": "enp1s0",
-			"internal_domain": false,
+			"internal_dns": false,
 			"ipv4": "24.247.144.69",
 			"ipv6": {
 				"gua": "",
@@ -181,7 +181,7 @@
 		},
 		"wg0": {
 			"name": "wg0",
-			"internal_domain": false,
+			"internal_dns": true,
 			"ipv4": "192.168.20.1",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5914::1",
@@ -191,7 +191,7 @@
 		},
 		"wwan0": {
 			"name": "wwp0s19u1u3i12",
-			"internal_domain": false,
+			"internal_dns": false,
 			"ipv4": "",
 			"ipv6": {
 				"gua": "",
@@ -204,6 +204,7 @@
 		"name": "wg0",
 		"subnet": {
 			"name": "wg0",
+			"trusted": true,
 			"ipv4": "192.168.20.0/24",
 			"ipv6": {
 				"gua": "2600:6c4a:787f:5914::/64",

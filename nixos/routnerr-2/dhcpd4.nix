@@ -44,7 +44,7 @@ in {
               let
                 domain = vars.domain;
                 # Configure additional options for the primary internal LAN.
-              in if ifi.internal_domain then ''
+              in if ifi.internal_dns then ''
                 option domain-search "${domain}";
                   option domain-name "${domain}";
               '' else

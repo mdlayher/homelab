@@ -3,3 +3,4 @@
 secrets.nix
 gokrazy/breakglass.tar
 obs/profiles/Programming/service.json
+nixos/lib/vargen/vargen

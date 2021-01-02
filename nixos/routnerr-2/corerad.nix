@@ -37,7 +37,7 @@ in {
           rdnss = [{ servers = [ ifi.ipv6.ula ]; }];
 
           # Configure DNS search on some trusted LANs, or omit otherwise.
-          dnssl = if ifi.internal_domain then [{
+          dnssl = if ifi.internal_dns then [{
             domain_names = [ vars.domain ];
           }] else
             [ ];
