@@ -22,6 +22,29 @@ const (
 	pdLen = 56
 )
 
+// A preference is the preference of a given network interface.
+type preference int
+
+const (
+	_ preference = iota
+	low
+	medium
+	high
+)
+
+func (p preference) MarshalText() ([]byte, error) {
+	switch p {
+	case low:
+		return []byte("low"), nil
+	case medium:
+		return []byte("medium"), nil
+	case high:
+		return []byte("high"), nil
+	}
+
+	panic("unhandled preference")
+}
+
 func main() {
 	// Fetch IPv4 address and IPv6 prefix for use elsewhere.
 	var (
@@ -37,8 +60,14 @@ func main() {
 		// deployed on them.
 		enp2s0 = newSubnet("enp2s0", 0, gua6, trusted)
 		lan0   = newSubnet("lan0", 10, gua6, trusted)
-		tengb0 = newSubnet("tengb0", 110, gua6, trusted)
 		wg0    = newSubnet("wg0", 20, gua6, trusted)
+
+		// When multiple subnets are available, prefer the 10GbE subnet.
+		tengb0 = func() subnet {
+			s := newSubnet("tengb0", 110, gua6, trusted)
+			s.Preference = high
+			return s
+		}()
 
 		// Untrusted subnets which do not necessarily, have internal DNS records
 		// and other services deployed on them. The lab subnet is a bit of a
@@ -146,11 +175,13 @@ func main() {
 	// TODO: WANs are special cases and should probably live in their own
 	// section with different rules.
 	out.Interfaces["wan0"] = iface{
-		Name: "enp1s0",
-		IPv4: wan4,
+		Name:       "enp1s0",
+		Preference: medium,
+		IPv4:       wan4,
 	}
 	out.Interfaces["wwan0"] = iface{
-		Name: "wwp0s19u1u3i12",
+		Name:       "wwp0s19u1u3i12",
+		Preference: medium,
 	}
 
 	// Marshal human-readable JSON for nicer git diffs.
@@ -216,6 +247,7 @@ type hosts struct {
 
 type iface struct {
 	Name        string        `json:"name"`
+	Preference  preference    `json:"preference"`
 	InternalDNS bool          `json:"internal_dns"`
 	IPv4        netaddr.IP    `json:"ipv4"`
 	IPv6        ipv6Addresses `json:"ipv6"`
@@ -243,9 +275,11 @@ func newSubnet(iface string, vlan int, gua netaddr.IPPrefix, trusted bool) subne
 	}
 
 	return subnet{
-		Name:    iface,
-		Trusted: trusted,
-		IPv4:    netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
+		Name: iface,
+		// All subnets have medium preference by default.
+		Preference: medium,
+		Trusted:    trusted,
+		IPv4:       netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
 		IPv6: ipv6Prefixes{
 			GUA: gua,
 			LLA: netaddr.MustParseIPPrefix("fe80::/64"),
@@ -269,7 +303,8 @@ func newInterface(s subnet) iface {
 	lla[15] = 1
 
 	return iface{
-		Name: s.Name,
+		Name:       s.Name,
+		Preference: s.Preference,
 		// Only trusted subnets get internal DNS records.
 		InternalDNS: s.Trusted,
 		IPv4:        netaddr.IPFrom16(ip4),
@@ -309,10 +344,11 @@ func newHost(hostname string, sub subnet, ip4 netaddr.IP, mac net.HardwareAddr) 
 }
 
 type subnet struct {
-	Name    string           `json:"name"`
-	Trusted bool             `json:"trusted"`
-	IPv4    netaddr.IPPrefix `json:"ipv4"`
-	IPv6    ipv6Prefixes     `json:"ipv6"`
+	Name       string           `json:"name"`
+	Preference preference       `json:"preference"`
+	Trusted    bool             `json:"trusted"`
+	IPv4       netaddr.IPPrefix `json:"ipv4"`
+	IPv6       ipv6Prefixes     `json:"ipv6"`
 }
 
 type host struct {

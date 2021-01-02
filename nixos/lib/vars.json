@@ -111,6 +111,7 @@
 	"interfaces": {
 		"enp2s0": {
 			"name": "enp2s0",
+			"preference": "medium",
 			"internal_dns": true,
 			"ipv4": "192.168.1.1",
 			"ipv6": {
@@ -121,6 +122,7 @@
 		},
 		"guest0": {
 			"name": "guest0",
+			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "192.168.9.1",
 			"ipv6": {
@@ -131,6 +133,7 @@
 		},
 		"iot0": {
 			"name": "iot0",
+			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "192.168.66.1",
 			"ipv6": {
@@ -141,6 +144,7 @@
 		},
 		"lab0": {
 			"name": "lab0",
+			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "192.168.2.1",
 			"ipv6": {
@@ -151,6 +155,7 @@
 		},
 		"lan0": {
 			"name": "lan0",
+			"preference": "medium",
 			"internal_dns": true,
 			"ipv4": "192.168.10.1",
 			"ipv6": {
@@ -161,6 +166,7 @@
 		},
 		"tengb0": {
 			"name": "tengb0",
+			"preference": "high",
 			"internal_dns": true,
 			"ipv4": "192.168.110.1",
 			"ipv6": {
@@ -171,6 +177,7 @@
 		},
 		"wan0": {
 			"name": "enp1s0",
+			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "24.247.144.69",
 			"ipv6": {
@@ -181,6 +188,7 @@
 		},
 		"wg0": {
 			"name": "wg0",
+			"preference": "medium",
 			"internal_dns": true,
 			"ipv4": "192.168.20.1",
 			"ipv6": {
@@ -191,6 +199,7 @@
 		},
 		"wwan0": {
 			"name": "wwp0s19u1u3i12",
+			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "",
 			"ipv6": {
@@ -204,6 +213,7 @@
 		"name": "wg0",
 		"subnet": {
 			"name": "wg0",
+			"preference": "medium",
 			"trusted": true,
 			"ipv4": "192.168.20.0/24",
 			"ipv6": {
