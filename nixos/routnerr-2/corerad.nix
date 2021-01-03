@@ -35,6 +35,9 @@ in {
           # Configure a higher preference for interfaces with more bandwidth.
           preference = ifi.preference;
 
+          # Enable verbose logs so we can identify client solicitation patterns.
+          verbose = true;
+
           # Advertise all /64 prefixes on the interface.
           prefix = [{ prefix = "::/64"; }];
 
