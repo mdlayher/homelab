@@ -7,16 +7,16 @@
       {
         alert = "InstanceDown";
         expr = ''up{instance!~"(nerr-3.*|theatnerr-1.*)",job!~"lab-.*"} == 0'';
-        for = "2m";
+        for = "5m";
         annotations.summary =
-          "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
+          "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
       }
       {
         alert = "ServiceDown";
         expr = ''probe_success{instance!~"nerr-3.*",job!~"lab-.*"} == 0'';
-        for = "2m";
+        for = "5m";
         annotations.summary =
-          "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes.";
+          "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
       }
       {
         alert = "TLSCertificateNearExpiration";

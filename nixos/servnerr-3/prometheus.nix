@@ -141,8 +141,8 @@ in {
       (blackboxScrape "http_2xx" "15s" [ "https://grafana.servnerr.com" ])
       # Netlify can occasionally be flappy, so check it less often.
       (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "1m" [
-        "https://corerad.net"
-        "https://mdlayher.com"
+        "https://corerad.net/status"
+        "https://mdlayher.com/status"
       ])
       (blackboxScrape "http_401" "15s" [
         "https://alertmanager.servnerr.com"
