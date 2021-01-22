@@ -132,11 +132,6 @@ in {
     zfs.autoScrub.enable = true;
   };
 
-  # Make systemd manage the hardware watchdog.
-  systemd.extraConfig = ''
-    RuntimeWatchdogSec=60s
-  '';
-
   virtualisation.libvirtd.enable = true;
 
   # root SSH key for remote builds.

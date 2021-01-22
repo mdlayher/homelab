@@ -96,6 +96,9 @@ in {
     stateVersion = "20.03"; # Did you read the comment?
   };
 
+  # Make systemd manage the hardware watchdog.
+  systemd.watchdog.runtimeTime = "60s";
+
   users = {
     # Force declarative user configuration.
     mutableUsers = false;
