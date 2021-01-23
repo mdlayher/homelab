@@ -95,6 +95,10 @@ in {
     # Deploy CoreRAD monitor mode on all interfaces.
     corerad = {
       enable = true;
+
+      # Use unstable for newer CoreRAD.
+      package = unstable.corerad;
+
       settings = {
         debug = {
           address = ":9430";
