@@ -133,6 +133,42 @@ in {
       passwordAuthentication = false;
     };
 
+    # OSPF experiments with BIRD.
+    # TODO(mdlayher): template as appropriate.
+    bird2 = {
+      enable = true;
+      config = ''
+        log syslog all;
+
+        router id 192.168.110.5;
+
+        protocol device {
+          scan time 10;
+        }
+
+        protocol kernel {
+          ipv6 { export all; };
+        }
+
+        protocol static {
+          ipv6 { export all; };
+          route fdd9:f297:2a58::/48 reject;
+        }
+
+        protocol ospf v3 IPv6 {
+          ipv6 { export all; };
+
+          area 0 {
+            interface "br0" {
+              cost 1;
+              type broadcast;
+              hello 5; retransmit 2; wait 10; dead 20;
+            };
+          };
+        }
+      '';
+    };
+
     zfs.autoScrub.enable = true;
   };
 
