@@ -6,7 +6,6 @@
 
 let
   vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
 
 in {
   imports = [
@@ -40,7 +39,7 @@ in {
   boot = {
     # Linux kernel 5.10 LTS, and explicitly enable drivetemp for SATA drive
     # temperature reporting in hwmon.
-    kernelPackages = unstable.linuxPackages_5_10;
+    kernelPackages = pkgs.linuxPackages_5_10;
     kernelModules = [ "drivetemp" ];
 
     kernel = {
