@@ -19,6 +19,9 @@ let
     unifi_device = "8080";
     unifi_stun = "3478";
     unifi_web = "8443";
+    valheim_game = "2456";
+    valheim_steam = "2457";
+    valheim_other = "2458";
     wireguard = "51820";
   };
 
@@ -282,8 +285,9 @@ in {
             2601:405:8500:f600::/64,
           } ip6 daddr ${vars.server_ipv6} udp dport ${ports.unifi_stun} counter accept comment "server UDPv6 UniFi"
 
-          # Streaming RTP6 on desktop, only enabled when necessary.
-          # ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
+          # Valheim running on server.
+          ip daddr ${vars.server_ipv4} udp dport {${ports.valheim_game}, ${ports.valheim_steam}, ${ports.valheim_other}} counter accept comment "server UDPv4 Valheim"
+          ip6 daddr ${vars.server_ipv6} udp dport {${ports.valheim_game}, ${ports.valheim_steam}, ${ports.valheim_other}} counter accept comment "server UDPv6 Valheim"
 
           counter reject
         }
@@ -316,6 +320,9 @@ in {
 
           udp dport {
             ${ports.unifi_stun},
+            ${ports.valheim_game},
+            ${ports.valheim_steam},
+            ${ports.valheim_other},
           } dnat ${vars.server_ipv4} comment "server UDPv4 DNAT"
 
           udp dport {
