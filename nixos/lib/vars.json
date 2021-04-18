@@ -1,18 +1,18 @@
 {
-	"server_ipv4": "192.168.110.5",
-	"server_ipv6": "2600:6c4a:787f:596e:92e2:baff:fe5b:9980",
+	"server_ipv4": "192.168.1.6",
+	"server_ipv6": "2600:6c4a:787f:5900:1e1b:dff:feea:830f",
 	"desktop_ipv6": "2600:6c4a:787f:596e:92e2:baff:fe23:1a3a",
 	"hosts": {
 		"servers": [
 			{
 				"name": "servnerr-3",
-				"ipv4": "192.168.110.5",
+				"ipv4": "192.168.1.6",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:596e:92e2:baff:fe5b:9980",
-					"ula": "fd9e:1a04:f01d:110:92e2:baff:fe5b:9980",
-					"lla": "fe80::92e2:baff:fe5b:9980"
+					"gua": "2600:6c4a:787f:5900:1e1b:dff:feea:830f",
+					"ula": "fd9e:1a04:f01d:0:1e1b:dff:feea:830f",
+					"lla": "fe80::1e1b:dff:feea:830f"
 				},
-				"mac": "90:e2:ba:5b:99:80"
+				"mac": "1c:1b:0d:ea:83:0f"
 			},
 			{
 				"name": "nerr-3",

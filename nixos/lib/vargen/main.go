@@ -78,9 +78,9 @@ func main() {
 
 		server = newHost(
 			"servnerr-3",
-			tengb0,
-			netaddr.MustParseIP("192.168.110.5"),
-			mac("90:e2:ba:5b:99:80"),
+			enp2s0,
+			netaddr.MustParseIP("192.168.1.6"),
+			mac("1c:1b:0d:ea:83:0f"),
 		)
 
 		desktop = newHost(
