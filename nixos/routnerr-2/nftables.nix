@@ -282,9 +282,6 @@ in {
             2601:405:8500:f600::/64,
           } ip6 daddr ${vars.server_ipv6} udp dport ${ports.unifi_stun} counter accept comment "server UDPv6 UniFi"
 
-          # Streaming RTP6 on desktop, only enabled when necessary.
-          # ip6 daddr ${vars.desktop_ipv6} udp dport 5000-5007 counter accept comment "desktop IPv6 RTP"
-
           counter reject
         }
 
