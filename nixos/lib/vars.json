@@ -1,7 +1,7 @@
 {
 	"server_ipv4": "192.168.1.6",
 	"server_ipv6": "2600:6c4a:787f:5900:1e1b:dff:feea:830f",
-	"desktop_ipv6": "2600:6c4a:787f:596e:92e2:baff:fe23:1a3a",
+	"desktop_ipv6": "2600:6c4a:787f:5900:6d9:f5ff:fe7e:1c47",
 	"hosts": {
 		"servers": [
 			{
@@ -16,13 +16,13 @@
 			},
 			{
 				"name": "nerr-3",
-				"ipv4": "192.168.110.6",
+				"ipv4": "192.168.1.7",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:596e:92e2:baff:fe23:1a3a",
-					"ula": "fd9e:1a04:f01d:110:92e2:baff:fe23:1a3a",
-					"lla": "fe80::92e2:baff:fe23:1a3a"
+					"gua": "2600:6c4a:787f:5900:6d9:f5ff:fe7e:1c47",
+					"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
+					"lla": "fe80::6d9:f5ff:fe7e:1c47"
 				},
-				"mac": "90:e2:ba:23:1a:3a"
+				"mac": "04:d9:f5:7e:1c:47"
 			},
 			{
 				"name": "theatnerr-1",

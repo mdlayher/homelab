@@ -85,9 +85,9 @@ func main() {
 
 		desktop = newHost(
 			"nerr-3",
-			tengb0,
-			netaddr.MustParseIP("192.168.110.6"),
-			mac("90:e2:ba:23:1a:3a"),
+			enp2s0,
+			netaddr.MustParseIP("192.168.1.7"),
+			mac("04:d9:f5:7e:1c:47"),
 		)
 	)
 
