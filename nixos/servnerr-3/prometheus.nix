@@ -116,7 +116,7 @@ in {
         "routnerr-2:9162"
         "servnerr-3:9162"
       ])
-      (staticScrape "consrv" [ "monitnerr-1:9288" "monitnerr-2:9288" ])
+      (staticScrape "consrv" [ "monitnerr-1:9288" ])
       (staticScrape "coredns" [ "routnerr-2:9153" ])
       (staticScrape "corerad" [ "routnerr-2:9430" "servnerr-3:9430" ])
       (lib.mkMerge [
@@ -127,7 +127,6 @@ in {
       # (staticScrape "modemmanager" [ "routnerr-2:9539" ])
       (staticScrape "node" [
         "monitnerr-1:9100"
-        "monitnerr-2:9100"
         "nerr-3:9100"
         "routnerr-2:9100"
         "servnerr-3:9100"
@@ -163,7 +162,6 @@ in {
         (staticScrape "snmp" [
           "switch-livingroom01"
           "switch-office01"
-          "switch-office02.ipv4"
           "ap-livingroom02.ipv4"
         ])
         {
