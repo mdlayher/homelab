@@ -114,7 +114,7 @@ in {
           pprof = true;
         };
 
-        interfaces = lib.forEach [ "enp5s0" "enp12s0" ] (name: {
+        interfaces = lib.forEach [ "enp5s0" ] (name: {
           inherit name;
           monitor = true;
         });
