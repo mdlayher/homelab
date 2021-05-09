@@ -135,6 +135,14 @@ in {
       (staticScrape "windows" [ "theatnerr-1:9182" ])
       (staticScrape "wireguard" [ "routnerr-2:9586" ])
 
+      # Home Assistant requires a more custom configuration.
+      {
+        job_name = "homeassistant";
+        metrics_path = "/api/prometheus";
+        bearer_token = "${secrets.prometheus.homeassistant_token}";
+        static_configs = [{ targets = [ "servnerr-3:8123" ]; }];
+      }
+
       # Blackbox exporter and associated targets.
       (staticScrape "blackbox" [ "servnerr-3:9115" ])
       (blackboxScrape "http_2xx" "15s" [ "https://grafana.servnerr.com" ])
