@@ -44,6 +44,12 @@ in {
             tls.certResolver = "letsencrypt";
           };
 
+          hass = {
+            rule = "Host(`hass.servnerr.com`)";
+            service = "hass";
+            tls.certResolver = "letsencrypt";
+          };
+
           plex = {
             rule = "Host(`plex.servnerr.com`)";
             service = "plex";
@@ -69,6 +75,8 @@ in {
             [{ url = "http://servnerr-3.${vars.domain}:9093"; }];
           grafana.loadBalancer.servers =
             [{ url = "http://servnerr-3.${vars.domain}:3000"; }];
+          hass.loadBalancer.servers =
+            [{ url = "http://servnerr-3.${vars.domain}:8123"; }];
           plex.loadBalancer.servers =
             [{ url = "http://servnerr-3.${vars.domain}:32400"; }];
           prometheus.loadBalancer.servers =
