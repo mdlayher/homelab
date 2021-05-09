@@ -45,11 +45,10 @@
     containers = {
       home-assistant = {
         image = "homeassistant/home-assistant:stable";
+        extraOptions = [ "--network=host" ];
         ports = [ "8123:8123" ];
-        volumes = [
-          "/etc/localtime:/etc/localtime:ro"
-          "/var/lib/hass:/config"
-        ];
+        volumes =
+          [ "/etc/localtime:/etc/localtime:ro" "/var/lib/hass:/config" ];
       };
 
       # promlens running on TCP/9091 adjacent to Prometheus.
