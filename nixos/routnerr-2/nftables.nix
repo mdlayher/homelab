@@ -203,16 +203,10 @@ in {
           # Limited/guest LANs to WAN.
           iifname {
             ${mkCSV limited_lans}
-          } oifname {
-            ${mkCSV unmetered_wans}
-          } counter accept comment "Allow limited LANs to unmetered WANs";
-
-          # Untrusted LANs to WAN.
-          iifname {
             ${mkCSV untrusted_lans}
           } oifname {
             ${mkCSV unmetered_wans}
-          } jump forward_untrusted_lan_wan
+          } counter accept comment "Allow limited LANs to unmetered WANs";
 
           # All WANs to trusted LANs.
           iifname {
@@ -230,16 +224,6 @@ in {
           } jump forward_wan_limited_untrusted_lan
 
           counter reject
-        }
-
-        chain forward_untrusted_lan_wan {
-          # Forward only necessary internet services.
-          tcp dport {
-            ${ports.http},
-            ${ports.https},
-          } counter accept comment "untrusted TCP HTTP(S)"
-
-          counter drop
         }
 
         chain forward_limited_untrusted_lan_trusted_lan {
