@@ -105,6 +105,36 @@
 					"lla": "fe80::3e6a:9dff:fe12:c4dc"
 				},
 				"mac": "3c:6a:9d:12:c4:dc"
+			},
+			{
+				"name": "bedroom-fan.iot",
+				"ipv4": "192.168.66.11",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:5942:c2c9:e3ff:fee0:8b44",
+					"ula": "fd9e:1a04:f01d:66:c2c9:e3ff:fee0:8b44",
+					"lla": "fe80::c2c9:e3ff:fee0:8b44"
+				},
+				"mac": "c0:c9:e3:e0:8b:44"
+			},
+			{
+				"name": "bedroom-air-purifier.iot",
+				"ipv4": "192.168.66.12",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:5942:c2c9:e3ff:fee0:a65c",
+					"ula": "fd9e:1a04:f01d:66:c2c9:e3ff:fee0:a65c",
+					"lla": "fe80::c2c9:e3ff:fee0:a65c"
+				},
+				"mac": "c0:c9:e3:e0:a6:5c"
+			},
+			{
+				"name": "living-room-receiver.iot",
+				"ipv4": "192.168.66.13",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:5942:206:78ff:fe55:b318",
+					"ula": "fd9e:1a04:f01d:66:206:78ff:fe55:b318",
+					"lla": "fe80::206:78ff:fe55:b318"
+				},
+				"mac": "00:06:78:55:b3:18"
 			}
 		]
 	},

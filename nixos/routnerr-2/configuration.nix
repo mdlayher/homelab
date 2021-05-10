@@ -106,7 +106,7 @@ in {
     # Google Home and Chromecast.
     avahi = {
       enable = true;
-      interfaces = with vars.interfaces; [ "${lan0.name}" "${iot0.name}" ];
+      interfaces = with vars.interfaces; [ "${enp2s0.name}" "${lan0.name}" "${iot0.name}" ];
       ipv4 = true;
       ipv6 = true;
       reflector = true;
