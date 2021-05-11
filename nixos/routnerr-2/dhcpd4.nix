@@ -34,7 +34,7 @@ in {
             option broadcast-address ${pfx}.255;
             option routers ${ipv4};
             option domain-name-servers ${ipv4};
-            range ${pfx}.20 ${pfx}.240;
+            range ${pfx}.50 ${pfx}.240;
 
             allow booting;
             next-server ${ipv4};
