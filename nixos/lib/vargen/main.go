@@ -176,6 +176,12 @@ func main() {
 					netaddr.MustParseIP("192.168.66.13"),
 					mac("00:06:78:55:b3:18"),
 				),
+				newHost(
+					"living-room-hue-hub.iot",
+					iot0,
+					netaddr.MustParseIP("192.168.66.14"),
+					mac("ec:b5:fa:1d:4f:c2"),
+				),
 			},
 		},
 		WireGuard: wg,

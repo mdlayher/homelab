@@ -135,6 +135,16 @@
 					"lla": "fe80::206:78ff:fe55:b318"
 				},
 				"mac": "00:06:78:55:b3:18"
+			},
+			{
+				"name": "living-room-hue-hub.iot",
+				"ipv4": "192.168.66.14",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:5942:eeb5:faff:fe1d:4fc2",
+					"ula": "fd9e:1a04:f01d:66:eeb5:faff:fe1d:4fc2",
+					"lla": "fe80::eeb5:faff:fe1d:4fc2"
+				},
+				"mac": "ec:b5:fa:1d:4f:c2"
 			}
 		]
 	},
