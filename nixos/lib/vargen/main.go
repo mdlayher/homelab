@@ -182,6 +182,12 @@ func main() {
 					netaddr.MustParseIP("192.168.66.14"),
 					mac("ec:b5:fa:1d:4f:c2"),
 				),
+				newHost(
+					"office-printer.iot",
+					iot0,
+					netaddr.MustParseIP("192.168.66.15"),
+					mac("40:b8:9a:27:d4:fd"),
+				),
 			},
 		},
 		WireGuard: wg,
