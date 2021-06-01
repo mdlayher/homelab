@@ -80,11 +80,11 @@
 				"name": "switch-office02",
 				"ipv4": "192.168.1.4",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5900:c6ad:34ff:feba:4082",
-					"ula": "fd9e:1a04:f01d:0:c6ad:34ff:feba:4082",
-					"lla": "fe80::c6ad:34ff:feba:4082"
+					"gua": "2600:6c4a:787f:5900:76ac:b9ff:fee2:4ea5",
+					"ula": "fd9e:1a04:f01d:0:76ac:b9ff:fee2:4ea5",
+					"lla": "fe80::76ac:b9ff:fee2:4ea5"
 				},
-				"mac": "c4:ad:34:ba:40:82"
+				"mac": "74:ac:b9:e2:4e:a5"
 			},
 			{
 				"name": "ap-livingroom02",
@@ -148,13 +148,13 @@
 			},
 			{
 				"name": "office-printer.iot",
-				"ipv4": "192.168.66.15",
+				"ipv4": "192.168.66.16",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5942:42b8:9aff:fe27:d4fd",
-					"ula": "fd9e:1a04:f01d:66:42b8:9aff:fe27:d4fd",
-					"lla": "fe80::42b8:9aff:fe27:d4fd"
+					"gua": "2600:6c4a:787f:5942:3205:5cff:fe90:47be",
+					"ula": "fd9e:1a04:f01d:66:3205:5cff:fe90:47be",
+					"lla": "fe80::3205:5cff:fe90:47be"
 				},
-				"mac": "40:b8:9a:27:d4:fd"
+				"mac": "30:05:5c:90:47:be"
 			}
 		]
 	},

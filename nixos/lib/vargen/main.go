@@ -144,7 +144,7 @@ func main() {
 					"switch-office02",
 					enp2s0,
 					netaddr.MustParseIP("192.168.1.4"),
-					mac("c4:ad:34:ba:40:82"),
+					mac("74:ac:b9:e2:4e:a5"),
 				),
 				newHost(
 					"ap-livingroom02",
@@ -185,8 +185,8 @@ func main() {
 				newHost(
 					"office-printer.iot",
 					iot0,
-					netaddr.MustParseIP("192.168.66.15"),
-					mac("40:b8:9a:27:d4:fd"),
+					netaddr.MustParseIP("192.168.66.16"),
+					mac("30:05:5c:90:47:be"),
 				),
 			},
 		},
