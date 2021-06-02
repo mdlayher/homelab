@@ -4,9 +4,7 @@
 
 { lib, pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
+let vars = import ./lib/vars.nix;
 
 in {
   imports = [
@@ -62,9 +60,7 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
-    # Linux kernel 5.10 LTS, and explicitly enable drivetemp for SATA drive
-    # temperature reporting in hwmon.
-    kernelPackages = pkgs.linuxPackages_5_10;
+    # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
 
     kernelParams = [
@@ -103,9 +99,6 @@ in {
     # Deploy CoreRAD monitor mode on all interfaces.
     corerad = {
       enable = true;
-
-      # Use unstable for newer CoreRAD.
-      package = unstable.corerad;
 
       settings = {
         debug = {
