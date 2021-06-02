@@ -4,8 +4,7 @@
 
 { pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
+let vars = import ./lib/vars.nix;
 
 in {
   imports = [
@@ -37,9 +36,7 @@ in {
   ];
 
   boot = {
-    # Linux kernel 5.10 LTS, and explicitly enable drivetemp for SATA drive
-    # temperature reporting in hwmon.
-    kernelPackages = pkgs.linuxPackages_5_10;
+    # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
 
     kernel = {
@@ -99,14 +96,21 @@ in {
     DynamicUser = false;
     User = "modemmanager-exporter";
   };
-  users.users.modemmanager-exporter.group = "networkmanager";
+  users.users.modemmanager-exporter = {
+    group = "networkmanager";
+    isNormalUser = true;
+  };
 
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
     # Google Home and Chromecast.
     avahi = {
       enable = true;
-      interfaces = with vars.interfaces; [ "${enp2s0.name}" "${lan0.name}" "${iot0.name}" ];
+      interfaces = with vars.interfaces; [
+        "${enp2s0.name}"
+        "${lan0.name}"
+        "${iot0.name}"
+      ];
       ipv4 = true;
       ipv6 = true;
       reflector = true;
