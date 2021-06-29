@@ -1,10 +1,15 @@
 { lib, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
+  unstable = import <nixos-unstable-small> { };
 
 in {
   services.corerad = {
     enable = true;
+
+    # Use unstable for newer CoreRAD.
+    package = unstable.corerad;
 
     settings = with vars.interfaces; {
       # Base non-interface configuration.
@@ -33,8 +38,8 @@ in {
           # Advertise all /64 prefixes on the interface.
           prefix = [{ prefix = "::/64"; }];
 
-          # Use the router's ULA address as a DNS server.
-          rdnss = [{ servers = [ ifi.ipv6.ula ]; }];
+          # Automatically use the appropriate interface address as a DNS server.
+          rdnss = [{ servers = ["::"]; }];
 
           # Configure DNS search on some trusted LANs, or omit otherwise.
           dnssl = [{ domain_names = [ vars.domain ]; }];
