@@ -28,22 +28,25 @@ in {
         })
 
         # Downstream advertising interfaces.
-        ++ lib.forEach [ enp2s0 lab0 lan0 guest0 iot0 tengb0 ] (ifi: {
-          name = ifi.name;
-          advertise = true;
+        ++ lib.forEach [ enp2s0 lab0 lan0 guest0 iot0 tengb0 ] (ifi:
+          {
+            name = ifi.name;
+            advertise = true;
 
-          # Configure a higher preference for interfaces with more bandwidth.
-          preference = ifi.preference;
+            # Configure a higher preference for interfaces with more bandwidth.
+            preference = ifi.preference;
 
-          # Advertise all /64 prefixes on the interface.
-          prefix = [{ prefix = "::/64"; }];
+            # Advertise all /64 prefixes on the interface.
+            prefix = [{ prefix = "::/64"; }];
 
-          # Automatically use the appropriate interface address as a DNS server.
-          rdnss = [{ servers = ["::"]; }];
-
-          # Configure DNS search on some trusted LANs, or omit otherwise.
-          dnssl = [{ domain_names = [ vars.domain ]; }];
-        });
+            # Automatically use the appropriate interface address as a DNS server.
+            rdnss = [{ servers = [ "::" ]; }];
+          } // (
+            # Configure DNS search on some trusted LANs, or omit otherwise.
+            if ifi.internal_dns then {
+              dnssl = [{ domain_names = [ vars.domain ]; }];
+            } else
+              { }));
     };
   };
 }
