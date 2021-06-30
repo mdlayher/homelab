@@ -117,6 +117,9 @@ in {
     wantedBy = [ "NetworkManager.service" ];
   };
 
+  # Tailscale experiments to replace WireGuard full-tunnel VPN.
+  services.tailscale.enable = true;
+
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
   services.wireguard_exporter = {
