@@ -11,6 +11,7 @@ require (
 	github.com/gokrazy/gokrazy v0.0.0-20210624155705-e2709e8b5564
 	github.com/gokrazy/kernel v0.0.0-20210629070931-4a0939a6d62e
 	github.com/gokrazy/rpi-eeprom v0.0.0-20210430033855-45c7d5dc0a11
+	github.com/gokrazy/serial-busybox v0.0.0-20200521210859-b4f0c5c3f3aa
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/jsimonetti/rtnetlink v0.0.0-20210614053835-9c52e516c709 // indirect

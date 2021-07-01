@@ -15,5 +15,6 @@ _update:
 	-update=http://gokrazy:$(shell cat ~/.config/gokrazy/$(DEVICE).txt)@$(DEVICE)/ \
 	-hostname=$(DEVICE) \
 	github.com/gokrazy/breakglass \
+	github.com/gokrazy/serial-busybox \
 	github.com/mdlayher/consrv \
 	github.com/prometheus/node_exporter

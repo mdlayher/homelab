@@ -7,6 +7,7 @@ import (
 	_ "github.com/gokrazy/gokrazy"
 	_ "github.com/gokrazy/kernel"
 	_ "github.com/gokrazy/rpi-eeprom"
+	_ "github.com/gokrazy/serial-busybox"
 
 	_ "github.com/mdlayher/consrv"
 	_ "github.com/prometheus/node_exporter"
