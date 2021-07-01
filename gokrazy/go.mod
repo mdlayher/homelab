@@ -15,7 +15,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/jsimonetti/rtnetlink v0.0.0-20210614053835-9c52e516c709 // indirect
-	github.com/mdlayher/consrv v0.0.0-20210624200631-08dbcb5170fa
+	github.com/mdlayher/consrv v0.0.0-20210701212525-48d36d745cc2
 	github.com/mdlayher/socket v0.0.0-20210624160740-9dbe287ded84 // indirect
 	github.com/pkg/sftp v1.13.1 // indirect
 	github.com/prometheus/exporter-toolkit v0.6.0 // indirect
