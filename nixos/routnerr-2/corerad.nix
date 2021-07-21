@@ -37,10 +37,10 @@ in {
             preference = ifi.preference;
 
             # Advertise all /64 prefixes on the interface.
-            prefix = [{ prefix = "::/64"; }];
+            prefix = [{}];
 
             # Automatically use the appropriate interface address as a DNS server.
-            rdnss = [{ servers = [ "::" ]; }];
+            rdnss = [{}];
           } // (
             # Configure DNS search on some trusted LANs, or omit otherwise.
             if ifi.internal_dns then {
