@@ -2,7 +2,7 @@
 
 let
   vars = import ./lib/vars.nix;
-  lans = with vars.interfaces; [ enp2s0 lan0 guest0 iot0 lab0 tengb0 ];
+  lans = with vars.interfaces; [ enp2s0 lan0 guest0 iot0 lab0 ];
 
 in {
   services.dhcpd4 = {

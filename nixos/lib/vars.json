@@ -214,17 +214,6 @@
 				"lla": "fe80::1"
 			}
 		},
-		"tengb0": {
-			"name": "tengb0",
-			"preference": "high",
-			"internal_dns": true,
-			"ipv4": "192.168.110.1",
-			"ipv6": {
-				"gua": "2600:6c4a:787f:596e::1",
-				"ula": "fd9e:1a04:f01d:110::1",
-				"lla": "fe80::1"
-			}
-		},
 		"wan0": {
 			"name": "enp1s0",
 			"preference": "medium",

@@ -199,7 +199,9 @@ func main() {
 	out.addInterface("guest0", guest0)
 	out.addInterface("iot0", iot0)
 	out.addInterface("lab0", lab0)
-	out.addInterface("tengb0", tengb0)
+	// TODO(mdlayher): re-enable tengb0 when switch is set up.
+	_ = tengb0
+	// out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", wg0)
 
 	// TODO: WANs are special cases and should probably live in their own
