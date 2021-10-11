@@ -21,6 +21,7 @@ require (
 	github.com/mdlayher/consrv v0.0.0-20210701214636-af1a96065cb4
 	github.com/pkg/sftp v1.13.4 // indirect
 	github.com/prometheus/common v0.31.1 // indirect
+	github.com/prometheus/node_exporter v1.2.2 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0 // indirect
