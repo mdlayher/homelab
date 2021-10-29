@@ -44,6 +44,7 @@ in {
       lm_sensors
       lshw
       lsscsi
+      magic-wormhole
       minicom
       mkpasswd
       mtr
