@@ -14,6 +14,7 @@ let
     http = "80";
     https = "443";
     mdns = "5353";
+    minecraft = "25565";
     plex = "32400";
     ssh = "22";
     unifi_device = "8080";
@@ -246,6 +247,12 @@ in {
             }
           } tcp dport {${ports.ssh}, ${ports.consrv}} counter accept comment "IPv6 SSH"
 
+          # Minecraft running on server.
+          ip daddr ${vars.server_ipv4} tcp dport ${ports.minecraft} counter accept comment "server TCPv4 Minecraft"
+          ip6 daddr ${vars.server_ipv6} tcp dport ${ports.minecraft} counter accept comment "server TCPv6 Minecraft"
+          ip daddr ${vars.server_ipv4} udp dport ${ports.minecraft} counter accept comment "server UDPv4 Minecraft"
+          ip6 daddr ${vars.server_ipv6} udp dport ${ports.minecraft} counter accept comment "server UDPv6 Minecraft"
+
           # Plex running on server.
           ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
           ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
@@ -290,12 +297,14 @@ in {
 
         chain prerouting_wans {
           tcp dport {
+            ${ports.minecraft},
             ${ports.plex},
             ${ports.unifi_device},
             ${ports.unifi_web},
           } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
 
           udp dport {
+            ${ports.minecraft},
             ${ports.unifi_stun},
           } dnat ${vars.server_ipv4} comment "server UDPv4 DNAT"
 
