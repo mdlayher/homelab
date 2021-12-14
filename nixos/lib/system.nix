@@ -10,6 +10,11 @@ let
     };
 
 in {
+  boot = {
+    # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
+    kernelModules = [ "drivetemp" ];
+  };
+
   # Console configuration.
   console = {
     font = "Lat2-Terminus16";

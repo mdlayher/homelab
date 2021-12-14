@@ -60,9 +60,6 @@ in {
     # Enable ZFS.
     supportedFilesystems = [ "zfs" ];
 
-    # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
-    kernelModules = [ "drivetemp" ];
-
     # Temporary, latest kernel with ZFS support.
     # TODO(mdlayher): 2021 LTS kernel.
     kernelPackages = pkgs.zfs.latestCompatibleLinuxPackages;

@@ -36,9 +36,6 @@ in {
   ];
 
   boot = {
-    # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
-    kernelModules = [ "drivetemp" ];
-
     kernel = {
       sysctl = with vars.interfaces.wan0; {
         # Forward on all interfaces.
