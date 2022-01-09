@@ -108,7 +108,7 @@ in {
 
   # Bring up MM and exporter with NM.
   systemd.services.ModemManager = {
-    enable = true;
+    enable = false;
     wantedBy = [ "NetworkManager.service" ];
   };
 
