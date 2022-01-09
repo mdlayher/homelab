@@ -88,8 +88,13 @@ in {
     autoOptimiseStore = true;
   };
 
-  # Run node_exporter everywhere.
-  services.prometheus.exporters.node.enable = true;
+  services = {
+    # Run fstrim on a regular basis.
+    fstrim.enable = true;
+
+    # Run node_exporter everywhere.
+    prometheus.exporters.node.enable = true;
+  };
 
   system = {
     # Automatic upgrades.
