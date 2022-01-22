@@ -5,7 +5,7 @@ let
 
   # Import comma with local nix-index preferred over the comma one.
   comma = import (builtins.fetchTarball
-    "https://github.com/Shopify/comma/archive/60a4cf8ec5c93104d3cfb9fc5a5bac8fb18cc8e4.tar.gz") {
+    "https://github.com/nix-community/comma/archive/refs/tags/1.1.0.tar.gz") {
       inherit pkgs;
     };
 
@@ -37,6 +37,7 @@ in {
       comma
       dmidecode
       ethtool
+      fwupd
       gcc
       go
       git
@@ -62,6 +63,7 @@ in {
       nmon
       pciutils
       pkg-config
+      rustup
       smartmontools
       tcpdump
       tmux
@@ -88,11 +90,10 @@ in {
     autoOptimiseStore = true;
   };
 
+  # Services which run on all deployed machines.
   services = {
-    # Run fstrim on a regular basis.
     fstrim.enable = true;
-
-    # Run node_exporter everywhere.
+    fwupd.enable = true;
     prometheus.exporters.node.enable = true;
   };
 
