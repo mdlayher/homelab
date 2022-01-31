@@ -9,7 +9,7 @@ require (
 	github.com/gokrazy/kernel v0.0.0-20220121035912-69bdcf8953aa
 	github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef
 	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab
-	github.com/mdlayher/consrv v0.0.0-20211011200631-5c5e98292711
+	github.com/mdlayher/consrv v0.0.0-20220131144135-fe847c9f508d
 	github.com/prometheus/node_exporter v1.3.1
 )
 
