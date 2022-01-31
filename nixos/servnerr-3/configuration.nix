@@ -15,15 +15,7 @@ in {
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
-
-    # Unstable or out-of-tree modules.
-    # ./lib/modules/conprof.nix
   ];
-
-  # Overlays for unstable and out-of-tree packages.
-  # nixpkgs.overlays = [
-  #  (_self: super: { conprof = super.callPackage ./lib/pkgs/conprof.nix { }; })
-  # ];
 
   networking = {
     # Host name and ID.
