@@ -10,4 +10,5 @@ import (
 	_ "github.com/gokrazy/serial-busybox"
 
 	_ "github.com/mdlayher/consrv"
+	_ "github.com/prometheus/node_exporter"
 )
