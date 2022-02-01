@@ -122,9 +122,7 @@ in {
       permitRootLogin = "no";
     };
 
-    prometheus.exporters = {
-      modemmanager.enable = true;
-    };
+    prometheus.exporters = { modemmanager.enable = true; };
 
     tftpd = {
       enable = true;
