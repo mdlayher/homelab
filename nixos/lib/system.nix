@@ -78,6 +78,9 @@ in {
     ];
   };
 
+  # Enable firmware updates when possible.
+  hardware.enableRedistributableFirmware = true;
+
   nix = {
     # Automatic Nix GC.
     gc = {
