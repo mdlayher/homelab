@@ -86,7 +86,7 @@ in {
     gc = {
       automatic = true;
       dates = "04:00";
-      options = "--delete-older-than 30d";
+      options = "--delete-older-than 7d";
     };
     extraOptions = ''
       min-free = ${toString (500 * 1024 * 1024)}
