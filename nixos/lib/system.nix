@@ -13,6 +13,9 @@ in {
   boot = {
     # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
+
+    # 2022 LTS kernel, expected EOL of October 2023.
+    kernelPackages = pkgs.linuxPackages_5_15;
   };
 
   # Console configuration.
