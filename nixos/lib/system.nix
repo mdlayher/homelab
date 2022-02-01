@@ -31,6 +31,7 @@ in {
 
     # Packages which should be installed on every machine.
     systemPackages = with pkgs; [
+      age
       bandwhich
       bc
       byobu
