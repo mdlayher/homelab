@@ -113,8 +113,6 @@ in {
       reflector = true;
     };
 
-    apcupsd.enable = true;
-
     lldpd.enable = true;
 
     # Enable the OpenSSH daemon.
@@ -125,7 +123,6 @@ in {
     };
 
     prometheus.exporters = {
-      apcupsd.enable = true;
       modemmanager.enable = true;
     };
 
