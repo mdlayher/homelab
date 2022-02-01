@@ -113,7 +113,6 @@ in {
       # Simple, static scrape jobs.
       (staticScrape "apcupsd" [
         "nerr-3:9162"
-        "routnerr-2:9162"
         "servnerr-3:9162"
       ])
       (staticScrape "consrv" [ "monitnerr-1:9288" ])
@@ -132,7 +131,7 @@ in {
         "servnerr-3:9100"
       ])
       (staticScrape "obs" [ "nerr-3:9407" ])
-      (staticScrape "windows" [ "theatnerr-1:9182" ])
+      (staticScrape "windows" [ "theatnerr-2:9182" ])
       (staticScrape "wireguard" [ "routnerr-2:9586" ])
 
       # Home Assistant requires a more custom configuration.
