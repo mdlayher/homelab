@@ -57,7 +57,7 @@ in {
     loader.grub = {
       enable = true;
       version = 2;
-      device = "/dev/sda";
+      device = "/dev/disk/by-id/ata-INDMEM_mSATA_256GB_AA200313000000000122";
     };
   };
 
