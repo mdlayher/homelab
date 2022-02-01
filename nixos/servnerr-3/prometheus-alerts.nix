@@ -6,14 +6,14 @@
       # excluded due to their experimental nature.
       {
         alert = "InstanceDown";
-        expr = ''up{instance!~"(nerr-3.*|theatnerr-1.*)",job!~"lab-.*"} == 0'';
+        expr = ''up{instance!~"(nerr-.*|theatnerr-.*)",job!~"lab-.*"} == 0'';
         for = "5m";
         annotations.summary =
           "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
       }
       {
         alert = "ServiceDown";
-        expr = ''probe_success{instance!~"nerr-3.*",job!~"lab-.*"} == 0'';
+        expr = ''probe_success{instance!~"nerr-.*",job!~"lab-.*"} == 0'';
         for = "5m";
         annotations.summary =
           "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
@@ -105,14 +105,14 @@
       {
         alert = "CoreRADMonitorDefaultRouteWANExpiring";
         expr = ''
-          corerad_monitor_default_route_expiration_timestamp_seconds{instance=~"routnerr-2.*",job="corerad"} - time() < 2*60*60'';
+          corerad_monitor_default_route_expiration_timestamp_seconds{instance=~"routnerr-.*",job="corerad"} - time() < 2*60*60'';
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to WAN {{ $labels.router }} in less than 2 hours.";
       }
       {
         alert = "CoreRADMonitorDefaultRouteLANExpiring";
         expr = ''
-          corerad_monitor_default_route_expiration_timestamp_seconds{instance!~"routnerr-2.*",job="corerad"} - time() < 1*60*10'';
+          corerad_monitor_default_route_expiration_timestamp_seconds{instance!~"routnerr-.*",job="corerad"} - time() < 1*60*10'';
         annotations.summary =
           "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} will drop its default route to LAN {{ $labels.router }} in less than 10 minutes.";
       }
