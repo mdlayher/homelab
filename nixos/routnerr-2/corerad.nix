@@ -9,7 +9,8 @@ in {
     enable = true;
 
     # Enable as necessary to get development builds of CoreRAD.
-    # package = unstable.corerad;
+    # v1.0.0 is packaged in unstable.
+    package = unstable.corerad;
 
     settings = with vars.interfaces; {
       # Base non-interface configuration.
