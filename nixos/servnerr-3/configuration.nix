@@ -78,6 +78,10 @@ in {
   # lib/system.nix.
   environment.systemPackages = with pkgs; [ zfs ];
 
+  # Only allow certain unfree packages.
+  nixpkgs.config.allowUnfreePredicate = pkg:
+    builtins.elem (lib.getName pkg) [ "tarsnap" ];
+
   services = {
     apcupsd.enable = true;
 
@@ -121,6 +125,16 @@ in {
     openssh = {
       enable = true;
       passwordAuthentication = false;
+    };
+
+    # Enable tarsnap backups.
+    tarsnap = {
+      enable = true;
+
+      archives.archive = {
+        directories = [ "/primary/archive" ];
+        verbose = true;
+      };
     };
 
     zfs.autoScrub.enable = true;
