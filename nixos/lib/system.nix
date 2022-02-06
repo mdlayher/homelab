@@ -48,6 +48,7 @@ in {
       gnumake
       htop
       iftop
+      iotop
       iperf3
       jq
       lm_sensors
@@ -132,5 +133,8 @@ in {
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)"
       ];
     };
+
+    # Set up root login for emergency console access.
+    users.root.hashedPassword = secrets.users.root_password_hash;
   };
 }
