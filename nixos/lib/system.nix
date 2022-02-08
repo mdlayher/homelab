@@ -37,6 +37,7 @@ in {
       age
       bandwhich
       bc
+      bintools-unwrapped
       byobu
       comma
       dmidecode
@@ -71,6 +72,7 @@ in {
       pv
       rustup
       smartmontools
+      sysstat
       tcpdump
       tmux
       unixtools.xxd
