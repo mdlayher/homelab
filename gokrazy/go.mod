@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/gokrazy/breakglass v0.0.0-20220103104057-9d823f94f035
-	github.com/gokrazy/firmware v0.0.0-20220125033649-7abe55c85157
+	github.com/gokrazy/firmware v0.0.0-20220206091305-ab5ac7f26e26
 	github.com/gokrazy/gokrazy v0.0.0-20220130135252-8f5fccc68ca3
-	github.com/gokrazy/kernel v0.0.0-20220121035912-69bdcf8953aa
+	github.com/gokrazy/kernel v0.0.0-20220206085004-b9f59d355d8a
 	github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef
 	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab
 	github.com/mdlayher/consrv v0.0.0-20220131144135-fe847c9f508d
@@ -35,6 +35,7 @@ require (
 	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e // indirect
+	github.com/hodgesds/perf-utils v0.4.0 // indirect
 	github.com/illumos/go-kstat v0.0.0-20210513183136-173c9b0a9973 // indirect
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -61,12 +62,14 @@ require (
 	github.com/safchain/ethtool v0.1.0 // indirect
 	github.com/soundcloud/go-runit v0.0.0-20150630195641-06ad41a06c4a // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
-	golang.org/x/crypto v0.0.0-20220128200615-198e4374d7ed // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
+	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/sys v0.0.0-20220207234003-57398862261d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
@@ -74,6 +77,7 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	honnef.co/go/tools v0.2.2 // indirect
 	rsc.io/goversion v1.2.0 // indirect
 )
