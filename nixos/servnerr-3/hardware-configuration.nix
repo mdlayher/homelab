@@ -52,11 +52,6 @@
     fsType = "zfs";
   };
 
-  fileSystems."/secondary" = {
-    device = "secondary";
-    fsType = "zfs";
-  };
-
   swapDevices =
     [{ device = "/dev/disk/by-uuid/51302f97-4b06-4bc1-8200-13217440af0f"; }];
 
