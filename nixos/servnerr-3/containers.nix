@@ -7,6 +7,11 @@
     plex = {
       autoStart = true;
       bindMounts = {
+        # Mount Plex data directory as read-write.
+        "/var/lib/plex" = {
+          hostPath = "/var/lib/plex";
+          isReadOnly = false;
+        };
         # Mount the ZFS pool as read-only.
         "/primary/media" = {
           hostPath = "/primary/media";
