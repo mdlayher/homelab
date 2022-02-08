@@ -53,6 +53,7 @@ in {
       jq
       lm_sensors
       lshw
+      lsof
       lsscsi
       magic-wormhole
       minicom
@@ -67,6 +68,7 @@ in {
       nmon
       pciutils
       pkg-config
+      pv
       rustup
       smartmontools
       tcpdump
