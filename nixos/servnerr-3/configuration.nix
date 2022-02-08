@@ -1,7 +1,3 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 { lib, pkgs, ... }:
 
 let
@@ -17,6 +13,7 @@ in {
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
+    ./storage.nix
   ];
 
   networking = {
@@ -78,10 +75,6 @@ in {
   # lib/system.nix.
   environment.systemPackages = with pkgs; [ zfs ];
 
-  # Only allow certain unfree packages.
-  nixpkgs.config.allowUnfreePredicate = pkg:
-    builtins.elem (lib.getName pkg) [ "tarsnap" ];
-
   services = {
     apcupsd.enable = true;
 
@@ -113,31 +106,11 @@ in {
       addr = "";
     };
 
-    # Export ZFS pool via NFS to trusted LAN.
-    nfs.server = {
-      enable = true;
-      exports = with vars.interfaces.lan0; ''
-        /primary 192.168.1.0/24(rw,sync,no_subtree_check,crossmnt) fd9e:1a04:f01d::/64(rw,sync,no_subtree_check,crossmnt)
-      '';
-    };
-
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
       passwordAuthentication = false;
     };
-
-    # Enable tarsnap backups.
-    tarsnap = {
-      enable = true;
-
-      archives.archive = {
-        directories = [ "/primary/archive" ];
-        verbose = true;
-      };
-    };
-
-    zfs.autoScrub.enable = true;
   };
 
   virtualisation.libvirtd.enable = true;
