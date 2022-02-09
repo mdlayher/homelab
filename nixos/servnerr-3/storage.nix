@@ -29,11 +29,20 @@ in {
       # Roll up snapshots for long periods of time, we have storage to burn.
       autoSnapshot = {
         enable = true;
+        # Debug output, keep zero-sized snapshots, parallel snapshots, UTC
+        # timestamp, verbose logging.
+        flags = "-d -k -p -u -v";
 
-        # No 15 minute or hourly snapshots, things don't change that often.
-        frequent = 0;
-        hourly = 0;
+        # High frequency snapshots. For quickly rolling back unintended changes,
+        # so we don't keep very many.
+        #
+        # Every 15 minutes for 1 hour.
+        frequent = 4;
+        # Every hour for 4 hours.
+        hourly = 4;
 
+        # Beyond this point, retain more snapshots for long-term archival.
+        #
         # Every day for 2 weeks.
         daily = 14;
         # Every week for 2 months.
