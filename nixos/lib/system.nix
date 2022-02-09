@@ -47,6 +47,7 @@ in {
       go
       git
       gnumake
+      gptfdisk
       htop
       iftop
       iotop
