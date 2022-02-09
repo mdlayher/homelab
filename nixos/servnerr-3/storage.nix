@@ -1,9 +1,45 @@
 { lib, pkgs, ... }:
 
-let
-  secrets = import ./lib/secrets.nix;
+let secrets = import ./lib/secrets.nix;
 
 in {
+  # ZFS filesystem mounts.
+  #
+  # The secondary backup pool is not mounted because we can zfs send without
+  # doing so.
+  fileSystems = {
+    # primary ZFS pool.
+    "/primary" = {
+      device = "primary";
+      fsType = "zfs";
+    };
+
+    "/primary/vm" = {
+      device = "primary/vm";
+      fsType = "zfs";
+    };
+
+    "/primary/misc" = {
+      device = "primary/misc";
+      fsType = "zfs";
+    };
+
+    "/primary/media" = {
+      device = "primary/media";
+      fsType = "zfs";
+    };
+
+    "/primary/archive" = {
+      device = "primary/archive";
+      fsType = "zfs";
+    };
+
+    "/primary/text" = {
+      device = "primary/text";
+      fsType = "zfs";
+    };
+  };
+
   # Only allow certain unfree packages.
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [ "tarsnap" ];
@@ -30,8 +66,8 @@ in {
       autoSnapshot = {
         enable = true;
         # Debug output, keep zero-sized snapshots, parallel snapshots, UTC
-        # timestamp, verbose logging.
-        flags = "-d -k -p -u -v";
+        # timestamp, verbose logging. Only snapshot primary.
+        flags = "-d -k -p -u -v -P primary";
 
         # High frequency snapshots. For quickly rolling back unintended changes,
         # so we don't keep very many.

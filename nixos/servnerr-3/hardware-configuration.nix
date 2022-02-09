@@ -22,36 +22,6 @@
     fsType = "vfat";
   };
 
-  fileSystems."/primary" = {
-    device = "primary";
-    fsType = "zfs";
-  };
-
-  fileSystems."/primary/vm" = {
-    device = "primary/vm";
-    fsType = "zfs";
-  };
-
-  fileSystems."/primary/misc" = {
-    device = "primary/misc";
-    fsType = "zfs";
-  };
-
-  fileSystems."/primary/media" = {
-    device = "primary/media";
-    fsType = "zfs";
-  };
-
-  fileSystems."/primary/archive" = {
-    device = "primary/archive";
-    fsType = "zfs";
-  };
-
-  fileSystems."/primary/text" = {
-    device = "primary/text";
-    fsType = "zfs";
-  };
-
   swapDevices =
     [{ device = "/dev/disk/by-uuid/51302f97-4b06-4bc1-8200-13217440af0f"; }];
 
