@@ -130,6 +130,7 @@ in {
       (staticScrape "obs" [ "nerr-3:9407" ])
       (staticScrape "windows" [ "theatnerr-2:9182" ])
       (staticScrape "wireguard" [ "routnerr-2:9586" ])
+      (staticScrape "zrepl" [ "servnerr-3:9811" ])
 
       # Home Assistant requires a more custom configuration.
       {
