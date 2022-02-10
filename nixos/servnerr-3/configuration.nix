@@ -73,12 +73,7 @@ in {
 
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
-  environment.systemPackages = with pkgs; [
-    zfs
-
-    # Use latest available zrepl.
-    unstable.zrepl
-  ];
+  environment.systemPackages = with pkgs; [ zfs zrepl ];
 
   services = {
     apcupsd.enable = true;

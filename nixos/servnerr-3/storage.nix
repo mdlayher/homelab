@@ -2,7 +2,6 @@
 
 let
   secrets = import ./lib/secrets.nix;
-  unstable = import <nixos-unstable-small> { };
 
   # Make a local zrepl push job from primary to the target zpool.
   pushLocal = (zpool: {
@@ -62,6 +61,13 @@ let
     };
   });
 
+  # Make a local zrepl encrypted sink job to the target zpool.
+  #
+  # TODO(mdlayher): unconditionally set this in sinkLocal anyway?
+  sinkLocalEncrypted = (zpool: lib.mkMerge [(sinkLocal zpool) {
+    recv.placeholder.encryption = "inherit";
+  }]);
+
   # Generate the zrepl push job name for a target zpool.
   pushName = (zpool: "primary_to_${zpool}");
 
@@ -106,9 +112,20 @@ in {
     };
   };
 
-  # Only allow certain unfree packages.
-  nixpkgs.config.allowUnfreePredicate = pkg:
-    builtins.elem (lib.getName pkg) [ "tarsnap" ];
+  nixpkgs = {
+    # Only allow certain unfree packages.
+    config.allowUnfreePredicate = pkg:
+      builtins.elem (lib.getName pkg) [ "tarsnap" ];
+
+    # Overlays for unstable and out-of-tree packages.
+    overlays = [
+      (_self: super: {
+        # We want to use the latest zrepl.
+        zrepl =
+          super.callPackage <nixos-unstable-small/pkgs/tools/backup/zrepl> { };
+      })
+    ];
+  };
 
   services = {
     # Enable tarsnap backups.
@@ -193,8 +210,8 @@ in {
 
           # Local sink jobs for backups.
           (sinkLocal "secondary")
-          (sinkLocal "backup0")
-          (sinkLocal "backup1")
+          (sinkLocalEncrypted "backup0")
+          (sinkLocalEncrypted "backup1")
         ];
       };
     };
@@ -208,11 +225,11 @@ in {
   systemd = {
     services.zrepl-signal-jobs = {
       serviceConfig.Type = "oneshot";
-      path = with pkgs; [ unstable.zrepl ];
+      path = with pkgs; [ zrepl ];
       script = ''
         zrepl signal wakeup ${pushName "secondary"}
-        zrepl signal wakeup ${pushName "backup0"}
-        zrepl signal wakeup ${pushName "backup1"}
+        # zrepl signal wakeup ${pushName "backup0"}
+        # zrepl signal wakeup ${pushName "backup1"}
       '';
     };
     timers.zrepl-signal-jobs = {
