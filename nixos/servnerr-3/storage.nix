@@ -236,7 +236,9 @@ in {
       wantedBy = [ "timers.target" ];
       partOf = [ "zrepl-signal-jobs.service" ];
       timerConfig = {
-        OnCalendar = "hourly";
+        # TODO(mdlayher): this is a hack; try to offset zrepl jobs from
+        # zfs.autoSnapshot running every 15 minutes.
+        OnCalendar = "*:20";
         Unit = "zrepl-signal-jobs.service";
       };
     };
