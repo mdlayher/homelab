@@ -27,8 +27,8 @@ let
       # Keep the last few snapshots for each dataset for disaster recovery.
       keep_receiver = [{
         type = "last_n";
-        # 6 ZFS datasets, 8 snapshots each.
-        count = 48;
+        # 8 snapshots for each dataset.
+        count = 8;
       }];
     };
   });
@@ -155,8 +155,8 @@ in {
         # High frequency snapshots. For quickly rolling back unintended changes,
         # so we don't keep very many.
         #
-        # Every 15 minutes for 1 hour.
-        frequent = 4;
+        # No frequent snapshots; unneeded.
+        frequent = 0;
         # Every hour for 4 hours.
         hourly = 4;
 
@@ -237,7 +237,7 @@ in {
       partOf = [ "zrepl-signal-jobs.service" ];
       timerConfig = {
         # TODO(mdlayher): this is a hack; try to offset zrepl jobs from
-        # zfs.autoSnapshot running every 15 minutes.
+        # zfs.autoSnapshot running every hour.
         OnCalendar = "*:20";
         Unit = "zrepl-signal-jobs.service";
       };
