@@ -43,6 +43,9 @@ let
       "inherit" = [ "encryption" "keyformat" "keylocation" ];
 
       override = {
+        # Always enable compression.
+        compression = "on";
+
         # Do not mount sink pools.
         mountpoint = "none";
 
@@ -64,9 +67,11 @@ let
   # Make a local zrepl encrypted sink job to the target zpool.
   #
   # TODO(mdlayher): unconditionally set this in sinkLocal anyway?
-  sinkLocalEncrypted = (zpool: lib.mkMerge [(sinkLocal zpool) {
-    recv.placeholder.encryption = "inherit";
-  }]);
+  sinkLocalEncrypted = (zpool:
+    lib.mkMerge [
+      (sinkLocal zpool)
+      { recv.placeholder.encryption = "inherit"; }
+    ]);
 
   # Generate the zrepl push job name for a target zpool.
   pushName = (zpool: "primary_to_${zpool}");
