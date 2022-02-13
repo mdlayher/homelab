@@ -1,8 +1,0 @@
----
-node_exporter_textfile_dir: "/var/lib/node_exporter"
-# Version configuration.
-node_exporter_version: "0.18.1"
-# Static configuration.
-node_exporter_dir: "node_exporter-{{ node_exporter_version }}.linux-{{ host_golang_arch }}"
-node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_dir }}.tar.gz"
-node_exporter_tgz: "/tmp/node_exporter.tgz"

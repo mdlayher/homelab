@@ -1,7 +1,0 @@
----
-- hosts: monitor
-  become: true
-  become_user: root
-  roles:
-    - sshkeys
-    - node_exporter

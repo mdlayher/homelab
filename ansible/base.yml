@@ -1,5 +1,0 @@
----
-- hosts: all
-  roles:
-    - base
-    - node_exporter
