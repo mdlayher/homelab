@@ -157,18 +157,7 @@ func main() {
 					netaddr.MustParseIP("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
 				),
-				newHost(
-					"bedroom-fan.iot",
-					iot0,
-					netaddr.MustParseIP("192.168.66.11"),
-					mac("c0:c9:e3:e0:8b:44"),
-				),
-				newHost(
-					"bedroom-air-purifier.iot",
-					iot0,
-					netaddr.MustParseIP("192.168.66.12"),
-					mac("c0:c9:e3:e0:a6:5c"),
-				),
+				// Free: .11, .12
 				newHost(
 					"living-room-receiver.iot",
 					iot0,
@@ -180,6 +169,12 @@ func main() {
 					iot0,
 					netaddr.MustParseIP("192.168.66.14"),
 					mac("ec:b5:fa:1d:4f:c2"),
+				),
+				newHost(
+					"living-room-myq-hub.iot",
+					iot0,
+					netaddr.MustParseIP("192.168.66.15"),
+					mac("cc:6a:10:0a:61:7f"),
 				),
 				newHost(
 					"office-printer.iot",

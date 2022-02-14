@@ -107,26 +107,6 @@
 				"mac": "3c:6a:9d:12:c4:dc"
 			},
 			{
-				"name": "bedroom-fan.iot",
-				"ipv4": "192.168.66.11",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:5942:c2c9:e3ff:fee0:8b44",
-					"ula": "fd9e:1a04:f01d:66:c2c9:e3ff:fee0:8b44",
-					"lla": "fe80::c2c9:e3ff:fee0:8b44"
-				},
-				"mac": "c0:c9:e3:e0:8b:44"
-			},
-			{
-				"name": "bedroom-air-purifier.iot",
-				"ipv4": "192.168.66.12",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:5942:c2c9:e3ff:fee0:a65c",
-					"ula": "fd9e:1a04:f01d:66:c2c9:e3ff:fee0:a65c",
-					"lla": "fe80::c2c9:e3ff:fee0:a65c"
-				},
-				"mac": "c0:c9:e3:e0:a6:5c"
-			},
-			{
 				"name": "living-room-receiver.iot",
 				"ipv4": "192.168.66.13",
 				"ipv6": {
@@ -145,6 +125,16 @@
 					"lla": "fe80::eeb5:faff:fe1d:4fc2"
 				},
 				"mac": "ec:b5:fa:1d:4f:c2"
+			},
+			{
+				"name": "living-room-myq-hub.iot",
+				"ipv4": "192.168.66.15",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:5942:ce6a:10ff:fe0a:617f",
+					"ula": "fd9e:1a04:f01d:66:ce6a:10ff:fe0a:617f",
+					"lla": "fe80::ce6a:10ff:fe0a:617f"
+				},
+				"mac": "cc:6a:10:0a:61:7f"
 			},
 			{
 				"name": "office-printer.iot",
