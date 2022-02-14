@@ -142,7 +142,10 @@ in {
 
       # Blackbox exporter and associated targets.
       (staticScrape "blackbox" [ "servnerr-3:9115" ])
-      (blackboxScrape "http_2xx" "15s" [ "https://grafana.servnerr.com" ])
+      (blackboxScrape "http_2xx" "15s" [
+        "http://living-room-myq-hub.iot.ipv4"
+        "https://grafana.servnerr.com"
+        ])
       # Netlify can occasionally be flappy, so check it less often.
       (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "1m" [
         "https://corerad.net/status"
