@@ -16,20 +16,29 @@ let
       client_identity = "local";
     };
 
-    # Let zfs-auto-snapshot manage the snapshotting.
-    snapshotting.type = "manual";
+    # Snapshot every 15 minutes.
+    snapshotting = {
+      type = "periodic";
+      prefix = "zrepl_";
+      interval = "15m";
+    };
+
     pruning = {
-      # Keep all primary snapshots, zfs-auto-snapshot manages them.
-      keep_sender = [{
-        type = "regex";
-        regex = ".*";
-      }];
-      # Keep the last few snapshots for each dataset for disaster recovery.
-      keep_receiver = [{
-        type = "last_n";
-        # 8 snapshots for each dataset.
-        count = 8;
-      }];
+      keep_sender = [
+        # Keep snapshots that are not already replicated.
+        {
+          type = "not_replicated";
+        }
+        # Keep manual snapshots.
+        {
+          type = "regex";
+          regex = "^manual_.*";
+        }
+        # Keep time-based bucketed snapshots.
+        keepGrid
+      ];
+      # Keep the same automatic snapshots as source.
+      keep_receiver = [ keepGrid ];
     };
   });
 
@@ -78,6 +87,21 @@ let
 
   # Generate the zrepl sink job name for a target zpool.
   sinkName = (zpool: "sink_${zpool}");
+
+  # Keep time-based bucketed snapshots.
+  keepGrid = {
+    type = "grid";
+    # Keep:
+    # - every snapshot from the last hour
+    # - every hour from the last 24 hours
+    # - every day from the last 2 weeks
+    # - every week from the last 2 months
+    # - every month from the last 2 years
+    #
+    # TODO(mdlayher): verify retention after a couple weeks!
+    grid = "1x1h(keep=all) | 24x1h | 14x1d | 8x7d | 24x30d";
+    regex = "^zrepl_.*";
+  };
 
 in {
   # ZFS filesystem mounts.
@@ -150,31 +174,6 @@ in {
       # Scrub all pools regularly.
       autoScrub.enable = true;
 
-      # Roll up snapshots for long periods of time, we have storage to burn.
-      autoSnapshot = {
-        enable = true;
-        # Debug output, keep zero-sized snapshots, parallel snapshots, UTC
-        # timestamp, verbose logging. Only snapshot primary.
-        flags = "-d -k -p -u -v -P primary";
-
-        # High frequency snapshots. For quickly rolling back unintended changes,
-        # so we don't keep very many.
-        #
-        # No frequent snapshots; unneeded.
-        frequent = 0;
-        # Every hour for 4 hours.
-        hourly = 4;
-
-        # Beyond this point, retain more snapshots for long-term archival.
-        #
-        # Every day for 2 weeks.
-        daily = 14;
-        # Every week for 2 months.
-        weekly = 8;
-        # Every month for 2 years.
-        monthly = 24;
-      };
-
       # ZED configuration.
       zed = {
         enableMail = false;
@@ -218,33 +217,6 @@ in {
           (sinkLocalEncrypted "backup0")
           (sinkLocalEncrypted "backup1")
         ];
-      };
-    };
-  };
-
-  # Manual systemd unit and timer to trigger zrepl jobs. We use
-  # zfs-auto-snapshot integrated into NixOS instead of zrepl's built-in
-  # automatic snapshotting, so we have to signal replication manually.
-  #
-  # TODO(mdlayher): push upstream into services.zrepl configuration.
-  systemd = {
-    services.zrepl-signal-jobs = {
-      serviceConfig.Type = "oneshot";
-      path = with pkgs; [ zrepl ];
-      script = ''
-        zrepl signal wakeup ${pushName "secondary"}
-        # zrepl signal wakeup ${pushName "backup0"}
-        # zrepl signal wakeup ${pushName "backup1"}
-      '';
-    };
-    timers.zrepl-signal-jobs = {
-      wantedBy = [ "timers.target" ];
-      partOf = [ "zrepl-signal-jobs.service" ];
-      timerConfig = {
-        # TODO(mdlayher): this is a hack; try to offset zrepl jobs from
-        # zfs.autoSnapshot running every hour.
-        OnCalendar = "*:20";
-        Unit = "zrepl-signal-jobs.service";
       };
     };
   };
