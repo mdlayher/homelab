@@ -118,10 +118,10 @@ github.com/gokrazy/internal v0.0.0-20210621162516-1b3b5687a06d/go.mod h1:Gqv1x1D
 github.com/gokrazy/internal v0.0.0-20220111191949-698f19a074ef/go.mod h1:Gc9sU6yJ/qxg3gJZ1pjfcTAULa0swdTa4TH51g1e00E=
 github.com/gokrazy/internal v0.0.0-20220129150711-9ed298107648 h1:kBuLicM0xJw3xEe4607WlnzGL+qSwPqdyh5/LUiCdq0=
 github.com/gokrazy/internal v0.0.0-20220129150711-9ed298107648/go.mod h1:Gc9sU6yJ/qxg3gJZ1pjfcTAULa0swdTa4TH51g1e00E=
-github.com/gokrazy/kernel v0.0.0-20220206085004-b9f59d355d8a h1:xzx6WP560Yx5mDbYYzNtjTK4TlOspVEiT624kbsvzbo=
-github.com/gokrazy/kernel v0.0.0-20220206085004-b9f59d355d8a/go.mod h1:9bunbYi8kxZow8AQJl4SiPmglzemYA/f3zrLgKrTmVI=
-github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef h1:2pIVD10ZmB6wKDgV02/C2VxNzheWCINpGS7QWFYhyw8=
-github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef/go.mod h1:vabxV1M+i6S3rGuWoFieHxCJW3jlob3rqe0KV82j+0o=
+github.com/gokrazy/kernel v0.0.0-20220212035857-b70789ee63d1 h1:IEaboWCX2nn0TM+s+1l6Ndze+wtytLwJlCYRVGmoWjU=
+github.com/gokrazy/kernel v0.0.0-20220212035857-b70789ee63d1/go.mod h1:9bunbYi8kxZow8AQJl4SiPmglzemYA/f3zrLgKrTmVI=
+github.com/gokrazy/rpi-eeprom v0.0.0-20220210033409-65a934c9dc5a h1:TjM6pP1k/rFkCjSXd80fe0l/1cacz9LpWjp2S8E1TOM=
+github.com/gokrazy/rpi-eeprom v0.0.0-20220210033409-65a934c9dc5a/go.mod h1:vabxV1M+i6S3rGuWoFieHxCJW3jlob3rqe0KV82j+0o=
 github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab h1:jg7jGyhoUN+32lqSq7qtNQNa1WI3jZ6xmL+ilDI66sc=
 github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab/go.mod h1:OYcG5tSb+QrelmUOO4EZVUFcIHyyZb0QDbEbZFUp1TA=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=

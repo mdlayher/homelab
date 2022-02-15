@@ -6,8 +6,8 @@ require (
 	github.com/gokrazy/breakglass v0.0.0-20220103104057-9d823f94f035
 	github.com/gokrazy/firmware v0.0.0-20220206091305-ab5ac7f26e26
 	github.com/gokrazy/gokrazy v0.0.0-20220130135252-8f5fccc68ca3
-	github.com/gokrazy/kernel v0.0.0-20220206085004-b9f59d355d8a
-	github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef
+	github.com/gokrazy/kernel v0.0.0-20220212035857-b70789ee63d1
+	github.com/gokrazy/rpi-eeprom v0.0.0-20220210033409-65a934c9dc5a
 	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab
 	github.com/mdlayher/consrv v0.0.0-20220215204021-5249700425a4
 	github.com/prometheus/node_exporter v1.3.1
