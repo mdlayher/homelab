@@ -3,109 +3,129 @@
 let
   secrets = import ./lib/secrets.nix;
 
-  # Create a local zrepl push job from source to the target zpool.
-  pushLocal = (source:
+  # Creates snapshots of zpool source using a zrepl snap job.
+  snap = (source: {
+    name = "snap_${source}";
+    type = "snap";
+
+    # Snapshot the entire pool every 15 minutes.
+    filesystems."${source}<" = true;
+    snapshotting = {
+      type = "periodic";
+      prefix = "zrepl_";
+      interval = "15m";
+    };
+
+    pruning.keep = keepSnaps;
+  });
+
+  # Advertises zpool source as a zrepl source job for target.
+  sourceLocal = (source:
     (target: {
-      name = pushName source target;
-      type = "push";
+      name = "source_${source}_${target}";
+      type = "source";
 
-      # Replicate all of the source zpool locally.
+      # Export everything, do not snapshot in this job.
       filesystems."${source}<" = true;
-      connect = {
+      snapshotting.type = "manual";
+
+      serve = {
         type = "local";
-        listener_name = sinkName target;
-        # Assumes only a single client will ever push locally to sink.
-        client_identity = "local";
-      };
-
-      # Snapshot every 15 minutes.
-      snapshotting = {
-        type = "periodic";
-        prefix = "zrepl_";
-        interval = "15m";
-      };
-
-      pruning = {
-        keep_sender = [
-          # Keep snapshots that are not already replicated.
-          {
-            type = "not_replicated";
-          }
-          # Keep manual snapshots.
-          {
-            type = "regex";
-            regex = "^manual_.*";
-          }
-          # Keep time-based bucketed snapshots.
-          keepGrid
-        ];
-        # Keep the same automatic snapshots as source.
-        keep_receiver = [ keepGrid ];
+        listener_name = "source_${source}_${target}";
       };
     }));
 
-  # Make a local zrepl sink job to the target zpool.
-  sinkLocal = (zpool: {
-    name = sinkName zpool;
-    type = "sink";
-    root_fs = "${zpool}";
+  # Templates out a zrepl pull job which replicates from zpool source into
+  # target.
+  _pullLocal = (source:
+    (target:
+      (root_fs: {
+        name = "pull_${source}_${target}";
+        type = "pull";
 
-    recv = {
-      # Necessary for encrypted destination with unencrypted source.
-      placeholder.encryption = "inherit";
+        # Replicate all of the source zpool into target.
+        root_fs = root_fs;
+        interval = "15m";
 
-      properties = {
-        # Inherit any encryption properties.
-        "inherit" = [ "encryption" "keyformat" "keylocation" ];
-
-        override = {
-          # Always enable compression.
-          compression = "on";
-
-          # Do not mount sink pools.
-          mountpoint = "none";
-
-          # Do not auto-snapshot sink pools.
-          "com.sun:auto-snapshot" = false;
-          "com.sun:auto-snapshot:frequent" = false;
-          "com.sun:auto-snapshot:hourly" = false;
-          "com.sun:auto-snapshot:daily" = false;
-          "com.sun:auto-snapshot:weekly" = false;
-          "com.sun:auto-snapshot:monthly" = false;
+        connect = {
+          type = "local";
+          listener_name = "source_${source}_${target}";
+          # Assumes only a single client (localhost).
+          client_identity = "local";
         };
-      };
-    };
 
-    serve = {
-      type = "local";
-      listener_name = "sink_${zpool}";
-    };
-  });
+        recv = {
+          # Necessary for encrypted destination with unencrypted source.
+          placeholder.encryption = "inherit";
 
-  # Generate the zrepl push job name for a source and target zpool.
-  #
-  # TODO(mdlayher): it would be nice to prefix this with push_ but job renames
-  # are not possible without major upheaval. See:
-  # https://github.com/zrepl/zrepl/issues/327.
-  pushName = (source: (target: "${source}_to_${target}"));
+          properties = {
+            # Inherit any encryption properties.
+            "inherit" = [ "encryption" "keyformat" "keylocation" ];
 
-  # Generate the zrepl sink job name for a target zpool.
-  sinkName = (zpool: "sink_${zpool}");
+            override = {
+              # Always enable compression.
+              compression = "on";
 
-  # Keep time-based bucketed snapshots.
-  keepGrid = {
-    type = "grid";
-    # Keep:
-    # - every snapshot from the last hour
-    # - every hour from the last 24 hours
-    # - every day from the last 2 weeks
-    # - every week from the last 2 months
-    # - every month from the last 2 years
-    #
-    # TODO(mdlayher): verify retention after a couple weeks!
-    grid = "1x1h(keep=all) | 24x1h | 14x1d | 8x7d | 24x30d";
-    regex = "^zrepl_.*";
-  };
+              # Do not mount sink pools.
+              mountpoint = "none";
+
+              # Do not auto-snapshot sink pools.
+              "com.sun:auto-snapshot" = false;
+              "com.sun:auto-snapshot:frequent" = false;
+              "com.sun:auto-snapshot:hourly" = false;
+              "com.sun:auto-snapshot:daily" = false;
+              "com.sun:auto-snapshot:weekly" = false;
+              "com.sun:auto-snapshot:monthly" = false;
+            };
+          };
+        };
+
+        # Allow replication concurrency. This should generally speed up blocking
+        # zfs operations but may negatively impact file I/O. Tune as needed.
+        replication.concurrency.steps = 4;
+
+        pruning = {
+          keep_sender = [{
+            # The source job handles pruning.
+            type = "regex";
+            regex = ".*";
+          }];
+          # Keep the same automatic snapshots as source.
+          keep_receiver = keepSnaps;
+        };
+      })));
+
+  # Creates a zrepl pull job which replicates from zpool source into target
+  # directly.
+  pullLocal = (source: (target: (_pullLocal source target target)));
+
+  # Creates a zrepl pull job which replicates from zpool source into an
+  # encrypted top-level dataset in target.
+  pullLocalEncrypted =
+    (source: (target: (_pullLocal source target "${target}/encrypted")));
+
+  # Rules to keep zrepl snapshots.
+  keepSnaps = [
+    # Keep manual snapshots.
+    {
+      type = "regex";
+      regex = "^manual_.*";
+    }
+    # Keep time-based bucketed snapshots.
+    {
+      type = "grid";
+      # Keep:
+      # - every snapshot from the last hour
+      # - every hour from the last 24 hours
+      # - every day from the last 2 weeks
+      # - every week from the last 2 months
+      # - every month from the last 2 years
+      #
+      # TODO(mdlayher): verify retention after a couple weeks!
+      grid = "1x1h(keep=all) | 24x1h | 14x1d | 8x7d | 24x30d";
+      regex = "^zrepl_.*";
+    }
+  ];
 
 in {
   # ZFS filesystem mounts.
@@ -211,16 +231,21 @@ in {
           listen = ":9811";
         }];
         jobs = [
-          # Replicate from primary to secondary.
-          #
-          # TODO(mdlayher): fan-out replication from secondary to backup{0,1},
-          # and make smart logic like a udev listener to signal replication when
-          # the drives are plugged in and spun up.
-          # https://zrepl.github.io/quickstart/fan_out_replication.html
-          (pushLocal "primary" "secondary")
+          # Take snapshots of primary and advertise it as a source for each
+          # fan-out pull job. Notably a source per pull job is necessary to
+          # maintain incremental replication, see:
+          # https://zrepl.github.io/quickstart/fan_out_replication.html.
+          (snap "primary")
+          (sourceLocal "primary" "secondary")
+          (sourceLocal "primary" "backup0")
+          (sourceLocal "primary" "backup1")
 
-          # Local sink jobs for backups.
-          (sinkLocal "secondary")
+          # Pull primary into backup pools:
+          # -  hot: pull into secondary
+          # - cold: pull into backup{0,1} (if available)
+          (pullLocal "primary" "secondary")
+          (pullLocalEncrypted "primary" "backup0")
+          (pullLocalEncrypted "primary" "backup1")
         ];
       };
     };
