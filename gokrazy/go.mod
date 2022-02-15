@@ -9,7 +9,7 @@ require (
 	github.com/gokrazy/kernel v0.0.0-20220206085004-b9f59d355d8a
 	github.com/gokrazy/rpi-eeprom v0.0.0-20220126033524-e673395298ef
 	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab
-	github.com/mdlayher/consrv v0.0.0-20220131144135-fe847c9f508d
+	github.com/mdlayher/consrv v0.0.0-20220215204021-5249700425a4
 	github.com/prometheus/node_exporter v1.3.1
 )
 
@@ -64,12 +64,12 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab // indirect
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220207234003-57398862261d // indirect
+	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
@@ -81,6 +81,3 @@ require (
 	honnef.co/go/tools v0.2.2 // indirect
 	rsc.io/goversion v1.2.0 // indirect
 )
-
-// Temporary fork: remove perf collector due to broken APIs.
-replace github.com/prometheus/node_exporter => /home/matt/src/github.com/prometheus/node_exporter

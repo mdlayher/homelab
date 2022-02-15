@@ -16,5 +16,5 @@ _update:
 	-hostname=$(DEVICE) \
 	github.com/gokrazy/breakglass \
 	github.com/gokrazy/serial-busybox \
-	github.com/mdlayher/consrv \
+	github.com/mdlayher/consrv/cmd/consrv \
 	github.com/prometheus/node_exporter
