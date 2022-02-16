@@ -42,6 +42,7 @@ in {
       comma
       dmidecode
       ethtool
+      file
       fwupd
       gcc
       go
