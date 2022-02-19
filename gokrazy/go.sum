@@ -246,8 +246,8 @@ github.com/mattn/go-xmlrpc v0.0.3 h1:Y6WEMLEsqs3RviBrAa1/7qmbGB7DVD3brZIbqMbQdGY
 github.com/mattn/go-xmlrpc v0.0.3/go.mod h1:mqc2dz7tP5x5BKlCahN/n+hs7OSZKJkS9JsHNBRlrxA=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
-github.com/mdlayher/consrv v0.0.0-20220215204021-5249700425a4 h1:bpuxU+TgC/jyuOWLlfVY0W1f2EeAY8K7zUkE0GZ5F9U=
-github.com/mdlayher/consrv v0.0.0-20220215204021-5249700425a4/go.mod h1:EvxMPrYvyrbqYc7pYFUi7lVXSzqDbDXxVwHkfxaU0iE=
+github.com/mdlayher/consrv v0.0.0-20220219021455-0a8404bfe76a h1:Ob2tkE2ETV1u+WRJOwfkdJiZrqDYXSk1VqjM5ROdEpE=
+github.com/mdlayher/consrv v0.0.0-20220219021455-0a8404bfe76a/go.mod h1:EvxMPrYvyrbqYc7pYFUi7lVXSzqDbDXxVwHkfxaU0iE=
 github.com/mdlayher/ethtool v0.0.0-20210210192532-2b88debcdd43/go.mod h1:+t7E0lkKfbBsebllff1xdTmyJt8lH37niI6kwFk9OTo=
 github.com/mdlayher/ethtool v0.0.0-20211028163843-288d040e9d60/go.mod h1:aYbhishWc4Ai3I2U4Gaa2n3kHWSwzme6EsG/46HRQbE=
 github.com/mdlayher/genetlink v1.0.0/go.mod h1:0rJ0h4itni50A86M2kHcgS85ttZazNt7a8H2a2cw0Gc=
