@@ -49,7 +49,7 @@
     backend = "podman";
     containers = {
       home-assistant = {
-        image = "homeassistant/home-assistant:stable";
+        image = "ghcr.io/home-assistant/home-assistant:stable";
         extraOptions = [ "--network=host" ];
         ports = [ "8123:8123" ];
         volumes =
