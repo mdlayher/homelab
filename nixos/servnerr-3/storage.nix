@@ -132,38 +132,18 @@ in {
   #
   # The secondary backup pool is not mounted because we can zfs send without
   # doing so.
-  fileSystems = {
-    # primary ZFS pool.
-    "/primary" = {
-      device = "primary";
-      fsType = "zfs";
-    };
-
-    "/primary/vm" = {
-      device = "primary/vm";
-      fsType = "zfs";
-    };
-
-    "/primary/misc" = {
-      device = "primary/misc";
-      fsType = "zfs";
-    };
-
-    "/primary/media" = {
-      device = "primary/media";
-      fsType = "zfs";
-    };
-
-    "/primary/archive" = {
-      device = "primary/archive";
-      fsType = "zfs";
-    };
-
-    "/primary/text" = {
-      device = "primary/text";
-      fsType = "zfs";
-    };
-  };
+  fileSystems = lib.genAttrs [
+    "/primary"
+    "/primary/archive"
+    "/primary/media"
+    "/primary/misc"
+    "/primary/text"
+    "/primary/vm"
+  ] (device: {
+    # The device has the leading / removed.
+    device = builtins.substring 1 255 device;
+    fsType = "zfs";
+  });
 
   nixpkgs = {
     # Only allow certain unfree packages.
