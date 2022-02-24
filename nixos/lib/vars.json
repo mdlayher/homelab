@@ -45,14 +45,14 @@
 				"mac": "dc:a6:32:1e:66:94"
 			},
 			{
-				"name": "monitnerr-2",
+				"name": "matt-3",
 				"ipv4": "192.168.10.12",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:590a:dea6:32ff:fe7e:b6fe",
-					"ula": "fd9e:1a04:f01d:10:dea6:32ff:fe7e:b6fe",
-					"lla": "fe80::dea6:32ff:fe7e:b6fe"
+					"gua": "2600:6c4a:787f:590a:c6bd:e5ff:fe1b:8ae6",
+					"ula": "fd9e:1a04:f01d:10:c6bd:e5ff:fe1b:8ae6",
+					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
 				},
-				"mac": "dc:a6:32:7e:b6:fe"
+				"mac": "c4:bd:e5:1b:8a:e6"
 			}
 		],
 		"infra": [

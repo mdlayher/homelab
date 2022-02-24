@@ -120,10 +120,10 @@ func main() {
 					mac("dc:a6:32:1e:66:94"),
 				),
 				newHost(
-					"monitnerr-2",
+					"matt-3",
 					lan0,
 					netaddr.MustParseIP("192.168.10.12"),
-					mac("dc:a6:32:7e:b6:fe"),
+					mac("c4:bd:e5:1b:8a:e6"),
 				),
 			},
 			Infra: []host{
