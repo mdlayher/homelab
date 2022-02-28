@@ -128,10 +128,7 @@ let
   ];
 
 in {
-  # ZFS filesystem mounts.
-  #
-  # The secondary backup pool is not mounted because we can zfs send without
-  # doing so.
+  # primary zpool mounts.
   fileSystems = lib.genAttrs [
     "/primary"
     "/primary/archive"
@@ -144,6 +141,9 @@ in {
     device = builtins.substring 1 255 device;
     fsType = "zfs";
   });
+
+  # Don't mount secondary, just import it on boot.
+  boot.zfs.extraPools = ["secondary"];
 
   nixpkgs = {
     # Only allow certain unfree packages.
