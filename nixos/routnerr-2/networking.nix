@@ -100,7 +100,7 @@ in {
 
     # Use NM/MM only to manage the LTE modem.
     networkmanager = {
-      enable = true;
+      enable = false;
       dns = "none";
       unmanaged = [ "*,except:type:gsm" ];
     };
@@ -113,7 +113,7 @@ in {
   };
 
   # Tailscale experiments to replace WireGuard full-tunnel VPN.
-  services.tailscale.enable = true;
+  services.tailscale.enable = false;
 
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
