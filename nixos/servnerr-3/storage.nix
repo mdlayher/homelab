@@ -143,7 +143,7 @@ in {
   });
 
   # Don't mount secondary, just import it on boot.
-  boot.zfs.extraPools = ["secondary"];
+  boot.zfs.extraPools = [ "secondary" ];
 
   nixpkgs = {
     # Only allow certain unfree packages.

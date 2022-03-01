@@ -1,8 +1,6 @@
 { lib, pkgs, ... }:
 
-let
-  vars = import ./lib/vars.nix;
-  unstable = import <nixos-unstable-small> { };
+let vars = import ./lib/vars.nix;
 
 in {
   imports = [
@@ -83,8 +81,7 @@ in {
       enable = true;
 
       # Enable as necessary to get development builds of CoreRAD.
-      # v1.0.0 is packaged in unstable.
-      package = unstable.corerad;
+      # package = unstable.corerad;
 
       settings = {
         debug = {
