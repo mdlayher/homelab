@@ -5,6 +5,12 @@ let
   lans = with vars.interfaces; [ mgmt0 lan0 guest0 iot0 lab0 ];
 
 in {
+  # Start only after systemd-networkd interface setup completes.
+  systemd.services.dhcpd4.unitConfig = {
+    After = lib.mkForce "network-online.target";
+    Requires = "network-online.target";
+  };
+
   services.dhcpd4 = {
     interfaces = lib.forEach lans (lan: toString lan.name);
     enable = true;

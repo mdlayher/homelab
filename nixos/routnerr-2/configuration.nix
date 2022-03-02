@@ -88,16 +88,6 @@ in {
     }];
   };
 
-  # TEMPORARY: required to make MM exporter work.
-  systemd.services.prometheus-modemmanager-exporter.serviceConfig = {
-    DynamicUser = false;
-    User = "modemmanager-exporter";
-  };
-  users.users.modemmanager-exporter = {
-    group = "networkmanager";
-    isNormalUser = true;
-  };
-
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
     # Google Home and Chromecast.
@@ -121,9 +111,6 @@ in {
       passwordAuthentication = false;
       permitRootLogin = "no";
     };
-
-    # Broken along with modemmanager for now.
-    prometheus.exporters = { modemmanager.enable = false; };
 
     tftpd = {
       enable = true;

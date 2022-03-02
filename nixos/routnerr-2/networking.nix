@@ -19,6 +19,7 @@ in {
     useNetworkd = true;
     useDHCP = false;
 
+    # TODO(mdlayher): move to networkd.
     wireguard = with vars.wireguard; {
       enable = true;
       interfaces = {
@@ -41,7 +42,7 @@ in {
     firewall.enable = false;
   };
 
-  # TODO(mdlayher): enable after working out CoreDNS dependency.
+  # We're already using CoreDNS for the whole system.
   services.resolved.enable = false;
 
   # Manage network configuration with networkd.
@@ -77,10 +78,37 @@ in {
       };
     };
 
-    # TODO(mdlayher): wireless WAN.
+    # Wireless WAN.
+    links."11-wwan0" = {
+      matchConfig.Path = "pci-0000:00:13.0-usb-0:1.3:1.12";
+      linkConfig.Name = "wwan0";
+    };
+    networks."11-wwan0" = {
+      matchConfig.Name = "wwan0";
+      networkConfig = {
+        DHCP = "yes";
+        DefaultRouteOnDevice = false;
+      };
+      # Do not require WWAN for online.
+      linkConfig.RequiredForOnline = false;
+      # Never accept ISP DNS or search domains.
+      dhcpV4Config = {
+        UseDNS = false;
+        UseDomains = false;
+      };
+      dhcpV6Config = {
+        UseDNS = false;
+        # TODO(mdlayher): NixOS doesn't allow this?
+        # UseDomains = false;
+      };
+      ipv6AcceptRAConfig = {
+        UseDNS = false;
+        UseDomains = false;
+      };
+    };
 
     # Physical management LAN.
-    links."11-mgmt0" = {
+    links."15-mgmt0" = {
       # Important: match on Ethernet device type because VLANs share this MAC.
       matchConfig = {
         Type = "ether";
@@ -88,7 +116,7 @@ in {
       };
       linkConfig.Name = "mgmt0";
     };
-    networks."11-mgmt0" = {
+    networks."15-mgmt0" = {
       matchConfig.Name = "mgmt0";
       address = [ "fd9e:1a04:f01d::1/64" "192.168.1.1/24" ];
 
@@ -103,14 +131,14 @@ in {
     };
 
     # Home VLAN.
-    netdevs."12-lan0" = {
+    netdevs."20-lan0" = {
       netdevConfig = {
         Name = "lan0";
         Kind = "vlan";
       };
       vlanConfig.Id = 10;
     };
-    networks."12-lan0" = {
+    networks."20-lan0" = {
       matchConfig.Name = "lan0";
       address = [ "fd9e:1a04:f01d:10::1/64" "192.168.10.1/24" ];
       networkConfig.DHCPv6PrefixDelegation = true;
@@ -121,14 +149,14 @@ in {
     };
 
     # IoT VLAN.
-    netdevs."13-iot0" = {
+    netdevs."25-iot0" = {
       netdevConfig = {
         Name = "iot0";
         Kind = "vlan";
       };
       vlanConfig.Id = 66;
     };
-    networks."13-iot0" = {
+    networks."25-iot0" = {
       matchConfig.Name = "iot0";
       address = [ "fd9e:1a04:f01d:66::1/64" "192.168.66.1/24" ];
       networkConfig.DHCPv6PrefixDelegation = true;
@@ -139,14 +167,14 @@ in {
     };
 
     # Guest VLAN.
-    netdevs."14-guest0" = {
+    netdevs."30-guest0" = {
       netdevConfig = {
         Name = "guest0";
         Kind = "vlan";
       };
       vlanConfig.Id = 9;
     };
-    networks."14-guest0" = {
+    networks."30-guest0" = {
       matchConfig.Name = "guest0";
       address = [ "fd9e:1a04:f01d:9::1/64" "192.168.9.1/24" ];
       networkConfig.DHCPv6PrefixDelegation = true;
@@ -157,14 +185,14 @@ in {
     };
 
     # Lab VLAN.
-    netdevs."15-lab0" = {
+    netdevs."35-lab0" = {
       netdevConfig = {
         Name = "lab0";
         Kind = "vlan";
       };
       vlanConfig.Id = 2;
     };
-    networks."15-lab0" = {
+    networks."35-lab0" = {
       matchConfig.Name = "lab0";
       address = [ "fd9e:1a04:f01d:2::1/64" "192.168.2.1/24" ];
       networkConfig.DHCPv6PrefixDelegation = true;
