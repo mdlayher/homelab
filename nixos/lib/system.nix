@@ -54,6 +54,7 @@ in {
       iotop
       iperf3
       jq
+      killall
       lm_sensors
       lshw
       lsof
@@ -82,6 +83,7 @@ in {
       usbutils
       wget
       wireguard-tools
+      xterm
     ];
   };
 
