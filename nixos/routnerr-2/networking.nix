@@ -59,10 +59,13 @@ in {
     networks."10-wan0" = {
       matchConfig.Name = "wan0";
       networkConfig.DHCP = "yes";
-      # Never accept ISP DNS or search domains.
+      # Never accept ISP DNS or search domains for any DHCP/RA family.
       dhcpV4Config = {
         UseDNS = false;
         UseDomains = false;
+
+        # Don't release IPv4 address on restart/reboots to avoid churn.
+        SendRelease = false;
       };
       dhcpV6Config = {
         # Spectrum gives a /56.
