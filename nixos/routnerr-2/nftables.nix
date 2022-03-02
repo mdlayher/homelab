@@ -31,8 +31,8 @@ let
   all_wans = with vars.interfaces; [ wan0 wwan0 ];
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  metered_lans = with vars.interfaces; [ enp2s0 lan0 ];
-  trusted_lans = with vars.interfaces; [ enp2s0 lan0 lab0 wg0 ];
+  metered_lans = with vars.interfaces; [ mgmt0 lan0 ];
+  trusted_lans = with vars.interfaces; [ mgmt0 lan0 lab0 wg0 ];
   limited_lans = with vars.interfaces; [ guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
 

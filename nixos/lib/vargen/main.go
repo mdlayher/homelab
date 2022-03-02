@@ -58,9 +58,9 @@ func main() {
 	var (
 		// Trusted subnets which will have internal DNS and other services
 		// deployed on them.
-		enp2s0 = newSubnet("enp2s0", 0, gua6, trusted)
-		lan0   = newSubnet("lan0", 10, gua6, trusted)
-		wg0    = newSubnet("wg0", 20, gua6, trusted)
+		mgmt0 = newSubnet("mgmt0", 0, gua6, trusted)
+		lan0  = newSubnet("lan0", 10, gua6, trusted)
+		wg0   = newSubnet("wg0", 20, gua6, trusted)
 
 		// When multiple subnets are available, prefer the 10GbE subnet.
 		tengb0 = func() subnet {
@@ -78,14 +78,14 @@ func main() {
 
 		server = newHost(
 			"servnerr-3",
-			enp2s0,
+			mgmt0,
 			netaddr.MustParseIP("192.168.1.6"),
 			mac("1c:1b:0d:ea:83:0f"),
 		)
 
 		desktop = newHost(
 			"nerr-3",
-			enp2s0,
+			mgmt0,
 			netaddr.MustParseIP("192.168.1.7"),
 			mac("04:d9:f5:7e:1c:47"),
 		)
@@ -129,25 +129,25 @@ func main() {
 			Infra: []host{
 				newHost(
 					"switch-livingroom01",
-					enp2s0,
+					mgmt0,
 					netaddr.MustParseIP("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
 				newHost(
 					"switch-office01",
-					enp2s0,
+					mgmt0,
 					netaddr.MustParseIP("192.168.1.3"),
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
 				newHost(
 					"switch-office02",
-					enp2s0,
+					mgmt0,
 					netaddr.MustParseIP("192.168.1.4"),
 					mac("74:ac:b9:e2:4e:a5"),
 				),
 				newHost(
 					"ap-livingroom02",
-					enp2s0,
+					mgmt0,
 					netaddr.MustParseIP("192.168.1.5"),
 					mac("74:83:c2:7a:c6:15"),
 				),
@@ -188,7 +188,7 @@ func main() {
 	}
 
 	// Attach interface definitions from subnet definitions.
-	out.addInterface("enp2s0", enp2s0)
+	out.addInterface("mgmt0", mgmt0)
 	out.addInterface("lan0", lan0)
 	out.addInterface("guest0", guest0)
 	out.addInterface("iot0", iot0)
@@ -201,7 +201,7 @@ func main() {
 	// TODO: WANs are special cases and should probably live in their own
 	// section with different rules.
 	out.Interfaces["wan0"] = iface{
-		Name:       "enp1s0",
+		Name:       "wan0",
 		Preference: medium,
 		IPv4:       wan4,
 	}

@@ -149,17 +149,6 @@
 		]
 	},
 	"interfaces": {
-		"enp2s0": {
-			"name": "enp2s0",
-			"preference": "medium",
-			"internal_dns": true,
-			"ipv4": "192.168.1.1",
-			"ipv6": {
-				"gua": "2600:6c4a:787f:1900::1",
-				"ula": "fd9e:1a04:f01d::1",
-				"lla": "fe80::1"
-			}
-		},
 		"guest0": {
 			"name": "guest0",
 			"preference": "medium",
@@ -204,8 +193,19 @@
 				"lla": "fe80::1"
 			}
 		},
+		"mgmt0": {
+			"name": "mgmt0",
+			"preference": "medium",
+			"internal_dns": true,
+			"ipv4": "192.168.1.1",
+			"ipv6": {
+				"gua": "2600:6c4a:787f:1900::1",
+				"ula": "fd9e:1a04:f01d::1",
+				"lla": "fe80::1"
+			}
+		},
 		"wan0": {
-			"name": "enp1s0",
+			"name": "wan0",
 			"preference": "medium",
 			"internal_dns": false,
 			"ipv4": "24.247.223.150",

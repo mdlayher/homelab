@@ -104,7 +104,7 @@ in {
     avahi = {
       enable = true;
       interfaces = with vars.interfaces; [
-        "${enp2s0.name}"
+        "${mgmt0.name}"
         "${lan0.name}"
         "${iot0.name}"
       ];

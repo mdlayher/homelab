@@ -26,7 +26,7 @@ in {
         })
 
         # Downstream advertising interfaces.
-        ++ lib.forEach [ enp2s0 lab0 lan0 guest0 iot0 ] (ifi:
+        ++ lib.forEach [ mgmt0 lab0 lan0 guest0 iot0 ] (ifi:
           {
             name = ifi.name;
             advertise = true;
