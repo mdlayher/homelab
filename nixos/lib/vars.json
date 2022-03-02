@@ -208,7 +208,7 @@
 			"name": "wan0",
 			"preference": "medium",
 			"internal_dns": false,
-			"ipv4": "174.81.249.98",
+			"ipv4": "24.176.13.51",
 			"ipv6": {
 				"gua": "",
 				"ula": "",
