@@ -7,37 +7,13 @@ in {
     # Hardware and base system configuration.
     ./hardware-configuration.nix
     ./lib/system.nix
+    ./networking.nix
+    ./storage.nix
 
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
-    ./storage.nix
   ];
-
-  networking = {
-    # Host name and ID.
-    hostName = "servnerr-3";
-    hostId = "efdd2a1b";
-
-    # No local firewall.
-    firewall.enable = false;
-
-    # Set up a bridge interface for VMs which is tagged into a lab VLAN.
-    bridges.br0.interfaces = [ "enp6s0" ];
-
-    # Use DHCP for all interfaces, but force the deprecated global setting off.
-    useDHCP = false;
-    interfaces = {
-      # 1GbE on management.
-      enp5s0.useDHCP = true;
-
-      # 10GbE VLAN.
-      enp12s0.useDHCP = true;
-
-      # 1GbE on Lab VLAN.
-      br0.useDHCP = false;
-    };
-  };
 
   boot = {
     # Use the systemd-boot EFI boot loader.
@@ -90,10 +66,10 @@ in {
           pprof = true;
         };
 
-        interfaces = lib.forEach [ "enp5s0" ] (name: {
-          inherit name;
+        interfaces = [{
+          names = [ "mgmt0" ];
           monitor = true;
-        });
+        }];
       };
     };
 
