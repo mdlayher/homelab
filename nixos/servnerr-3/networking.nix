@@ -25,6 +25,8 @@
     networks."10-mgmt0" = {
       matchConfig.Name = "mgmt0";
       networkConfig.DHCP = "ipv4";
+      # Only accept DNS search on this interface.
+      ipv6AcceptRAConfig.UseDomains = true;
     };
 
     # 1GbE lab LAN, attached to br0 for VMs.
