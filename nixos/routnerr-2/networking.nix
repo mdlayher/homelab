@@ -11,8 +11,6 @@ let
 in {
   networking = {
     hostName = "routnerr-2";
-    # TODO(mdlayher): systemd-resolved with fallback nameservers.
-    nameservers = with vars.localhost; [ "${ipv4}" "${ipv6}" ];
 
     # Use systemd-networkd for configuration. Forcibly disable legacy DHCP
     # client.
@@ -42,8 +40,15 @@ in {
     firewall.enable = false;
   };
 
-  # We're already using CoreDNS for the whole system.
-  services.resolved.enable = false;
+  # Use resolved for local DNS lookups, querying through CoreDNS.
+  services.resolved = {
+    enable = true;
+    domains = [ vars.domain ];
+    extraConfig = ''
+      DNS=::1 127.0.0.1
+      DNSStubListener=no
+    '';
+  };
 
   # Manage network configuration with networkd.
   #
