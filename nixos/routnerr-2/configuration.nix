@@ -112,9 +112,9 @@ in {
       permitRootLogin = "no";
     };
 
-    tftpd = {
+    atftpd = {
       enable = true;
-      path = "/var/lib/tftp";
+      root = "/var/lib/tftp";
     };
   };
 }
