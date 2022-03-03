@@ -3,6 +3,24 @@
 let
   vars = import ./lib/vars.nix;
 
+  ethLink = (name:
+    (mac: {
+      matchConfig = {
+        Type = "ether";
+        MACAddress = mac;
+      };
+      linkConfig.Name = name;
+    }));
+
+  vlanNetdev = (name:
+    (id: {
+      netdevConfig = {
+        Name = name;
+        Kind = "vlan";
+      };
+      vlanConfig.Id = id;
+    }));
+
 in {
   networking = {
     hostName = "routnerr-2";
@@ -34,10 +52,7 @@ in {
     enable = true;
 
     # Wired WAN.
-    links."10-wan0" = {
-      matchConfig.MACAddress = "00:0d:b9:53:ea:cc";
-      linkConfig.Name = "wan0";
-    };
+    links."10-wan0" = ethLink "wan0" "00:0d:b9:53:ea:cc";
     networks."10-wan0" = {
       matchConfig.Name = "wan0";
       networkConfig.DHCP = "yes";
@@ -97,13 +112,7 @@ in {
 
     # Physical management LAN. For physical LANs, we have to make sure to match
     # on both Type and MACAddress since VLANs would share the same MAC.
-    links."15-mgmt0" = {
-      matchConfig = {
-        Type = "ether";
-        MACAddress = "00:0d:b9:53:ea:cd";
-      };
-      linkConfig.Name = "mgmt0";
-    };
+    links."15-mgmt0" = ethLink "mgmt0" "00:0d:b9:53:ea:cd";
     networks."15-mgmt0" = {
       matchConfig.Name = "mgmt0";
       address = [ "fd9e:1a04:f01d::1/64" "192.168.1.1/24" ];
@@ -119,29 +128,11 @@ in {
     };
 
     # Unused physical management LANs.
-    links."16-mgmt1" = {
-      matchConfig = {
-        Type = "ether";
-        MACAddress = "00:0d:b9:53:ea:ce";
-      };
-      linkConfig.Name = "mgmt1";
-    };
-    links."17-mgmt2" = {
-      matchConfig = {
-        Type = "ether";
-        MACAddress = "00:0d:b9:53:ea:cf";
-      };
-      linkConfig.Name = "mgmt2";
-    };
+    links."16-mgmt1" = ethLink "mgmt1" "00:0d:b9:53:ea:ce";
+    links."17-mgmt2" = ethLink "mgmt2" "00:0d:b9:53:ea:cf";
 
     # Home VLAN.
-    netdevs."20-lan0" = {
-      netdevConfig = {
-        Name = "lan0";
-        Kind = "vlan";
-      };
-      vlanConfig.Id = 10;
-    };
+    netdevs."20-lan0" = vlanNetdev "lan0" 10;
     networks."20-lan0" = {
       matchConfig.Name = "lan0";
       address = [ "fd9e:1a04:f01d:10::1/64" "192.168.10.1/24" ];
@@ -153,13 +144,7 @@ in {
     };
 
     # IoT VLAN.
-    netdevs."25-iot0" = {
-      netdevConfig = {
-        Name = "iot0";
-        Kind = "vlan";
-      };
-      vlanConfig.Id = 66;
-    };
+    netdevs."25-iot0" = vlanNetdev "iot0" 66;
     networks."25-iot0" = {
       matchConfig.Name = "iot0";
       address = [ "fd9e:1a04:f01d:66::1/64" "192.168.66.1/24" ];
@@ -171,13 +156,7 @@ in {
     };
 
     # Guest VLAN.
-    netdevs."30-guest0" = {
-      netdevConfig = {
-        Name = "guest0";
-        Kind = "vlan";
-      };
-      vlanConfig.Id = 9;
-    };
+    netdevs."30-guest0" = vlanNetdev "guest0" 9;
     networks."30-guest0" = {
       matchConfig.Name = "guest0";
       address = [ "fd9e:1a04:f01d:9::1/64" "192.168.9.1/24" ];
@@ -189,13 +168,7 @@ in {
     };
 
     # Lab VLAN.
-    netdevs."35-lab0" = {
-      netdevConfig = {
-        Name = "lab0";
-        Kind = "vlan";
-      };
-      vlanConfig.Id = 2;
-    };
+    netdevs."35-lab0" = vlanNetdev "lab0" 2;
     networks."35-lab0" = {
       matchConfig.Name = "lab0";
       address = [ "fd9e:1a04:f01d:2::1/64" "192.168.2.1/24" ];
