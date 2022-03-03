@@ -69,6 +69,9 @@ in {
       linkConfig.Name = "wwan0";
     };
     networks."11-wwan0" = {
+      # Disabled; waiting on networkd + ModemManager integration.
+      enable = false;
+
       matchConfig.Name = "wwan0";
       networkConfig = {
         DHCP = "yes";
