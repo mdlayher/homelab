@@ -3,11 +3,6 @@
 let
   vars = import ./lib/vars.nix;
 
-  mkPeer = (peer: {
-    publicKey = peer.public_key;
-    allowedIPs = peer.allowed_ips;
-  });
-
 in {
   networking = {
     hostName = "routnerr-2";
@@ -16,24 +11,6 @@ in {
     # client.
     useNetworkd = true;
     useDHCP = false;
-
-    # TODO(mdlayher): move to networkd.
-    wireguard = with vars.wireguard; {
-      enable = true;
-      interfaces = {
-        ${name} = {
-          listenPort = 51820;
-          ips = with subnet; [
-            "${ipv4}"
-            "${ipv6.gua}"
-            "${ipv6.ula}"
-            "${ipv6.lla}"
-          ];
-          privateKeyFile = "/var/lib/wireguard/${name}.key";
-          peers = lib.forEach peers mkPeer;
-        };
-      };
-    };
 
     # Use nftables instead.
     nat.enable = false;
@@ -208,6 +185,28 @@ in {
         Token = "::1";
         SubnetId = "2";
       };
+    };
+
+    # WireGuard tunnel.
+    netdevs."40-wg0" = {
+      netdevConfig = {
+        Name = "wg0";
+        Kind = "wireguard";
+      };
+      wireguardConfig = {
+        PrivateKeyFile = "/var/lib/wireguard/wg0.key";
+        ListenPort = 51820;
+      };
+      wireguardPeers = lib.forEach vars.wireguard.peers (peer: {
+        wireguardPeerConfig = {
+          PublicKey = peer.public_key;
+          AllowedIPs = peer.allowed_ips;
+        };
+      });
+    };
+    networks."40-wg0" = {
+      matchConfig.Name = "wg0";
+      address = with vars.wireguard.subnet; [ ipv4 ipv6.gua ipv6.ula ipv6.lla ];
     };
   };
 
