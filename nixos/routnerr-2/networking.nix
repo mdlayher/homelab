@@ -95,9 +95,9 @@ in {
       };
     };
 
-    # Physical management LAN.
+    # Physical management LAN. For physical LANs, we have to make sure to match
+    # on both Type and MACAddress since VLANs would share the same MAC.
     links."15-mgmt0" = {
-      # Important: match on Ethernet device type because VLANs share this MAC.
       matchConfig = {
         Type = "ether";
         MACAddress = "00:0d:b9:53:ea:cd";
@@ -116,6 +116,22 @@ in {
         Token = "::1";
         SubnetId = 0;
       };
+    };
+
+    # Unused physical management LANs.
+    links."16-mgmt1" = {
+      matchConfig = {
+        Type = "ether";
+        MACAddress = "00:0d:b9:53:ea:ce";
+      };
+      linkConfig.Name = "mgmt1";
+    };
+    links."17-mgmt2" = {
+      matchConfig = {
+        Type = "ether";
+        MACAddress = "00:0d:b9:53:ea:cf";
+      };
+      linkConfig.Name = "mgmt2";
     };
 
     # Home VLAN.
