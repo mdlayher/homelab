@@ -21,10 +21,12 @@ let
       vlanConfig.Id = id;
     }));
 
-  vlanNetwork = (name: (id: {
+  vlanNetwork = (name:
+    (id: {
       matchConfig.Name = name;
       # Embed ID directly in IPv4/6 addresses for clarity.
-      address = [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
+      address =
+        [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
       networkConfig.DHCPv6PrefixDelegation = true;
       dhcpV6PrefixDelegationConfig = {
         # Router always lives at ::1.
@@ -36,20 +38,15 @@ let
 
   # Thanks, corpix!
   # https://gist.github.com/corpix/f761c82c9d6fdbc1b3846b37e1020e11
-  decToHex =
-    let
-      intToHex = [
-        "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"
-        "a" "b" "c" "d" "e" "f"
-      ];
-      toHex' = q: a:
-        if q > 0
-        then (toHex'
-          (q / 16)
-          ((lib.elemAt intToHex (lib.mod q 16)) + a))
-        else a;
-    in
-      v: toHex' v "";
+  decToHex = let
+    intToHex =
+      [ "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "a" "b" "c" "d" "e" "f" ];
+    toHex' = q: a:
+      if q > 0 then
+        (toHex' (q / 16) ((lib.elemAt intToHex (lib.mod q 16)) + a))
+      else
+        a;
+  in v: toHex' v "";
 in {
   networking = {
     hostName = "routnerr-2";
