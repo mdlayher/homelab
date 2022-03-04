@@ -115,8 +115,8 @@ func main() {
 				),
 				newHost(
 					"monitnerr-1",
-					lan0,
-					netaddr.MustParseIP("192.168.10.11"),
+					mgmt0,
+					netaddr.MustParseIP("192.168.1.8"),
 					mac("dc:a6:32:1e:66:94"),
 				),
 				newHost(
