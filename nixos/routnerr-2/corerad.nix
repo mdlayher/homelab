@@ -41,8 +41,15 @@ in {
             rdnss = [ { } ];
           } // (
             # Configure DNS search on some trusted LANs, or omit otherwise.
+            #
+            # TODO(mdlayher): probably rename to ifi.trusted.
             if ifi.internal_dns then {
               dnssl = [{ domain_names = [ vars.domain ]; }];
+
+              # This router owns the ULA /48.
+              #
+              # TODO(mdlayher): ::/N wildcard syntax.
+              route = [{ prefix = "fd9e:1a04:f01d::/48"; }];
             } else
               { }));
     };

@@ -77,6 +77,19 @@ in {
   systemd.network = {
     enable = true;
 
+    # Loopback.
+    networks."5-lo" = {
+      matchConfig.Name = "lo";
+      routes = [{
+        # We own the ULA /48, create a blanket unreachable route which will be
+        # superseded by more specific /64s.
+        routeConfig = {
+          Destination = "fd9e:1a04:f01d::/48";
+          Type = "unreachable";
+        };
+      }];
+    };
+
     # Wired WAN.
     links."10-wan0" = ethLink "wan0" "00:0d:b9:53:ea:cc";
     networks."10-wan0" = {
