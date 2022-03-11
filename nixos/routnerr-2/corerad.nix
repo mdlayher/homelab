@@ -46,10 +46,13 @@ in {
             if ifi.internal_dns then {
               dnssl = [{ domain_names = [ vars.domain ]; }];
 
-              # This router owns the ULA /48.
+              # This router owns the GUA /56 and ULA /48.
               #
-              # TODO(mdlayher): ::/N wildcard syntax.
-              route = [{ prefix = "fd9e:1a04:f01d::/48"; }];
+              # TODO(mdlayher): ::/N wildcard syntax?
+              route = [
+                { prefix = "2600:6c4a:787f:1900::/56"; }
+                { prefix = "fd9e:1a04:f01d::/48"; }
+              ];
             } else
               { }));
     };

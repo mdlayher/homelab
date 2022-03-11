@@ -27,7 +27,10 @@ let
       # Embed ID directly in IPv4/6 addresses for clarity.
       address =
         [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
-      networkConfig.DHCPv6PrefixDelegation = true;
+      networkConfig = {
+        DHCPv6PrefixDelegation = true;
+        IPv6AcceptRA = false;
+      };
       dhcpV6PrefixDelegationConfig = {
         # Router always lives at ::1.
         Token = "::1";
@@ -136,7 +139,10 @@ in {
       # VLANs associated with this physical interface.
       vlan = [ "lan0" "iot0" "guest0" "lab0" ];
 
-      networkConfig.DHCPv6PrefixDelegation = true;
+      networkConfig = {
+        DHCPv6PrefixDelegation = true;
+        IPv6AcceptRA = false;
+      };
       dhcpV6PrefixDelegationConfig = {
         Token = "::1";
         SubnetId = 0;
