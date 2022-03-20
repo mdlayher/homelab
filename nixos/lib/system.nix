@@ -91,6 +91,9 @@ in {
   hardware.enableRedistributableFirmware = true;
 
   nix = {
+    # Enable flakes.
+    package = pkgs.nixFlakes;
+
     # Automatic Nix GC.
     gc = {
       automatic = true;
@@ -99,6 +102,7 @@ in {
     };
     extraOptions = ''
       min-free = ${toString (500 * 1024 * 1024)}
+      experimental-features = nix-command flakes
     '';
 
     # Automatic store optimization.
