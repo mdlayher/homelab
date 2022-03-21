@@ -43,20 +43,15 @@ in {
 
             # Automatically use the appropriate interface address as a DNS server.
             rdnss = [ { } ];
+
+            # Automatically propagate routes owned by loopback.
+            route = [ { } ];
           } // (
             # Configure DNS search on some trusted LANs, or omit otherwise.
             #
             # TODO(mdlayher): probably rename to ifi.trusted.
             if ifi.internal_dns then {
               dnssl = [{ domain_names = [ vars.domain ]; }];
-
-              # This router owns the GUA /56 and ULA /48.
-              #
-              # TODO(mdlayher): ::/N wildcard syntax?
-              route = [
-                { prefix = "2600:6c4a:787f:1900::/56"; }
-                { prefix = "fd9e:1a04:f01d::/48"; }
-              ];
             } else
               { }));
     };
