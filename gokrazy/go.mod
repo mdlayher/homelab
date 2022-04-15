@@ -9,7 +9,7 @@ require (
 	github.com/gokrazy/kernel v0.0.0-20220409132738-43d2231e15aa
 	github.com/gokrazy/rpi-eeprom v0.0.0-20220320150435-c833da5fdf2b
 	github.com/gokrazy/serial-busybox v0.0.0-20211029180129-24c7ca0a91ab
-	github.com/mdlayher/consrv v0.0.0-20220330005702-f369c05f2fbe
+	github.com/mdlayher/consrv v1.0.0
 	github.com/prometheus/node_exporter v1.3.1-0.20220409151055-3d9ee5d9cc45
 )
 
@@ -64,11 +64,11 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921 // indirect
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
