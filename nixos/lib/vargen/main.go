@@ -146,10 +146,18 @@ func main() {
 					mac("74:ac:b9:e2:4e:a5"),
 				),
 				newHost(
-					"ap-livingroom02",
+					"ap-livingroom",
 					mgmt0,
 					netaddr.MustParseIP("192.168.1.5"),
-					mac("74:83:c2:7a:c6:15"),
+					mac("d0:4d:c6:c1:75:4c"),
+				),
+				// server
+				// desktop
+				newHost(
+					"ap-basement",
+					mgmt0,
+					netaddr.MustParseIP("192.168.1.8"),
+					mac("d0:4d:c6:c1:72:96"),
 				),
 				newHost(
 					"keylight",
