@@ -147,10 +147,11 @@ in {
         "https://grafana.servnerr.com"
       ])
       # Netlify can occasionally be flappy, so check it less often.
-      (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "1m" [
-        "https://corerad.net/status"
-        "https://mdlayher.com/status"
-      ])
+      # TODO(mdlayher): Netlify may be throttling us, enable later at lower intervals.
+      # (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "3m" [
+      #   "https://corerad.net/status"
+      #   "https://mdlayher.com/status"
+      # ])
       (blackboxScrape "http_401" "15s" [
         "https://alertmanager.servnerr.com"
         "https://plex.servnerr.com"
@@ -167,11 +168,7 @@ in {
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp" [
-          "switch-livingroom01"
-          "switch-office01"
-          "ap-livingroom02.ipv4"
-        ])
+        (staticScrape "snmp" [ "switch-livingroom01" "switch-office01" ])
         {
           metrics_path = "/snmp";
           params = { module = [ "if_mib" ]; };
