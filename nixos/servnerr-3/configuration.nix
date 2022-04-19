@@ -1,6 +1,8 @@
 { lib, pkgs, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  unstable = import <nixos-unstable-small> { };
+  vars = import ./lib/vars.nix;
 
 in {
   imports = [
@@ -45,6 +47,15 @@ in {
   # Scale down CPU frequency when load is low.
   powerManagement.cpuFreqGovernor = "ondemand";
 
+  # Overlays for unstable and out-of-tree packages.
+  nixpkgs.overlays = [
+    (_self: super: {
+      zedhook = super.callPackage ./lib/pkgs/zedhook.nix {
+        buildGoModule = unstable.buildGo118Module;
+      };
+    })
+  ];
+
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
   environment.systemPackages = with pkgs; [
@@ -53,6 +64,9 @@ in {
     sqlite
     zfs
     zrepl
+
+    # Unstable and out-of-tree packages.
+    zedhook
   ];
 
   services = {
