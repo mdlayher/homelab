@@ -15,6 +15,9 @@ in {
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
+
+    # Unstable or out-of-tree modules.
+    ./lib/modules/zedhook.nix
   ];
 
   boot = {

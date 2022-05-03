@@ -2,15 +2,16 @@
 
 buildGoModule rec {
   pname = "zedhook";
-  version = "unstable-2022-04-18";
+  version = "unstable-2022-04-29";
 
   src = fetchFromGitHub {
     owner = "mdlayher";
     repo = "zedhook";
-    rev = "e30e67abaa5e5b53f11fb613946325fe06f8ca97";
-    sha256 = "sha256-+GWMC/EaKiSQQpxu8mudtRdLrWczWR6ZaVhn/VCAa5M=";
+    rev = "a44f053f8f1eea1d7a21ad7ec321dedc0fb819c6";
+    sha256 = "sha256-2eGd4Yejz7iLRNISYUqSxFIQwg1PJ7q2/WUsP/5wEew=";
   };
 
+  # TODO: workaround for buildGoModule using 1.17.
   modBuildPhase = ''
     go mod edit -go=1.18
     go mod tidy

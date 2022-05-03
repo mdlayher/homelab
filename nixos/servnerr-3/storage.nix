@@ -202,6 +202,9 @@ in {
       };
     };
 
+    # ZFS event logs via zedhookd.
+    zedhook.enable = true;
+
     # Replicate ZFS pools using zrepl.
     zrepl = {
       enable = true;
