@@ -151,12 +151,13 @@ func main() {
 					netaddr.MustParseIP("192.168.1.5"),
 					mac("d0:4d:c6:c1:75:4c"),
 				),
-				// server
-				// desktop
+				// server:  192.168.1.6
+				// desktop: 192.168.1.7
+				// monitor: 192.168.1.8
 				newHost(
 					"ap-basement",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.8"),
+					netaddr.MustParseIP("192.168.1.9"),
 					mac("d0:4d:c6:c1:72:96"),
 				),
 				newHost(
@@ -165,7 +166,6 @@ func main() {
 					netaddr.MustParseIP("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
 				),
-				// Free: .11, .12
 				newHost(
 					"living-room-receiver.iot",
 					iot0,
