@@ -8,11 +8,11 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"strings"
 
 	"github.com/mdlayher/netx/eui64"
-	"inet.af/netaddr"
 )
 
 //go:generate /usr/bin/env bash -c "go run main.go > ../vars.json"
@@ -79,14 +79,14 @@ func main() {
 		server = newHost(
 			"servnerr-3",
 			mgmt0,
-			netaddr.MustParseIP("192.168.1.6"),
+			netip.MustParseAddr("192.168.1.6"),
 			mac("1c:1b:0d:ea:83:0f"),
 		)
 
 		desktop = newHost(
 			"nerr-3",
 			mgmt0,
-			netaddr.MustParseIP("192.168.1.7"),
+			netip.MustParseAddr("192.168.1.7"),
 			mac("04:d9:f5:7e:1c:47"),
 		)
 	)
@@ -110,19 +110,19 @@ func main() {
 				newHost(
 					"theatnerr-1",
 					lan0,
-					netaddr.MustParseIP("192.168.10.10"),
+					netip.MustParseAddr("192.168.10.10"),
 					mac("94:de:80:6c:0e:ef"),
 				),
 				newHost(
 					"monitnerr-1",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.8"),
+					netip.MustParseAddr("192.168.1.8"),
 					mac("dc:a6:32:1e:66:94"),
 				),
 				newHost(
 					"matt-3",
 					lan0,
-					netaddr.MustParseIP("192.168.10.12"),
+					netip.MustParseAddr("192.168.10.12"),
 					mac("c4:bd:e5:1b:8a:e6"),
 				),
 			},
@@ -130,25 +130,25 @@ func main() {
 				newHost(
 					"switch-livingroom01",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.2"),
+					netip.MustParseAddr("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
 				newHost(
 					"switch-office01",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.3"),
+					netip.MustParseAddr("192.168.1.3"),
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
 				newHost(
 					"switch-office02",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.4"),
+					netip.MustParseAddr("192.168.1.4"),
 					mac("74:ac:b9:e2:4e:a5"),
 				),
 				newHost(
 					"ap-livingroom",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.5"),
+					netip.MustParseAddr("192.168.1.5"),
 					mac("d0:4d:c6:c1:75:4c"),
 				),
 				// server:  192.168.1.6
@@ -157,37 +157,37 @@ func main() {
 				newHost(
 					"ap-basement",
 					mgmt0,
-					netaddr.MustParseIP("192.168.1.9"),
+					netip.MustParseAddr("192.168.1.9"),
 					mac("d0:4d:c6:c1:72:96"),
 				),
 				newHost(
 					"keylight",
 					iot0,
-					netaddr.MustParseIP("192.168.66.10"),
+					netip.MustParseAddr("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
 				),
 				newHost(
 					"living-room-receiver.iot",
 					iot0,
-					netaddr.MustParseIP("192.168.66.13"),
+					netip.MustParseAddr("192.168.66.13"),
 					mac("00:06:78:55:b3:18"),
 				),
 				newHost(
 					"living-room-hue-hub.iot",
 					iot0,
-					netaddr.MustParseIP("192.168.66.14"),
+					netip.MustParseAddr("192.168.66.14"),
 					mac("ec:b5:fa:1d:4f:c2"),
 				),
 				newHost(
 					"living-room-myq-hub.iot",
 					iot0,
-					netaddr.MustParseIP("192.168.66.15"),
+					netip.MustParseAddr("192.168.66.15"),
 					mac("cc:6a:10:0a:61:7f"),
 				),
 				newHost(
 					"office-printer.iot",
 					iot0,
-					netaddr.MustParseIP("192.168.66.16"),
+					netip.MustParseAddr("192.168.66.16"),
 					mac("30:05:5c:90:47:be"),
 				),
 			},
@@ -226,7 +226,7 @@ func main() {
 	}
 }
 
-func wanIPv4() netaddr.IP {
+func wanIPv4() netip.Addr {
 	res, err := http.Get("https://ipv4.icanhazip.com")
 	if err != nil {
 		log.Fatalf("failed to perform HTTP request: %v", err)
@@ -238,10 +238,10 @@ func wanIPv4() netaddr.IP {
 		log.Fatalf("failed to read HTTP body: %v", err)
 	}
 
-	return netaddr.MustParseIP(strings.TrimSpace(string(b)))
+	return netip.MustParseAddr(strings.TrimSpace(string(b)))
 }
 
-func wanIPv6Prefix() netaddr.IPPrefix {
+func wanIPv6Prefix() netip.Prefix {
 	res, err := http.Get("https://ipv6.icanhazip.com")
 	if err != nil {
 		log.Fatalf("failed to perform HTTP request: %v", err)
@@ -256,7 +256,7 @@ func wanIPv6Prefix() netaddr.IPPrefix {
 	// We want to determine the WAN IPv6 prefix so we can use that elsewhere
 	// when the ISP decides to change it after some period of time. The prefix
 	// length is hardcoded so it can be used elsewhere.
-	ip := netaddr.MustParseIP(strings.TrimSpace(string(b)))
+	ip := netip.MustParseAddr(strings.TrimSpace(string(b)))
 	pfx, err := ip.Prefix(pdLen)
 	if err != nil {
 		log.Fatalf("failed to create prefix from IP: %v", err)
@@ -266,9 +266,9 @@ func wanIPv6Prefix() netaddr.IPPrefix {
 }
 
 type output struct {
-	ServerIPv4  netaddr.IP       `json:"server_ipv4"`
-	ServerIPv6  netaddr.IP       `json:"server_ipv6"`
-	DesktopIPv6 netaddr.IP       `json:"desktop_ipv6"`
+	ServerIPv4  netip.Addr       `json:"server_ipv4"`
+	ServerIPv6  netip.Addr       `json:"server_ipv6"`
+	DesktopIPv6 netip.Addr       `json:"desktop_ipv6"`
 	Hosts       hosts            `json:"hosts"`
 	Interfaces  map[string]iface `json:"interfaces"`
 	WireGuard   wireguard        `json:"wireguard"`
@@ -283,24 +283,23 @@ type iface struct {
 	Name        string        `json:"name"`
 	Preference  preference    `json:"preference"`
 	InternalDNS bool          `json:"internal_dns"`
-	IPv4        netaddr.IP    `json:"ipv4"`
+	IPv4        netip.Addr    `json:"ipv4"`
 	IPv6        ipv6Addresses `json:"ipv6"`
 }
 
 type ipv6Addresses struct {
-	GUA netaddr.IP `json:"gua"`
-	ULA netaddr.IP `json:"ula"`
-	LLA netaddr.IP `json:"lla"`
+	GUA netip.Addr `json:"gua"`
+	ULA netip.Addr `json:"ula"`
+	LLA netip.Addr `json:"lla"`
 }
 
-func newSubnet(iface string, vlan int, gua netaddr.IPPrefix, trusted bool) subnet {
+func newSubnet(iface string, vlan int, gua netip.Prefix, trusted bool) subnet {
 	// The GUA prefix passed is a larger prefix such as a /48 or /56 and must
 	// be combined with the VLAN identifier to create a single /64 subnet for
 	// use with machines.
-	sub6 := gua.IP.As16()
+	sub6 := gua.Addr().As16()
 	sub6[pdLen/8] = byte(vlan)
-	gua.IP = netaddr.IPFrom16(sub6)
-	gua.Bits = 64
+	gua = netip.PrefixFrom(netip.AddrFrom16(sub6), 64)
 
 	// A hack to continue using 192.168.1.0/24 for the management network.
 	v4Subnet := vlan
@@ -313,27 +312,27 @@ func newSubnet(iface string, vlan int, gua netaddr.IPPrefix, trusted bool) subne
 		// All subnets have medium preference by default.
 		Preference: medium,
 		Trusted:    trusted,
-		IPv4:       netaddr.MustParseIPPrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
+		IPv4:       netip.MustParsePrefix(fmt.Sprintf("192.168.%d.0/24", v4Subnet)),
 		IPv6: ipv6Prefixes{
 			GUA: gua,
-			LLA: netaddr.MustParseIPPrefix("fe80::/64"),
-			ULA: netaddr.MustParseIPPrefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
+			LLA: netip.MustParsePrefix("fe80::/64"),
+			ULA: netip.MustParsePrefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
 		},
 	}
 }
 
 func newInterface(s subnet) iface {
 	// Router always has a .1 or ::1 suffix.
-	ip4 := s.IPv4.IP.As16()
-	ip4[15] = 1
+	ip4 := s.IPv4.Addr().As4()
+	ip4[3] = 1
 
-	gua := s.IPv6.GUA.IP.As16()
+	gua := s.IPv6.GUA.Addr().As16()
 	gua[15] = 1
 
-	ula := s.IPv6.ULA.IP.As16()
+	ula := s.IPv6.ULA.Addr().As16()
 	ula[15] = 1
 
-	lla := s.IPv6.LLA.IP.As16()
+	lla := s.IPv6.LLA.Addr().As16()
 	lla[15] = 1
 
 	return iface{
@@ -341,11 +340,11 @@ func newInterface(s subnet) iface {
 		Preference: s.Preference,
 		// Only trusted subnets get internal DNS records.
 		InternalDNS: s.Trusted,
-		IPv4:        netaddr.IPFrom16(ip4),
+		IPv4:        netip.AddrFrom4(ip4),
 		IPv6: ipv6Addresses{
-			GUA: netaddr.IPFrom16(gua),
-			ULA: netaddr.IPFrom16(ula),
-			LLA: netaddr.IPFrom16(lla),
+			GUA: netip.AddrFrom16(gua),
+			ULA: netip.AddrFrom16(ula),
+			LLA: netip.AddrFrom16(lla),
 		},
 	}
 }
@@ -358,7 +357,7 @@ func (o *output) addInterface(name string, s subnet) {
 	o.Interfaces[name] = newInterface(s)
 }
 
-func newHost(hostname string, sub subnet, ip4 netaddr.IP, mac net.HardwareAddr) host {
+func newHost(hostname string, sub subnet, ip4 netip.Addr, mac net.HardwareAddr) host {
 	// ip must belong to the input subnet.
 	if !sub.IPv4.Contains(ip4) {
 		panicf("subnet %q does not contain %q", sub.IPv4, ip4)
@@ -378,24 +377,24 @@ func newHost(hostname string, sub subnet, ip4 netaddr.IP, mac net.HardwareAddr) 
 }
 
 type subnet struct {
-	Name       string           `json:"name"`
-	Preference preference       `json:"preference"`
-	Trusted    bool             `json:"trusted"`
-	IPv4       netaddr.IPPrefix `json:"ipv4"`
-	IPv6       ipv6Prefixes     `json:"ipv6"`
+	Name       string       `json:"name"`
+	Preference preference   `json:"preference"`
+	Trusted    bool         `json:"trusted"`
+	IPv4       netip.Prefix `json:"ipv4"`
+	IPv6       ipv6Prefixes `json:"ipv6"`
 }
 
 type host struct {
 	Name string        `json:"name"`
-	IPv4 netaddr.IP    `json:"ipv4"`
+	IPv4 netip.Addr    `json:"ipv4"`
 	IPv6 ipv6Addresses `json:"ipv6"`
 	MAC  string        `json:"mac"`
 }
 
 type ipv6Prefixes struct {
-	GUA netaddr.IPPrefix `json:"gua"`
-	ULA netaddr.IPPrefix `json:"ula"`
-	LLA netaddr.IPPrefix `json:"lla"`
+	GUA netip.Prefix `json:"gua"`
+	ULA netip.Prefix `json:"ula"`
+	LLA netip.Prefix `json:"lla"`
 }
 
 type wireguard struct {
@@ -412,25 +411,22 @@ func (wg *wireguard) addPeer(name, publicKey string) {
 	const offset = 10
 
 	var ips []string
-	for _, ipp := range []netaddr.IPPrefix{
+	for _, ipp := range []netip.Prefix{
 		wg.Subnet.IPv4,
 		wg.Subnet.IPv6.GUA,
 		wg.Subnet.IPv6.ULA,
 		wg.Subnet.IPv6.LLA,
 	} {
 		// Router always has a .1 or ::1 suffix.
-		arr := ipp.IP.As16()
+		arr := ipp.Addr().As16()
 		arr[15] = byte(offset + wg.idx)
 
 		bits := 32
-		if ipp.IP.Is6() {
+		if ipp.Addr().Is6() {
 			bits = 128
 		}
 
-		ips = append(ips, netaddr.IPPrefix{
-			IP:   netaddr.IPFrom16(arr),
-			Bits: uint8(bits),
-		}.String())
+		ips = append(ips, netip.PrefixFrom(netip.AddrFrom16(arr).Unmap(), bits).String())
 	}
 
 	wg.Peers = append(wg.Peers, wgPeer{
@@ -446,8 +442,8 @@ type wgPeer struct {
 	AllowedIPs []string `json:"allowed_ips"`
 }
 
-func mustStdIP(ip net.IP) netaddr.IP {
-	out, ok := netaddr.FromStdIP(ip)
+func mustStdIP(ip net.IP) netip.Addr {
+	out, ok := netip.AddrFromSlice(ip)
 	if !ok {
 		panicf("bad IP: %q", ip)
 	}
@@ -455,8 +451,8 @@ func mustStdIP(ip net.IP) netaddr.IP {
 	return out
 }
 
-func mustEUI64(prefix netaddr.IPPrefix, mac net.HardwareAddr) netaddr.IP {
-	ip, err := eui64.ParseMAC(prefix.IPNet().IP, mac)
+func mustEUI64(prefix netip.Prefix, mac net.HardwareAddr) netip.Addr {
+	ip, err := eui64.ParseMAC(prefix.Addr().AsSlice(), mac)
 	if err != nil {
 		panicf("failed to make EUI64: %v", err)
 	}
