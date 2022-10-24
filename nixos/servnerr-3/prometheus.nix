@@ -119,8 +119,6 @@ in {
         (staticScrape "keylight" [ "keylight" ])
         { relabel_configs = relabelTarget "servnerr-3:9288"; }
       ])
-      # TODO: temporarily disabled until necessary.
-      # (staticScrape "modemmanager" [ "routnerr-2:9539" ])
       (staticScrape "node" [
         "monitnerr-1:9100"
         "nerr-3:9100"
@@ -146,12 +144,6 @@ in {
         "http://living-room-myq-hub.iot.ipv4"
         "https://grafana.servnerr.com"
       ])
-      # Netlify can occasionally be flappy, so check it less often.
-      # TODO(mdlayher): Netlify may be throttling us, enable later at lower intervals.
-      # (blackboxScrapeJobName "http_2xx_netlify" "http_2xx" "3m" [
-      #   "https://corerad.net/status"
-      #   "https://mdlayher.com/status"
-      # ])
       (blackboxScrape "http_401" "15s" [
         "https://alertmanager.servnerr.com"
         "https://plex.servnerr.com"

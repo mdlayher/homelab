@@ -69,7 +69,6 @@ in {
     zrepl
 
     # Unstable and out-of-tree packages.
-    zedhook
   ];
 
   services = {

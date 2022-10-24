@@ -120,11 +120,8 @@ in {
     # Automatic upgrades.
     autoUpgrade.enable = true;
 
-    # This value determines the NixOS release with which your system is to be
-    # compatible, in order to avoid breaking some software such as database
-    # servers. You should change this only after NixOS release notes say you
-    # should.
-    stateVersion = "20.03"; # Did you read the comment?
+    # Required as of 22.05.
+    stateVersion = "22.05";
   };
 
   # Make systemd manage the hardware watchdog.
