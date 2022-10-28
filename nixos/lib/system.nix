@@ -2,12 +2,14 @@
 
 let
   secrets = import ./secrets.nix;
+  unstable = import <nixos-unstable-small> { };
 
-  # Import comma with local nix-index preferred over the comma one.
-  comma = import (builtins.fetchTarball
-    "https://github.com/nix-community/comma/archive/refs/tags/1.1.0.tar.gz") {
-      inherit pkgs;
-    };
+  comma = (import (pkgs.fetchFromGitHub {
+    owner = "nix-community";
+    repo = "comma";
+    rev = "v1.3.0";
+    sha256 = "sha256-rXAX14yB8v9BOG4ZsdGEedpZAnNqhQ4DtjQwzFX/TLY=";
+  })).default;
 
 in {
   boot = {
@@ -45,7 +47,6 @@ in {
       file
       fwupd
       gcc
-      go
       git
       gnumake
       gptfdisk
@@ -84,6 +85,9 @@ in {
       wget
       wireguard-tools
       xterm
+
+      # Unstable packages.
+      unstable.go
     ];
   };
 

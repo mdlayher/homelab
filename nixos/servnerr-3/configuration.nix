@@ -72,7 +72,16 @@ in {
   ];
 
   services = {
-    apcupsd.enable = true;
+    apcupsd = {
+      enable = true;
+      configText = ''
+UPSCABLE usb
+UPSTYPE usb
+DEVICE
+UPSCLASS standalone
+UPSMODE disable
+      '';
+    };
 
     # Deploy CoreRAD monitor mode on all interfaces.
     corerad = {
