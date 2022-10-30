@@ -2,7 +2,7 @@
 
 all:
 	tar cf breakglass.tar --dereference sh \
-	&& breakglass -debug_tarball_pattern breakglass.tar monitnerr-1
+	&& breakglass monitnerr-1
 
 monitnerr-1: DEVICE := monitnerr-1
 monitnerr-1: _update
