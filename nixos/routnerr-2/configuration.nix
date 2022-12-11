@@ -27,6 +27,8 @@ in {
     ./lib/modules/wireguard_exporter.nix
   ];
 
+  system.stateVersion = "22.11";
+
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
     (_self: super: {

@@ -110,7 +110,7 @@ in {
     '';
 
     # Automatic store optimization.
-    autoOptimiseStore = true;
+    settings.auto-optimise-store = true;
   };
 
   # Services which run on all deployed machines.
@@ -120,13 +120,7 @@ in {
     prometheus.exporters.node.enable = true;
   };
 
-  system = {
-    # Automatic upgrades.
-    autoUpgrade.enable = true;
-
-    # Required as of 22.05.
-    stateVersion = "22.05";
-  };
+  system.autoUpgrade.enable = true;
 
   # Make systemd manage the hardware watchdog.
   systemd.watchdog.runtimeTime = "60s";

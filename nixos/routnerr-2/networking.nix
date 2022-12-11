@@ -143,7 +143,7 @@ in {
         DHCPv6PrefixDelegation = true;
         IPv6AcceptRA = false;
       };
-      dhcpV6PrefixDelegationConfig = {
+      dhcpPrefixDelegationConfig = {
         Token = "::1";
         SubnetId = 0;
       };

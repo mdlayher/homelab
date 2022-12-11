@@ -20,6 +20,8 @@ in {
     ./lib/modules/zedhook.nix
   ];
 
+  system.stateVersion = "22.11";
+
   boot = {
     # Use the systemd-boot EFI boot loader.
     loader = {
@@ -107,7 +109,7 @@ UPSMODE disable
     grafana = {
       enable = true;
       # Bind to all interfaces.
-      addr = "";
+      settings.server.http_addr = "";
     };
 
     # Enable the OpenSSH daemon.
