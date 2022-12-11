@@ -1,6 +1,7 @@
 { lib, ... }:
 
 let
+  unstable = import <nixos-unstable-small> { };
   vars = import ./lib/vars.nix;
 
   ethLink = (name:
@@ -190,6 +191,12 @@ in {
       matchConfig.Name = "wg0";
       address = with vars.wireguard.subnet; [ ipv4 ipv6.gua ipv6.ula ipv6.lla ];
     };
+  };
+
+  services.tailscale = {
+    enable = true;
+    package = unstable.tailscale;
+    interfaceName = "ts0";
   };
 
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.

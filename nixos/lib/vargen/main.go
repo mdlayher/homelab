@@ -95,7 +95,7 @@ func main() {
 		Name:   "wg0",
 		Subnet: wg0,
 	}
-	wg.addPeer("matt-3", "b3kX+KbsjHDajUIe7Q7F/kEfSNdJ3Phv9Z4zqqlD7iE=")
+	wg.addPeer("matt-3", "owbwahkmPWQg97iDSfn4dc80f2MYegEbnCAszExlbi8=")
 
 	// Set up the output structure and create host/infra records.
 	out := output{
