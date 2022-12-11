@@ -3,11 +3,11 @@ module github.com/mdlayher/homelab/gokrazy
 go 1.19
 
 require (
-	github.com/gokrazy/breakglass v0.0.0-20220918191812-3d820b07fad6
-	github.com/gokrazy/firmware v0.0.0-20221027042157-d1bc8d88f0a7
-	github.com/gokrazy/gokrazy v0.0.0-20221014172010-d5cbca1b9083
-	github.com/gokrazy/kernel v0.0.0-20221104044843-3e510e1dd979
-	github.com/gokrazy/rpi-eeprom v0.0.0-20221021042537-9b2c1abbb3a8
+	github.com/gokrazy/breakglass v0.0.0-20221108205153-2c1eed342dd4
+	github.com/gokrazy/firmware v0.0.0-20221112040708-2d61670cb2e8
+	github.com/gokrazy/gokrazy v0.0.0-20221120103626-d41f7f8489b4
+	github.com/gokrazy/kernel v0.0.0-20221209172027-06b5606dd218
+	github.com/gokrazy/rpi-eeprom v0.0.0-20221208032957-9b423e6d2c0d
 	github.com/gokrazy/serial-busybox v0.0.0-20220918193710-d728912733ca
 	github.com/mdlayher/consrv v1.0.1-0.20221030184627-e188cb5e4b80
 	github.com/prometheus/node_exporter v1.3.1-0.20220409151055-3d9ee5d9cc45
@@ -65,12 +65,12 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/crypto v0.4.0 // indirect
+	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
