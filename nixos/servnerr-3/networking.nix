@@ -38,14 +38,13 @@
       Name = "br0";
       Kind = "bridge";
     };
-    # TODO(mdlayher): enable after reconfiguring switch.
     networks."11-br0" = {
-      enable = false;
+      enable = true;
       matchConfig.Name = "br0";
       networkConfig.DHCP = "ipv4";
     };
     networks."11-lab0" = {
-      enable = false;
+      enable = true;
       matchConfig.Name = "lab0";
       networkConfig.Bridge = "br0";
     };
