@@ -29,10 +29,10 @@ let
       address =
         [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
       networkConfig = {
-        DHCPv6PrefixDelegation = true;
+        DHCPPrefixDelegation = true;
         IPv6AcceptRA = false;
       };
-      dhcpV6PrefixDelegationConfig = {
+      dhcpPrefixDelegationConfig = {
         # Router always lives at ::1.
         Token = "::1";
         # Delegate the associated hex subnet ID from DHCPv6-PD.
@@ -141,7 +141,7 @@ in {
       vlan = [ "lan0" "iot0" "guest0" "lab0" ];
 
       networkConfig = {
-        DHCPv6PrefixDelegation = true;
+        DHCPPrefixDelegation = true;
         IPv6AcceptRA = false;
       };
       dhcpPrefixDelegationConfig = {
