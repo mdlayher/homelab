@@ -20,7 +20,6 @@ in {
     # Networking daemons.
     ./coredns.nix
     ./corerad.nix
-    ./dhcpd4.nix
     ./traefik.nix
 
     # Unstable or out-of-tree modules.

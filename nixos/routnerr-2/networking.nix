@@ -30,24 +30,6 @@ let
         [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
       networkConfig = {
         DHCPPrefixDelegation = true;
-        IPv6AcceptRA = false;
-      };
-      dhcpPrefixDelegationConfig = {
-        # Router always lives at ::1.
-        Token = "::1";
-        # Delegate the associated hex subnet ID from DHCPv6-PD.
-        SubnetId = "${toString (decToHex id)}";
-      };
-    }));
-
-  vlanNetworkDHCP = (name:
-    (id: {
-      matchConfig.Name = name;
-      # Embed ID directly in IPv4/6 addresses for clarity.
-      address =
-        [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
-      networkConfig = {
-        DHCPPrefixDelegation = true;
         DHCPServer = true;
         IPv6AcceptRA = false;
       };
@@ -58,6 +40,7 @@ let
         SubnetId = "${toString (decToHex id)}";
       };
 
+      # DHCPServer on NixOS does not support Boot options yet.
       extraConfig = ''
         [DHCPServer]
         PoolOffset = 50
@@ -66,8 +49,9 @@ let
         BootFilename = netboot.xyz.kpxe
       '';
 
-      dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts (host:
-        {
+      # Write out fixed leases per subnet.
+      dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts
+        (host: {
           dhcpServerStaticLeaseConfig = {
             Address = host.ipv4;
             MACAddress = host.mac;
@@ -175,12 +159,30 @@ in {
 
       networkConfig = {
         DHCPPrefixDelegation = true;
+        DHCPServer = true;
         IPv6AcceptRA = false;
       };
       dhcpPrefixDelegationConfig = {
         Token = "::1";
         SubnetId = 0;
       };
+
+      # DHCPServer on NixOS does not support Boot options yet.
+      extraConfig = ''
+        [DHCPServer]
+        PoolOffset = 50
+        DNS = ${vars.domain}
+        BootServerAddress = 192.168.1.1
+        BootFilename = netboot.xyz.kpxe
+      '';
+
+      # Write out fixed leases per subnet.
+      dhcpServerStaticLeases = lib.forEach vars.interfaces.mgmt0.hosts (host: {
+        dhcpServerStaticLeaseConfig = {
+          Address = host.ipv4;
+          MACAddress = host.mac;
+        };
+      });
     };
 
     # Unused physical management LANs.
@@ -201,7 +203,7 @@ in {
 
     # Lab VLAN.
     netdevs."35-lab0" = vlanNetdev "lab0" 2;
-    networks."35-lab0" = vlanNetworkDHCP "lab0" 2;
+    networks."35-lab0" = vlanNetwork "lab0" 2;
 
     # WireGuard tunnel.
     netdevs."40-wg0" = {
