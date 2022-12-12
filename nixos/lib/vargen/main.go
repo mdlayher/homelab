@@ -120,6 +120,10 @@ func main() {
 					netip.MustParseAddr("192.168.10.12"),
 					mac("c4:bd:e5:1b:8a:e6"),
 				),
+				lab0.newHost("servnerr-3.lab",
+					netip.MustParseAddr("192.168.2.2"),
+					mac("72:18:6c:5f:39:fb"),
+				),
 			},
 			Infra: []host{
 				mgmt0.newHost(

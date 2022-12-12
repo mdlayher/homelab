@@ -53,6 +53,16 @@
 					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
 				},
 				"mac": "c4:bd:e5:1b:8a:e6"
+			},
+			{
+				"name": "servnerr-3.lab",
+				"ipv4": "192.168.2.2",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:1902:7018:6cff:fe5f:39fb",
+					"ula": "fd9e:1a04:f01d:2:7018:6cff:fe5f:39fb",
+					"lla": "fe80::7018:6cff:fe5f:39fb"
+				},
+				"mac": "72:18:6c:5f:39:fb"
 			}
 		],
 		"infra": [
@@ -244,7 +254,18 @@
 				"ula": "fd9e:1a04:f01d:2::1",
 				"lla": "fe80::1"
 			},
-			"hosts": []
+			"hosts": [
+				{
+					"name": "servnerr-3.lab",
+					"ipv4": "192.168.2.2",
+					"ipv6": {
+						"gua": "2600:6c4a:787f:1902:7018:6cff:fe5f:39fb",
+						"ula": "fd9e:1a04:f01d:2:7018:6cff:fe5f:39fb",
+						"lla": "fe80::7018:6cff:fe5f:39fb"
+					},
+					"mac": "72:18:6c:5f:39:fb"
+				}
+			]
 		},
 		"lan0": {
 			"name": "lan0",
