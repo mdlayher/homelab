@@ -2,7 +2,7 @@
 
 let
   vars = import ./lib/vars.nix;
-  lans = with vars.interfaces; [ mgmt0 lan0 guest0 iot0 lab0 ];
+  lans = with vars.interfaces; [ mgmt0 lan0 guest0 iot0 ];
 
 in {
   # Start only after systemd-networkd interface setup completes.

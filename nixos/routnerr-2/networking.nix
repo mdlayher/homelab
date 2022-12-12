@@ -40,6 +40,41 @@ let
       };
     }));
 
+  vlanNetworkDHCP = (name:
+    (id: {
+      matchConfig.Name = name;
+      # Embed ID directly in IPv4/6 addresses for clarity.
+      address =
+        [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
+      networkConfig = {
+        DHCPPrefixDelegation = true;
+        DHCPServer = true;
+        IPv6AcceptRA = false;
+      };
+      dhcpPrefixDelegationConfig = {
+        # Router always lives at ::1.
+        Token = "::1";
+        # Delegate the associated hex subnet ID from DHCPv6-PD.
+        SubnetId = "${toString (decToHex id)}";
+      };
+
+      extraConfig = ''
+        [DHCPServer]
+        PoolOffset = 50
+        DNS = ${vars.domain}
+        BootServerAddress = 192.168.${toString id}.1
+        BootFilename = netboot.xyz.kpxe
+      '';
+
+      dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts (host:
+        {
+          dhcpServerStaticLeaseConfig = {
+            Address = host.ipv4;
+            MACAddress = host.mac;
+          };
+        });
+    }));
+
   # Thanks, corpix!
   # https://gist.github.com/corpix/f761c82c9d6fdbc1b3846b37e1020e11
   decToHex = let
@@ -112,8 +147,6 @@ in {
         PrefixDelegationHint = "::/56";
 
         UseDNS = false;
-        # TODO(mdlayher): NixOS doesn't allow this?
-        # UseDomains = false;
       };
       ipv6AcceptRAConfig = {
         UseDNS = false;
@@ -168,7 +201,7 @@ in {
 
     # Lab VLAN.
     netdevs."35-lab0" = vlanNetdev "lab0" 2;
-    networks."35-lab0" = vlanNetwork "lab0" 2;
+    networks."35-lab0" = vlanNetworkDHCP "lab0" 2;
 
     # WireGuard tunnel.
     netdevs."40-wg0" = {
@@ -194,7 +227,7 @@ in {
   };
 
   services.tailscale = {
-    enable = true;
+    enable = false;
     package = unstable.tailscale;
     interfaceName = "ts0";
   };
