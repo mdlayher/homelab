@@ -76,16 +76,14 @@ func main() {
 		guest0 = newSubnet("guest0", 9, gua6, !trusted)
 		iot0   = newSubnet("iot0", 66, gua6, !trusted)
 
-		server = newHost(
+		server = mgmt0.newHost(
 			"servnerr-3",
-			mgmt0,
 			netip.MustParseAddr("192.168.1.6"),
 			mac("1c:1b:0d:ea:83:0f"),
 		)
 
-		desktop = newHost(
+		desktop = mgmt0.newHost(
 			"nerr-3",
-			mgmt0,
 			netip.MustParseAddr("192.168.1.7"),
 			mac("04:d9:f5:7e:1c:47"),
 		)
@@ -107,86 +105,73 @@ func main() {
 			Servers: []host{
 				server,
 				desktop,
-				newHost(
+				lan0.newHost(
 					"theatnerr-1",
-					lan0,
 					netip.MustParseAddr("192.168.10.10"),
 					mac("94:de:80:6c:0e:ef"),
 				),
-				newHost(
+				mgmt0.newHost(
 					"monitnerr-1",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.8"),
 					mac("dc:a6:32:1e:66:94"),
 				),
-				newHost(
+				lan0.newHost(
 					"matt-3",
-					lan0,
 					netip.MustParseAddr("192.168.10.12"),
 					mac("c4:bd:e5:1b:8a:e6"),
 				),
 			},
 			Infra: []host{
-				newHost(
+				mgmt0.newHost(
 					"switch-livingroom01",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
-				newHost(
+				mgmt0.newHost(
 					"switch-office01",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.3"),
 					mac("f0:9f:c2:ce:7e:e1"),
 				),
-				newHost(
+				mgmt0.newHost(
 					"switch-office02",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.4"),
 					mac("74:ac:b9:e2:4e:a5"),
 				),
-				newHost(
+				mgmt0.newHost(
 					"ap-livingroom",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.5"),
 					mac("d0:4d:c6:c1:75:4c"),
 				),
 				// server:  192.168.1.6
 				// desktop: 192.168.1.7
 				// monitor: 192.168.1.8
-				newHost(
+				mgmt0.newHost(
 					"ap-basement",
-					mgmt0,
 					netip.MustParseAddr("192.168.1.9"),
 					mac("d0:4d:c6:c1:72:96"),
 				),
-				newHost(
+				iot0.newHost(
 					"keylight",
-					iot0,
 					netip.MustParseAddr("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
 				),
-				newHost(
+				iot0.newHost(
 					"living-room-receiver.iot",
-					iot0,
 					netip.MustParseAddr("192.168.66.13"),
 					mac("00:06:78:55:b3:18"),
 				),
-				newHost(
+				iot0.newHost(
 					"living-room-hue-hub.iot",
-					iot0,
 					netip.MustParseAddr("192.168.66.14"),
 					mac("ec:b5:fa:1d:4f:c2"),
 				),
-				newHost(
+				iot0.newHost(
 					"living-room-myq-hub.iot",
-					iot0,
 					netip.MustParseAddr("192.168.66.15"),
 					mac("cc:6a:10:0a:61:7f"),
 				),
-				newHost(
+				iot0.newHost(
 					"office-printer.iot",
-					iot0,
 					netip.MustParseAddr("192.168.66.16"),
 					mac("30:05:5c:90:47:be"),
 				),
@@ -285,6 +270,7 @@ type iface struct {
 	InternalDNS bool          `json:"internal_dns"`
 	IPv4        netip.Addr    `json:"ipv4"`
 	IPv6        ipv6Addresses `json:"ipv6"`
+	Hosts       []host        `json:"hosts"`
 }
 
 type ipv6Addresses struct {
@@ -318,6 +304,7 @@ func newSubnet(iface string, vlan int, gua netip.Prefix, trusted bool) subnet {
 			LLA: netip.MustParsePrefix("fe80::/64"),
 			ULA: netip.MustParsePrefix(fmt.Sprintf("fd9e:1a04:f01d:%d::/64", vlan)),
 		},
+		Hosts: []host{},
 	}
 }
 
@@ -346,6 +333,7 @@ func newInterface(s subnet) iface {
 			ULA: netip.AddrFrom16(ula),
 			LLA: netip.AddrFrom16(lla),
 		},
+		Hosts: s.Hosts,
 	}
 }
 
@@ -376,12 +364,20 @@ func newHost(hostname string, sub subnet, ip4 netip.Addr, mac net.HardwareAddr) 
 	}
 }
 
+func (s *subnet) newHost(hostname string, ip4 netip.Addr, mac net.HardwareAddr) host {
+	h := newHost(hostname, *s, ip4, mac)
+	s.Hosts = append(s.Hosts, h)
+
+	return h
+}
+
 type subnet struct {
 	Name       string       `json:"name"`
 	Preference preference   `json:"preference"`
 	Trusted    bool         `json:"trusted"`
 	IPv4       netip.Prefix `json:"ipv4"`
 	IPv6       ipv6Prefixes `json:"ipv6"`
+	Hosts      []host       `json:"hosts"`
 }
 
 type host struct {
