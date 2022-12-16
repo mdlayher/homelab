@@ -97,26 +97,6 @@
 				"mac": "74:ac:b9:e2:4e:a5"
 			},
 			{
-				"name": "ap-livingroom",
-				"ipv4": "192.168.1.5",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:1900:d24d:c6ff:fec1:754c",
-					"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:754c",
-					"lla": "fe80::d24d:c6ff:fec1:754c"
-				},
-				"mac": "d0:4d:c6:c1:75:4c"
-			},
-			{
-				"name": "ap-basement",
-				"ipv4": "192.168.1.9",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:1900:d24d:c6ff:fec1:7296",
-					"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:7296",
-					"lla": "fe80::d24d:c6ff:fec1:7296"
-				},
-				"mac": "d0:4d:c6:c1:72:96"
-			},
-			{
 				"name": "keylight",
 				"ipv4": "192.168.66.10",
 				"ipv6": {
@@ -370,26 +350,6 @@
 						"lla": "fe80::76ac:b9ff:fee2:4ea5"
 					},
 					"mac": "74:ac:b9:e2:4e:a5"
-				},
-				{
-					"name": "ap-livingroom",
-					"ipv4": "192.168.1.5",
-					"ipv6": {
-						"gua": "2600:6c4a:787f:1900:d24d:c6ff:fec1:754c",
-						"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:754c",
-						"lla": "fe80::d24d:c6ff:fec1:754c"
-					},
-					"mac": "d0:4d:c6:c1:75:4c"
-				},
-				{
-					"name": "ap-basement",
-					"ipv4": "192.168.1.9",
-					"ipv6": {
-						"gua": "2600:6c4a:787f:1900:d24d:c6ff:fec1:7296",
-						"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:7296",
-						"lla": "fe80::d24d:c6ff:fec1:7296"
-					},
-					"mac": "d0:4d:c6:c1:72:96"
 				}
 			]
 		},
