@@ -43,8 +43,11 @@ let
       # DHCPServer on NixOS does not support Boot options yet.
       extraConfig = ''
         [DHCPServer]
+        DefaultLeaseTimeSec = 86400;
+        MaxLeaseTimeSec = 86400;
         PoolOffset = 50
-        DNS = ${vars.domain}
+        EmitDNS = true
+        DNS = _server_address
         BootServerAddress = 192.168.${toString id}.1
         BootFilename = netboot.xyz.kpxe
       '';
@@ -170,8 +173,11 @@ in {
       # DHCPServer on NixOS does not support Boot options yet.
       extraConfig = ''
         [DHCPServer]
+        DefaultLeaseTimeSec = 86400;
+        MaxLeaseTimeSec = 86400;
         PoolOffset = 50
-        DNS = ${vars.domain}
+        EmitDNS = true
+        DNS = _server_address
         BootServerAddress = 192.168.1.1
         BootFilename = netboot.xyz.kpxe
       '';
