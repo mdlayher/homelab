@@ -25,6 +25,7 @@
     networks."10-mgmt0" = {
       matchConfig.Name = "mgmt0";
       networkConfig.DHCP = "ipv4";
+      dhcpV4Config.ClientIdentifier = "mac";
       # Only accept DNS search on this interface.
       ipv6AcceptRAConfig.UseDomains = true;
     };
@@ -42,6 +43,7 @@
       enable = true;
       matchConfig.Name = "br0";
       networkConfig.DHCP = "ipv4";
+      dhcpV4Config.ClientIdentifier = "mac";
     };
     networks."11-lab0" = {
       enable = true;

@@ -39,6 +39,7 @@
         in {
           services.unifi = {
             enable = true;
+            jrePackage = unstable.jdk11;
             unifiPackage = unstable.unifi;
           };
         };
