@@ -83,9 +83,9 @@ func main() {
 		)
 
 		desktop = mgmt0.newHost(
-			"nerr-3",
+			"nerr-4",
 			netip.MustParseAddr("192.168.1.7"),
-			mac("04:d9:f5:7e:1c:47"),
+			mac("74:56:3c:43:73:37"),
 		)
 	)
 
