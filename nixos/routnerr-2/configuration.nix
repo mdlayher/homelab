@@ -81,10 +81,10 @@ in {
   nix = {
     distributedBuilds = true;
     buildMachines = [{
-      hostName = "servnerr-3";
+      hostName = "servnerr-4";
       system = "x86_64-linux";
-      maxJobs = 8;
-      speedFactor = 2;
+      maxJobs = 16;
+      speedFactor = 4;
       supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
     }];
   };

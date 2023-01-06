@@ -77,9 +77,9 @@ func main() {
 		iot0   = newSubnet("iot0", 66, gua6, !trusted)
 
 		server = mgmt0.newHost(
-			"servnerr-3",
-			netip.MustParseAddr("192.168.1.6"),
-			mac("1c:1b:0d:ea:83:0f"),
+			"servnerr-4",
+			netip.MustParseAddr("192.168.1.10"),
+			mac("04:d9:f5:7e:1c:47"),
 		)
 
 		desktop = mgmt0.newHost(
@@ -105,11 +105,6 @@ func main() {
 			Servers: []host{
 				server,
 				desktop,
-				lan0.newHost(
-					"theatnerr-1",
-					netip.MustParseAddr("192.168.10.10"),
-					mac("94:de:80:6c:0e:ef"),
-				),
 				mgmt0.newHost(
 					"monitnerr-1",
 					netip.MustParseAddr("192.168.1.8"),
@@ -119,10 +114,6 @@ func main() {
 					"matt-3",
 					netip.MustParseAddr("192.168.10.12"),
 					mac("c4:bd:e5:1b:8a:e6"),
-				),
-				lab0.newHost("servnerr-3.lab",
-					netip.MustParseAddr("192.168.2.2"),
-					mac("72:18:6c:5f:39:fb"),
 				),
 			},
 			Infra: []host{
@@ -141,13 +132,11 @@ func main() {
 					netip.MustParseAddr("192.168.1.4"),
 					mac("74:ac:b9:e2:4e:a5"),
 				),
-				/*
 				mgmt0.newHost(
-					"ap-livingroom",
+					"pdu01",
 					netip.MustParseAddr("192.168.1.5"),
-					mac("d0:4d:c6:c1:75:4c"),
+					mac("00:0c:15:41:33:5e"),
 				),
-				*/
 				// server:  192.168.1.6
 				// desktop: 192.168.1.7
 				// monitor: 192.168.1.8

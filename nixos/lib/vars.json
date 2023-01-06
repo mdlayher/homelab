@@ -1,18 +1,18 @@
 {
-	"server_ipv4": "192.168.1.6",
-	"server_ipv6": "2600:6c4a:787f:1900:1e1b:dff:feea:830f",
+	"server_ipv4": "192.168.1.10",
+	"server_ipv6": "2600:6c4a:787f:1900:6d9:f5ff:fe7e:1c47",
 	"desktop_ipv6": "2600:6c4a:787f:1900:7656:3cff:fe43:7337",
 	"hosts": {
 		"servers": [
 			{
-				"name": "servnerr-3",
-				"ipv4": "192.168.1.6",
+				"name": "servnerr-4",
+				"ipv4": "192.168.1.10",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:1900:1e1b:dff:feea:830f",
-					"ula": "fd9e:1a04:f01d:0:1e1b:dff:feea:830f",
-					"lla": "fe80::1e1b:dff:feea:830f"
+					"gua": "2600:6c4a:787f:1900:6d9:f5ff:fe7e:1c47",
+					"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
+					"lla": "fe80::6d9:f5ff:fe7e:1c47"
 				},
-				"mac": "1c:1b:0d:ea:83:0f"
+				"mac": "04:d9:f5:7e:1c:47"
 			},
 			{
 				"name": "nerr-4",
@@ -23,16 +23,6 @@
 					"lla": "fe80::7656:3cff:fe43:7337"
 				},
 				"mac": "74:56:3c:43:73:37"
-			},
-			{
-				"name": "theatnerr-1",
-				"ipv4": "192.168.10.10",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:190a:96de:80ff:fe6c:eef",
-					"ula": "fd9e:1a04:f01d:10:96de:80ff:fe6c:eef",
-					"lla": "fe80::96de:80ff:fe6c:eef"
-				},
-				"mac": "94:de:80:6c:0e:ef"
 			},
 			{
 				"name": "monitnerr-1",
@@ -53,16 +43,6 @@
 					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
 				},
 				"mac": "c4:bd:e5:1b:8a:e6"
-			},
-			{
-				"name": "servnerr-3.lab",
-				"ipv4": "192.168.2.2",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:1902:7018:6cff:fe5f:39fb",
-					"ula": "fd9e:1a04:f01d:2:7018:6cff:fe5f:39fb",
-					"lla": "fe80::7018:6cff:fe5f:39fb"
-				},
-				"mac": "72:18:6c:5f:39:fb"
 			}
 		],
 		"infra": [
@@ -95,6 +75,16 @@
 					"lla": "fe80::76ac:b9ff:fee2:4ea5"
 				},
 				"mac": "74:ac:b9:e2:4e:a5"
+			},
+			{
+				"name": "pdu01",
+				"ipv4": "192.168.1.5",
+				"ipv6": {
+					"gua": "2600:6c4a:787f:1900:20c:15ff:fe41:335e",
+					"ula": "fd9e:1a04:f01d:0:20c:15ff:fe41:335e",
+					"lla": "fe80::20c:15ff:fe41:335e"
+				},
+				"mac": "00:0c:15:41:33:5e"
 			},
 			{
 				"name": "keylight",
@@ -234,18 +224,7 @@
 				"ula": "fd9e:1a04:f01d:2::1",
 				"lla": "fe80::1"
 			},
-			"hosts": [
-				{
-					"name": "servnerr-3.lab",
-					"ipv4": "192.168.2.2",
-					"ipv6": {
-						"gua": "2600:6c4a:787f:1902:7018:6cff:fe5f:39fb",
-						"ula": "fd9e:1a04:f01d:2:7018:6cff:fe5f:39fb",
-						"lla": "fe80::7018:6cff:fe5f:39fb"
-					},
-					"mac": "72:18:6c:5f:39:fb"
-				}
-			]
+			"hosts": []
 		},
 		"lan0": {
 			"name": "lan0",
@@ -258,16 +237,6 @@
 				"lla": "fe80::1"
 			},
 			"hosts": [
-				{
-					"name": "theatnerr-1",
-					"ipv4": "192.168.10.10",
-					"ipv6": {
-						"gua": "2600:6c4a:787f:190a:96de:80ff:fe6c:eef",
-						"ula": "fd9e:1a04:f01d:10:96de:80ff:fe6c:eef",
-						"lla": "fe80::96de:80ff:fe6c:eef"
-					},
-					"mac": "94:de:80:6c:0e:ef"
-				},
 				{
 					"name": "matt-3",
 					"ipv4": "192.168.10.12",
@@ -292,14 +261,14 @@
 			},
 			"hosts": [
 				{
-					"name": "servnerr-3",
-					"ipv4": "192.168.1.6",
+					"name": "servnerr-4",
+					"ipv4": "192.168.1.10",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:1900:1e1b:dff:feea:830f",
-						"ula": "fd9e:1a04:f01d:0:1e1b:dff:feea:830f",
-						"lla": "fe80::1e1b:dff:feea:830f"
+						"gua": "2600:6c4a:787f:1900:6d9:f5ff:fe7e:1c47",
+						"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
+						"lla": "fe80::6d9:f5ff:fe7e:1c47"
 					},
-					"mac": "1c:1b:0d:ea:83:0f"
+					"mac": "04:d9:f5:7e:1c:47"
 				},
 				{
 					"name": "nerr-4",
@@ -350,6 +319,16 @@
 						"lla": "fe80::76ac:b9ff:fee2:4ea5"
 					},
 					"mac": "74:ac:b9:e2:4e:a5"
+				},
+				{
+					"name": "pdu01",
+					"ipv4": "192.168.1.5",
+					"ipv6": {
+						"gua": "2600:6c4a:787f:1900:20c:15ff:fe41:335e",
+						"ula": "fd9e:1a04:f01d:0:20c:15ff:fe41:335e",
+						"lla": "fe80::20c:15ff:fe41:335e"
+					},
+					"mac": "00:0c:15:41:33:5e"
 				}
 			]
 		},

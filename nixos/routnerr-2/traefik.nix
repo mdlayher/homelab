@@ -72,15 +72,15 @@ in {
 
         services = {
           alertmanager.loadBalancer.servers =
-            [{ url = "http://servnerr-3.${vars.domain}:9093"; }];
+            [{ url = "http://servnerr-4.${vars.domain}:9093"; }];
           grafana.loadBalancer.servers =
-            [{ url = "http://servnerr-3.${vars.domain}:3000"; }];
+            [{ url = "http://servnerr-4.${vars.domain}:3000"; }];
           hass.loadBalancer.servers =
-            [{ url = "http://servnerr-3.${vars.domain}:8123"; }];
+            [{ url = "http://servnerr-4.${vars.domain}:8123"; }];
           plex.loadBalancer.servers =
-            [{ url = "http://servnerr-3.${vars.domain}:32400"; }];
+            [{ url = "http://servnerr-4.${vars.domain}:32400"; }];
           prometheus.loadBalancer.servers =
-            [{ url = "http://servnerr-3.${vars.domain}:9090"; }];
+            [{ url = "http://servnerr-4.${vars.domain}:9090"; }];
         };
       };
     };
