@@ -160,7 +160,11 @@ in {
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp" [ "switch-livingroom01" "switch-office01" ])
+        (staticScrape "snmp" [
+          "switch-livingroom01"
+          "switch-office01"
+          "pdu01"
+        ])
         {
           metrics_path = "/snmp";
           params = { module = [ "if_mib" ]; };

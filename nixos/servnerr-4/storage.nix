@@ -130,12 +130,12 @@ let
 in {
   # primary zpool mounts.
   fileSystems = lib.genAttrs [
-    #"/primary"
-    #"/primary/archive"
-    #"/primary/media"
-    #"/primary/misc"
-    #"/primary/text"
-    #"/primary/vm"
+    "/primary"
+    "/primary/archive"
+    "/primary/media"
+    "/primary/misc"
+    "/primary/text"
+    "/primary/vm"
   ] (device: {
     # The device has the leading / removed.
     device = builtins.substring 1 255 device;
@@ -163,7 +163,7 @@ in {
   services = {
     # Enable tarsnap backups.
     tarsnap = {
-      enable = false;
+      enable = true;
 
       archives.archive = {
         directories = [ "/primary/archive" ];
@@ -204,7 +204,7 @@ in {
 
     # Replicate ZFS pools using zrepl.
     zrepl = {
-      enable = false;
+      enable = true;
       settings = {
         global.monitoring = [{
           type = "prometheus";

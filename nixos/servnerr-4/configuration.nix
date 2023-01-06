@@ -34,14 +34,14 @@ in {
 
     kernelParams = [
       # Enable serial console.
-      "console=ttyS0,115200n8"
+      "console=ttyS1,115200n8"
       # 56GiB ZFS ARC.
       "zfs.zfs_arc_max=58720256"
     ];
   };
 
   # Start getty over serial console.
-  systemd.services."serial-getty@ttyS0" = {
+  systemd.services."serial-getty@ttyS1" = {
     enable = true;
     # Make sure agetty spawns at boot and always restarts whenever it
     # exits due to user logout.
@@ -68,11 +68,11 @@ in {
     apcupsd = {
       enable = true;
       configText = ''
-UPSCABLE usb
-UPSTYPE usb
-DEVICE
-UPSCLASS standalone
-UPSMODE disable
+        UPSCABLE usb
+        UPSTYPE usb
+        DEVICE
+        UPSCLASS standalone
+        UPSMODE disable
       '';
     };
 
