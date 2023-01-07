@@ -102,8 +102,8 @@ in {
         enable = true;
         configurationPath = builtins.fetchurl {
           url =
-            "https://raw.githubusercontent.com/prometheus/snmp_exporter/9dcbc02f59648b21fcf632de1b62a30df70f4649/snmp.yml";
-          sha256 = "04kh3n3q4nf6542w0cx36pdzfy3nr65hyc755j7q6xlsrpsqc21m";
+            "https://raw.githubusercontent.com/prometheus/snmp_exporter/1964bce321942a73f994813103ed2ca2e432039d/snmp.yml";
+          sha256 = "sha256:0cshh89ijchi10iqijvmw473hhxf5cdrd1y0502wlwgw4glbis36";
         };
       };
     };
@@ -160,14 +160,21 @@ in {
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp" [
+        (staticScrape "snmp-ifmib" [
           "switch-livingroom01"
           "switch-office01"
-          "pdu01"
         ])
         {
           metrics_path = "/snmp";
           params = { module = [ "if_mib" ]; };
+          relabel_configs = relabelTarget "servnerr-4:9116";
+        }
+      ])
+      (lib.mkMerge [
+        (staticScrape "snmp-cyberpower" [ "pdu01" ])
+        {
+          metrics_path = "/snmp";
+          params = { module = [ "cyberpower" ]; };
           relabel_configs = relabelTarget "servnerr-4:9116";
         }
       ])

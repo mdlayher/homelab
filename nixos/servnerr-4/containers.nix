@@ -23,6 +23,7 @@
           unstable =
             import <nixos-unstable-small> { config.allowUnfree = true; };
         in {
+          system.stateVersion = "21.11";
           services.plex = {
             enable = true;
             package = unstable.plex;
