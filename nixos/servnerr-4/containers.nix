@@ -13,10 +13,10 @@
           isReadOnly = false;
         };
         # Mount the ZFS pool as read-only.
-        #"/primary/media" = {
-        #  hostPath = "/primary/media";
-        #  isReadOnly = true;
-        #};
+        "/primary/media" = {
+          hostPath = "/primary/media";
+          isReadOnly = true;
+        };
       };
       config = { ... }:
         let
