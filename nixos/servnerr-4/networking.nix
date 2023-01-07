@@ -40,6 +40,7 @@
       enable = false;
       matchConfig.Name = "tengb0";
       networkConfig.DHCP = "ipv4";
+      dhcpV4Config.ClientIdentifier = "mac";
     };
   };
 }
