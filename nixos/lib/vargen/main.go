@@ -137,16 +137,19 @@ func main() {
 					netip.MustParseAddr("192.168.1.5"),
 					mac("00:0c:15:41:33:5e"),
 				),
-				// server:  192.168.1.6
+				mgmt0.newHost(
+					"ap-livingroom",
+					netip.MustParseAddr("192.168.1.6"),
+					mac("34:3a:20:c8:a9:de"),
+				),
 				// desktop: 192.168.1.7
 				// monitor: 192.168.1.8
-				/*
 				mgmt0.newHost(
 					"ap-basement",
 					netip.MustParseAddr("192.168.1.9"),
 					mac("d0:4d:c6:c1:72:96"),
 				),
-				*/
+				// server:  192.168.1.10
 				iot0.newHost(
 					"keylight",
 					netip.MustParseAddr("192.168.66.10"),
