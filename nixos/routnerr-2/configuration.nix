@@ -90,8 +90,6 @@ in {
   };
 
   services = {
-    apcupsd.enable = true;
-
     # Allow mDNS to reflect between VLANs where necessary for devices such as
     # Google Home and Chromecast.
     avahi = {
