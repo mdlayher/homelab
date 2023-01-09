@@ -118,17 +118,17 @@ func main() {
 			},
 			Infra: []host{
 				mgmt0.newHost(
-					"switch-livingroom01",
+					"switch-core",
 					netip.MustParseAddr("192.168.1.2"),
 					mac("f0:9f:c2:0b:28:ca"),
 				),
 				mgmt0.newHost(
-					"switch-office01",
+					"switch-livingroom",
 					netip.MustParseAddr("192.168.1.3"),
-					mac("f0:9f:c2:ce:7e:e1"),
+					mac("ec:50:aa:42:0e:83"),
 				),
 				mgmt0.newHost(
-					"switch-office02",
+					"switch-office",
 					netip.MustParseAddr("192.168.1.4"),
 					mac("74:ac:b9:e2:4e:a5"),
 				),
@@ -154,11 +154,6 @@ func main() {
 					"keylight",
 					netip.MustParseAddr("192.168.66.10"),
 					mac("3c:6a:9d:12:c4:dc"),
-				),
-				iot0.newHost(
-					"living-room-receiver.iot",
-					netip.MustParseAddr("192.168.66.13"),
-					mac("00:06:78:55:b3:18"),
 				),
 				iot0.newHost(
 					"living-room-hue-hub.iot",

@@ -47,7 +47,7 @@
 		],
 		"infra": [
 			{
-				"name": "switch-livingroom01",
+				"name": "switch-core",
 				"ipv4": "192.168.1.2",
 				"ipv6": {
 					"gua": "2600:6c4a:787f:1900:f29f:c2ff:fe0b:28ca",
@@ -57,17 +57,17 @@
 				"mac": "f0:9f:c2:0b:28:ca"
 			},
 			{
-				"name": "switch-office01",
+				"name": "switch-livingroom",
 				"ipv4": "192.168.1.3",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:1900:f29f:c2ff:fece:7ee1",
-					"ula": "fd9e:1a04:f01d:0:f29f:c2ff:fece:7ee1",
-					"lla": "fe80::f29f:c2ff:fece:7ee1"
+					"gua": "2600:6c4a:787f:1900:ee50:aaff:fe42:e83",
+					"ula": "fd9e:1a04:f01d:0:ee50:aaff:fe42:e83",
+					"lla": "fe80::ee50:aaff:fe42:e83"
 				},
-				"mac": "f0:9f:c2:ce:7e:e1"
+				"mac": "ec:50:aa:42:0e:83"
 			},
 			{
-				"name": "switch-office02",
+				"name": "switch-office",
 				"ipv4": "192.168.1.4",
 				"ipv6": {
 					"gua": "2600:6c4a:787f:1900:76ac:b9ff:fee2:4ea5",
@@ -115,16 +115,6 @@
 					"lla": "fe80::3e6a:9dff:fe12:c4dc"
 				},
 				"mac": "3c:6a:9d:12:c4:dc"
-			},
-			{
-				"name": "living-room-receiver.iot",
-				"ipv4": "192.168.66.13",
-				"ipv6": {
-					"gua": "2600:6c4a:787f:1942:206:78ff:fe55:b318",
-					"ula": "fd9e:1a04:f01d:66:206:78ff:fe55:b318",
-					"lla": "fe80::206:78ff:fe55:b318"
-				},
-				"mac": "00:06:78:55:b3:18"
 			},
 			{
 				"name": "living-room-hue-hub.iot",
@@ -191,16 +181,6 @@
 						"lla": "fe80::3e6a:9dff:fe12:c4dc"
 					},
 					"mac": "3c:6a:9d:12:c4:dc"
-				},
-				{
-					"name": "living-room-receiver.iot",
-					"ipv4": "192.168.66.13",
-					"ipv6": {
-						"gua": "2600:6c4a:787f:1942:206:78ff:fe55:b318",
-						"ula": "fd9e:1a04:f01d:66:206:78ff:fe55:b318",
-						"lla": "fe80::206:78ff:fe55:b318"
-					},
-					"mac": "00:06:78:55:b3:18"
 				},
 				{
 					"name": "living-room-hue-hub.iot",
@@ -311,7 +291,7 @@
 					"mac": "dc:a6:32:1e:66:94"
 				},
 				{
-					"name": "switch-livingroom01",
+					"name": "switch-core",
 					"ipv4": "192.168.1.2",
 					"ipv6": {
 						"gua": "2600:6c4a:787f:1900:f29f:c2ff:fe0b:28ca",
@@ -321,17 +301,17 @@
 					"mac": "f0:9f:c2:0b:28:ca"
 				},
 				{
-					"name": "switch-office01",
+					"name": "switch-livingroom",
 					"ipv4": "192.168.1.3",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:1900:f29f:c2ff:fece:7ee1",
-						"ula": "fd9e:1a04:f01d:0:f29f:c2ff:fece:7ee1",
-						"lla": "fe80::f29f:c2ff:fece:7ee1"
+						"gua": "2600:6c4a:787f:1900:ee50:aaff:fe42:e83",
+						"ula": "fd9e:1a04:f01d:0:ee50:aaff:fe42:e83",
+						"lla": "fe80::ee50:aaff:fe42:e83"
 					},
-					"mac": "f0:9f:c2:ce:7e:e1"
+					"mac": "ec:50:aa:42:0e:83"
 				},
 				{
-					"name": "switch-office02",
+					"name": "switch-office",
 					"ipv4": "192.168.1.4",
 					"ipv6": {
 						"gua": "2600:6c4a:787f:1900:76ac:b9ff:fee2:4ea5",
