@@ -140,11 +140,11 @@
 				"name": "office-printer.iot",
 				"ipv4": "192.168.66.16",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:1942:3205:5cff:fe90:47be",
-					"ula": "fd9e:1a04:f01d:66:3205:5cff:fe90:47be",
-					"lla": "fe80::3205:5cff:fe90:47be"
+					"gua": "2600:6c4a:787f:1942:42b8:9aff:fe27:d4fd",
+					"ula": "fd9e:1a04:f01d:66:42b8:9aff:fe27:d4fd",
+					"lla": "fe80::42b8:9aff:fe27:d4fd"
 				},
-				"mac": "30:05:5c:90:47:be"
+				"mac": "40:b8:9a:27:d4:fd"
 			}
 		]
 	},
@@ -206,11 +206,11 @@
 					"name": "office-printer.iot",
 					"ipv4": "192.168.66.16",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:1942:3205:5cff:fe90:47be",
-						"ula": "fd9e:1a04:f01d:66:3205:5cff:fe90:47be",
-						"lla": "fe80::3205:5cff:fe90:47be"
+						"gua": "2600:6c4a:787f:1942:42b8:9aff:fe27:d4fd",
+						"ula": "fd9e:1a04:f01d:66:42b8:9aff:fe27:d4fd",
+						"lla": "fe80::42b8:9aff:fe27:d4fd"
 					},
-					"mac": "30:05:5c:90:47:be"
+					"mac": "40:b8:9a:27:d4:fd"
 				}
 			]
 		},

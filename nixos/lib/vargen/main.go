@@ -168,7 +168,7 @@ func main() {
 				iot0.newHost(
 					"office-printer.iot",
 					netip.MustParseAddr("192.168.66.16"),
-					mac("30:05:5c:90:47:be"),
+					mac("40:b8:9a:27:d4:fd"),
 				),
 			},
 		},
