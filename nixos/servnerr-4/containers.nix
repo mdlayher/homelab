@@ -30,22 +30,6 @@
           };
         };
     };
-
-    unifi = {
-      autoStart = true;
-      config = { ... }:
-        let
-          unstable =
-            import <nixos-unstable-small> { config.allowUnfree = true; };
-        in {
-          system.stateVersion = "21.11";
-          services.unifi = {
-            enable = true;
-            jrePackage = unstable.jdk11;
-            unifiPackage = unstable.unifi;
-          };
-        };
-    };
   };
 
   virtualisation.oci-containers = {
