@@ -2,5 +2,6 @@
 *.bak
 secrets.nix
 gokrazy/breakglass.tar
+gokrazy/builddir
 obs/profiles/Programming/service.json
 nixos/lib/vargen/vargen
