@@ -120,7 +120,7 @@ func main() {
 				mgmt0.newHost(
 					"switch-core",
 					netip.MustParseAddr("192.168.1.2"),
-					mac("f0:9f:c2:0b:28:ca"),
+					mac("44:5b:ed:f7:ce:da"),
 				),
 				mgmt0.newHost(
 					"switch-livingroom",

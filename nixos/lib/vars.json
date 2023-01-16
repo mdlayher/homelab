@@ -50,11 +50,11 @@
 				"name": "switch-core",
 				"ipv4": "192.168.1.2",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:1900:f29f:c2ff:fe0b:28ca",
-					"ula": "fd9e:1a04:f01d:0:f29f:c2ff:fe0b:28ca",
-					"lla": "fe80::f29f:c2ff:fe0b:28ca"
+					"gua": "2600:6c4a:787f:1900:465b:edff:fef7:ceda",
+					"ula": "fd9e:1a04:f01d:0:465b:edff:fef7:ceda",
+					"lla": "fe80::465b:edff:fef7:ceda"
 				},
-				"mac": "f0:9f:c2:0b:28:ca"
+				"mac": "44:5b:ed:f7:ce:da"
 			},
 			{
 				"name": "switch-livingroom",
@@ -294,11 +294,11 @@
 					"name": "switch-core",
 					"ipv4": "192.168.1.2",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:1900:f29f:c2ff:fe0b:28ca",
-						"ula": "fd9e:1a04:f01d:0:f29f:c2ff:fe0b:28ca",
-						"lla": "fe80::f29f:c2ff:fe0b:28ca"
+						"gua": "2600:6c4a:787f:1900:465b:edff:fef7:ceda",
+						"ula": "fd9e:1a04:f01d:0:465b:edff:fef7:ceda",
+						"lla": "fe80::465b:edff:fef7:ceda"
 					},
-					"mac": "f0:9f:c2:0b:28:ca"
+					"mac": "44:5b:ed:f7:ce:da"
 				},
 				{
 					"name": "switch-livingroom",
