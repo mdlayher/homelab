@@ -30,17 +30,32 @@
       ipv6AcceptRAConfig.UseDomains = true;
     };
 
-    # 10GbE LAN.
-    links."12-tengb0" = {
-      matchConfig.MACAddress = "90:e2:ba:23:1a:3a";
-      linkConfig.Name = "tengb0";
+    # 10GbE internal LAN.
+    links."11-ten0p0lan0" = {
+      matchConfig.MACAddress = "8c:dc:d4:ac:96:24";
+      linkConfig.Name = "ten0p0lan0";
     };
-    networks."12-tengb0" = {
-      # TODO(mdlayher): enable after setting up switch.
-      enable = false;
-      matchConfig.Name = "tengb0";
+    networks."11-ten0p0lan0" = {
+      matchConfig.Name = "ten0p0lan0";
       networkConfig.DHCP = "ipv4";
       dhcpV4Config.ClientIdentifier = "mac";
+      # Only accept DNS search on this interface.
+      ipv6AcceptRAConfig.UseDomains = true;
+    };
+
+    # 10GbE lab VLAN.
+    links."12-ten0p1lab0" = {
+      matchConfig.MACAddress = "8c:dc:d4:ac:96:25";
+      linkConfig.Name = "ten0p1lab0";
+    };
+    networks."12-ten0p1lab0" = {
+      # TODO(mdlayher): enable after setting up bridge.
+      enable = false;
+      matchConfig.Name = "ten0p1lab0";
+      networkConfig.DHCP = "ipv4";
+      dhcpV4Config.ClientIdentifier = "mac";
+      # Only accept DNS search on this interface.
+      ipv6AcceptRAConfig.UseDomains = true;
     };
   };
 }

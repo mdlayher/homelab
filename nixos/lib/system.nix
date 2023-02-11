@@ -16,8 +16,8 @@ in {
     # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
 
-    # 2022 LTS kernel, expected EOL of October 2023.
-    kernelPackages = pkgs.linuxPackages_5_15;
+    # 2022 LTS kernel.
+    kernelPackages = pkgs.linuxPackages_6_1;
   };
 
   # Console configuration.
@@ -74,7 +74,6 @@ in {
       pciutils
       pkg-config
       pv
-      rustup
       smartmontools
       sysstat
       tcpdump

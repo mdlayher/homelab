@@ -148,7 +148,7 @@ in {
         }
       ])
       (lib.mkMerge [
-        (staticScrape "snmp-cyberpower" [ "pdu01" ])
+        (staticScrape "snmp-cyberpower" [ "pdu01" "ups01" ])
         {
           metrics_path = "/snmp";
           params = { module = [ "cyberpower" ]; };
