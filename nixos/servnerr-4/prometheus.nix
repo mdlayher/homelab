@@ -160,17 +160,6 @@ in {
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp-ifmib" [
-          "switch-livingroom01"
-          "switch-office01"
-        ])
-        {
-          metrics_path = "/snmp";
-          params = { module = [ "if_mib" ]; };
-          relabel_configs = relabelTarget "servnerr-4:9116";
-        }
-      ])
-      (lib.mkMerge [
         (staticScrape "snmp-cyberpower" [ "pdu01" "ups01" ])
         {
           metrics_path = "/snmp";
