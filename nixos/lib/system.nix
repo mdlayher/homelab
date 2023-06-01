@@ -68,7 +68,8 @@ in {
       neofetch
       nethogs
       nixfmt
-      nix-linter
+      # Broken as of June 1, 2023.
+      # nix-linter
       nmap
       nmon
       pciutils
