@@ -234,6 +234,19 @@ in {
     };
   };
 
+  # Use NM/MM only to manage the LTE modem.
+  networking.networkmanager = {
+    enable = true;
+    dns = "systemd-resolved";
+    unmanaged = [ "*,except:type:gsm" ];
+  };
+
+  # Bring up MM and exporter with NM.
+  systemd.services.ModemManager = {
+    enable = true;
+    wantedBy = [ "NetworkManager.service" ];
+  };
+
   services.tailscale = {
     enable = false;
     package = unstable.tailscale;
