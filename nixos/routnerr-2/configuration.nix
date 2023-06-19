@@ -57,7 +57,6 @@ in {
     # Use the GRUB 2 boot loader with MBR.
     loader.grub = {
       enable = true;
-      version = 2;
       device = "/dev/disk/by-id/ata-INDMEM_mSATA_256GB_AA200313000000000122";
     };
   };
@@ -94,7 +93,7 @@ in {
     # Google Home and Chromecast.
     avahi = {
       enable = true;
-      interfaces = with vars.interfaces; [
+      allowInterfaces = with vars.interfaces; [
         "${mgmt0.name}"
         "${lan0.name}"
         "${iot0.name}"
@@ -109,8 +108,10 @@ in {
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
-      passwordAuthentication = false;
-      permitRootLogin = "no";
+      settings = {
+        PasswordAuthentication = false;
+        PermitRootLogin = "no";
+      };
     };
 
     atftpd = {
