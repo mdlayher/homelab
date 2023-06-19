@@ -6,7 +6,7 @@ require (
 	github.com/gokrazy/breakglass v0.0.0-20230225152058-158f63b4afb1
 	github.com/gokrazy/firmware v0.0.0-20230426033153-87439d42d999
 	github.com/gokrazy/gokrazy v0.0.0-20230417151844-a7649541429e
-	github.com/gokrazy/kernel v0.0.0-20230531040002-a75e6988e435
+	github.com/gokrazy/kernel v0.0.0-20230615035741-80608d3c235a
 	github.com/gokrazy/rpi-eeprom v0.0.0-20230516032624-867a3d61458d
 	github.com/gokrazy/serial-busybox v0.0.0-20220918193710-d728912733ca
 	github.com/mdlayher/consrv v1.0.1-0.20221030184627-e188cb5e4b80
@@ -14,11 +14,11 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.0 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/alecthomas/kingpin/v2 v2.3.2 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
-	github.com/beevik/ntp v1.0.0 // indirect
+	github.com/beevik/ntp v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
@@ -48,33 +48,33 @@ require (
 	github.com/lufia/iostat v1.2.1 // indirect
 	github.com/mattn/go-xmlrpc v0.0.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
-	github.com/mdlayher/ethtool v0.0.0-20221212131811-ba3b4bc2e02c // indirect
+	github.com/mdlayher/ethtool v0.1.0 // indirect
 	github.com/mdlayher/genetlink v1.3.2 // indirect
 	github.com/mdlayher/metricslite v0.0.0-20220406114248-d75c70dd4887 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/mdlayher/watchdog v0.0.0-20221003142519-49be0df7b3b5 // indirect
-	github.com/mdlayher/wifi v0.0.0-20220330172155-a44c70b6d3c8 // indirect
+	github.com/mdlayher/wifi v0.1.0 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pkg/sftp v1.13.5 // indirect
 	github.com/prometheus-community/go-runit v0.1.0 // indirect
-	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.10.0 // indirect
-	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/safchain/ethtool v0.3.0 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sync v0.2.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/oauth2 v0.9.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
