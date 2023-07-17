@@ -23,9 +23,8 @@ let
   mkCSV = lib.concatMapStrings (ifi: "${ifi.name}, ");
 
   # WAN interfaces.
-  metered_wans = with vars.interfaces; [ wwan0 ];
   unmetered_wans = with vars.interfaces; [ wan0 ];
-  all_wans = with vars.interfaces; [ wan0 wwan0 ];
+  all_wans = with vars.interfaces; [ wan0 ];
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   metered_lans = with vars.interfaces; [ mgmt0 lan0 ];
@@ -181,13 +180,6 @@ in {
           } oifname {
             ${mkCSV unmetered_wans}
           } counter accept comment "Allow trusted LANs to unmetered WANs";
-
-          # Forward certain trusted LAN traffic to metered WANs.
-          iifname {
-            ${mkCSV metered_lans}
-          } oifname {
-            ${mkCSV metered_wans}
-          } counter accept comment "trusted LAN devices to metered WANs"
 
           iifname {
             ${mkCSV trusted_lans}

@@ -35,7 +35,7 @@ in {
               '' else
                 ""}
             '') (hosts.servers ++ hosts.infra ++ [{
-              name = "routnerr-2";
+              name = "routnerr-3";
               ipv4 = interfaces.lan0.ipv4;
               ipv6.ula = interfaces.lan0.ipv6.ula;
             }])

@@ -9,7 +9,6 @@ let vars = import ./lib/vars.nix;
 in {
   imports = [
     # Hardware and base system configuration.
-    <nixos-hardware/pcengines/apu>
     ./hardware-configuration.nix
     ./lib/system.nix
 
@@ -26,7 +25,11 @@ in {
     ./lib/modules/wireguard_exporter.nix
   ];
 
-  system.stateVersion = "22.11";
+  # TODO: https://github.com/NixOS/nixos-hardware/pull/673
+  boot.kernelParams = [ "console=ttyS0,115200n8" ];
+
+  system.copySystemConfiguration = true;
+  system.stateVersion = "23.05";
 
   # Overlays for unstable and out-of-tree packages.
   nixpkgs.overlays = [
@@ -53,24 +56,17 @@ in {
         "net.ipv6.conf.${name}.autoconf" = 1;
       };
     };
-
-    # Use the GRUB 2 boot loader with MBR.
-    loader.grub = {
-      enable = true;
-      device = "/dev/disk/by-id/ata-INDMEM_mSATA_256GB_AA200313000000000122";
-    };
   };
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
   environment.systemPackages = with pkgs; [
     # Stable packages.
     bind
-    cbfstool
-    cmatrix
-    flashrom
-    libmbim
-    libqmi
 
     # Unstable and out-of-tree packages.
     wireguard_exporter

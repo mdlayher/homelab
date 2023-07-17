@@ -74,6 +74,7 @@ in {
       pciutils
       pkg-config
       pv
+      ripgrep
       smartmontools
       sysstat
       tcpdump

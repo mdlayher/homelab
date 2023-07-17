@@ -75,7 +75,7 @@ let
   in v: toHex' v "";
 in {
   networking = {
-    hostName = "routnerr-2";
+    hostName = "routnerr-3";
 
     # Use systemd-networkd for configuration. Forcibly disable legacy DHCP
     # client.
@@ -98,8 +98,6 @@ in {
   };
 
   # Manage network configuration with networkd.
-  #
-  # TODO(mdlayher): template out again.
   systemd.network = {
     enable = true;
 
@@ -117,7 +115,7 @@ in {
     };
 
     # Wired WAN.
-    links."10-wan0" = ethLink "wan0" "00:0d:b9:53:ea:cc";
+    links."10-wan0" = ethLink "wan0" "f4:90:ea:00:c7:8d";
     networks."10-wan0" = {
       matchConfig.Name = "wan0";
       networkConfig.DHCP = "yes";
@@ -141,15 +139,9 @@ in {
       };
     };
 
-    # Wireless WAN, temporarily unused.
-    links."11-wwan0" = {
-      matchConfig.Path = "pci-0000:00:13.0-usb-0:1.3:1.12";
-      linkConfig.Name = "wwan0";
-    };
-
     # Physical management LAN. For physical LANs, we have to make sure to match
     # on both Type and MACAddress since VLANs would share the same MAC.
-    links."15-mgmt0" = ethLink "mgmt0" "00:0d:b9:53:ea:cd";
+    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:90";
     networks."15-mgmt0" = {
       matchConfig.Name = "mgmt0";
 
@@ -192,8 +184,11 @@ in {
     };
 
     # Unused physical management LANs.
-    links."16-mgmt1" = ethLink "mgmt1" "00:0d:b9:53:ea:ce";
-    links."17-mgmt2" = ethLink "mgmt2" "00:0d:b9:53:ea:cf";
+    links."11-wan1" = ethLink "mgmt1" "f4:90:ea:00:c7:91";
+
+    # Unused WANs.
+    links."12-eth1" = ethLink "eth1" "f4:90:ea:00:c7:8e";
+    links."13-eth2" = ethLink "eth2" "f4:90:ea:00:c7:8f";
 
     # Home VLAN.
     netdevs."20-lan0" = vlanNetdev "lan0" 10;
@@ -232,19 +227,6 @@ in {
       matchConfig.Name = "wg0";
       address = with vars.wireguard.subnet; [ ipv4 ipv6.gua ipv6.ula ipv6.lla ];
     };
-  };
-
-  # Use NM/MM only to manage the LTE modem.
-  networking.networkmanager = {
-    enable = true;
-    dns = "systemd-resolved";
-    unmanaged = [ "*,except:type:gsm" ];
-  };
-
-  # Bring up MM and exporter with NM.
-  systemd.services.ModemManager = {
-    enable = true;
-    wantedBy = [ "NetworkManager.service" ];
   };
 
   services.tailscale = {
