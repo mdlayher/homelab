@@ -37,9 +37,9 @@ in {
     # Packages which should be installed on every machine.
     systemPackages = with pkgs; [
       age
-      bandwhich
       bc
       bintools-unwrapped
+      btop
       byobu
       comma
       dmidecode
@@ -66,7 +66,6 @@ in {
       mtr
       ndisc6
       neofetch
-      nethogs
       nixfmt
       # Broken as of June 1, 2023.
       # nix-linter
@@ -79,6 +78,7 @@ in {
       sysstat
       tcpdump
       tmux
+      tree
       unixtools.xxd
       unzip
       usbutils
