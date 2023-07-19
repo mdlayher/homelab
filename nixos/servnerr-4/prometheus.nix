@@ -113,8 +113,8 @@ in {
       # Simple, static scrape jobs.
       (staticScrape "apcupsd" [ "nerr-4:9162" "servnerr-4:9162" ])
       (staticScrape "consrv" [ "monitnerr-1:9288" ])
-      (staticScrape "coredns" [ "routnerr-2:9153" ])
-      (staticScrape "corerad" [ "routnerr-2:9430" "servnerr-4:9430" ])
+      (staticScrape "coredns" [ "routnerr-3:9153" ])
+      (staticScrape "corerad" [ "routnerr-3:9430" "servnerr-4:9430" ])
       (lib.mkMerge [
         (staticScrape "keylight" [ "keylight" ])
         { relabel_configs = relabelTarget "servnerr-4:9288"; }
@@ -122,12 +122,12 @@ in {
       (staticScrape "node" [
         "monitnerr-1:9100"
         "nerr-4:9100"
-        "routnerr-2:9100"
+        "routnerr-3:9100"
         "servnerr-4:9100"
       ])
       (staticScrape "obs" [ "nerr-4:9407" ])
       (staticScrape "windows" [ "theatnerr-2:9182" ])
-      (staticScrape "wireguard" [ "routnerr-2:9586" ])
+      (staticScrape "wireguard" [ "routnerr-3:9586" ])
       (staticScrape "zrepl" [ "servnerr-4:9811" ])
 
       # Home Assistant requires a more custom configuration.
@@ -153,14 +153,14 @@ in {
       # it once a minute.
       (blackboxScrape "ssh_banner" "1m" [
         "nerr-4:22"
-        "routnerr-2:22"
+        "routnerr-3:22"
         "servnerr-4:22"
       ])
 
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp-cyberpower" [ "pdu01" "ups01" ])
+        (staticScrape "snmp-cyberpower" [ "pdu01.ipv4" "ups01.ipv4" ])
         {
           metrics_path = "/snmp";
           params = { module = [ "cyberpower" ]; };
@@ -169,7 +169,7 @@ in {
       ])
 
       # Lab-only jobs must be prefixed with lab- to avoid alerting.
-      (staticScrape "lab-corerad" [ "routnerr-2:9431" ])
+      (staticScrape "lab-corerad" [ "routnerr-3:9431" ])
     ];
 
     rules = [ (builtins.toJSON (import ./prometheus-alerts.nix)) ];

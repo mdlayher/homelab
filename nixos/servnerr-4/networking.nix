@@ -36,6 +36,8 @@
       linkConfig.Name = "ten0p0lan0";
     };
     networks."11-ten0p0lan0" = {
+      # TODO(mdlayher): enable again.
+      enable = false;
       matchConfig.Name = "ten0p0lan0";
       networkConfig.DHCP = "ipv4";
       dhcpV4Config.ClientIdentifier = "mac";
