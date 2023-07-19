@@ -1,7 +1,6 @@
 *.retry
 *.bak
 secrets.nix
-gokrazy/breakglass.tar
-gokrazy/builddir
+gokrazy/monitnerr-1/config.json
 obs/profiles/Programming/service.json
 nixos/lib/vargen/vargen

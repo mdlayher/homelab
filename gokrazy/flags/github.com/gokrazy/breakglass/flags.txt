@@ -1,1 +1,0 @@
--authorized_keys=/etc/breakglass.authorized_keys

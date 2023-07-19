@@ -1,1 +1,5 @@
+# This authorized_keys(5) file allows access from keys on nerr-4
+
+# /home/matt/.ssh/id_ed25519.pub
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)
+

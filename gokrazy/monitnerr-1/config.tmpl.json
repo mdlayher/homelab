@@ -1,0 +1,37 @@
+{
+    "Hostname": "monitnerr-1",
+    "Update": {
+        "HTTPPassword": ""
+    },
+    "Packages": [
+        "github.com/gokrazy/serial-busybox",
+        "github.com/gokrazy/breakglass",
+        "github.com/mdlayher/consrv/cmd/consrv",
+        "github.com/prometheus/node_exporter"
+    ],
+    "PackageConfig": {
+        "github.com/gokrazy/breakglass": {
+            "CommandLineFlags": [
+                "-authorized_keys=/etc/breakglass.authorized_keys"
+            ],
+            "ExtraFilePaths": {
+                "/etc/breakglass.authorized_keys": "breakglass.authorized_keys"
+            }
+        },
+        "github.com/gokrazy/gokrazy/cmd/randomd": {
+            "ExtraFileContents": {
+                "/etc/machine-id": "f4eda07834ca40c6915deabb26f08b85\n"
+            }
+        },
+        "github.com/mdlayher/consrv/cmd/consrv": {
+            "CommandLineFlags": [
+                "-c=/etc/consrv.toml"
+            ],
+            "ExtraFilePaths": {
+                "/etc/consrv.toml": "consrv.toml"
+            }
+        }
+    },
+    "SerialConsole": "disabled",
+    "InternalCompatibilityFlags": {}
+}

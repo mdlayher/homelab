@@ -1,7 +1,7 @@
 # Configuration for monitnerr-1.
 [[devices]]
 name = "router"
-serial = "01BF9A13"
+serial = "Q3245527461"
 baud = 115200
 identities = ["mdlayher"]
 
