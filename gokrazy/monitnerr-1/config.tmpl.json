@@ -7,7 +7,9 @@
         "github.com/gokrazy/serial-busybox",
         "github.com/gokrazy/breakglass",
         "github.com/mdlayher/consrv/cmd/consrv",
-        "github.com/prometheus/node_exporter"
+        "github.com/prometheus/node_exporter",
+        "tailscale.com/cmd/tailscaled",
+        "tailscale.com/cmd/tailscale"
     ],
     "PackageConfig": {
         "github.com/gokrazy/breakglass": {
@@ -30,6 +32,11 @@
             "ExtraFilePaths": {
                 "/etc/consrv.toml": "consrv.toml"
             }
+        },
+        "tailscale.com/cmd/tailscale": {
+            "CommandLineFlags": [
+                "up"
+            ]
         }
     },
     "SerialConsole": "disabled",
