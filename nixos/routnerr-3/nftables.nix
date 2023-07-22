@@ -5,7 +5,6 @@ let
 
   # Port definitions.
   ports = {
-    consrv = "2222";
     dns = "53";
     dhcp4_server = "67";
     dhcp4_client = "68";
@@ -28,7 +27,7 @@ let
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   metered_lans = with vars.interfaces; [ mgmt0 lan0 ];
-  trusted_lans = with vars.interfaces; [ mgmt0 lan0 lab0 wg0 ];
+  trusted_lans = with vars.interfaces; [ mgmt0 lan0 lab0 wg0 {name = "ts0";} ];
   limited_lans = with vars.interfaces; [ guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
 
@@ -227,14 +226,6 @@ in {
           ct state {established, related} counter accept
           ct state invalid counter drop
 
-          # SSH for internal machines.
-          ip6 daddr {
-            ${
-              lib.concatMapStrings (host: "${host.ipv6.gua}, ")
-              vars.hosts.servers
-            }
-          } tcp dport {${ports.ssh}, ${ports.consrv}} counter accept comment "IPv6 SSH"
-
           # Plex running on server.
           ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
           ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
@@ -266,10 +257,6 @@ in {
             ${ports.plex},
           } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
 
-          udp dport {
-            ${ports.dns},
-          } redirect to ${ports.wireguard} comment "router IPv4 WireGuard DNAT"
-
           accept
         }
 
@@ -279,21 +266,6 @@ in {
           oifname {
             ${mkCSV all_wans}
           } masquerade
-        }
-      }
-
-      table ip6 nat {
-        chain prerouting {
-          type nat hook prerouting priority 0
-
-          # NAT WireGuard alternate port IPv6 from all WANs.
-          iifname {
-            ${mkCSV all_wans}
-          } udp dport {
-            ${ports.dns},
-          } redirect to ${ports.wireguard} comment "router IPv6 WireGuard DNAT"
-
-          accept
         }
       }
     '';

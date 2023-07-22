@@ -230,9 +230,10 @@ in {
   };
 
   services.tailscale = {
-    enable = false;
+    enable = true;
     package = unstable.tailscale;
     interfaceName = "ts0";
+    useRoutingFeatures = "server";
   };
 
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
