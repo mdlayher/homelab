@@ -1,6 +1,8 @@
 { lib, ... }:
 
-{
+let unstable = import <nixos-unstable-small> { };
+
+in {
   networking = {
     # Host name and ID.
     hostName = "servnerr-4";
@@ -12,6 +14,12 @@
 
     # No local firewall.
     firewall.enable = false;
+  };
+
+  services.tailscale = {
+    enable = true;
+    package = unstable.tailscale;
+    interfaceName = "ts0";
   };
 
   systemd.network = {
