@@ -3,8 +3,9 @@ module gokrazy/build/monitnerr-1
 go 1.20
 
 require (
-	github.com/gokrazy/gokrazy v0.0.0-20230701125004-edba3d33ffa9 // indirect
+	github.com/gokrazy/gokrazy v0.0.0-20230723153554-331c98011aad // indirect
 	github.com/google/gopacket v1.1.19 // indirect
+	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/packet v1.0.0 // indirect
 	github.com/mdlayher/socket v0.2.3 // indirect
