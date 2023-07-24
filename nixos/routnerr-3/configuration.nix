@@ -28,6 +28,13 @@ in {
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
   boot.kernelParams = [ "console=ttyS0,115200n8" ];
 
+  # Start getty over serial console.
+  systemd.services."serial-getty@ttyS0" = {
+    enable = true;
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = { Restart = "always"; };
+  };
+
   system.copySystemConfiguration = true;
   system.stateVersion = "23.05";
 
