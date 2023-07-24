@@ -40,6 +40,13 @@ in {
     ];
   };
 
+  # Start getty over serial console.
+  systemd.services."serial-getty@ttyS1" = {
+    enable = true;
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = { Restart = "always"; };
+  };
+
   # Scale down CPU frequency when load is low.
   powerManagement.cpuFreqGovernor = "ondemand";
 
