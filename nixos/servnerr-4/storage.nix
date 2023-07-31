@@ -176,7 +176,10 @@ in {
     # TODO(mdlayher): sharenfs integration?
     zfs = {
       # Scrub all pools regularly.
-      autoScrub.enable = true;
+      autoScrub = {
+        enable = true;
+        interval = "monthly";
+      };
 
       # ZED configuration.
       zed = {
