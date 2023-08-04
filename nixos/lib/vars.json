@@ -384,6 +384,30 @@
 			},
 			"hosts": null
 		},
+		"wan1": {
+			"name": "wan1",
+			"preference": "medium",
+			"internal_dns": false,
+			"ipv4": "",
+			"ipv6": {
+				"gua": "",
+				"ula": "",
+				"lla": ""
+			},
+			"hosts": null
+		},
+		"wan2": {
+			"name": "wan2",
+			"preference": "medium",
+			"internal_dns": false,
+			"ipv4": "",
+			"ipv6": {
+				"gua": "",
+				"ula": "",
+				"lla": ""
+			},
+			"hosts": null
+		},
 		"wg0": {
 			"name": "wg0",
 			"preference": "medium",
@@ -395,18 +419,6 @@
 				"lla": "fe80::1"
 			},
 			"hosts": []
-		},
-		"wwan0": {
-			"name": "wwp0s19u1u3i12",
-			"preference": "medium",
-			"internal_dns": false,
-			"ipv4": "",
-			"ipv6": {
-				"gua": "",
-				"ula": "",
-				"lla": ""
-			},
-			"hosts": null
 		}
 	},
 	"wireguard": {

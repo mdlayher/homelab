@@ -198,8 +198,12 @@ func main() {
 		Preference: medium,
 		IPv4:       wan4,
 	}
-	out.Interfaces["wwan0"] = iface{
-		Name:       "wwp0s19u1u3i12",
+	out.Interfaces["wan1"] = iface{
+		Name:       "wan1",
+		Preference: medium,
+	}
+	out.Interfaces["wan2"] = iface{
+		Name:       "wan2",
 		Preference: medium,
 	}
 
