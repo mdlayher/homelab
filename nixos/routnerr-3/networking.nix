@@ -114,7 +114,7 @@ in {
       }];
     };
 
-    # Wired WAN.
+    # Wired WAN: Spectrum 1GbE.
     links."10-wan0" = ethLink "wan0" "f4:90:ea:00:c7:8d";
     networks."10-wan0" = {
       matchConfig.Name = "wan0";
@@ -126,10 +126,73 @@ in {
 
         # Don't release IPv4 address on restart/reboots to avoid churn.
         SendRelease = false;
+
+        # Deprioritize Spectrum IPv4.
+        RouteMetric = 200;
       };
       dhcpV6Config = {
         # Spectrum gives a /56.
         PrefixDelegationHint = "::/56";
+
+        UseDNS = false;
+      };
+      ipv6AcceptRAConfig = {
+        UseDNS = false;
+        UseDomains = false;
+      };
+    };
+
+    # Wired WAN: Metronet 10GbE.
+    # TODO(mdlayher): enable!
+    links."11-wan1" = ethLink "wan1" "f4:90:ea:00:c7:91";
+    networks."11-wan1" = {
+      enable = false;
+
+      matchConfig.Name = "wan1";
+      networkConfig.DHCP = "yes";
+      # Never accept ISP DNS or search domains for any DHCP/RA family.
+      dhcpV4Config = {
+        UseDNS = false;
+        UseDomains = false;
+
+        # Don't release IPv4 address on restart/reboots to avoid churn.
+        SendRelease = false;
+
+        # Prioritize Metronet IPv4.
+        RouteMetric = 100;
+      };
+      dhcpV6Config = {
+        # TODO: ???.
+        PrefixDelegationHint = "::/48";
+
+        UseDNS = false;
+      };
+      ipv6AcceptRAConfig = {
+        UseDNS = false;
+        UseDomains = false;
+      };
+    };
+
+    # Wired WAN: Metronet 1GbE.
+    # TODO(mdlayher): remove once wan1 is up.
+    links."11-wan2" = ethLink "wan2" "f4:90:ea:00:c7:8e";
+    networks."11-wan2" = {
+      matchConfig.Name = "wan2";
+      networkConfig.DHCP = "yes";
+      # Never accept ISP DNS or search domains for any DHCP/RA family.
+      dhcpV4Config = {
+        UseDNS = false;
+        UseDomains = false;
+
+        # Don't release IPv4 address on restart/reboots to avoid churn.
+        SendRelease = false;
+
+        # Prioritize Metronet IPv4.
+        RouteMetric = 100;
+      };
+      dhcpV6Config = {
+        # TODO: ???.
+        PrefixDelegationHint = "::/48";
 
         UseDNS = false;
       };
@@ -182,13 +245,6 @@ in {
         };
       });
     };
-
-    # Unused physical management LANs.
-    links."11-wan1" = ethLink "mgmt1" "f4:90:ea:00:c7:91";
-
-    # Unused WANs.
-    links."12-eth1" = ethLink "eth1" "f4:90:ea:00:c7:8e";
-    links."13-eth2" = ethLink "eth2" "f4:90:ea:00:c7:8f";
 
     # Home VLAN.
     netdevs."20-lan0" = vlanNetdev "lan0" 10;
