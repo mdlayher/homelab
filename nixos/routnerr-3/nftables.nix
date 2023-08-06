@@ -22,8 +22,8 @@ let
   mkCSV = lib.concatMapStrings (ifi: "${ifi.name}, ");
 
   # WAN interfaces.
-  unmetered_wans = with vars.interfaces; [ wan0 wan1 wan2 ];
-  all_wans = with vars.interfaces; [ wan0 wan1 wan2 ];
+  unmetered_wans = with vars.interfaces; [ wan0 wan1 ];
+  all_wans = with vars.interfaces; [ wan0 wan1 ];
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   metered_lans = with vars.interfaces; [ mgmt0 lan0 ];

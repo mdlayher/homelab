@@ -143,11 +143,8 @@ in {
     };
 
     # Wired WAN: Metronet 10GbE.
-    # TODO(mdlayher): enable!
     links."11-wan1" = ethLink "wan1" "f4:90:ea:00:c7:91";
     networks."11-wan1" = {
-      enable = false;
-
       matchConfig.Name = "wan1";
       networkConfig.DHCP = "yes";
       # Never accept ISP DNS or search domains for any DHCP/RA family.
@@ -160,39 +157,13 @@ in {
 
         # Prioritize Metronet IPv4.
         RouteMetric = 100;
+
+        # Experiment.
+        RequestBroadcast = true;
       };
       dhcpV6Config = {
         # TODO: ???.
-        PrefixDelegationHint = "::/48";
-
-        UseDNS = false;
-      };
-      ipv6AcceptRAConfig = {
-        UseDNS = false;
-        UseDomains = false;
-      };
-    };
-
-    # Wired WAN: Metronet 1GbE.
-    # TODO(mdlayher): remove once wan1 is up.
-    links."11-wan2" = ethLink "wan2" "f4:90:ea:00:c7:8e";
-    networks."11-wan2" = {
-      matchConfig.Name = "wan2";
-      networkConfig.DHCP = "yes";
-      # Never accept ISP DNS or search domains for any DHCP/RA family.
-      dhcpV4Config = {
-        UseDNS = false;
-        UseDomains = false;
-
-        # Don't release IPv4 address on restart/reboots to avoid churn.
-        SendRelease = false;
-
-        # Prioritize Metronet IPv4.
-        RouteMetric = 100;
-      };
-      dhcpV6Config = {
-        # TODO: ???.
-        PrefixDelegationHint = "::/48";
+        PrefixDelegationHint = "::/56";
 
         UseDNS = false;
       };
