@@ -21,6 +21,7 @@ in {
     package = unstable.tailscale;
     interfaceName = "ts0";
   };
+  systemd.services.tailscaled.after = [ "network-online.target" "systemd-resolved.service" ];
 
   systemd.network = {
     enable = true;
@@ -38,30 +39,13 @@ in {
       ipv6AcceptRAConfig.UseDomains = true;
     };
 
-    # 10GbE internal LAN.
-    links."11-ten0p0lan0" = {
+    # 10GbE management LAN.
+    links."11-mgmt1" = {
       matchConfig.MACAddress = "8c:dc:d4:ac:96:24";
-      linkConfig.Name = "ten0p0lan0";
+      linkConfig.Name = "mgmt1";
     };
-    networks."11-ten0p0lan0" = {
-      # TODO(mdlayher): enable again.
-      enable = false;
-      matchConfig.Name = "ten0p0lan0";
-      networkConfig.DHCP = "ipv4";
-      dhcpV4Config.ClientIdentifier = "mac";
-      # Only accept DNS search on this interface.
-      ipv6AcceptRAConfig.UseDomains = true;
-    };
-
-    # 10GbE lab VLAN.
-    links."12-ten0p1lab0" = {
-      matchConfig.MACAddress = "8c:dc:d4:ac:96:25";
-      linkConfig.Name = "ten0p1lab0";
-    };
-    networks."12-ten0p1lab0" = {
-      # TODO(mdlayher): enable after setting up bridge.
-      enable = false;
-      matchConfig.Name = "ten0p1lab0";
+    networks."11-mgmt1" = {
+      matchConfig.Name = "mgmt1";
       networkConfig.DHCP = "ipv4";
       dhcpV4Config.ClientIdentifier = "mac";
       # Only accept DNS search on this interface.
