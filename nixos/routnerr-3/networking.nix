@@ -90,7 +90,7 @@ in {
   # Use resolved for local DNS lookups, querying through CoreDNS.
   services.resolved = {
     enable = true;
-    domains = [ vars.domain ];
+    domains = [ vars.domain "taild07ab.ts.net" ];
     extraConfig = ''
       DNS=::1 127.0.0.1
       DNSStubListener=no
@@ -145,6 +145,8 @@ in {
     # Wired WAN: Metronet 10GbE.
     links."11-wan1" = ethLink "wan1" "f4:90:ea:00:c7:91";
     networks."11-wan1" = {
+      enable = false;
+
       matchConfig.Name = "wan1";
       networkConfig.DHCP = "yes";
       # Never accept ISP DNS or search domains for any DHCP/RA family.
@@ -262,6 +264,7 @@ in {
     interfaceName = "ts0";
     useRoutingFeatures = "server";
   };
+  systemd.services.tailscaled.after = [ "network-online.target" "systemd-resolved.service" ];
 
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
