@@ -95,8 +95,6 @@ in {
         }));
       };
 
-      keylight.enable = true;
-
       # SNMP exporter with data file from release 0.19.0.
       snmp = {
         enable = true;
@@ -115,10 +113,6 @@ in {
       (staticScrape "consrv" [ "monitnerr-1:9288" ])
       (staticScrape "coredns" [ "routnerr-3:9153" ])
       (staticScrape "corerad" [ "routnerr-3:9430" "servnerr-4:9430" ])
-      (lib.mkMerge [
-        (staticScrape "keylight" [ "keylight" ])
-        { relabel_configs = relabelTarget "servnerr-4:9288"; }
-      ])
       (staticScrape "node" [
         "monitnerr-1:9100"
         "nerr-4:9100"
