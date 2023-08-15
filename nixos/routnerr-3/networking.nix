@@ -43,8 +43,8 @@ let
       # DHCPServer on NixOS does not support Boot options yet.
       extraConfig = ''
         [DHCPServer]
-        DefaultLeaseTimeSec = 86400;
-        MaxLeaseTimeSec = 86400;
+        DefaultLeaseTimeSec = 86400
+        MaxLeaseTimeSec = 86400
         PoolOffset = 50
         EmitDNS = true
         DNS = _server_address
@@ -145,34 +145,17 @@ in {
     # Wired WAN: Metronet 10GbE.
     links."11-wan1" = ethLink "wan1" "f4:90:ea:00:c7:91";
     networks."11-wan1" = {
-      enable = false;
-
       matchConfig.Name = "wan1";
-      networkConfig.DHCP = "yes";
-      # Never accept ISP DNS or search domains for any DHCP/RA family.
-      dhcpV4Config = {
-        UseDNS = false;
-        UseDomains = false;
+      networkConfig.Address = "216.82.20.71/26";
 
-        # Don't release IPv4 address on restart/reboots to avoid churn.
-        SendRelease = false;
+      routes = [{
+        routeConfig = {
+          Gateway = "216.82.20.65";
 
-        # Prioritize Metronet IPv4.
-        RouteMetric = 100;
-
-        # Experiment.
-        RequestBroadcast = true;
-      };
-      dhcpV6Config = {
-        # TODO: ???.
-        PrefixDelegationHint = "::/56";
-
-        UseDNS = false;
-      };
-      ipv6AcceptRAConfig = {
-        UseDNS = false;
-        UseDomains = false;
-      };
+          # Prioritize Metronet IPv4.
+          Metric = 100;
+        };
+      }];
     };
 
     # Physical management LAN. For physical LANs, we have to make sure to match
@@ -201,8 +184,8 @@ in {
       # DHCPServer on NixOS does not support Boot options yet.
       extraConfig = ''
         [DHCPServer]
-        DefaultLeaseTimeSec = 86400;
-        MaxLeaseTimeSec = 86400;
+        DefaultLeaseTimeSec = 86400
+        MaxLeaseTimeSec = 86400
         PoolOffset = 50
         EmitDNS = true
         DNS = _server_address
@@ -264,7 +247,8 @@ in {
     interfaceName = "ts0";
     useRoutingFeatures = "server";
   };
-  systemd.services.tailscaled.after = [ "network-online.target" "systemd-resolved.service" ];
+  systemd.services.tailscaled.after =
+    [ "network-online.target" "systemd-resolved.service" ];
 
   # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
   # TODO: nixify the configuration.
