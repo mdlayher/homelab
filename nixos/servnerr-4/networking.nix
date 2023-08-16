@@ -21,6 +21,10 @@ in {
     package = unstable.tailscale;
     interfaceName = "ts0";
   };
+
+  # Tailscale readiness and DNS tweaks.
+  systemd.network.wait-online.ignoredInterfaces = ["ts0"];
+
   systemd.services.tailscaled.after = [ "network-online.target" "systemd-resolved.service" ];
 
   systemd.network = {

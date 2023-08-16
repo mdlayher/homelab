@@ -45,6 +45,7 @@ in {
       dmidecode
       ethtool
       file
+      fio
       fwupd
       gcc
       git
