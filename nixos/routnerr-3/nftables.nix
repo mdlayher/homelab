@@ -15,6 +15,7 @@ let
     mdns = "5353";
     plex = "32400";
     ssh = "22";
+    tailscale = "41461";
     wireguard = "51820";
   };
 
@@ -41,6 +42,7 @@ let
   icmp_rules = ''
     ip6 nexthdr icmpv6 icmpv6 type {
       echo-request,
+      echo-reply,
       destination-unreachable,
       packet-too-big,
       time-exceeded,
@@ -51,6 +53,7 @@ let
 
     ip protocol icmp icmp type {
       echo-request,
+      echo-reply,
       destination-unreachable,
       time-exceeded,
       parameter-problem,
@@ -116,6 +119,7 @@ in {
 
           # router UDP
           udp dport {
+            ${ports.tailscale},
             ${ports.wireguard},
           } counter accept comment "router WAN UDP"
 
