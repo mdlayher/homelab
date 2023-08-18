@@ -245,6 +245,7 @@ in {
     enable = true;
     package = unstable.tailscale;
     interfaceName = "ts0";
+    permitCertUid = "caddy";
     useRoutingFeatures = "server";
   };
 

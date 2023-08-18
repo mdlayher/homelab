@@ -19,7 +19,7 @@ in {
     # Networking daemons.
     ./coredns.nix
     ./corerad.nix
-    ./traefik.nix
+    ./caddy.nix
 
     # Unstable or out-of-tree modules.
     ./lib/modules/wireguard_exporter.nix
@@ -78,18 +78,6 @@ in {
     # Unstable and out-of-tree packages.
     wireguard_exporter
   ];
-
-  # Use server as a remote builder.
-  nix = {
-    distributedBuilds = true;
-    buildMachines = [{
-      hostName = "servnerr-4";
-      system = "x86_64-linux";
-      maxJobs = 16;
-      speedFactor = 4;
-      supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
-    }];
-  };
 
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
