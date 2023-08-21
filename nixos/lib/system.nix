@@ -119,7 +119,10 @@ in {
   services = {
     fstrim.enable = true;
     fwupd.enable = true;
-    prometheus.exporters.node.enable = true;
+    prometheus.exporters.node = {
+      enable = true;
+      enabledCollectors = ["ethtool" "systemd"];
+    };
   };
 
   system.autoUpgrade.enable = true;
