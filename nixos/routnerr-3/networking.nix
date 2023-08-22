@@ -10,7 +10,14 @@ let
         Type = "ether";
         MACAddress = mac;
       };
-      linkConfig.Name = name;
+      linkConfig = {
+        Name = name;
+
+        # Hardware tuning. Note that wan0/wan1/mgmt0 all happen to support a max
+        # of 4096 since the NixOS option won't allow "max".
+        RxBufferSize = 4096;
+        TxBufferSize = 4096;
+      };
     }));
 
   vlanNetdev = (name:
