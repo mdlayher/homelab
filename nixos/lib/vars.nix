@@ -8,6 +8,7 @@ let
 
   server_ipv4 = gen.server_ipv4;
   server_ipv6 = gen.server_ipv6;
+  desktop_ipv4 = gen.desktop_ipv4;
   desktop_ipv6 = gen.desktop_ipv6;
 
 in {
@@ -17,6 +18,7 @@ in {
 
   inherit server_ipv4;
   inherit server_ipv6;
+  inherit desktop_ipv4;
   inherit desktop_ipv6;
 
   domain = "lan.servnerr.com";

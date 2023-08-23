@@ -100,6 +100,7 @@ func main() {
 		// TODO: this is a hack, we should make a Service type or similar.
 		ServerIPv4:  server.IPv4,
 		ServerIPv6:  server.IPv6.GUA,
+		DesktopIPv4: desktop.IPv4,
 		DesktopIPv6: desktop.IPv6.GUA,
 		Hosts: hosts{
 			Servers: []host{
@@ -257,6 +258,7 @@ func wanIPv6Prefix() netip.Prefix {
 type output struct {
 	ServerIPv4  netip.Addr       `json:"server_ipv4"`
 	ServerIPv6  netip.Addr       `json:"server_ipv6"`
+	DesktopIPv4 netip.Addr       `json:"desktop_ipv4"`
 	DesktopIPv6 netip.Addr       `json:"desktop_ipv6"`
 	Hosts       hosts            `json:"hosts"`
 	Interfaces  map[string]iface `json:"interfaces"`
