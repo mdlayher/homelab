@@ -17,8 +17,10 @@ let
     ssh = "22";
     # Different tailscaled ports for different devices to avoid messing with
     # poking nftables firewall holes with miniupnpd or similar.
-    tailscale_router = "41461";
-    tailscale_desktop = "41642";
+    tailscale = {
+      router = "41461";
+      desktop = "41642";
+    };
     wireguard = "51820";
   };
 
@@ -122,7 +124,7 @@ in {
 
           # router UDP
           udp dport {
-            ${ports.tailscale_router},
+            ${ports.tailscale.router},
             ${ports.wireguard},
           } counter accept comment "router WAN UDP"
 
@@ -244,8 +246,8 @@ in {
           ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
 
           # Tailscale running on desktop.
-          ip daddr ${vars.desktop_ipv4} udp dport ${ports.tailscale_desktop} counter accept comment "desktop IPv4 Tailscale"
-          ip6 daddr ${vars.desktop_ipv6} udp dport ${ports.tailscale_desktop} counter accept comment "desktop IPv6 Tailscale"
+          ip daddr ${vars.desktop_ipv4} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv4 Tailscale"
+          ip6 daddr ${vars.desktop_ipv6} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv6 Tailscale"
 
           counter reject
         }
@@ -275,7 +277,7 @@ in {
           } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
 
           udp dport {
-            ${ports.tailscale_desktop},
+            ${ports.tailscale.desktop},
           } dnat ${vars.desktop_ipv4} comment "desktop UDPv4 DNAT"
 
           accept
