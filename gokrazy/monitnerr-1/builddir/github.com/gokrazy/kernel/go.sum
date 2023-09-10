@@ -4,3 +4,5 @@ github.com/gokrazy/kernel v0.0.0-20230721065804-1fc6db972814 h1:tB3zlxqLAk4nVDs9
 github.com/gokrazy/kernel v0.0.0-20230721065804-1fc6db972814/go.mod h1:9bunbYi8kxZow8AQJl4SiPmglzemYA/f3zrLgKrTmVI=
 github.com/gokrazy/kernel v0.0.0-20230817035607-3fd001b743cb h1:/Fql5+it0end0fDZH2XbRojW47JQJKz+NN+yz62lYfs=
 github.com/gokrazy/kernel v0.0.0-20230817035607-3fd001b743cb/go.mod h1:9bunbYi8kxZow8AQJl4SiPmglzemYA/f3zrLgKrTmVI=
+github.com/gokrazy/kernel v0.0.0-20230907062000-165f6de9072a h1:jopo2pzlP0kiKi147CPHR8XWWjsEhNoCKx6G2qNfCT8=
+github.com/gokrazy/kernel v0.0.0-20230907062000-165f6de9072a/go.mod h1:9bunbYi8kxZow8AQJl4SiPmglzemYA/f3zrLgKrTmVI=
