@@ -121,7 +121,7 @@ in {
     fwupd.enable = true;
     prometheus.exporters.node = {
       enable = true;
-      enabledCollectors = ["ethtool" "systemd"];
+      enabledCollectors = [ "ethtool" "systemd" ];
     };
   };
 
