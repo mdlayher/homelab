@@ -156,6 +156,11 @@ func main() {
 					netip.MustParseAddr("192.168.1.11"),
 					mac("00:0c:15:05:1e:e6"),
 				),
+				mgmt0.newHost(
+					"hass",
+					netip.MustParseAddr("192.168.1.12"),
+					mac("52:54:00:22:db:4d"),
+				),
 				iot0.newHost(
 					"keylight",
 					netip.MustParseAddr("192.168.66.10"),
