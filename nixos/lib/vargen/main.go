@@ -46,11 +46,8 @@ func (p preference) MarshalText() ([]byte, error) {
 }
 
 func main() {
-	// Fetch IPv4 address and IPv6 prefix for use elsewhere.
-	var (
-		wan4 = wanIPv4()
-		gua6 = wanIPv6Prefix()
-	)
+	// Fetch IPv6 prefix for use elsewhere.
+	gua6 := wanIPv6Prefix()
 
 	const trusted = true
 
@@ -61,13 +58,6 @@ func main() {
 		mgmt0 = newSubnet("mgmt0", 0, gua6, trusted)
 		lan0  = newSubnet("lan0", 10, gua6, trusted)
 		wg0   = newSubnet("wg0", 20, gua6, trusted)
-
-		// When multiple subnets are available, prefer the 10GbE subnet.
-		tengb0 = func() subnet {
-			s := newSubnet("tengb0", 110, gua6, trusted)
-			s.Preference = high
-			return s
-		}()
 
 		// Untrusted subnets which do not necessarily, have internal DNS records
 		// and other services deployed on them. The lab subnet is a bit of a
@@ -192,26 +182,7 @@ func main() {
 	out.addInterface("guest0", guest0)
 	out.addInterface("iot0", iot0)
 	out.addInterface("lab0", lab0)
-	// TODO(mdlayher): re-enable tengb0 when switch is set up.
-	_ = tengb0
-	// out.addInterface("tengb0", tengb0)
 	out.addInterface("wg0", wg0)
-
-	// TODO: WANs are special cases and should probably live in their own
-	// section with different rules.
-	out.Interfaces["wan0"] = iface{
-		Name:       "wan0",
-		Preference: medium,
-		IPv4:       wan4,
-	}
-	out.Interfaces["wan1"] = iface{
-		Name:       "wan1",
-		Preference: medium,
-	}
-	out.Interfaces["wan2"] = iface{
-		Name:       "wan2",
-		Preference: medium,
-	}
 
 	// Marshal human-readable JSON for nicer git diffs.
 	e := json.NewEncoder(os.Stdout)
@@ -219,21 +190,6 @@ func main() {
 	if err := e.Encode(out); err != nil {
 		log.Fatalf("failed to encode JSON: %v", err)
 	}
-}
-
-func wanIPv4() netip.Addr {
-	res, err := http.Get("https://ipv4.icanhazip.com")
-	if err != nil {
-		log.Fatalf("failed to perform HTTP request: %v", err)
-	}
-	defer res.Body.Close()
-
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalf("failed to read HTTP body: %v", err)
-	}
-
-	return netip.MustParseAddr(strings.TrimSpace(string(b)))
 }
 
 func wanIPv6Prefix() netip.Prefix {

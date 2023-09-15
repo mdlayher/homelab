@@ -22,10 +22,11 @@ in {
 
       interfaces =
         # Upstream monitoring interfaces.
-        lib.forEach [ wan0 ] (ifi: {
-          name = ifi.name;
+        [{
+          # Spectrum, Metronet does not provide IPv6 as of September 2023.
+          names = [ "wan0" ];
           monitor = true;
-        })
+        }]
 
         # Downstream advertising interfaces.
         ++ lib.forEach [ mgmt0 lab0 lan0 guest0 iot0 ] (ifi:

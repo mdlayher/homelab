@@ -28,8 +28,7 @@ let
   mkCSV = lib.concatMapStrings (ifi: "${ifi.name}, ");
 
   # WAN interfaces.
-  unmetered_wans = with vars.interfaces; [ wan0 wan1 ];
-  all_wans = with vars.interfaces; [ wan0 wan1 ];
+  all_wans = "wan0, wan1";
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
   metered_lans = with vars.interfaces; [ mgmt0 lan0 ];
@@ -90,7 +89,7 @@ in {
 
           # Allow all WANs to selectively communicate with the router.
           iifname {
-            ${mkCSV all_wans}
+            ${all_wans}
           } jump input_wan
 
           # Always allow router solicitation from any LAN.
@@ -192,8 +191,8 @@ in {
           iifname {
             ${mkCSV trusted_lans}
           } oifname {
-            ${mkCSV unmetered_wans}
-          } counter accept comment "Allow trusted LANs to unmetered WANs";
+            ${all_wans}
+          } counter accept comment "Allow trusted LANs to all WANs";
 
           iifname {
             ${mkCSV trusted_lans}
@@ -208,19 +207,19 @@ in {
             ${mkCSV limited_lans}
             ${mkCSV untrusted_lans}
           } oifname {
-            ${mkCSV unmetered_wans}
-          } counter accept comment "Allow limited LANs to unmetered WANs";
+            ${all_wans}
+          } counter accept comment "Allow limited LANs only to WANs";
 
           # All WANs to trusted LANs.
           iifname {
-            ${mkCSV all_wans}
+            ${all_wans}
           } oifname {
             ${mkCSV trusted_lans}
           } jump forward_wan_trusted_lan
 
-          # Unmetered WANs only to limited/untrusted LANs.
+          # All WANs to limited/untrusted LANs.
           iifname {
-            ${mkCSV unmetered_wans}
+            ${all_wans}
           } oifname {
             ${mkCSV limited_lans}
             ${mkCSV untrusted_lans}
@@ -266,7 +265,7 @@ in {
 
           # NAT IPv4 to all WANs.
           iifname {
-            ${mkCSV all_wans}
+            ${all_wans}
           } jump prerouting_wans
           accept
         }
@@ -287,7 +286,7 @@ in {
           type nat hook postrouting priority 0
           # Masquerade IPv4 to all WANs.
           oifname {
-            ${mkCSV all_wans}
+            ${all_wans}
           } masquerade
         }
       }

@@ -393,42 +393,6 @@
 				}
 			]
 		},
-		"wan0": {
-			"name": "wan0",
-			"preference": "medium",
-			"internal_dns": false,
-			"ipv4": "24.176.13.44",
-			"ipv6": {
-				"gua": "",
-				"ula": "",
-				"lla": ""
-			},
-			"hosts": null
-		},
-		"wan1": {
-			"name": "wan1",
-			"preference": "medium",
-			"internal_dns": false,
-			"ipv4": "",
-			"ipv6": {
-				"gua": "",
-				"ula": "",
-				"lla": ""
-			},
-			"hosts": null
-		},
-		"wan2": {
-			"name": "wan2",
-			"preference": "medium",
-			"internal_dns": false,
-			"ipv4": "",
-			"ipv6": {
-				"gua": "",
-				"ula": "",
-				"lla": ""
-			},
-			"hosts": null
-		},
 		"wg0": {
 			"name": "wg0",
 			"preference": "medium",
