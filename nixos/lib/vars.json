@@ -1,15 +1,15 @@
 {
 	"server_ipv4": "192.168.1.10",
-	"server_ipv6": "2600:6c4a:787f:5e00:6d9:f5ff:fe7e:1c47",
+	"server_ipv6": "2600:6c4a:787f:400:6d9:f5ff:fe7e:1c47",
 	"desktop_ipv4": "192.168.1.7",
-	"desktop_ipv6": "2600:6c4a:787f:5e00:7656:3cff:fe43:7337",
+	"desktop_ipv6": "2600:6c4a:787f:400:7656:3cff:fe43:7337",
 	"hosts": {
 		"servers": [
 			{
 				"name": "servnerr-4",
 				"ipv4": "192.168.1.10",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:6d9:f5ff:fe7e:1c47",
+					"gua": "2600:6c4a:787f:400:6d9:f5ff:fe7e:1c47",
 					"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
 					"lla": "fe80::6d9:f5ff:fe7e:1c47"
 				},
@@ -19,7 +19,7 @@
 				"name": "nerr-4",
 				"ipv4": "192.168.1.7",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:7656:3cff:fe43:7337",
+					"gua": "2600:6c4a:787f:400:7656:3cff:fe43:7337",
 					"ula": "fd9e:1a04:f01d:0:7656:3cff:fe43:7337",
 					"lla": "fe80::7656:3cff:fe43:7337"
 				},
@@ -29,7 +29,7 @@
 				"name": "monitnerr-1",
 				"ipv4": "192.168.1.8",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:dea6:32ff:fe1e:6694",
+					"gua": "2600:6c4a:787f:400:dea6:32ff:fe1e:6694",
 					"ula": "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694",
 					"lla": "fe80::dea6:32ff:fe1e:6694"
 				},
@@ -39,7 +39,7 @@
 				"name": "matt-3",
 				"ipv4": "192.168.10.12",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e0a:c6bd:e5ff:fe1b:8ae6",
+					"gua": "2600:6c4a:787f:40a:c6bd:e5ff:fe1b:8ae6",
 					"ula": "fd9e:1a04:f01d:10:c6bd:e5ff:fe1b:8ae6",
 					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
 				},
@@ -51,7 +51,7 @@
 				"name": "switch-core",
 				"ipv4": "192.168.1.2",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:465b:edff:fef7:ceda",
+					"gua": "2600:6c4a:787f:400:465b:edff:fef7:ceda",
 					"ula": "fd9e:1a04:f01d:0:465b:edff:fef7:ceda",
 					"lla": "fe80::465b:edff:fef7:ceda"
 				},
@@ -61,7 +61,7 @@
 				"name": "switch-livingroom",
 				"ipv4": "192.168.1.3",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:ee50:aaff:fe42:e83",
+					"gua": "2600:6c4a:787f:400:ee50:aaff:fe42:e83",
 					"ula": "fd9e:1a04:f01d:0:ee50:aaff:fe42:e83",
 					"lla": "fe80::ee50:aaff:fe42:e83"
 				},
@@ -71,7 +71,7 @@
 				"name": "switch-office",
 				"ipv4": "192.168.1.4",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:76ac:b9ff:fee2:4ea5",
+					"gua": "2600:6c4a:787f:400:76ac:b9ff:fee2:4ea5",
 					"ula": "fd9e:1a04:f01d:0:76ac:b9ff:fee2:4ea5",
 					"lla": "fe80::76ac:b9ff:fee2:4ea5"
 				},
@@ -81,7 +81,7 @@
 				"name": "pdu01",
 				"ipv4": "192.168.1.5",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:20c:15ff:fe41:335e",
+					"gua": "2600:6c4a:787f:400:20c:15ff:fe41:335e",
 					"ula": "fd9e:1a04:f01d:0:20c:15ff:fe41:335e",
 					"lla": "fe80::20c:15ff:fe41:335e"
 				},
@@ -91,7 +91,7 @@
 				"name": "ap-livingroom",
 				"ipv4": "192.168.1.6",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:363a:20ff:fec8:a9de",
+					"gua": "2600:6c4a:787f:400:363a:20ff:fec8:a9de",
 					"ula": "fd9e:1a04:f01d:0:363a:20ff:fec8:a9de",
 					"lla": "fe80::363a:20ff:fec8:a9de"
 				},
@@ -101,7 +101,7 @@
 				"name": "ap-basement",
 				"ipv4": "192.168.1.9",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:d24d:c6ff:fec1:7296",
+					"gua": "2600:6c4a:787f:400:d24d:c6ff:fec1:7296",
 					"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:7296",
 					"lla": "fe80::d24d:c6ff:fec1:7296"
 				},
@@ -111,7 +111,7 @@
 				"name": "ups01",
 				"ipv4": "192.168.1.11",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:20c:15ff:fe05:1ee6",
+					"gua": "2600:6c4a:787f:400:20c:15ff:fe05:1ee6",
 					"ula": "fd9e:1a04:f01d:0:20c:15ff:fe05:1ee6",
 					"lla": "fe80::20c:15ff:fe05:1ee6"
 				},
@@ -121,7 +121,7 @@
 				"name": "hass",
 				"ipv4": "192.168.1.12",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e00:5054:ff:fe22:db4d",
+					"gua": "2600:6c4a:787f:400:5054:ff:fe22:db4d",
 					"ula": "fd9e:1a04:f01d:0:5054:ff:fe22:db4d",
 					"lla": "fe80::5054:ff:fe22:db4d"
 				},
@@ -131,7 +131,7 @@
 				"name": "keylight",
 				"ipv4": "192.168.66.10",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e42:3e6a:9dff:fe12:c4dc",
+					"gua": "2600:6c4a:787f:442:3e6a:9dff:fe12:c4dc",
 					"ula": "fd9e:1a04:f01d:66:3e6a:9dff:fe12:c4dc",
 					"lla": "fe80::3e6a:9dff:fe12:c4dc"
 				},
@@ -141,7 +141,7 @@
 				"name": "living-room-hue-hub.iot",
 				"ipv4": "192.168.66.14",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e42:eeb5:faff:fe1d:4fc2",
+					"gua": "2600:6c4a:787f:442:eeb5:faff:fe1d:4fc2",
 					"ula": "fd9e:1a04:f01d:66:eeb5:faff:fe1d:4fc2",
 					"lla": "fe80::eeb5:faff:fe1d:4fc2"
 				},
@@ -151,7 +151,7 @@
 				"name": "living-room-myq-hub.iot",
 				"ipv4": "192.168.66.15",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e42:ce6a:10ff:fe0a:617f",
+					"gua": "2600:6c4a:787f:442:ce6a:10ff:fe0a:617f",
 					"ula": "fd9e:1a04:f01d:66:ce6a:10ff:fe0a:617f",
 					"lla": "fe80::ce6a:10ff:fe0a:617f"
 				},
@@ -161,7 +161,7 @@
 				"name": "office-printer.iot",
 				"ipv4": "192.168.66.16",
 				"ipv6": {
-					"gua": "2600:6c4a:787f:5e42:42b8:9aff:fe27:d4fd",
+					"gua": "2600:6c4a:787f:442:42b8:9aff:fe27:d4fd",
 					"ula": "fd9e:1a04:f01d:66:42b8:9aff:fe27:d4fd",
 					"lla": "fe80::42b8:9aff:fe27:d4fd"
 				},
@@ -176,7 +176,7 @@
 			"internal_dns": false,
 			"ipv4": "192.168.9.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e09::1",
+				"gua": "2600:6c4a:787f:409::1",
 				"ula": "fd9e:1a04:f01d:9::1",
 				"lla": "fe80::1"
 			},
@@ -188,7 +188,7 @@
 			"internal_dns": false,
 			"ipv4": "192.168.66.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e42::1",
+				"gua": "2600:6c4a:787f:442::1",
 				"ula": "fd9e:1a04:f01d:66::1",
 				"lla": "fe80::1"
 			},
@@ -197,7 +197,7 @@
 					"name": "keylight",
 					"ipv4": "192.168.66.10",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e42:3e6a:9dff:fe12:c4dc",
+						"gua": "2600:6c4a:787f:442:3e6a:9dff:fe12:c4dc",
 						"ula": "fd9e:1a04:f01d:66:3e6a:9dff:fe12:c4dc",
 						"lla": "fe80::3e6a:9dff:fe12:c4dc"
 					},
@@ -207,7 +207,7 @@
 					"name": "living-room-hue-hub.iot",
 					"ipv4": "192.168.66.14",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e42:eeb5:faff:fe1d:4fc2",
+						"gua": "2600:6c4a:787f:442:eeb5:faff:fe1d:4fc2",
 						"ula": "fd9e:1a04:f01d:66:eeb5:faff:fe1d:4fc2",
 						"lla": "fe80::eeb5:faff:fe1d:4fc2"
 					},
@@ -217,7 +217,7 @@
 					"name": "living-room-myq-hub.iot",
 					"ipv4": "192.168.66.15",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e42:ce6a:10ff:fe0a:617f",
+						"gua": "2600:6c4a:787f:442:ce6a:10ff:fe0a:617f",
 						"ula": "fd9e:1a04:f01d:66:ce6a:10ff:fe0a:617f",
 						"lla": "fe80::ce6a:10ff:fe0a:617f"
 					},
@@ -227,7 +227,7 @@
 					"name": "office-printer.iot",
 					"ipv4": "192.168.66.16",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e42:42b8:9aff:fe27:d4fd",
+						"gua": "2600:6c4a:787f:442:42b8:9aff:fe27:d4fd",
 						"ula": "fd9e:1a04:f01d:66:42b8:9aff:fe27:d4fd",
 						"lla": "fe80::42b8:9aff:fe27:d4fd"
 					},
@@ -241,7 +241,7 @@
 			"internal_dns": false,
 			"ipv4": "192.168.2.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e02::1",
+				"gua": "2600:6c4a:787f:402::1",
 				"ula": "fd9e:1a04:f01d:2::1",
 				"lla": "fe80::1"
 			},
@@ -253,7 +253,7 @@
 			"internal_dns": true,
 			"ipv4": "192.168.10.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e0a::1",
+				"gua": "2600:6c4a:787f:40a::1",
 				"ula": "fd9e:1a04:f01d:10::1",
 				"lla": "fe80::1"
 			},
@@ -262,7 +262,7 @@
 					"name": "matt-3",
 					"ipv4": "192.168.10.12",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e0a:c6bd:e5ff:fe1b:8ae6",
+						"gua": "2600:6c4a:787f:40a:c6bd:e5ff:fe1b:8ae6",
 						"ula": "fd9e:1a04:f01d:10:c6bd:e5ff:fe1b:8ae6",
 						"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
 					},
@@ -276,7 +276,7 @@
 			"internal_dns": true,
 			"ipv4": "192.168.1.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e00::1",
+				"gua": "2600:6c4a:787f:400::1",
 				"ula": "fd9e:1a04:f01d::1",
 				"lla": "fe80::1"
 			},
@@ -285,7 +285,7 @@
 					"name": "servnerr-4",
 					"ipv4": "192.168.1.10",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:6d9:f5ff:fe7e:1c47",
+						"gua": "2600:6c4a:787f:400:6d9:f5ff:fe7e:1c47",
 						"ula": "fd9e:1a04:f01d:0:6d9:f5ff:fe7e:1c47",
 						"lla": "fe80::6d9:f5ff:fe7e:1c47"
 					},
@@ -295,7 +295,7 @@
 					"name": "nerr-4",
 					"ipv4": "192.168.1.7",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:7656:3cff:fe43:7337",
+						"gua": "2600:6c4a:787f:400:7656:3cff:fe43:7337",
 						"ula": "fd9e:1a04:f01d:0:7656:3cff:fe43:7337",
 						"lla": "fe80::7656:3cff:fe43:7337"
 					},
@@ -305,7 +305,7 @@
 					"name": "monitnerr-1",
 					"ipv4": "192.168.1.8",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:dea6:32ff:fe1e:6694",
+						"gua": "2600:6c4a:787f:400:dea6:32ff:fe1e:6694",
 						"ula": "fd9e:1a04:f01d:0:dea6:32ff:fe1e:6694",
 						"lla": "fe80::dea6:32ff:fe1e:6694"
 					},
@@ -315,7 +315,7 @@
 					"name": "switch-core",
 					"ipv4": "192.168.1.2",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:465b:edff:fef7:ceda",
+						"gua": "2600:6c4a:787f:400:465b:edff:fef7:ceda",
 						"ula": "fd9e:1a04:f01d:0:465b:edff:fef7:ceda",
 						"lla": "fe80::465b:edff:fef7:ceda"
 					},
@@ -325,7 +325,7 @@
 					"name": "switch-livingroom",
 					"ipv4": "192.168.1.3",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:ee50:aaff:fe42:e83",
+						"gua": "2600:6c4a:787f:400:ee50:aaff:fe42:e83",
 						"ula": "fd9e:1a04:f01d:0:ee50:aaff:fe42:e83",
 						"lla": "fe80::ee50:aaff:fe42:e83"
 					},
@@ -335,7 +335,7 @@
 					"name": "switch-office",
 					"ipv4": "192.168.1.4",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:76ac:b9ff:fee2:4ea5",
+						"gua": "2600:6c4a:787f:400:76ac:b9ff:fee2:4ea5",
 						"ula": "fd9e:1a04:f01d:0:76ac:b9ff:fee2:4ea5",
 						"lla": "fe80::76ac:b9ff:fee2:4ea5"
 					},
@@ -345,7 +345,7 @@
 					"name": "pdu01",
 					"ipv4": "192.168.1.5",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:20c:15ff:fe41:335e",
+						"gua": "2600:6c4a:787f:400:20c:15ff:fe41:335e",
 						"ula": "fd9e:1a04:f01d:0:20c:15ff:fe41:335e",
 						"lla": "fe80::20c:15ff:fe41:335e"
 					},
@@ -355,7 +355,7 @@
 					"name": "ap-livingroom",
 					"ipv4": "192.168.1.6",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:363a:20ff:fec8:a9de",
+						"gua": "2600:6c4a:787f:400:363a:20ff:fec8:a9de",
 						"ula": "fd9e:1a04:f01d:0:363a:20ff:fec8:a9de",
 						"lla": "fe80::363a:20ff:fec8:a9de"
 					},
@@ -365,7 +365,7 @@
 					"name": "ap-basement",
 					"ipv4": "192.168.1.9",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:d24d:c6ff:fec1:7296",
+						"gua": "2600:6c4a:787f:400:d24d:c6ff:fec1:7296",
 						"ula": "fd9e:1a04:f01d:0:d24d:c6ff:fec1:7296",
 						"lla": "fe80::d24d:c6ff:fec1:7296"
 					},
@@ -375,7 +375,7 @@
 					"name": "ups01",
 					"ipv4": "192.168.1.11",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:20c:15ff:fe05:1ee6",
+						"gua": "2600:6c4a:787f:400:20c:15ff:fe05:1ee6",
 						"ula": "fd9e:1a04:f01d:0:20c:15ff:fe05:1ee6",
 						"lla": "fe80::20c:15ff:fe05:1ee6"
 					},
@@ -385,7 +385,7 @@
 					"name": "hass",
 					"ipv4": "192.168.1.12",
 					"ipv6": {
-						"gua": "2600:6c4a:787f:5e00:5054:ff:fe22:db4d",
+						"gua": "2600:6c4a:787f:400:5054:ff:fe22:db4d",
 						"ula": "fd9e:1a04:f01d:0:5054:ff:fe22:db4d",
 						"lla": "fe80::5054:ff:fe22:db4d"
 					},
@@ -435,7 +435,7 @@
 			"internal_dns": true,
 			"ipv4": "192.168.20.1",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e14::1",
+				"gua": "2600:6c4a:787f:414::1",
 				"ula": "fd9e:1a04:f01d:20::1",
 				"lla": "fe80::1"
 			},
@@ -450,7 +450,7 @@
 			"trusted": true,
 			"ipv4": "192.168.20.0/24",
 			"ipv6": {
-				"gua": "2600:6c4a:787f:5e14::/64",
+				"gua": "2600:6c4a:787f:414::/64",
 				"ula": "fd9e:1a04:f01d:20::/64",
 				"lla": "fe80::/64"
 			},
@@ -462,7 +462,7 @@
 				"public_key": "owbwahkmPWQg97iDSfn4dc80f2MYegEbnCAszExlbi8=",
 				"allowed_ips": [
 					"192.168.20.10/32",
-					"2600:6c4a:787f:5e14::a/128",
+					"2600:6c4a:787f:414::a/128",
 					"fd9e:1a04:f01d:20::a/128",
 					"fe80::a/128"
 				]
