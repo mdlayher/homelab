@@ -19,10 +19,6 @@ in {
         reverse_proxy http://servnerr-4.${vars.domain}:3000
       '';
 
-      "hass.servnerr.com".extraConfig = ''
-        reverse_proxy http://servnerr-4.${vars.domain}:8123
-      '';
-
       "plex.servnerr.com".extraConfig = ''
         reverse_proxy http://servnerr-4.${vars.domain}:32400
       '';
