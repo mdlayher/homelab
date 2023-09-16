@@ -33,8 +33,11 @@ let
     (id: {
       matchConfig.Name = name;
       # Embed ID directly in IPv4/6 addresses for clarity.
-      address =
-        [ "fd9e:1a04:f01d:${toString id}::1/64" "192.168.${toString id}.1/24" ];
+      address = [
+        "fd9e:1a04:f01d:${toString id}::1/64"
+        "fe80::1/64"
+        "192.168.${toString id}.1/24"
+      ];
       networkConfig = {
         DHCPPrefixDelegation = true;
         DHCPServer = true;
@@ -173,7 +176,7 @@ in {
 
       # TODO(mdlayher): eventually it'd be nice to renumber this as
       # 192.168.0.1/24 but that would require a lot of device churn.
-      address = [ "fd9e:1a04:f01d::1/64" "192.168.1.1/24" ];
+      address = [ "fd9e:1a04:f01d::1/64" "fe80::1/64" "192.168.1.1/24" ];
 
       # VLANs associated with this physical interface.
       vlan = [ "lan0" "iot0" "guest0" "lab0" ];

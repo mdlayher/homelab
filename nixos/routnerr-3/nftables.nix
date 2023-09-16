@@ -30,12 +30,7 @@ let
   all_wans = "wan0, wan1";
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  trusted_lans = with vars.interfaces; [
-    mgmt0
-    lan0
-    lab0
-    { name = "ts0"; }
-  ];
+  trusted_lans = with vars.interfaces; [ mgmt0 lan0 lab0 { name = "ts0"; } ];
   limited_lans = with vars.interfaces; [ guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
 

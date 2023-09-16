@@ -62,10 +62,11 @@ in {
 
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
-  environment.systemPackages = with pkgs; [
-    # Stable packages.
-    bind
-  ];
+  environment.systemPackages = with pkgs;
+    [
+      # Stable packages.
+      bind
+    ];
 
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
