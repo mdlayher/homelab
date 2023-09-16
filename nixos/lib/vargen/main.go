@@ -4,7 +4,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -78,12 +78,6 @@ func main() {
 			mac("74:56:3c:43:73:37"),
 		)
 	)
-
-	wg := wireguard{
-		Name:   "wg0",
-		Subnet: wg0,
-	}
-	wg.addPeer("matt-3", "owbwahkmPWQg97iDSfn4dc80f2MYegEbnCAszExlbi8=")
 
 	// Set up the output structure and create host/infra records.
 	out := output{
@@ -173,7 +167,6 @@ func main() {
 				),
 			},
 		},
-		WireGuard: wg,
 	}
 
 	// Attach interface definitions from subnet definitions.
@@ -199,7 +192,7 @@ func wanIPv6Prefix() netip.Prefix {
 	}
 	defer res.Body.Close()
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalf("failed to read HTTP body: %v", err)
 	}
@@ -223,7 +216,6 @@ type output struct {
 	DesktopIPv6 netip.Addr       `json:"desktop_ipv6"`
 	Hosts       hosts            `json:"hosts"`
 	Interfaces  map[string]iface `json:"interfaces"`
-	WireGuard   wireguard        `json:"wireguard"`
 }
 
 type hosts struct {
@@ -358,51 +350,6 @@ type ipv6Prefixes struct {
 	GUA netip.Prefix `json:"gua"`
 	ULA netip.Prefix `json:"ula"`
 	LLA netip.Prefix `json:"lla"`
-}
-
-type wireguard struct {
-	Name   string   `json:"name"`
-	Subnet subnet   `json:"subnet"`
-	Peers  []wgPeer `json:"peers"`
-
-	idx int
-}
-
-func (wg *wireguard) addPeer(name, publicKey string) {
-	defer func() { wg.idx++ }()
-
-	const offset = 10
-
-	var ips []string
-	for _, ipp := range []netip.Prefix{
-		wg.Subnet.IPv4,
-		wg.Subnet.IPv6.GUA,
-		wg.Subnet.IPv6.ULA,
-		wg.Subnet.IPv6.LLA,
-	} {
-		// Router always has a .1 or ::1 suffix.
-		arr := ipp.Addr().As16()
-		arr[15] = byte(offset + wg.idx)
-
-		bits := 32
-		if ipp.Addr().Is6() {
-			bits = 128
-		}
-
-		ips = append(ips, netip.PrefixFrom(netip.AddrFrom16(arr).Unmap(), bits).String())
-	}
-
-	wg.Peers = append(wg.Peers, wgPeer{
-		Name:       name,
-		PublicKey:  publicKey,
-		AllowedIPs: ips,
-	})
-}
-
-type wgPeer struct {
-	Name       string   `json:"name"`
-	PublicKey  string   `json:"public_key"`
-	AllowedIPs []string `json:"allowed_ips"`
 }
 
 func mustStdIP(ip net.IP) netip.Addr {

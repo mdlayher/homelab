@@ -405,32 +405,5 @@
 			},
 			"hosts": []
 		}
-	},
-	"wireguard": {
-		"name": "wg0",
-		"subnet": {
-			"name": "wg0",
-			"preference": "medium",
-			"trusted": true,
-			"ipv4": "192.168.20.0/24",
-			"ipv6": {
-				"gua": "2600:6c4a:787f:414::/64",
-				"ula": "fd9e:1a04:f01d:20::/64",
-				"lla": "fe80::/64"
-			},
-			"hosts": []
-		},
-		"peers": [
-			{
-				"name": "matt-3",
-				"public_key": "owbwahkmPWQg97iDSfn4dc80f2MYegEbnCAszExlbi8=",
-				"allowed_ips": [
-					"192.168.20.10/32",
-					"2600:6c4a:787f:414::a/128",
-					"fd9e:1a04:f01d:20::a/128",
-					"fe80::a/128"
-				]
-			}
-		]
 	}
 }
