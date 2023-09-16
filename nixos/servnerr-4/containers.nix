@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  # These services are proprietary and run containerized for confinement from
+  # These services are proprietary and run in systemd containers for confinement from
   # the rest of the system and on unstable for faster update cycles.
   containers = {
     plex = {
@@ -32,21 +32,9 @@
     };
   };
 
-  virtualisation.oci-containers = {
-    backend = "podman";
-    containers = {
-      home-assistant = {
-        image = "ghcr.io/home-assistant/home-assistant:stable";
-        extraOptions = [
-          # Expose on the host.
-          "--network=host"
-          # Pass in Home Assistant SkyConnect device.
-          "--device=/dev/serial/by-id/usb-Nabu_Casa_SkyConnect_v1.0_4c34810ea196ed11a365c698a7669f5d-if00-port0"
-        ];
-        ports = [ "8123:8123" ];
-        volumes =
-          [ "/etc/localtime:/etc/localtime:ro" "/var/lib/hass:/config" ];
-      };
-    };
+  # libvirtd hypervisor.
+  virtualisation.libvirtd = {
+    enable = true;
+    onBoot = "start";
   };
 }

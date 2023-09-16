@@ -122,7 +122,6 @@ in {
       ])
       (staticScrape "obs" [ "nerr-4:9407" ])
       (staticScrape "windows" [ "theatnerr-2:9182" ])
-      (staticScrape "wireguard" [ "routnerr-3:9586" ])
       (staticScrape "zrepl" [ "servnerr-4:9811" ])
 
       # Home Assistant requires a more custom configuration.
@@ -130,7 +129,7 @@ in {
         job_name = "homeassistant";
         metrics_path = "/api/prometheus";
         bearer_token = "${secrets.prometheus.homeassistant_token}";
-        static_configs = [{ targets = [ "servnerr-4:8123" ]; }];
+        static_configs = [{ targets = [ "hass:8123" ]; }];
       }
 
       # Blackbox exporter and associated targets.

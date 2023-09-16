@@ -44,17 +44,25 @@ in {
       ipv6AcceptRAConfig.UseDomains = true;
     };
 
-    # 10GbE management LAN.
+    # 10GbE management LAN with bridge.
+    netdevs."11-br0".netdevConfig = {
+      Name = "br0";
+      Kind = "bridge";
+    };
+    networks."11-br0" = {
+      matchConfig.Name = "br0";
+      networkConfig.DHCP = "ipv4";
+      dhcpV4Config.ClientIdentifier = "mac";
+    };
+
+    # 10GbE NIC tied to bridge.
     links."11-mgmt1" = {
       matchConfig.MACAddress = "8c:dc:d4:ac:96:24";
       linkConfig.Name = "mgmt1";
     };
     networks."11-mgmt1" = {
       matchConfig.Name = "mgmt1";
-      networkConfig.DHCP = "ipv4";
-      dhcpV4Config.ClientIdentifier = "mac";
-      # Only accept DNS search on this interface.
-      ipv6AcceptRAConfig.UseDomains = true;
+      bridge = ["br0"];
     };
   };
 }
