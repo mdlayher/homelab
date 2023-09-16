@@ -20,9 +20,6 @@ in {
     ./coredns.nix
     ./corerad.nix
     ./caddy.nix
-
-    # Unstable or out-of-tree modules.
-    ./lib/modules/wireguard_exporter.nix
   ];
 
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
@@ -37,14 +34,6 @@ in {
 
   system.copySystemConfiguration = true;
   system.stateVersion = "23.05";
-
-  # Overlays for unstable and out-of-tree packages.
-  nixpkgs.overlays = [
-    (_self: super: {
-      wireguard_exporter =
-        super.callPackage ./lib/pkgs/wireguard_exporter.nix { };
-    })
-  ];
 
   boot = {
     kernel = {
@@ -76,9 +65,6 @@ in {
   environment.systemPackages = with pkgs; [
     # Stable packages.
     bind
-
-    # Unstable and out-of-tree packages.
-    wireguard_exporter
   ];
 
   services = {

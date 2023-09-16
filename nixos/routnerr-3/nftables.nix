@@ -21,7 +21,6 @@ let
       router = "41461";
       desktop = "41642";
     };
-    wireguard = "51820";
   };
 
   # Produces a CSV list of interface names.
@@ -31,12 +30,10 @@ let
   all_wans = "wan0, wan1";
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  metered_lans = with vars.interfaces; [ mgmt0 lan0 ];
   trusted_lans = with vars.interfaces; [
     mgmt0
     lan0
     lab0
-    wg0
     { name = "ts0"; }
   ];
   limited_lans = with vars.interfaces; [ guest0 ];
@@ -124,7 +121,6 @@ in {
           # router UDP
           udp dport {
             ${ports.tailscale.router},
-            ${ports.wireguard},
           } counter accept comment "router WAN UDP"
 
           # router DHCPv6 client

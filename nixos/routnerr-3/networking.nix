@@ -224,28 +224,6 @@ in {
     # Lab VLAN.
     netdevs."35-lab0" = vlanNetdev "lab0" 2;
     networks."35-lab0" = vlanNetwork "lab0" 2;
-
-    # WireGuard tunnel.
-    netdevs."40-wg0" = {
-      netdevConfig = {
-        Name = "wg0";
-        Kind = "wireguard";
-      };
-      wireguardConfig = {
-        PrivateKeyFile = "/var/lib/wireguard/wg0.key";
-        ListenPort = 51820;
-      };
-      wireguardPeers = lib.forEach vars.wireguard.peers (peer: {
-        wireguardPeerConfig = {
-          PublicKey = peer.public_key;
-          AllowedIPs = peer.allowed_ips;
-        };
-      });
-    };
-    networks."40-wg0" = {
-      matchConfig.Name = "wg0";
-      address = with vars.wireguard.subnet; [ ipv4 ipv6.gua ipv6.ula ipv6.lla ];
-    };
   };
 
   services.tailscale = {
@@ -258,20 +236,6 @@ in {
 
   # Tailscale readiness and DNS tweaks.
   systemd.network.wait-online.ignoredInterfaces = [ "ts0" ];
-
   systemd.services.tailscaled.after =
     [ "network-online.target" "systemd-resolved.service" ];
-
-  # Enable WireGuard Prometheus exporter and set up peer key/name mappings.
-  # TODO: nixify the configuration.
-  services.wireguard_exporter = {
-    enable = true;
-    config = ''
-      ${lib.concatMapStrings (peer: ''
-        [[peer]]
-        public_key = "${peer.public_key}"
-        name = "${peer.name}"
-      '') vars.wireguard.peers}
-    '';
-  };
 }
