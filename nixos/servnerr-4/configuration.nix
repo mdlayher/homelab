@@ -89,7 +89,7 @@ in {
         };
 
         interfaces = [{
-          names = [ "mgmt0" ];
+          names = [ "mgmt0" "br0" ];
           monitor = true;
         }];
       };
