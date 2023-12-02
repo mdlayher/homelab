@@ -170,7 +170,7 @@ in {
 
     # Physical management LAN. For physical LANs, we have to make sure to match
     # on both Type and MACAddress since VLANs would share the same MAC.
-    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:90";
+    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:8e";
     networks."15-mgmt0" = {
       matchConfig.Name = "mgmt0";
 
@@ -211,6 +211,10 @@ in {
         };
       });
     };
+
+    # Unused Ethernet and SFP+ links.
+    links."15-eth2" = ethLink "eth2" "f4:90:ea:00:c7:8f";
+    links."15-sfp0" = ethLink "sfp0" "f4:90:ea:00:c7:90";
 
     # Home VLAN.
     netdevs."20-lan0" = vlanNetdev "lan0" 10;
