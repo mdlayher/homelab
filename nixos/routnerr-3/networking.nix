@@ -111,6 +111,8 @@ in {
   systemd.network = {
     enable = true;
 
+    config.networkConfig.SpeedMeter = "yes";
+
     # Loopback.
     networks."5-lo" = {
       matchConfig.Name = "lo";
