@@ -4,13 +4,6 @@ let
   secrets = import ./secrets.nix;
   unstable = import <nixos-unstable-small> { };
 
-  comma = (import (pkgs.fetchFromGitHub {
-    owner = "nix-community";
-    repo = "comma";
-    rev = "v1.3.0";
-    sha256 = "sha256-rXAX14yB8v9BOG4ZsdGEedpZAnNqhQ4DtjQwzFX/TLY=";
-  })).default;
-
 in {
   boot = {
     # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
@@ -65,6 +58,7 @@ in {
       minicom
       mkpasswd
       mtr
+      nano
       ndisc6
       neofetch
       nixfmt
@@ -85,7 +79,6 @@ in {
       unzip
       usbutils
       wget
-      wireguard-tools
       xterm
 
       # Unstable packages.
