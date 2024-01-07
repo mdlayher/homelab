@@ -4,4 +4,6 @@ github.com/gokrazy/firmware v0.0.0-20230812164343-bd4d0cb7d693 h1:6NhSWnxynTdiVr
 github.com/gokrazy/firmware v0.0.0-20230812164343-bd4d0cb7d693/go.mod h1:nbEte1HMYHF4is+rAadA57SWBONRn7N3kXmafjkusFY=
 github.com/gokrazy/firmware v0.0.0-20230922033133-d46a09648231 h1:GohIVqOiId3x+1ao20qPqtzkSaaox5PGT1/YjtumOr8=
 github.com/gokrazy/firmware v0.0.0-20230922033133-d46a09648231/go.mod h1:nbEte1HMYHF4is+rAadA57SWBONRn7N3kXmafjkusFY=
+github.com/gokrazy/firmware v0.0.0-20231213075030-b645049ebf9e h1:kRsUCCiuQJBNWddqATo6pXmxcoTjBvfn/ux5z3yShpo=
+github.com/gokrazy/firmware v0.0.0-20231213075030-b645049ebf9e/go.mod h1:x8Lwd/ZFqJTBWUGW7yt/qwgxO8/AHh5KGFYJ4yfH+FE=
 golang.org/x/sync v0.0.0-20201207232520-09787c993a3a/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

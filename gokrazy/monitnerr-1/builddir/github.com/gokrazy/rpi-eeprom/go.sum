@@ -1,3 +1,5 @@
 github.com/gokrazy/rpi-eeprom v0.0.0-20230516032624-867a3d61458d h1:mNoB8gK7iQlKJXV55FNQSjW+ipH4Xk/wE+85N+G11pI=
 github.com/gokrazy/rpi-eeprom v0.0.0-20230516032624-867a3d61458d/go.mod h1:vabxV1M+i6S3rGuWoFieHxCJW3jlob3rqe0KV82j+0o=
+github.com/gokrazy/rpi-eeprom v0.0.0-20231120175629-4b8fc2187aac h1:fbO6kUpg5sAcI5trqKjOAxFLs1MfS/0AIjYicnlzSGY=
+github.com/gokrazy/rpi-eeprom v0.0.0-20231120175629-4b8fc2187aac/go.mod h1:vabxV1M+i6S3rGuWoFieHxCJW3jlob3rqe0KV82j+0o=
 golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
