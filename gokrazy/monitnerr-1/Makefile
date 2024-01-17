@@ -1,4 +1,4 @@
-GOK := sed 's,"HTTPPassword": "","HTTPPassword": "$(GOKRAZY_PASSWORD)",g' config.tmpl.json > config.json && gok -i monitnerr-1 --parent_dir=/home/matt/src/github.com/mdlayher/homelab/gokrazy
+GOK := sed 's,"HTTPPassword": "","HTTPPassword": "$(GOKRAZY_PASSWORD)",g' config.tmpl.json > config.json && gok -i monitnerr-1 --parent_dir=/home/mdlayher/src/github.com/mdlayher/homelab/gokrazy
 
 all:
 

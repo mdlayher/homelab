@@ -156,6 +156,8 @@ github.com/mdlayher/consrv v1.0.1-0.20230719000938-d8452d989341 h1:BuO4Xexnu/5zZ
 github.com/mdlayher/consrv v1.0.1-0.20230719000938-d8452d989341/go.mod h1:2JMSKZZSSaC15jfQM3sl9+PjQkXkNvfN7IO+OYLp4rw=
 github.com/mdlayher/consrv v1.1.0 h1:fNjysJ4sfojW+2+ORfa3kZ75Ka8Cdcdd3/6V93Ju3oU=
 github.com/mdlayher/consrv v1.1.0/go.mod h1:2JMSKZZSSaC15jfQM3sl9+PjQkXkNvfN7IO+OYLp4rw=
+github.com/mdlayher/consrv v1.1.1-0.20240117151551-4e5fe29fa49b h1:8BGz0jWETqyjK/IE43IOc95kmkXaWdwaqAFGki1kYYA=
+github.com/mdlayher/consrv v1.1.1-0.20240117151551-4e5fe29fa49b/go.mod h1:2JMSKZZSSaC15jfQM3sl9+PjQkXkNvfN7IO+OYLp4rw=
 github.com/mdlayher/metricslite v0.0.0-20220406114248-d75c70dd4887 h1:bQHlyj7L8//jVylGe6HYuTqfUweTtAqHmhuOLy6C3vs=
 github.com/mdlayher/metricslite v0.0.0-20220406114248-d75c70dd4887/go.mod h1:BqYH//q1ULAuVmKB/whePnSt4JCyGBV7bxZU6CjKR1s=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=

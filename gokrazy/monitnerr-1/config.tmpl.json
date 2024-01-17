@@ -27,7 +27,8 @@
         },
         "github.com/mdlayher/consrv/cmd/consrv": {
             "CommandLineFlags": [
-                "-c=/etc/consrv.toml"
+                "-c=/etc/consrv.toml",
+                "-experimental-drop-privileges"
             ],
             "ExtraFilePaths": {
                 "/etc/consrv.toml": "consrv.toml"
