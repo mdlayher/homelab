@@ -64,7 +64,9 @@ in {
         };
         receivers = [{
           name = "default";
-          pushover_configs = secrets.alertmanager.pushover;
+          discord_configs = [{
+            webhook_url = secrets.alertmanager.discord.webhook_url;
+          }];
         }];
       };
     };
