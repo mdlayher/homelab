@@ -14,7 +14,6 @@ let
     https = "443";
     mdns = "5353";
     plex = "32400";
-    ssh = "22";
     # Different tailscaled ports for different devices to avoid messing with
     # poking nftables firewall holes with miniupnpd or similar.
     tailscale = {
@@ -110,7 +109,6 @@ in {
           tcp dport {
             ${ports.http},
             ${ports.https},
-            ${ports.ssh},
           } counter accept comment "router WAN TCP"
 
           # router UDP
