@@ -39,6 +39,7 @@ in {
       ethtool
       file
       fio
+      fish
       fwupd
       gcc
       git
