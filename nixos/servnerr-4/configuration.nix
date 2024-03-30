@@ -74,27 +74,6 @@ in {
       '';
     };
 
-    # Deploy CoreRAD monitor mode on all interfaces.
-    corerad = {
-      enable = true;
-
-      # Enable as necessary to get development builds of CoreRAD.
-      # package = unstable.corerad;
-
-      settings = {
-        debug = {
-          address = ":9430";
-          prometheus = true;
-          pprof = true;
-        };
-
-        interfaces = [{
-          names = [ "mgmt0" "br0" ];
-          monitor = true;
-        }];
-      };
-    };
-
     grafana = {
       enable = true;
       # Bind to all interfaces.

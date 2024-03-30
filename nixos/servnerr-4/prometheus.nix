@@ -115,15 +115,14 @@ in {
       (staticScrape "apcupsd" [ "nerr-4:9162" "servnerr-4:9162" ])
       (staticScrape "consrv" [ "monitnerr-1:9288" ])
       (staticScrape "coredns" [ "routnerr-3:9153" ])
-      (staticScrape "corerad" [ "routnerr-3:9430" "servnerr-4:9430" ])
+      (staticScrape "corerad" [ "routnerr-3:9430" ])
       (staticScrape "node" [
         "monitnerr-1:9100"
         "nerr-4:9100"
         "routnerr-3:9100"
         "servnerr-4:9100"
       ])
-      (staticScrape "obs" [ "nerr-4:9407" ])
-      (staticScrape "windows" [ "theatnerr-2:9182" ])
+      (staticScrape "windows" [ "theatnerr-2.ipv4.lan.servnerr.com:9182" ])
       (staticScrape "zrepl" [ "servnerr-4:9811" ])
 
       # Home Assistant requires a more custom configuration.
@@ -163,9 +162,6 @@ in {
           relabel_configs = relabelTarget "servnerr-4:9116";
         }
       ])
-
-      # Lab-only jobs must be prefixed with lab- to avoid alerting.
-      (staticScrape "lab-corerad" [ "routnerr-3:9431" ])
     ];
 
     rules = [ (builtins.toJSON (import ./prometheus-alerts.nix)) ];
