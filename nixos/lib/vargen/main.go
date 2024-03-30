@@ -100,6 +100,16 @@ func main() {
 					netip.MustParseAddr("192.168.10.12"),
 					mac("c4:bd:e5:1b:8a:e6"),
 				),
+				lan0.newHost(
+					"matt-4",
+					netip.MustParseAddr("192.168.10.13"),
+					mac("14:ac:60:46:8d:91"),
+				),
+				lan0.newHost(
+					"theatnerr-2",
+					netip.MustParseAddr("192.168.10.14"),
+					mac("18:c0:4d:91:04:d8"),
+				),
 			},
 			Infra: []host{
 				mgmt0.newHost(
