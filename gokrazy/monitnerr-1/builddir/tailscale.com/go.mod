@@ -80,13 +80,13 @@ require (
 	golang.org/x/net v0.20.0
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/sync v0.6.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	golang.org/x/term v0.16.0
 	golang.org/x/time v0.5.0
 	golang.org/x/tools v0.17.0
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2
 	golang.zx2c4.com/wireguard/windows v0.5.3
-	gvisor.dev/gvisor v0.0.0-20240119233241-c9c1d4f9b186
+	gvisor.dev/gvisor v0.0.0-20240306221502-ee1e1f6070e3
 	honnef.co/go/tools v0.4.6
 	inet.af/peercred v0.0.0-20210906144145-0893ea02156a
 	inet.af/tcpproxy v0.0.0-20231102063150-2862066fc2a9
@@ -110,7 +110,9 @@ require (
 	github.com/safchain/ethtool v0.3.0 // indirect
 	github.com/tailscale/go-winio v0.0.0-20231025203758-c4f33415bf55 // indirect
 	github.com/tailscale/gowebdav v0.0.0-20240130173557-d49b872b5126 // indirect
-	github.com/tailscale/web-client-prebuilt v0.0.0-20240208184856-443a64766f61 // indirect
+	github.com/tailscale/peercred v0.0.0-20240214030740-b535050b2aa4 // indirect
+	github.com/tailscale/web-client-prebuilt v0.0.0-20240226180453-5db17b287bf1 // indirect
+	github.com/tailscale/wf v0.0.0-20240214030419-6fbb0a674ee6 // indirect
 	github.com/tailscale/xnet v0.0.0-20240117122442-62b9a7c569f9 // indirect
 )
 
@@ -368,5 +370,5 @@ require (
 	mvdan.cc/unparam v0.0.0-20230312165513-e84e2d14e3b8 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-	tailscale.com v1.60.0
+	tailscale.com v1.62.1
 )
