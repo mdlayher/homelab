@@ -8,6 +8,8 @@ github.com/gokrazy/breakglass v0.0.0-20230812093049-e771a5894bd2 h1:M8VcJV7iuGE/
 github.com/gokrazy/breakglass v0.0.0-20230812093049-e771a5894bd2/go.mod h1:g6AIXw9nTAj54jl9ZlcvZ19TJXlz0bFsavGpqQLTAxU=
 github.com/gokrazy/breakglass v0.0.0-20231219075147-eacd5a447e73 h1:QYNDFiU8WENHBvsZWwAUOpMJDe/C/CNejsG7JartT5A=
 github.com/gokrazy/breakglass v0.0.0-20231219075147-eacd5a447e73/go.mod h1:4Yffo2Z5w3q2eDvo3HDR8eDnmkDpMAkX0Tn7b/9upgs=
+github.com/gokrazy/breakglass v0.0.0-20240609201123-0327ae332c84 h1:IRFVW6k3XkbfpUxfnb8L95GmwiwsB6HmbYEowDO2U5o=
+github.com/gokrazy/breakglass v0.0.0-20240609201123-0327ae332c84/go.mod h1:4Yffo2Z5w3q2eDvo3HDR8eDnmkDpMAkX0Tn7b/9upgs=
 github.com/gokrazy/gokrazy v0.0.0-20230219142620-73892ad2388a h1:FVdd+wf07vVnxDsF7A/MAwVUxHY3NQuC2eMwzuMt4fg=
 github.com/gokrazy/gokrazy v0.0.0-20230219142620-73892ad2388a/go.mod h1:v4yQTOzEIpUmkKHYGMfqhktZXwvaxUpc2VfFTMyHAYI=
 github.com/gokrazy/gokrazy v0.0.0-20230812092215-346db1998f83 h1:Y4sADvUYd/c0eqnqebipHHl0GMpAxOQeTzPnwI4ievM=

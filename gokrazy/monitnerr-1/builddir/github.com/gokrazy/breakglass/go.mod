@@ -6,7 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/creack/pty v1.1.18 // indirect
-	github.com/gokrazy/breakglass v0.0.0-20231219075147-eacd5a447e73 // indirect
+	github.com/gokrazy/breakglass v0.0.0-20240609201123-0327ae332c84 // indirect
 	github.com/gokrazy/gokrazy v0.0.0-20230812092215-346db1998f83 // indirect
 	github.com/gokrazy/internal v0.0.0-20230211171410-9608422911d0 // indirect
 	github.com/google/renameio/v2 v2.0.0 // indirect

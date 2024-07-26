@@ -16,11 +16,17 @@ github.com/gokrazy/gokrazy v0.0.0-20240118072056-7acb85f429f8 h1:Y1wFJsJvRykf2yt
 github.com/gokrazy/gokrazy v0.0.0-20240118072056-7acb85f429f8/go.mod h1:FOTcHsN9okcM6wLX58MC33A8i5U3AI+sYD5wsuWee1U=
 github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35 h1:/vto7EZFxjlb2gM6K+3/apYLaff7yvA3tEtf0GsvFw0=
 github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35/go.mod h1:FOTcHsN9okcM6wLX58MC33A8i5U3AI+sYD5wsuWee1U=
+github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e h1:pGH+YVcfF0oIYAPYuTEmbunQ4J//MgSs062GohEjfTQ=
+github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e/go.mod h1:+/WWMckeuQt+DG6690A6H8IgC+HpBFq2fmwRKcSbxdk=
 golang.org/x/net v0.7.0 h1:rJrUqqhjsgNp7KqAIc25s9pZnjU7TUcSY7HcVZjdn1g=
 golang.org/x/net v0.7.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.17.0 h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=
 golang.org/x/net v0.17.0/go.mod h1:NxSsAGuq816PNPmqtQdLE42eU2Fs7NoRIZrHJAlaCOE=
+golang.org/x/net v0.23.0 h1:7EYJ93RZ9vYSZAIb2x3lnuvqO5zneoD6IvWjuhfxjTs=
+golang.org/x/net v0.23.0/go.mod h1:JKghWKKOSdJwpW2GEx0Ja7fmaKnMsbu+MWVZTokSYmg=
 golang.org/x/sys v0.5.0 h1:MUK/U/4lj1t1oPg0HfuXDN/Z1wv31ZJ/YcPiGccS4DU=
 golang.org/x/sys v0.5.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
 golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.20.0 h1:Od9JTbYCk261bKm4M/mw7AklTlFYIa0bIp9BgSm1S8Y=
+golang.org/x/sys v0.20.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
