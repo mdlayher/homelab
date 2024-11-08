@@ -6,14 +6,16 @@
       # excluded due to their experimental nature.
       {
         alert = "InstanceDown";
-        expr = ''up{instance!~"(nerr-.*|theatnerr-.*)",job!~"lab-.*|snmp-.*"} == 0'';
+        expr =
+          ''up{instance!~"(nerr-.*|theatnerr-.*)",job!~"lab-.*|snmp-.*"} == 0'';
         for = "5m";
         annotations.summary =
           "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
       }
       {
         alert = "ServiceDown";
-        expr = ''probe_success{instance!~"nerr-.*",job!~"lab-.*|snmp-.*"} == 0'';
+        expr =
+          ''probe_success{instance!~"nerr-.*",job!~"lab-.*|snmp-.*"} == 0'';
         for = "5m";
         annotations.summary =
           "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";

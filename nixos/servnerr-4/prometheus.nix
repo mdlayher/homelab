@@ -64,9 +64,8 @@ in {
         };
         receivers = [{
           name = "default";
-          discord_configs = [{
-            webhook_url = secrets.alertmanager.discord.webhook_url;
-          }];
+          discord_configs =
+            [{ webhook_url = secrets.alertmanager.discord.webhook_url; }];
         }];
       };
     };
@@ -97,14 +96,12 @@ in {
         }));
       };
 
-      # SNMP exporter with data file from release 0.19.0.
+      # SNMP exporter with data file from release 0.26.0.
       snmp = {
         enable = true;
         configurationPath = builtins.fetchurl {
           url =
-            "https://raw.githubusercontent.com/prometheus/snmp_exporter/1964bce321942a73f994813103ed2ca2e432039d/snmp.yml";
-          sha256 =
-            "sha256:0cshh89ijchi10iqijvmw473hhxf5cdrd1y0502wlwgw4glbis36";
+            "https://raw.githubusercontent.com/prometheus/snmp_exporter/44f8732988e726bad3f13d5779f1da7705178642/snmp.yml";
         };
       };
     };

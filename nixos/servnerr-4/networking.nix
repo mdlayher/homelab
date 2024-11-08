@@ -62,7 +62,7 @@ in {
     };
     networks."11-mgmt1" = {
       matchConfig.Name = "mgmt1";
-      bridge = ["br0"];
+      bridge = [ "br0" ];
     };
   };
 }
