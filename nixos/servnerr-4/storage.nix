@@ -149,15 +149,6 @@ in {
     # Only allow certain unfree packages.
     config.allowUnfreePredicate = pkg:
       builtins.elem (lib.getName pkg) [ "tarsnap" ];
-
-    # Overlays for unstable and out-of-tree packages.
-    overlays = [
-      (_self: super: {
-        # We want to use the latest zrepl.
-        zrepl =
-          super.callPackage <nixos-unstable-small/pkgs/tools/backup/zrepl> { };
-      })
-    ];
   };
 
   services = {
