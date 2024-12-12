@@ -1,11 +1,11 @@
 module gokrazy/build/monitnerr-1
 
-go 1.21
+go 1.22
 
-toolchain go1.22.0
+toolchain go1.23.0
 
 require (
-	github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e // indirect
+	github.com/gokrazy/gokrazy v0.0.0-20241106183216-3fd48c2b9366 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/josharian/native v1.0.0 // indirect

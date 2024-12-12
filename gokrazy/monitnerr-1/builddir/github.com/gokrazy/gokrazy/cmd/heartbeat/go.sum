@@ -16,6 +16,8 @@ github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35 h1:/vto7EZFxjlb2gM
 github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35/go.mod h1:FOTcHsN9okcM6wLX58MC33A8i5U3AI+sYD5wsuWee1U=
 github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e h1:pGH+YVcfF0oIYAPYuTEmbunQ4J//MgSs062GohEjfTQ=
 github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e/go.mod h1:+/WWMckeuQt+DG6690A6H8IgC+HpBFq2fmwRKcSbxdk=
+github.com/gokrazy/gokrazy v0.0.0-20241106183216-3fd48c2b9366 h1:RaqiSBCZcnebrloq3lqWj21UmvXV4v2a7JsSXeh+EY8=
+github.com/gokrazy/gokrazy v0.0.0-20241106183216-3fd48c2b9366/go.mod h1:1yOdp952OIkgR9lBNUzV+mBSIcvPV0RCaCmBq9WKTJw=
 github.com/gokrazy/internal v0.0.0-20220129150711-9ed298107648 h1:kBuLicM0xJw3xEe4607WlnzGL+qSwPqdyh5/LUiCdq0=
 github.com/gokrazy/internal v0.0.0-20220129150711-9ed298107648/go.mod h1:Gc9sU6yJ/qxg3gJZ1pjfcTAULa0swdTa4TH51g1e00E=
 github.com/gokrazy/internal v0.0.0-20240629150625-a0f1dee26ef5 h1:XDklMxV0pE5jWiNaoo5TzvWfqdoiRRScmr4ZtDzE4Uw=

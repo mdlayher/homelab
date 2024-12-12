@@ -16,6 +16,8 @@ github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35 h1:/vto7EZFxjlb2gM
 github.com/gokrazy/gokrazy v0.0.0-20240228074937-cbb1cdfc7d35/go.mod h1:FOTcHsN9okcM6wLX58MC33A8i5U3AI+sYD5wsuWee1U=
 github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e h1:pGH+YVcfF0oIYAPYuTEmbunQ4J//MgSs062GohEjfTQ=
 github.com/gokrazy/gokrazy v0.0.0-20240721075352-1d9057cee92e/go.mod h1:+/WWMckeuQt+DG6690A6H8IgC+HpBFq2fmwRKcSbxdk=
+github.com/gokrazy/gokrazy v0.0.0-20241106183216-3fd48c2b9366 h1:RaqiSBCZcnebrloq3lqWj21UmvXV4v2a7JsSXeh+EY8=
+github.com/gokrazy/gokrazy v0.0.0-20241106183216-3fd48c2b9366/go.mod h1:1yOdp952OIkgR9lBNUzV+mBSIcvPV0RCaCmBq9WKTJw=
 github.com/google/gopacket v1.1.19 h1:ves8RnFZPGiFnTS0uPQStjwru6uO6h+nlr9j6fL7kF8=
 github.com/google/gopacket v1.1.19/go.mod h1:iJ8V8n6KS+z2U1A8pUwu8bW5SyEMkXJB8Yo/Vo+TKTo=
 github.com/google/renameio/v2 v2.0.0 h1:UifI23ZTGY8Tt29JbYFiuyIU3eX+RNFtUwefq9qAhxg=
