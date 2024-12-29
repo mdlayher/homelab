@@ -109,6 +109,8 @@ in {
     settings.auto-optimise-store = true;
   };
 
+  programs.fish.enable = true;
+
   # Services which run on all deployed machines.
   services = {
     fstrim.enable = true;
@@ -134,6 +136,7 @@ in {
       uid = 1000;
       extraGroups = [ "dialout" "libvirtd" "networkmanager" "wheel" ];
       hashedPassword = secrets.users.matt_password_hash;
+      shell = pkgs.fish;
 
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)"
