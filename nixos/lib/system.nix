@@ -30,6 +30,7 @@ in {
     # Packages which should be installed on every machine.
     systemPackages = with pkgs; [
       age
+      atuin
       bc
       bintools-unwrapped
       btop
