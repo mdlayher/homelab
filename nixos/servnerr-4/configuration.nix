@@ -29,8 +29,8 @@ in {
       efi.canTouchEfiVariables = true;
     };
 
-    # Enable ZFS.
-    supportedFilesystems = [ "zfs" ];
+    # Enable extra filesystems.
+    supportedFilesystems = [ "ntfs" "zfs" ];
 
     kernelParams = [
       # Enable serial console.
