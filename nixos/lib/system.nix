@@ -109,7 +109,11 @@ in
     settings.auto-optimise-store = true;
   };
 
-  programs.fish.enable = true;
+  # Programs installed on every machine.
+  programs = {
+    fish.enable = true;
+    nano.enable = true;
+  };
 
   # Services which run on all deployed machines.
   services = {
