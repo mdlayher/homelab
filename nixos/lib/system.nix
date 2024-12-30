@@ -91,9 +91,6 @@ in
   hardware.enableRedistributableFirmware = true;
 
   nix = {
-    # Enable flakes.
-    package = pkgs.nixFlakes;
-
     # Automatic Nix GC.
     gc = {
       automatic = true;
