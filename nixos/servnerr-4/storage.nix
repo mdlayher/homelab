@@ -4,23 +4,26 @@ let
   secrets = import ./lib/secrets.nix;
 
   # Creates snapshots of zpool source using a zrepl snap job.
-  snap = (source: {
-    name = "snap_${source}";
-    type = "snap";
+  snap = (
+    source: {
+      name = "snap_${source}";
+      type = "snap";
 
-    # Snapshot the entire pool every 15 minutes.
-    filesystems."${source}<" = true;
-    snapshotting = {
-      type = "periodic";
-      prefix = "zrepl_";
-      interval = "15m";
-    };
+      # Snapshot the entire pool every 15 minutes.
+      filesystems."${source}<" = true;
+      snapshotting = {
+        type = "periodic";
+        prefix = "zrepl_";
+        interval = "15m";
+      };
 
-    pruning.keep = keepSnaps;
-  });
+      pruning.keep = keepSnaps;
+    }
+  );
 
   # Advertises zpool source as a zrepl source job for target.
-  sourceLocal = (source:
+  sourceLocal = (
+    source:
     (target: {
       name = "source_${source}_${target}";
       type = "source";
@@ -33,12 +36,15 @@ let
         type = "local";
         listener_name = "source_${source}_${target}";
       };
-    }));
+    })
+  );
 
   # Templates out a zrepl pull job which replicates from zpool source into
   # target.
-  _pullLocal = (source:
-    (target:
+  _pullLocal = (
+    source:
+    (
+      target:
       (root_fs: {
         name = "pull_${source}_${target}";
         type = "pull";
@@ -60,7 +66,11 @@ let
 
           properties = {
             # Inherit any encryption properties.
-            "inherit" = [ "encryption" "keyformat" "keylocation" ];
+            "inherit" = [
+              "encryption"
+              "keyformat"
+              "keylocation"
+            ];
 
             override = {
               # Always enable compression.
@@ -85,15 +95,19 @@ let
         replication.concurrency.steps = 4;
 
         pruning = {
-          keep_sender = [{
-            # The source job handles pruning.
-            type = "regex";
-            regex = ".*";
-          }];
+          keep_sender = [
+            {
+              # The source job handles pruning.
+              type = "regex";
+              regex = ".*";
+            }
+          ];
           # Keep the same automatic snapshots as source.
           keep_receiver = keepSnaps;
         };
-      })));
+      })
+    )
+  );
 
   # Creates a zrepl pull job which replicates from zpool source into target
   # directly.
@@ -101,8 +115,7 @@ let
 
   # Creates a zrepl pull job which replicates from zpool source into an
   # encrypted top-level dataset in target.
-  pullLocalEncrypted =
-    (source: (target: (_pullLocal source target "${target}/encrypted")));
+  pullLocalEncrypted = (source: (target: (_pullLocal source target "${target}/encrypted")));
 
   # Rules to keep zrepl snapshots.
   keepSnaps = [
@@ -127,28 +140,31 @@ let
     }
   ];
 
-in {
+in
+{
   # primary zpool mounts.
-  fileSystems = lib.genAttrs [
-    "/primary"
-    "/primary/archive"
-    "/primary/media"
-    "/primary/misc"
-    "/primary/text"
-    "/primary/vm"
-  ] (device: {
-    # The device has the leading / removed.
-    device = builtins.substring 1 255 device;
-    fsType = "zfs";
-  });
+  fileSystems =
+    lib.genAttrs
+      [
+        "/primary"
+        "/primary/archive"
+        "/primary/media"
+        "/primary/misc"
+        "/primary/text"
+        "/primary/vm"
+      ]
+      (device: {
+        # The device has the leading / removed.
+        device = builtins.substring 1 255 device;
+        fsType = "zfs";
+      });
 
   # Don't mount secondary, just import it on boot.
   boot.zfs.extraPools = [ "secondary" ];
 
   nixpkgs = {
     # Only allow certain unfree packages.
-    config.allowUnfreePredicate = pkg:
-      builtins.elem (lib.getName pkg) [ "tarsnap" ];
+    config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "tarsnap" ];
   };
 
   services = {
@@ -200,10 +216,12 @@ in {
     zrepl = {
       enable = true;
       settings = {
-        global.monitoring = [{
-          type = "prometheus";
-          listen = ":9811";
-        }];
+        global.monitoring = [
+          {
+            type = "prometheus";
+            listen = ":9811";
+          }
+        ];
         jobs = [
           # Take snapshots of primary and advertise it as a source for each
           # fan-out pull job. Notably a source per pull job is necessary to

@@ -18,11 +18,12 @@
           isReadOnly = true;
         };
       };
-      config = { ... }:
+      config =
+        { ... }:
         let
-          unstable =
-            import <nixos-unstable-small> { config.allowUnfree = true; };
-        in {
+          unstable = import <nixos-unstable-small> { config.allowUnfree = true; };
+        in
+        {
           system.stateVersion = "21.11";
           services.plex = {
             enable = true;

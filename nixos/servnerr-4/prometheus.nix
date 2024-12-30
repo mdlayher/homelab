@@ -7,40 +7,49 @@ let
   blackboxScrape = (module: blackboxScrapeJobName module module);
 
   # Same as blackboxScrape, but allow customizing the job name.
-  blackboxScrapeJobName = (job: module: interval: targets: {
-    job_name = "blackbox_${job}";
-    scrape_interval = "${interval}";
-    metrics_path = "/probe";
-    params = { module = [ "${module}" ]; };
-    # blackbox_exporter location is hardcoded.
-    relabel_configs = relabelTarget "servnerr-4:9115";
-    static_configs = [{ inherit targets; }];
-  });
+  blackboxScrapeJobName = (
+    job: module: interval: targets: {
+      job_name = "blackbox_${job}";
+      scrape_interval = "${interval}";
+      metrics_path = "/probe";
+      params = {
+        module = [ "${module}" ];
+      };
+      # blackbox_exporter location is hardcoded.
+      relabel_configs = relabelTarget "servnerr-4:9115";
+      static_configs = [ { inherit targets; } ];
+    }
+  );
 
   # Scrape a list of static targets for a job.
-  staticScrape = (job_name: targets: {
-    inherit job_name;
-    static_configs = [{ inherit targets; }];
-  });
+  staticScrape = (
+    job_name: targets: {
+      inherit job_name;
+      static_configs = [ { inherit targets; } ];
+    }
+  );
 
   # Produces a relabeling configuration that replaces the instance label with
   # the HTTP target parameter.
-  relabelTarget = (target: [
-    {
-      source_labels = [ "__address__" ];
-      target_label = "__param_target";
-    }
-    {
-      source_labels = [ "__param_target" ];
-      target_label = "instance";
-    }
-    {
-      target_label = "__address__";
-      replacement = "${target}";
-    }
-  ]);
+  relabelTarget = (
+    target: [
+      {
+        source_labels = [ "__address__" ];
+        target_label = "__param_target";
+      }
+      {
+        source_labels = [ "__param_target" ];
+        target_label = "instance";
+      }
+      {
+        target_label = "__address__";
+        replacement = "${target}";
+      }
+    ]
+  );
 
-in {
+in
+{
   # Prometheus monitoring server and exporter configuration.
   services.prometheus = {
     enable = true;
@@ -48,7 +57,10 @@ in {
 
     globalConfig.scrape_interval = "15s";
 
-    extraFlags = [ "--storage.tsdb.retention=1825d" "--web.enable-admin-api" ];
+    extraFlags = [
+      "--storage.tsdb.retention=1825d"
+      "--web.enable-admin-api"
+    ];
 
     alertmanager = {
       enable = true;
@@ -62,17 +74,17 @@ in {
           repeat_interval = "1h";
           receiver = "default";
         };
-        receivers = [{
-          name = "default";
-          discord_configs =
-            [{ webhook_url = secrets.alertmanager.discord.webhook_url; }];
-        }];
+        receivers = [
+          {
+            name = "default";
+            discord_configs = [ { webhook_url = secrets.alertmanager.discord.webhook_url; } ];
+          }
+        ];
       };
     };
 
     # Use alertmanager running on monitoring machine.
-    alertmanagers =
-      [{ static_configs = [{ targets = [ "servnerr-4:9093" ]; }]; }];
+    alertmanagers = [ { static_configs = [ { targets = [ "servnerr-4:9093" ]; } ]; } ];
 
     exporters = {
       # Node exporter already enabled on all machines.
@@ -81,27 +93,28 @@ in {
 
       blackbox = {
         enable = true;
-        configFile = pkgs.writeText "blackbox.yml" (builtins.toJSON ({
-          modules = {
-            http_2xx.prober = "http";
-            http_401 = {
-              prober = "http";
-              http.valid_status_codes = [ 401 ];
+        configFile = pkgs.writeText "blackbox.yml" (
+          builtins.toJSON ({
+            modules = {
+              http_2xx.prober = "http";
+              http_401 = {
+                prober = "http";
+                http.valid_status_codes = [ 401 ];
+              };
+              ssh_banner = {
+                prober = "tcp";
+                tcp.query_response = [ { expect = "^SSH-2.0-"; } ];
+              };
             };
-            ssh_banner = {
-              prober = "tcp";
-              tcp.query_response = [{ expect = "^SSH-2.0-"; }];
-            };
-          };
-        }));
+          })
+        );
       };
 
       # SNMP exporter with data file from release 0.26.0.
       snmp = {
         enable = true;
         configurationPath = builtins.fetchurl {
-          url =
-            "https://raw.githubusercontent.com/prometheus/snmp_exporter/44f8732988e726bad3f13d5779f1da7705178642/snmp.yml";
+          url = "https://raw.githubusercontent.com/prometheus/snmp_exporter/44f8732988e726bad3f13d5779f1da7705178642/snmp.yml";
         };
       };
     };
@@ -109,7 +122,10 @@ in {
     # TODO: template out hostnames or consider DNSSD.
     scrapeConfigs = [
       # Simple, static scrape jobs.
-      (staticScrape "apcupsd" [ "nerr-4:9162" "servnerr-4:9162" ])
+      (staticScrape "apcupsd" [
+        "nerr-4:9162"
+        "servnerr-4:9162"
+      ])
       (staticScrape "consrv" [ "monitnerr-1:9288" ])
       (staticScrape "coredns" [ "routnerr-3:9153" ])
       (staticScrape "corerad" [ "routnerr-3:9430" ])
@@ -127,7 +143,7 @@ in {
         job_name = "homeassistant";
         metrics_path = "/api/prometheus";
         bearer_token = "${secrets.prometheus.homeassistant_token}";
-        static_configs = [{ targets = [ "hass:8123" ]; }];
+        static_configs = [ { targets = [ "hass:8123" ]; } ];
       }
 
       # Blackbox exporter and associated targets.
@@ -152,10 +168,15 @@ in {
       # SNMP relabeling configuration required to properly replace the instance
       # names and query the correct devices.
       (lib.mkMerge [
-        (staticScrape "snmp-cyberpower" [ "pdu01.ipv4" "ups01.ipv4" ])
+        (staticScrape "snmp-cyberpower" [
+          "pdu01.ipv4"
+          "ups01.ipv4"
+        ])
         {
           metrics_path = "/snmp";
-          params = { module = [ "cyberpower" ]; };
+          params = {
+            module = [ "cyberpower" ];
+          };
           relabel_configs = relabelTarget "servnerr-4:9116";
         }
       ])

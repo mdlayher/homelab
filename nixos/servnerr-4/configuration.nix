@@ -4,7 +4,8 @@ let
   unstable = import <nixos-unstable-small> { };
   vars = import ./lib/vars.nix;
 
-in {
+in
+{
   imports = [
     # Hardware and base system configuration.
     ./hardware-configuration.nix
@@ -30,7 +31,10 @@ in {
     };
 
     # Enable extra filesystems.
-    supportedFilesystems = [ "ntfs" "zfs" ];
+    supportedFilesystems = [
+      "ntfs"
+      "zfs"
+    ];
 
     kernelParams = [
       # Enable serial console.
@@ -44,7 +48,9 @@ in {
   systemd.services."serial-getty@ttyS1" = {
     enable = true;
     wantedBy = [ "multi-user.target" ];
-    serviceConfig = { Restart = "always"; };
+    serviceConfig = {
+      Restart = "always";
+    };
   };
 
   # Scale down CPU frequency when load is low.

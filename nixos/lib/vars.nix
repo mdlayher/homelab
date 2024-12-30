@@ -11,7 +11,8 @@ let
   desktop_ipv4 = gen.desktop_ipv4;
   desktop_ipv6 = gen.desktop_ipv6;
 
-in {
+in
+{
   inherit hosts;
   inherit interfaces;
   inherit wireguard;

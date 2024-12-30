@@ -1,9 +1,16 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
-let cfg = config.services.zedhook;
-in {
+let
+  cfg = config.services.zedhook;
+in
+{
   options.services.zedhook = {
     enable = mkEnableOption "zedhook ZFS event monitoring system";
 
@@ -34,8 +41,7 @@ in {
         LimitNPROC = 512;
         LimitNOFILE = 1048576;
         NoNewPrivileges = true;
-        ExecStart =
-          "${getBin cfg.package}/bin/zedhookd -d /var/lib/zedhookd/zedhookd.db";
+        ExecStart = "${getBin cfg.package}/bin/zedhookd -d /var/lib/zedhookd/zedhookd.db";
         User = "zedhookd";
         Restart = "always";
         RuntimeDirectory = "zedhookd";

@@ -1,8 +1,10 @@
 { lib, ... }:
 
-let unstable = import <nixos-unstable-small> { };
+let
+  unstable = import <nixos-unstable-small> { };
 
-in {
+in
+{
   networking = {
     # Host name and ID.
     hostName = "servnerr-4";
@@ -25,8 +27,10 @@ in {
   # Tailscale readiness and DNS tweaks.
   systemd.network.wait-online.ignoredInterfaces = [ "ts0" ];
 
-  systemd.services.tailscaled.after =
-    [ "network-online.target" "systemd-resolved.service" ];
+  systemd.services.tailscaled.after = [
+    "network-online.target"
+    "systemd-resolved.service"
+  ];
 
   systemd.network = {
     enable = true;

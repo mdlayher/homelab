@@ -4,7 +4,8 @@ let
   secrets = import ./secrets.nix;
   unstable = import <nixos-unstable-small> { };
 
-in {
+in
+{
   boot = {
     # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
@@ -63,9 +64,7 @@ in {
       nano
       ndisc6
       neofetch
-      nixfmt
-      # Broken as of June 1, 2023.
-      # nix-linter
+      nixfmt-rfc-style
       nmap
       nmon
       pciutils
@@ -118,7 +117,10 @@ in {
     fwupd.enable = true;
     prometheus.exporters.node = {
       enable = true;
-      enabledCollectors = [ "ethtool" "systemd" ];
+      enabledCollectors = [
+        "ethtool"
+        "systemd"
+      ];
     };
   };
 
@@ -135,7 +137,12 @@ in {
     users.matt = {
       isNormalUser = true;
       uid = 1000;
-      extraGroups = [ "dialout" "libvirtd" "networkmanager" "wheel" ];
+      extraGroups = [
+        "dialout"
+        "libvirtd"
+        "networkmanager"
+        "wheel"
+      ];
       hashedPassword = secrets.users.matt_password_hash;
       shell = pkgs.fish;
 
