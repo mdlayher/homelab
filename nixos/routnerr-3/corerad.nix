@@ -42,13 +42,25 @@ in
             preference = ifi.preference;
 
             # Advertise all /64 prefixes on the interface.
-            prefix = [ { } ];
+            prefix = [
+              # RFC8978: Reaction of IPv6 SLAAC to Flash-Renumbering Events
+              {
+                preferred_lifetime = "45m";
+                valid_lifetime = "90m";
+              }
+            ];
 
             # Automatically use the appropriate interface address as a DNS server.
             rdnss = [ { } ];
 
             # Automatically propagate routes owned by loopback.
-            route = [ { } ];
+            route = [
+              # Tuning inspired by:
+              # RFC8978: Reaction of IPv6 SLAAC to Flash-Renumbering Events
+              {
+                lifetime = "45m";
+              }
+            ];
           }
           // (
             # Configure DNS search on some trusted LANs, or omit otherwise.
