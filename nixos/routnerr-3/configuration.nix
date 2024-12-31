@@ -4,9 +4,11 @@
 
 { pkgs, ... }:
 
-let vars = import ./lib/vars.nix;
+let
+  vars = import ./lib/vars.nix;
 
-in {
+in
+{
   imports = [
     # Hardware and base system configuration.
     ./hardware-configuration.nix
@@ -29,7 +31,9 @@ in {
   systemd.services."serial-getty@ttyS0" = {
     enable = true;
     wantedBy = [ "multi-user.target" ];
-    serviceConfig = { Restart = "always"; };
+    serviceConfig = {
+      Restart = "always";
+    };
   };
 
   system.copySystemConfiguration = true;
@@ -62,11 +66,10 @@ in {
 
   # Packages specific to this machine. The base package set is defined in
   # lib/system.nix.
-  environment.systemPackages = with pkgs;
-    [
-      # Stable packages.
-      bind
-    ];
+  environment.systemPackages = with pkgs; [
+    # Stable packages.
+    bind
+  ];
 
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as

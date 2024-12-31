@@ -29,7 +29,12 @@ let
   all_wans = "wan0, wan1";
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  trusted_lans = with vars.interfaces; [ mgmt0 lan0 lab0 { name = "ts0"; } ];
+  trusted_lans = with vars.interfaces; [
+    mgmt0
+    lan0
+    lab0
+    { name = "ts0"; }
+  ];
   limited_lans = with vars.interfaces; [ guest0 ];
   untrusted_lans = with vars.interfaces; [ iot0 ];
 
@@ -55,7 +60,8 @@ let
     } counter accept
   '';
 
-in {
+in
+{
   networking.nftables = {
     enable = true;
     ruleset = ''
@@ -129,16 +135,14 @@ in {
           udp dport ${ports.mdns} udp sport ${ports.mdns} counter accept comment "router untrusted mDNS"
 
           # Drop traffic trying to cross VLANs or broadcast.
-          ${
-            lib.concatMapStrings (ifi: ''
-              iifname ${ifi.name} ip daddr != ${ifi.ipv4} counter drop comment "${ifi.name} traffic leaving IPv4 VLAN"
+          ${lib.concatMapStrings (ifi: ''
+            iifname ${ifi.name} ip daddr != ${ifi.ipv4} counter drop comment "${ifi.name} traffic leaving IPv4 VLAN"
 
-              iifname ${ifi.name} ip6 daddr != {
-                ${ifi.ipv6.lla},
-                ${ifi.ipv6.ula},
-              } counter drop comment "${ifi.name} traffic leaving IPv6 VLAN"
-            '') (limited_lans ++ untrusted_lans)
-          }
+            iifname ${ifi.name} ip6 daddr != {
+              ${ifi.ipv6.lla},
+              ${ifi.ipv6.ula},
+            } counter drop comment "${ifi.name} traffic leaving IPv6 VLAN"
+          '') (limited_lans ++ untrusted_lans)}
 
           # Allow only necessary router-provided services.
           tcp dport {

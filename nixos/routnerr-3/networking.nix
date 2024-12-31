@@ -4,7 +4,8 @@ let
   unstable = import <nixos-unstable-small> { };
   vars = import ./lib/vars.nix;
 
-  ethLink = (name:
+  ethLink = (
+    name:
     (mac: {
       matchConfig = {
         Type = "ether";
@@ -18,18 +19,22 @@ let
         RxBufferSize = 4096;
         TxBufferSize = 4096;
       };
-    }));
+    })
+  );
 
-  vlanNetdev = (name:
+  vlanNetdev = (
+    name:
     (id: {
       netdevConfig = {
         Name = name;
         Kind = "vlan";
       };
       vlanConfig.Id = id;
-    }));
+    })
+  );
 
-  vlanNetwork = (name:
+  vlanNetwork = (
+    name:
     (id: {
       matchConfig.Name = name;
       # Embed ID directly in IPv4/6 addresses for clarity.
@@ -63,27 +68,42 @@ let
       '';
 
       # Write out fixed leases per subnet.
-      dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts
-        (host: {
-          dhcpServerStaticLeaseConfig = {
-            Address = host.ipv4;
-            MACAddress = host.mac;
-          };
-        });
-    }));
+      dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts (host: {
+        dhcpServerStaticLeaseConfig = {
+          Address = host.ipv4;
+          MACAddress = host.mac;
+        };
+      });
+    })
+  );
 
   # Thanks, corpix!
   # https://gist.github.com/corpix/f761c82c9d6fdbc1b3846b37e1020e11
-  decToHex = let
-    intToHex =
-      [ "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "a" "b" "c" "d" "e" "f" ];
-    toHex' = q: a:
-      if q > 0 then
-        (toHex' (q / 16) ((lib.elemAt intToHex (lib.mod q 16)) + a))
-      else
-        a;
-  in v: toHex' v "";
-in {
+  decToHex =
+    let
+      intToHex = [
+        "0"
+        "1"
+        "2"
+        "3"
+        "4"
+        "5"
+        "6"
+        "7"
+        "8"
+        "9"
+        "a"
+        "b"
+        "c"
+        "d"
+        "e"
+        "f"
+      ];
+      toHex' = q: a: if q > 0 then (toHex' (q / 16) ((lib.elemAt intToHex (lib.mod q 16)) + a)) else a;
+    in
+    v: toHex' v "";
+in
+{
   networking = {
     hostName = "routnerr-3";
 
@@ -100,7 +120,10 @@ in {
   # Use resolved for local DNS lookups, querying through CoreDNS.
   services.resolved = {
     enable = true;
-    domains = [ vars.domain "taild07ab.ts.net" ];
+    domains = [
+      vars.domain
+      "taild07ab.ts.net"
+    ];
     extraConfig = ''
       DNS=::1 127.0.0.1
       DNSStubListener=no
@@ -116,14 +139,16 @@ in {
     # Loopback.
     networks."5-lo" = {
       matchConfig.Name = "lo";
-      routes = [{
-        # We own the ULA /48, create a blanket unreachable route which will be
-        # superseded by more specific /64s.
-        routeConfig = {
-          Destination = "fd9e:1a04:f01d::/48";
-          Type = "unreachable";
-        };
-      }];
+      routes = [
+        {
+          # We own the ULA /48, create a blanket unreachable route which will be
+          # superseded by more specific /64s.
+          routeConfig = {
+            Destination = "fd9e:1a04:f01d::/48";
+            Type = "unreachable";
+          };
+        }
+      ];
     };
 
     # Wired WAN: Spectrum 1GbE.
@@ -160,14 +185,16 @@ in {
       matchConfig.Name = "wan1";
       networkConfig.Address = "216.82.20.71/26";
 
-      routes = [{
-        routeConfig = {
-          Gateway = "216.82.20.65";
+      routes = [
+        {
+          routeConfig = {
+            Gateway = "216.82.20.65";
 
-          # Prioritize Metronet IPv4.
-          Metric = 100;
-        };
-      }];
+            # Prioritize Metronet IPv4.
+            Metric = 100;
+          };
+        }
+      ];
     };
 
     # Physical management LAN. For physical LANs, we have to make sure to match
@@ -178,10 +205,19 @@ in {
 
       # TODO(mdlayher): eventually it'd be nice to renumber this as
       # 192.168.0.1/24 but that would require a lot of device churn.
-      address = [ "fd9e:1a04:f01d::1/64" "fe80::1/64" "192.168.1.1/24" ];
+      address = [
+        "fd9e:1a04:f01d::1/64"
+        "fe80::1/64"
+        "192.168.1.1/24"
+      ];
 
       # VLANs associated with this physical interface.
-      vlan = [ "lan0" "iot0" "guest0" "lab0" ];
+      vlan = [
+        "lan0"
+        "iot0"
+        "guest0"
+        "lab0"
+      ];
 
       networkConfig = {
         DHCPPrefixDelegation = true;
@@ -245,6 +281,12 @@ in {
 
   # Tailscale readiness and DNS tweaks.
   systemd.network.wait-online.ignoredInterfaces = [ "ts0" ];
-  systemd.services.tailscaled.after =
-    [ "network-online.target" "systemd-resolved.service" ];
+
+  systemd.services.tailscaled = {
+    after = [
+      "network-online.target"
+      "systemd-resolved.service"
+    ];
+    wants = [ "network-online.target" ];
+  };
 }

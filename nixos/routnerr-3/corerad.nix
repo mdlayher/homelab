@@ -4,7 +4,8 @@ let
   unstable = import <nixos-unstable-small> { };
   vars = import ./lib/vars.nix;
 
-in {
+in
+{
   services.corerad = {
     enable = true;
 
@@ -22,14 +23,17 @@ in {
 
       interfaces =
         # Upstream monitoring interfaces.
-        [{
-          # Spectrum, Metronet does not provide IPv6 as of September 2023.
-          names = [ "wan0" ];
-          monitor = true;
-        }]
+        [
+          {
+            # Spectrum, Metronet does not provide IPv6 as of September 2023.
+            names = [ "wan0" ];
+            monitor = true;
+          }
+        ]
 
         # Downstream advertising interfaces.
-        ++ lib.forEach [ mgmt0 lab0 lan0 guest0 iot0 ] (ifi:
+        ++ lib.forEach [ mgmt0 lab0 lan0 guest0 iot0 ] (
+          ifi:
           {
             name = ifi.name;
             advertise = true;
@@ -45,14 +49,19 @@ in {
 
             # Automatically propagate routes owned by loopback.
             route = [ { } ];
-          } // (
+          }
+          // (
             # Configure DNS search on some trusted LANs, or omit otherwise.
             #
             # TODO(mdlayher): probably rename to ifi.trusted.
-            if ifi.internal_dns then {
-              dnssl = [{ domain_names = [ vars.domain ]; }];
-            } else
-              { }));
+            if ifi.internal_dns then
+              {
+                dnssl = [ { domain_names = [ vars.domain ]; } ];
+              }
+            else
+              { }
+          )
+        );
     };
   };
 }

@@ -4,7 +4,8 @@ let
   secrets = import ./lib/secrets.nix;
   vars = import ./lib/vars.nix;
 
-in {
+in
+{
   services.caddy = {
     enable = true;
     virtualHosts = {
