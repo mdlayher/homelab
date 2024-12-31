@@ -69,10 +69,8 @@ let
 
       # Write out fixed leases per subnet.
       dhcpServerStaticLeases = lib.forEach vars.interfaces."${name}".hosts (host: {
-        dhcpServerStaticLeaseConfig = {
-          Address = host.ipv4;
-          MACAddress = host.mac;
-        };
+        Address = host.ipv4;
+        MACAddress = host.mac;
       });
     })
   );
@@ -143,10 +141,8 @@ in
         {
           # We own the ULA /48, create a blanket unreachable route which will be
           # superseded by more specific /64s.
-          routeConfig = {
-            Destination = "fd9e:1a04:f01d::/48";
-            Type = "unreachable";
-          };
+          Destination = "fd9e:1a04:f01d::/48";
+          Type = "unreachable";
         }
       ];
     };
@@ -187,12 +183,10 @@ in
 
       routes = [
         {
-          routeConfig = {
-            Gateway = "216.82.20.65";
+          Gateway = "216.82.20.65";
 
-            # Prioritize Metronet IPv4.
-            Metric = 100;
-          };
+          # Prioritize Metronet IPv4.
+          Metric = 100;
         }
       ];
     };
@@ -243,10 +237,8 @@ in
 
       # Write out fixed leases per subnet.
       dhcpServerStaticLeases = lib.forEach vars.interfaces.mgmt0.hosts (host: {
-        dhcpServerStaticLeaseConfig = {
-          Address = host.ipv4;
-          MACAddress = host.mac;
-        };
+        Address = host.ipv4;
+        MACAddress = host.mac;
       });
     };
 
