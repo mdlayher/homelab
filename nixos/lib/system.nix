@@ -67,6 +67,7 @@ in
       nixfmt-rfc-style
       nmap
       nmon
+      nvme-cli
       pciutils
       pkg-config
       pv
