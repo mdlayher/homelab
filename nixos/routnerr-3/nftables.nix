@@ -13,7 +13,6 @@ let
     http = "80";
     https = "443";
     mdns = "5353";
-    plex = "32400";
     # Different tailscaled ports for different devices to avoid messing with
     # poking nftables firewall holes with miniupnpd or similar.
     tailscale = {
@@ -233,10 +232,6 @@ in
           ct state {established, related} counter accept
           ct state invalid counter drop
 
-          # Plex running on server.
-          ip daddr ${vars.server_ipv4} tcp dport ${ports.plex} counter accept comment "server IPv4 Plex"
-          ip6 daddr ${vars.server_ipv6} tcp dport ${ports.plex} counter accept comment "server IPv6 Plex"
-
           # Tailscale running on desktop.
           ip daddr ${vars.desktop_ipv4} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv4 Tailscale"
           ip6 daddr ${vars.desktop_ipv6} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv6 Tailscale"
@@ -264,10 +259,6 @@ in
         }
 
         chain prerouting_wans {
-          tcp dport {
-            ${ports.plex},
-          } dnat ${vars.server_ipv4} comment "server TCPv4 DNAT"
-
           udp dport {
             ${ports.tailscale.desktop},
           } dnat ${vars.desktop_ipv4} comment "desktop UDPv4 DNAT"
