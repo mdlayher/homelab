@@ -8,6 +8,8 @@ github.com/gokrazy/serial-busybox v0.0.0-20220918193710-d728912733ca h1:x0eSjuFy
 github.com/gokrazy/serial-busybox v0.0.0-20220918193710-d728912733ca/go.mod h1:OYcG5tSb+QrelmUOO4EZVUFcIHyyZb0QDbEbZFUp1TA=
 github.com/gokrazy/serial-busybox v0.0.0-20240818092410-3d7f3f33f595 h1:UhDtHHWvM0GfdwV0wE77r6W9YIWlmo1tKBNQxn0VZFg=
 github.com/gokrazy/serial-busybox v0.0.0-20240818092410-3d7f3f33f595/go.mod h1:OYcG5tSb+QrelmUOO4EZVUFcIHyyZb0QDbEbZFUp1TA=
+github.com/gokrazy/serial-busybox v0.0.0-20250119153030-ac58ba7574e7 h1:gurTGc4sL7Ik+IKZ29rhGgHNZQTXPtEXLw+aM9E+/HE=
+github.com/gokrazy/serial-busybox v0.0.0-20250119153030-ac58ba7574e7/go.mod h1:OYcG5tSb+QrelmUOO4EZVUFcIHyyZb0QDbEbZFUp1TA=
 github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/gopacket v1.1.16/go.mod h1:UCLx9mCmAwsVbn6qQl1WIEt2SO7Nd2fD0th1TBAsqBw=
 github.com/mdlayher/raw v0.0.0-20190303161257-764d452d77af/go.mod h1:rC/yE65s/DoHB6BzVOUBNYBGTg772JVytyAytffIZkY=
