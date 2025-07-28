@@ -77,28 +77,32 @@ func main() {
 			netip.MustParseAddr("192.168.1.7"),
 			mac("74:56:3c:43:73:37"),
 		)
+
+		workLaptop = lan0.newHost(
+			"psframework",
+			netip.MustParseAddr("192.168.10.12"),
+			mac("c4:bd:e5:1b:8a:e6"),
+		)
 	)
 
 	// Set up the output structure and create host/infra records.
 	out := output{
 		// TODO: this is a hack, we should make a Service type or similar.
-		ServerIPv4:  server.IPv4,
-		ServerIPv6:  server.IPv6.GUA,
-		DesktopIPv4: desktop.IPv4,
-		DesktopIPv6: desktop.IPv6.GUA,
+		ServerIPv4:     server.IPv4,
+		ServerIPv6:     server.IPv6.GUA,
+		DesktopIPv4:    desktop.IPv4,
+		DesktopIPv6:    desktop.IPv6.GUA,
+		WorkLaptopIPv4: workLaptop.IPv4,
+		WorkLaptopIPv6: workLaptop.IPv6.GUA,
 		Hosts: hosts{
 			Servers: []host{
 				server,
 				desktop,
+				workLaptop,
 				mgmt0.newHost(
 					"monitnerr-1",
 					netip.MustParseAddr("192.168.1.8"),
 					mac("dc:a6:32:1e:66:94"),
-				),
-				lan0.newHost(
-					"matt-3",
-					netip.MustParseAddr("192.168.10.12"),
-					mac("c4:bd:e5:1b:8a:e6"),
 				),
 				lan0.newHost(
 					"matt-4",
@@ -220,12 +224,14 @@ func wanIPv6Prefix() netip.Prefix {
 }
 
 type output struct {
-	ServerIPv4  netip.Addr       `json:"server_ipv4"`
-	ServerIPv6  netip.Addr       `json:"server_ipv6"`
-	DesktopIPv4 netip.Addr       `json:"desktop_ipv4"`
-	DesktopIPv6 netip.Addr       `json:"desktop_ipv6"`
-	Hosts       hosts            `json:"hosts"`
-	Interfaces  map[string]iface `json:"interfaces"`
+	ServerIPv4     netip.Addr       `json:"server_ipv4"`
+	ServerIPv6     netip.Addr       `json:"server_ipv6"`
+	DesktopIPv4    netip.Addr       `json:"desktop_ipv4"`
+	DesktopIPv6    netip.Addr       `json:"desktop_ipv6"`
+	WorkLaptopIPv4 netip.Addr       `json:"work_laptop_ipv4"`
+	WorkLaptopIPv6 netip.Addr       `json:"work_laptop_ipv6"`
+	Hosts          hosts            `json:"hosts"`
+	Interfaces     map[string]iface `json:"interfaces"`
 }
 
 type hosts struct {

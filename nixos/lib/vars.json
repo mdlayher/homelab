@@ -3,6 +3,8 @@
 	"server_ipv6": "2600:6c4a:783f:7800:6d9:f5ff:fe7e:1c47",
 	"desktop_ipv4": "192.168.1.7",
 	"desktop_ipv6": "2600:6c4a:783f:7800:7656:3cff:fe43:7337",
+	"work_laptop_ipv4": "192.168.10.12",
+	"work_laptop_ipv6": "2600:6c4a:783f:780a:c6bd:e5ff:fe1b:8ae6",
 	"hosts": {
 		"servers": [
 			{
@@ -26,6 +28,16 @@
 				"mac": "74:56:3c:43:73:37"
 			},
 			{
+				"name": "psframework",
+				"ipv4": "192.168.10.12",
+				"ipv6": {
+					"gua": "2600:6c4a:783f:780a:c6bd:e5ff:fe1b:8ae6",
+					"ula": "fd9e:1a04:f01d:10:c6bd:e5ff:fe1b:8ae6",
+					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
+				},
+				"mac": "c4:bd:e5:1b:8a:e6"
+			},
+			{
 				"name": "monitnerr-1",
 				"ipv4": "192.168.1.8",
 				"ipv6": {
@@ -34,16 +46,6 @@
 					"lla": "fe80::dea6:32ff:fe1e:6694"
 				},
 				"mac": "dc:a6:32:1e:66:94"
-			},
-			{
-				"name": "matt-3",
-				"ipv4": "192.168.10.12",
-				"ipv6": {
-					"gua": "2600:6c4a:783f:780a:c6bd:e5ff:fe1b:8ae6",
-					"ula": "fd9e:1a04:f01d:10:c6bd:e5ff:fe1b:8ae6",
-					"lla": "fe80::c6bd:e5ff:fe1b:8ae6"
-				},
-				"mac": "c4:bd:e5:1b:8a:e6"
 			},
 			{
 				"name": "matt-4",
@@ -279,7 +281,7 @@
 			},
 			"hosts": [
 				{
-					"name": "matt-3",
+					"name": "psframework",
 					"ipv4": "192.168.10.12",
 					"ipv6": {
 						"gua": "2600:6c4a:783f:780a:c6bd:e5ff:fe1b:8ae6",
