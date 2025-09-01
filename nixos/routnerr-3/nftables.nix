@@ -18,6 +18,7 @@ let
     tailscale = {
       router = "41461";
       desktop = "41642";
+      work_laptop = "41643";
     };
   };
 
@@ -232,9 +233,12 @@ in
           ct state {established, related} counter accept
           ct state invalid counter drop
 
-          # Tailscale running on desktop.
+          # Tailscale forwarding.
           ip daddr ${vars.desktop_ipv4} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv4 Tailscale"
           ip6 daddr ${vars.desktop_ipv6} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv6 Tailscale"
+
+          ip daddr ${vars.work_laptop_ipv4} udp dport ${ports.tailscale.work_laptop} counter accept comment "work laptop IPv4 Tailscale"
+          ip6 daddr ${vars.work_laptop_ipv6} udp dport ${ports.tailscale.work_laptop} counter accept comment "work laptop IPv6 Tailscale"
 
           counter reject
         }
@@ -259,9 +263,8 @@ in
         }
 
         chain prerouting_wans {
-          udp dport {
-            ${ports.tailscale.desktop},
-          } dnat ${vars.desktop_ipv4} comment "desktop UDPv4 DNAT"
+          udp dport ${ports.tailscale.desktop} dnat ${vars.desktop_ipv4} comment "desktop UDPv4 DNAT"
+          udp dport ${ports.tailscale.work_laptop} dnat ${vars.work_laptop_ipv4} comment "work laptop UDPv4 DNAT"
 
           accept
         }

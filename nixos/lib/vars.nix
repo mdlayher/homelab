@@ -10,6 +10,8 @@ let
   server_ipv6 = gen.server_ipv6;
   desktop_ipv4 = gen.desktop_ipv4;
   desktop_ipv6 = gen.desktop_ipv6;
+  work_laptop_ipv4 = gen.work_laptop_ipv4;
+  work_laptop_ipv6 = gen.work_laptop_ipv6;
 
 in
 {
@@ -21,6 +23,8 @@ in
   inherit server_ipv6;
   inherit desktop_ipv4;
   inherit desktop_ipv6;
+  inherit work_laptop_ipv4;
+  inherit work_laptop_ipv6;
 
   domain = "lan.servnerr.com";
   localhost = {
