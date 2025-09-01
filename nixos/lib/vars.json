@@ -191,7 +191,7 @@
 			},
 			{
 				"name": "prusa-core-one.iot",
-				"ipv4": "192.168.66.17",
+				"ipv4": "192.168.66.173",
 				"ipv6": {
 					"gua": "2600:6c4a:783f:7842:fef5:c4ff:feae:b221",
 					"ula": "fd9e:1a04:f01d:66:fef5:c4ff:feae:b221",
@@ -267,7 +267,7 @@
 				},
 				{
 					"name": "prusa-core-one.iot",
-					"ipv4": "192.168.66.17",
+					"ipv4": "192.168.66.173",
 					"ipv6": {
 						"gua": "2600:6c4a:783f:7842:fef5:c4ff:feae:b221",
 						"ula": "fd9e:1a04:f01d:66:fef5:c4ff:feae:b221",
