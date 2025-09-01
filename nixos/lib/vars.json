@@ -188,6 +188,16 @@
 					"lla": "fe80::42b8:9aff:fe27:d4fd"
 				},
 				"mac": "40:b8:9a:27:d4:fd"
+			},
+			{
+				"name": "prusa-core-one.iot",
+				"ipv4": "192.168.66.17",
+				"ipv6": {
+					"gua": "2600:6c4a:783f:7842:fef5:c4ff:feae:b221",
+					"ula": "fd9e:1a04:f01d:66:fef5:c4ff:feae:b221",
+					"lla": "fe80::fef5:c4ff:feae:b221"
+				},
+				"mac": "fc:f5:c4:ae:b2:21"
 			}
 		]
 	},
@@ -254,6 +264,16 @@
 						"lla": "fe80::42b8:9aff:fe27:d4fd"
 					},
 					"mac": "40:b8:9a:27:d4:fd"
+				},
+				{
+					"name": "prusa-core-one.iot",
+					"ipv4": "192.168.66.17",
+					"ipv6": {
+						"gua": "2600:6c4a:783f:7842:fef5:c4ff:feae:b221",
+						"ula": "fd9e:1a04:f01d:66:fef5:c4ff:feae:b221",
+						"lla": "fe80::fef5:c4ff:feae:b221"
+					},
+					"mac": "fc:f5:c4:ae:b2:21"
 				}
 			]
 		},

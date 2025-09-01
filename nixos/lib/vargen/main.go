@@ -179,6 +179,11 @@ func main() {
 					netip.MustParseAddr("192.168.66.16"),
 					mac("40:b8:9a:27:d4:fd"),
 				),
+				iot0.newHost(
+					"prusa-core-one.iot",
+					netip.MustParseAddr("192.168.66.17"),
+					mac("fc:f5:c4:ae:b2:21"),
+				),
 			},
 		},
 	}
