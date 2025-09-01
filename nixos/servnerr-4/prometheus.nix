@@ -146,6 +146,18 @@ in
         static_configs = [ { targets = [ "hass:8123" ]; } ];
       }
 
+      # Prusa exporter: https://github.com/pstrobl96/prusa_exporter
+      {
+        job_name = "prusa_prusalink";
+        metrics_path = "/metrics/prusalink";
+        static_configs = [ { targets = [ "servnerr-4:10009" ]; } ];
+      }
+      {
+        job_name = "prusa_udp";
+        metrics_path = "/metrics/udp";
+        static_configs = [ { targets = [ "servnerr-4:10009" ]; } ];
+      }
+
       # Blackbox exporter and associated targets.
       (staticScrape "blackbox" [ "servnerr-4:9115" ])
       (blackboxScrape "http_2xx" "15s" [
