@@ -196,7 +196,7 @@ in
       zed = {
         enableMail = false;
         settings = {
-          # Send event notifications to Discord; see sops.templates."zed.rc".
+          # Event notifications go to Discord; see sops.templates."zed.rc".
 
           # Verify integrity via scrub after resilver.
           ZED_SCRUB_AFTER_RESILVER = true;

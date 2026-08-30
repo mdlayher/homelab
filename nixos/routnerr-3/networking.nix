@@ -55,7 +55,6 @@ let
       PoolOffset = 50;
       EmitDNS = true;
       DNS = "_server_address";
-      BootFilename = "netboot.xyz.kpxe";
     };
   };
 
@@ -66,9 +65,6 @@ let
       [Network]
       Address=${ifi.ula}/64
       Address=${ifi.ipv4}/24
-
-      [DHCPServer]
-      BootServerAddress=${ifi.ipv4}
     ''
     + lib.concatMapStrings (host: ''
 

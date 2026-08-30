@@ -92,10 +92,5 @@ in
         PermitRootLogin = "no";
       };
     };
-
-    atftpd = {
-      enable = true;
-      root = "/var/lib/tftp";
-    };
   };
 }

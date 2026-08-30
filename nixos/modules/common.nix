@@ -96,6 +96,9 @@
   # Enable firmware updates when possible.
   hardware.enableRedistributableFirmware = true;
 
+  # Keep /boot bounded; nightly upgrades produce a generation a day.
+  boot.loader.systemd-boot.configurationLimit = 10;
+
   nix = {
     # Flakes only: no channels. Pin the nixpkgs registry entry and NIX_PATH to
     # the flake input so `nix shell nixpkgs#foo`, `nix-shell -p foo`, and comma
@@ -117,9 +120,12 @@
         "flakes"
       ];
       min-free = 500 * 1024 * 1024;
+    };
 
-      # Automatic store optimization.
-      auto-optimise-store = true;
+    # Automatic store optimization, after GC.
+    optimise = {
+      automatic = true;
+      dates = [ "04:30" ];
     };
   };
 
@@ -175,7 +181,6 @@
       extraGroups = [
         "dialout"
         "libvirtd"
-        "networkmanager"
         "wheel"
       ];
       hashedPasswordFile = config.sops.secrets."users/matt_password_hash".path;
