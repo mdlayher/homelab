@@ -48,6 +48,7 @@
     in
     {
       nixosConfigurations = {
+        monitnerr-1 = mkSystem "monitnerr-1";
         routnerr-3 = mkSystem "routnerr-3";
         servnerr-4 = mkSystem "servnerr-4";
       };

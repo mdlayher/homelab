@@ -3,6 +3,7 @@
 NixOS configurations for my machines, built from the `flake.nix` at the root
 of this repository. Individual machines have their own directories:
 
+- `monitnerr-1/`: Raspberry Pi 4 serial console server (consrv)
 - `routnerr-3/`: home router (WAN, VLANs, DHCP, DNS, IPv6 RAs, nftables)
 - `servnerr-4/`: home server (monitoring, hypervisor, NAS, development containers)
 

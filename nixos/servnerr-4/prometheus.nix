@@ -89,13 +89,11 @@ let
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 
-  # Machines not managed by this flake. alerts = false for PCs which are often
-  # off.
+  # Machines not managed by this flake (alerts = false for PCs which are often
+  # off), plus jobs which discover cannot find on managed machines.
   otherHosts = {
-    monitnerr-1.jobs = {
-      consrv.port = 9288;
-      node.port = 9100;
-    };
+    # consrv exposes its own metrics endpoint; see nixos/monitnerr-1/consrv.nix.
+    monitnerr-1.jobs.consrv.port = 9288;
     nerr-4 = {
       jobs = {
         apcupsd.port = 9162;

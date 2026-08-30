@@ -8,6 +8,7 @@ keys:
   - &matt age136z4kwkfsqlvaa7e6f5c79rzjstg4ktq2lw6zadv23c038jnafssp2mngs
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
   - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
+  - &monitnerr-1 age15k9ztajdwg8w98t297pml8zq0x37mm5wd85vhxvyqul6zmfpygvsl7akg6
 creation_rules:
   - path_regex: nixos/servnerr-4/secrets\.yaml$
     key_groups:
@@ -18,5 +19,6 @@ creation_rules:
     key_groups:
       - age:
           - *matt
+          - *monitnerr-1
           - *routnerr-3
           - *servnerr-4
