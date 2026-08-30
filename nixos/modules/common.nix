@@ -16,6 +16,9 @@
 
     # 2026 LTS kernel.
     kernelPackages = pkgs.linuxPackages_6_18;
+
+    # systemd-based initrd.
+    initrd.systemd.enable = true;
   };
 
   # Console configuration.
