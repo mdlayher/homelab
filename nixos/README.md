@@ -79,14 +79,16 @@ nix fmt
 # Bump inputs (also done weekly by .github/workflows/update-flake-lock.yml).
 nix flake update
 
-# Deploy servnerr-4 from any machine with this checkout (root SSH login is
-# allowed with matt's key), or on the machine itself.
-nixos-rebuild switch --flake .#servnerr-4 --target-host root@servnerr-4
-sudo nixos-rebuild switch --flake /home/matt/src/homelab#servnerr-4
+# Deploy from any machine with this checkout: builds locally, then activates
+# over SSH (as root on servnerr-4; as matt with a sudo prompt on the router).
+# Prefer `test` before `switch` on the router: it activates without a boot
+# entry, so a reboot reverts it.
+nixos/deploy.sh servnerr-4
+nixos/deploy.sh routnerr-3 test
+nixos/deploy.sh routnerr-3 switch
 
-# Deploy the router on the machine itself. Prefer `test` before `switch`: it
-# activates without a boot entry, so a reboot reverts it.
-sudo nixos-rebuild test --flake /home/matt/src/homelab#routnerr-3
+# Or on the machine itself.
+sudo nixos-rebuild switch --flake /home/matt/src/homelab#servnerr-4
 ```
 
 ## Upgrades

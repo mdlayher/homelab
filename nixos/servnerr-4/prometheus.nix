@@ -31,9 +31,12 @@ let
     in
     lib.toInt (lib.head (lib.head matches));
 
-  # Exporters which are probed through by other jobs and don't need scraping
-  # themselves.
-  probeExporters = [ "snmp" ];
+  # Exporters to skip: probers scraped through by other jobs, and renamed
+  # options which only emit a warning when read.
+  ignoredExporters = [
+    "snmp"
+    "unifi-poller"
+  ];
 
   # Scrape jobs discovered from every NixOS machine in this flake: each enabled
   # Prometheus exporter, plus the metrics endpoints of services which expose
@@ -50,7 +53,7 @@ let
         let
           r = builtins.tryEval (e.enable or false);
         in
-        r.success && r.value && !(lib.elem name probeExporters);
+        r.success && r.value && !(lib.elem name ignoredExporters);
     in
     {
       jobs =
