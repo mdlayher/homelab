@@ -141,10 +141,12 @@
     fstrim.enable = true;
     fwupd.enable = true;
 
-    # SSH keys only, wherever sshd is enabled.
+    # SSH keys only, wherever sshd is enabled, and never as root: deploys log
+    # in as matt and escalate with sudo.
     openssh.settings = {
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
     };
 
     prometheus.exporters = {

@@ -136,8 +136,4 @@ in
     # Enable the OpenSSH daemon.
     openssh.enable = true;
   };
-
-  # root SSH login with matt's key, for remote deploys and builds:
-  #   nixos-rebuild switch --flake .#servnerr-4 --target-host root@servnerr-4
-  users.users.root.openssh.authorizedKeys.keys = config.users.users.matt.openssh.authorizedKeys.keys;
 }

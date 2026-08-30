@@ -81,9 +81,6 @@ in
     lldpd.enable = true;
 
     # Enable the OpenSSH daemon.
-    openssh = {
-      enable = true;
-      settings.PermitRootLogin = "no";
-    };
+    openssh.enable = true;
   };
 }
