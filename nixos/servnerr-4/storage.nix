@@ -1,7 +1,6 @@
-{ lib, pkgs, ... }:
+{ config, lib, ... }:
 
 let
-  secrets = import ./lib/secrets.nix;
 
   # Creates snapshots of zpool source using a zrepl snap job.
   snap = (
@@ -159,8 +158,12 @@ in
         fsType = "zfs";
       });
 
-  # Don't mount secondary, just import it on boot.
-  boot.zfs.extraPools = [ "secondary" ];
+  boot.zfs = {
+    # Don't mount secondary, just import it on boot.
+    extraPools = [ "secondary" ];
+    # The root filesystem is ext4; never force-import pools.
+    forceImportRoot = false;
+  };
 
   nixpkgs = {
     # Only allow certain unfree packages.
@@ -188,19 +191,12 @@ in
         interval = "monthly";
       };
 
-      # ZED configuration.
+      # ZED configuration. Secret settings are injected via the sops template
+      # below rather than here, so they don't end up in the Nix store.
       zed = {
         enableMail = false;
-        settings = with secrets.zfs; {
-          # Send event notifications via Pushbullet.
-          ZED_PUSHBULLET_ACCESS_TOKEN = pushbullet.access_token;
-
-          # Send event notifications via Pushover.
-          #
-          # TODO(mdlayher): it seems NixOS 21.11 ZFS does not support pushover
-          # yet; we'll use pushbullet for now and reevaluate later.
-          # ZED_PUSHOVER_TOKEN = pushover.token;
-          # ZED_PUSHOVER_USER = pushover.user_key;
+        settings = {
+          # Send event notifications to Discord; see sops.templates."zed.rc".
 
           # Verify integrity via scrub after resilver.
           ZED_SCRUB_AFTER_RESILVER = true;
@@ -242,4 +238,22 @@ in
       };
     };
   };
+
+  # ZED reads notification secrets from zed.rc, which has no separate secrets
+  # file mechanism. Render the module-generated zed.rc plus the secret webhook
+  # into a sops template and point /etc/zfs/zed.d/zed.rc at it.
+  #
+  # ZED has no Discord backend, but Discord webhooks accept Slack-format
+  # payloads at "<webhook_url>/slack", which is what the stored URL includes.
+  sops = {
+    secrets."zfs/discord_webhook_url" = { };
+    templates."zed.rc" = {
+      content = ''
+        ${config.environment.etc."zfs/zed.d/zed.rc".text}
+        ZED_SLACK_WEBHOOK_URL="${config.sops.placeholder."zfs/discord_webhook_url"}"
+      '';
+      restartUnits = [ "zfs-zed.service" ];
+    };
+  };
+  environment.etc."zfs/zed.d/zed.rc".source = lib.mkForce config.sops.templates."zed.rc".path;
 }

@@ -1,27 +1,26 @@
-{ lib, pkgs, ... }:
+{ config, pkgs, ... }:
 
-let
-  unstable = import <nixos-unstable-small> { };
-  vars = import ./lib/vars.nix;
-
-in
 {
   imports = [
-    # Hardware and base system configuration.
+    # Hardware and base system configuration. The shared base system lives in
+    # nixos/modules/ and is imported by flake.nix.
     ./hardware-configuration.nix
-    ./lib/system.nix
     ./networking.nix
     ./storage.nix
 
     # Service configuration.
     ./containers.nix
     ./prometheus.nix
-
-    # Unstable or out-of-tree modules.
-    # ./lib/modules/zedhook.nix
   ];
 
   system.stateVersion = "22.11";
+
+  # Secrets for this machine, encrypted with sops. Edit with:
+  #   sops nixos/servnerr-4/secrets.yaml
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets."grafana/secret_key".owner = "grafana";
+  };
 
   boot = {
     # Use the systemd-boot EFI boot loader.
@@ -57,7 +56,7 @@ in
   powerManagement.cpuFreqGovernor = "ondemand";
 
   # Packages specific to this machine. The base package set is defined in
-  # lib/system.nix.
+  # nixos/modules/common.nix.
   environment.systemPackages = with pkgs; [
     flac
     mkvtoolnix-cli
@@ -82,8 +81,15 @@ in
 
     grafana = {
       enable = true;
-      # Bind to all interfaces.
-      settings.server.http_addr = "";
+      settings = {
+        # Bind to all interfaces.
+        server.http_addr = "";
+
+        # NixOS 26.05 no longer ships a default secret_key. Grafana was reset
+        # (fresh /var/lib/grafana) when switching to the flake, so this key is
+        # a new random value stored in sops.
+        security.secret_key = "$__file{${config.sops.secrets."grafana/secret_key".path}}";
+      };
     };
 
     # Enable the OpenSSH daemon.

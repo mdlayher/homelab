@@ -18,18 +18,15 @@
           isReadOnly = true;
         };
       };
-      config =
-        { ... }:
-        let
-          unstable = import <nixos-unstable-small> { config.allowUnfree = true; };
-        in
-        {
-          system.stateVersion = "21.11";
-          services.plex = {
-            enable = true;
-            package = unstable.plex;
-          };
+      # Note: pkgs here is the host's package set, so pkgs.unstable comes from
+      # the nixpkgs-unstable flake input.
+      config = {
+        system.stateVersion = "21.11";
+        services.plex = {
+          enable = true;
+          package = pkgs.unstable.plex;
         };
+      };
     };
   };
 

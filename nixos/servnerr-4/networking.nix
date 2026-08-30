@@ -1,9 +1,5 @@
-{ lib, ... }:
+{ pkgs, ... }:
 
-let
-  unstable = import <nixos-unstable-small> { };
-
-in
 {
   networking = {
     # Host name and ID.
@@ -20,7 +16,7 @@ in
 
   services.tailscale = {
     enable = true;
-    package = unstable.tailscale;
+    package = pkgs.unstable.tailscale;
     interfaceName = "ts0";
   };
 
