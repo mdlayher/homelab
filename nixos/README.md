@@ -79,10 +79,10 @@ nix fmt
 # Bump inputs (also done weekly by .github/workflows/update-flake-lock.yml).
 nix flake update
 
-# Deploy from any machine with this checkout: builds locally, then activates
-# over SSH (as root on servnerr-4; as matt with a sudo prompt on the router).
-# Prefer `test` before `switch` on the router: it activates without a boot
-# entry, so a reboot reverts it.
+# Deploy from any machine with this checkout: evaluates locally, then builds
+# and activates over SSH as matt with a sudo prompt. Prefer `test` before
+# `switch` on the router: it activates without a boot entry, so a reboot
+# reverts it.
 nixos/deploy.sh servnerr-4
 nixos/deploy.sh routnerr-3 test
 nixos/deploy.sh routnerr-3 switch
