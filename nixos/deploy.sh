@@ -24,6 +24,10 @@ case $host in
   *) target=(--target-host "root@$host") ;;
 esac
 
+# Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
+export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}experimental-features = nix-command flakes"
+
 cd "$(dirname "$0")/.."
 exec nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
   "$action" --flake ".#$host" "${target[@]}" "$@"
