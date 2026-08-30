@@ -15,13 +15,30 @@ let
   inventory = config.homelab.inventory;
   dev0 = inventory.interfaces.dev0;
 
-  # The host's decrypted password hash for matt, shared into each container so
-  # sudo works with the same password.
-  passwordHash = "/run/host-secrets/matt_password_hash";
+  # The user inside the containers. The host's matt account provides its SSH
+  # key and password hash, but the name is mdlayher going forward.
+  user = "mdlayher";
+  home = "/home/${user}";
+  src = "${home}/src";
+  hostUser = config.users.users.matt;
+
+  # The host's decrypted password hash, shared into each container so sudo
+  # works with the same password.
+  passwordHash = "/run/host-secrets/password_hash";
+
+  # Repositories cloned into ~/src on linuxdev.
+  repos = [ "bgpdev" ];
+
+  # Shell dotfiles from nixos/dotfiles, packaged into fish's vendor
+  # directories, which fish searches from the system profile.
+  dotfiles = pkgs.runCommand "dotfiles" { } ''
+    install -Dm444 -t $out/share/fish/vendor_conf.d ${../dotfiles/fish/conf.d}/*.fish
+    install -Dm444 -t $out/share/fish/vendor_functions.d ${../dotfiles/fish/functions}/*.fish
+  '';
 
   # Common configuration for a container on dev0: addresses from the router
   # (DHCPv4 plus SLAAC with a fixed, MAC-free interface identifier matching
-  # the inventory's DNS record), SSH for matt, and a few tools.
+  # the inventory's DNS record), SSH for the user, and a few tools.
   #
   # Note: pkgs is the host's package set, so pkgs.unstable comes from the
   # nixpkgs-unstable flake input.
@@ -55,10 +72,42 @@ let
       "flakes"
     ];
 
-    programs.fish.enable = true;
+    programs = {
+      fish = {
+        enable = true;
+        # Shell history via atuin, with the up arrow left to fish.
+        interactiveShellInit = "${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source";
+      };
+      bash.completion.enable = true;
+    };
+
+    environment = {
+      # terminfo for terminals which SSH in (e.g. xterm-ghostty).
+      enableAllTerminfo = true;
+
+      # Put ~/bin in PATH.
+      homeBinInPath = true;
+      variables.EDITOR = "nano";
+    };
+
+    # Standard directories in the user's home.
+    systemd.tmpfiles.rules = [
+      "d ${home}/bin 0755 ${user} users -"
+      "d ${home}/tmp 0755 ${user} users -"
+    ];
 
     services = {
       resolved.enable = true;
+
+      # Same monitoring as the machines; scraped by Prometheus on the host.
+      prometheus.exporters.node = {
+        enable = true;
+        enabledCollectors = [
+          "ethtool"
+          "systemd"
+        ];
+        openFirewall = true;
+      };
 
       # SSH keys only, never as root.
       openssh = {
@@ -73,18 +122,23 @@ let
 
     users = {
       mutableUsers = false;
-      users.matt = {
+      users.${user} = {
         isNormalUser = true;
         uid = 1000;
         extraGroups = [ "wheel" ];
         shell = pkgs.fish;
         hashedPasswordFile = passwordHash;
-        openssh.authorizedKeys.keys = config.users.users.matt.openssh.authorizedKeys.keys;
+        openssh.authorizedKeys.keys = hostUser.openssh.authorizedKeys.keys;
       };
     };
 
     environment.systemPackages = with pkgs; [
+      dotfiles
+
+      atuin
+      bashInteractive
       bind
+      byobu
       curl
       fish
       git
@@ -167,18 +221,116 @@ in
               interfaceName = "ts0";
             };
 
+            # ~/src exists regardless of whether repositories have been cloned.
+            systemd.tmpfiles.rules = [ "d ${src} 0755 ${user} users -" ];
+
+            # GOPATH in the home directory, so `go install` lands in ~/bin.
+            environment.variables.GOPATH = home;
+
+            # Re-run the clone job hourly so additions to repos appear without
+            # a restart; the boot-time run comes from claude-remote-control's
+            # ordering below.
+            systemd.timers.dev-repos = {
+              wantedBy = [ "timers.target" ];
+              timerConfig.OnCalendar = "hourly";
+            };
+
+            systemd.services = {
+              # Clone repositories into ~/src if they aren't there yet, using
+              # gh's credentials. Skipped until `gh auth login` has been run as
+              # the user.
+              dev-repos = {
+                description = "Clone development repositories";
+                after = [ "network-online.target" ];
+                wants = [ "network-online.target" ];
+                unitConfig.ConditionPathExists = "${home}/.config/gh/hosts.yml";
+                path = [
+                  pkgs.gh
+                  pkgs.git
+                ];
+                serviceConfig = {
+                  Type = "oneshot";
+                  User = user;
+                  WorkingDirectory = home;
+                };
+                script = lib.concatMapStrings (repo: ''
+                  if [ ! -d ${src}/${repo} ]; then
+                    gh repo clone mdlayher/${repo} ${src}/${repo}
+                  fi
+                '') repos;
+              };
+
+              # Claude Code server mode, so the Claude app can attach sessions
+              # via Remote Control. Claude insists on a terminal and a consent
+              # prompt, so it runs in a detached tmux session on its own tmux
+              # server, out of byobu's reach (attach with `tmux -L claude
+              # attach`), and the prompt is answered automatically. Starts once `claude auth login` has been run as
+              # the user; sessions start in ~/src, since Claude Code never
+              # trusts a home directory itself.
+              claude-remote-control = {
+                description = "Claude Code Remote Control";
+                wantedBy = [ "multi-user.target" ];
+                after = [
+                  "network-online.target"
+                  "dev-repos.service"
+                ];
+                wants = [
+                  "network-online.target"
+                  "dev-repos.service"
+                ];
+                unitConfig.ConditionPathExists = "${home}/.claude/.credentials.json";
+                path = [
+                  pkgs.tmux
+                  pkgs.unstable.claude-code
+                ];
+                environment.TERM = "xterm-256color";
+                serviceConfig = {
+                  # The tmux server is the main process; the unit ends and
+                  # restarts when Claude exits and the session closes.
+                  Type = "forking";
+                  User = user;
+                  WorkingDirectory = src;
+                  ExecStart = "${pkgs.tmux}/bin/tmux -L claude new-session -d -s claude claude remote-control --name linuxdev";
+                  ExecStop = "${pkgs.tmux}/bin/tmux -L claude kill-server";
+                  Restart = "always";
+                  RestartSec = "10s";
+                };
+                # Answer the consent prompt if it appears.
+                postStart = ''
+                  for _ in $(seq 30); do
+                    if tmux -L claude capture-pane -p -t claude 2>/dev/null | grep -q "Enable Remote Control"; then
+                      tmux -L claude send-keys -t claude y
+                      break
+                    fi
+                    sleep 1
+                  done
+                '';
+              };
+            };
+
             environment.systemPackages = with pkgs; [
               # Claude Code and its sandbox dependencies come from unstable to track
               # releases closely.
               unstable.claude-code
 
-              # Go toolchain.
+              # Go toolchain and tooling; go-tools provides staticcheck.
               unstable.go_1_27
+              unstable.gopls
               gofumpt
               go-tools
 
               gh
             ];
+
+            # Let the VS Code Remote-SSH server, which VS Code downloads as a
+            # prebuilt dynamically linked binary, run on NixOS.
+            programs.nix-ld = {
+              enable = true;
+              libraries = with pkgs; [
+                stdenv.cc.cc.lib
+                zlib
+              ];
+            };
           }
         ]
         {
@@ -197,8 +349,8 @@ in
               configFile = frrConfigFile;
             };
 
-            # vtysh access for matt.
-            users.users.matt.extraGroups = [ "frrvty" ];
+            # vtysh access for the user.
+            users.users.${user}.extraGroups = [ "frrvty" ];
           }
         ]
         {

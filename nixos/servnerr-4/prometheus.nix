@@ -38,15 +38,13 @@ let
     "unifi-poller"
   ];
 
-  # Scrape jobs discovered from every NixOS machine in this flake: each enabled
-  # Prometheus exporter, plus the metrics endpoints of services which expose
-  # their own. Hosts running sshd get an SSH banner probe, and hosts sending
-  # router advertisements are routers for alerting purposes.
-  nixosHosts = lib.mapAttrs (
-    _: system:
+  # Scrape jobs discovered from a NixOS configuration: each enabled Prometheus
+  # exporter, plus the metrics endpoints of services which expose their own.
+  # Hosts running sshd get an SSH banner probe, and hosts sending router
+  # advertisements are routers for alerting purposes.
+  discover =
+    cfg:
     let
-      cfg = system.config;
-
       # Removed exporters throw when read, so probe them with tryEval.
       enabled =
         name: e:
@@ -71,8 +69,25 @@ let
         };
       ssh = cfg.services.openssh.enable;
       router = cfg.services.corerad.enable;
-    }
-  ) inputs.self.nixosConfigurations;
+    };
+
+  # Every NixOS machine in this flake, by host name.
+  nixosHosts = lib.mapAttrs (_: system: discover system.config) inputs.self.nixosConfigurations;
+
+  # Containers on those machines which have a dev0 inventory entry, by their
+  # DNS name. Other containers share their host's network and need nothing.
+  inherit (config.homelab.inventory) domain;
+  containerHosts = lib.listToAttrs (
+    lib.concatMap (
+      system:
+      lib.concatMap (
+        name:
+        lib.optional (config.homelab.inventory.hosts ? "${name}.dev") (
+          lib.nameValuePair "${name}.dev.${domain}" (discover system.config.containers.${name}.config)
+        )
+      ) (lib.attrNames system.config.containers)
+    ) (lib.attrValues inputs.self.nixosConfigurations)
+  );
 
   # Machines not managed by this flake. alerts = false for PCs which are often
   # off.
@@ -91,7 +106,7 @@ let
     };
   };
 
-  hosts = lib.recursiveUpdate nixosHosts otherHosts;
+  hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
 
   # Blackbox HTTP probe targets: local service health endpoints and devices.
   probes = [
