@@ -19,8 +19,11 @@ shift $(( $# >= 2 ? 2 : 1 ))
 
 # root SSH login is only allowed where it's needed for unattended deploys;
 # elsewhere log in as matt and escalate with sudo, prompting for the password.
+# Paths built locally are unsigned and matt is not a trusted user there, so
+# also build on the machine itself: only derivations and sources are copied,
+# and everything else comes from the binary cache.
 case $host in
-  routnerr-3) target=(--target-host "matt@$host" --sudo --ask-sudo-password) ;;
+  routnerr-3) target=(--build-host "matt@$host" --target-host "matt@$host" --sudo --ask-sudo-password) ;;
   *) target=(--target-host "root@$host") ;;
 esac
 
