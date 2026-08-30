@@ -14,8 +14,8 @@
     # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
     kernelModules = [ "drivetemp" ];
 
-    # 2025 LTS kernel.
-    kernelPackages = pkgs.linuxPackages_6_12;
+    # 2026 LTS kernel.
+    kernelPackages = pkgs.linuxPackages_6_18;
   };
 
   # Console configuration.

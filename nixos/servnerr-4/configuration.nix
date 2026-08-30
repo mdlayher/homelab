@@ -30,10 +30,10 @@
     };
 
     # Enable extra filesystems.
-    supportedFilesystems = [
-      "ntfs"
-      "zfs"
-    ];
+    supportedFilesystems = {
+      ntfs = true;
+      zfs = true;
+    };
 
     kernelParams = [
       # Enable serial console.
@@ -52,8 +52,10 @@
     };
   };
 
-  # Scale down CPU frequency when load is low.
-  powerManagement.cpuFreqGovernor = "ondemand";
+  # The Ryzen 3900X runs amd-pstate in EPP mode, which only offers the
+  # performance and powersave governors; powersave with the default EPP scales
+  # down when load is low.
+  powerManagement.cpuFreqGovernor = "powersave";
 
   # Packages specific to this machine. The base package set is defined in
   # nixos/modules/common.nix.
