@@ -200,6 +200,23 @@ in
     nano.enable = true;
   };
 
+  # Let matt trigger an immediate rebuild from the flake on GitHub without a
+  # password, so agents and CI can roll out merged changes on demand. This only
+  # changes deploy timing, not trust: main already becomes root on every
+  # machine nightly via system.autoUpgrade below. Everything else sudo still
+  # prompts, including deploy.sh's ad-hoc activations.
+  security.sudo.extraRules = lib.mkIf isHost [
+    {
+      users = [ "matt" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/systemctl start nixos-upgrade.service";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   services = {
     # SSH keys only, wherever sshd is enabled, and never as root: deploys log
     # in as matt and escalate with sudo.
