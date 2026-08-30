@@ -25,14 +25,19 @@
       ...
     }@inputs:
     let
+      # Network inventory structure shared by all machines; see nixos/inventory/.
+      inventory = import ./nixos/inventory;
+
       # Builds a NixOS system for the machine defined in nixos/<name>.
       mkSystem =
         name:
         nixpkgs.lib.nixosSystem {
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs inventory; };
           modules = [
             ./nixos/modules/common.nix
             ./nixos/modules/unstable.nix
+            ./nixos/modules/inventory.nix
+            ./nixos/modules/tailscale.nix
             sops-nix.nixosModules.sops
             ./nixos/${name}/configuration.nix
             { networking.hostName = name; }
@@ -43,11 +48,8 @@
     in
     {
       nixosConfigurations = {
+        routnerr-3 = mkSystem "routnerr-3";
         servnerr-4 = mkSystem "servnerr-4";
-
-        # TODO(mdlayher): routnerr-3 is still deployed from channels and
-        # nixos/routnerr-3/configuration.nix. Migrate it here once servnerr-4
-        # has settled.
       };
 
       # nix fmt

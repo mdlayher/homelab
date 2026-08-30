@@ -1,13 +1,45 @@
-{ lib, ... }:
+{ config, lib, ... }:
 
 let
-  vars = import ./lib/vars.nix;
+  inventory = config.homelab.inventory;
 
+  # Internal DNS records for each host and the router itself, as a hosts file
+  # rendered from the inventory secrets. Hosts without a known IPv6 address get
+  # an A record only.
+  hostsFile = lib.concatMapStrings (
+    host:
+    ''
+      ${host.ipv4} ${host.name}.${inventory.domain}
+      ${host.ipv4} ${host.name}.ipv4.${inventory.domain}
+    ''
+    + lib.optionalString (host.ula != null) ''
+      ${host.ula} ${host.name}.${inventory.domain}
+      ${host.ula} ${host.name}.ipv6.${inventory.domain}
+    ''
+  ) (lib.attrValues inventory.hosts ++ [ router ]);
+
+  router = {
+    name = config.networking.hostName;
+    inherit (inventory.interfaces.lan0) ipv4 ula;
+  };
+
+  credential = "hosts";
 in
 {
+  sops.templates."coredns-hosts" = {
+    content = hostsFile;
+    restartUnits = [ "coredns.service" ];
+  };
+
+  # coredns runs with DynamicUser, so hand it the hosts file via systemd
+  # credentials.
+  systemd.services.coredns.serviceConfig.LoadCredential = [
+    "${credential}:${config.sops.templates."coredns-hosts".path}"
+  ];
+
   services.coredns = {
     enable = true;
-    config = with vars; ''
+    config = ''
       # Root zone.
       . {
         cache 3600 {
@@ -22,39 +54,8 @@ in
       }
 
       # Internal zone.
-      ${domain} {
-        hosts {
-          ${
-            # Write out internal DNS records for each of the configured hosts.
-            # If the host does not have an IPv6 ULA address, omit it.
-            lib.concatMapStrings
-              (host: ''
-                ${host.ipv4} ${host.name}.${domain}
-                ${host.ipv4} ${host.name}.ipv4.${domain}
-
-                ${
-                  if host.ipv6.ula != "" then
-                    ''
-                      ${host.ipv6.ula} ${host.name}.${domain}
-                      ${host.ipv6.ula} ${host.name}.ipv6.${domain}
-                    ''
-                  else
-                    ""
-                }
-              '')
-              (
-                hosts.servers
-                ++ hosts.infra
-                ++ [
-                  {
-                    name = "routnerr-3";
-                    ipv4 = interfaces.lan0.ipv4;
-                    ipv6.ula = interfaces.lan0.ipv6.ula;
-                  }
-                ]
-              )
-          }
-        }
+      ${inventory.domain} {
+        hosts /run/credentials/coredns.service/${credential}
       }
     '';
   };

@@ -1,28 +1,26 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
-  vars = import ./lib/vars.nix;
-
+  inventory = config.homelab.inventory;
 in
 {
   imports = [
-    # Hardware and base system configuration.
+    # Hardware and base router networking. The shared base system lives in
+    # nixos/modules/ and is imported by flake.nix.
     ./hardware-configuration.nix
-    ./lib/system.nix
-
-    # Base router networking.
     ./networking.nix
     ./nftables.nix
 
     # Networking daemons.
     ./coredns.nix
     ./corerad.nix
-    ./caddy.nix
   ];
+
+  system.stateVersion = "23.05";
+
+  # Secrets for this machine, encrypted with sops. Edit with:
+  #   sops nixos/routnerr-3/secrets.yaml
+  sops.defaultSopsFile = ./secrets.yaml;
 
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
   boot.kernelParams = [ "console=ttyS0,115200n8" ];
@@ -35,9 +33,6 @@ in
       Restart = "always";
     };
   };
-
-  system.copySystemConfiguration = true;
-  system.stateVersion = "23.05";
 
   boot = {
     kernel = {
@@ -58,16 +53,17 @@ in
         "net.ipv6.conf.wan1.autoconf" = 1;
       };
     };
+
+    # Use the systemd-boot EFI boot loader.
+    loader = {
+      systemd-boot.enable = true;
+      efi.canTouchEfiVariables = true;
+    };
   };
 
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
   # Packages specific to this machine. The base package set is defined in
-  # lib/system.nix.
+  # nixos/modules/common.nix.
   environment.systemPackages = with pkgs; [
-    # Stable packages.
     bind
   ];
 
@@ -76,10 +72,10 @@ in
     # Google Home and Chromecast.
     avahi = {
       enable = true;
-      allowInterfaces = with vars.interfaces; [
-        "${mgmt0.name}"
-        "${lan0.name}"
-        "${iot0.name}"
+      allowInterfaces = with inventory.interfaces; [
+        mgmt0.name
+        lan0.name
+        iot0.name
       ];
       ipv4 = true;
       ipv6 = true;

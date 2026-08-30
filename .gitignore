@@ -3,4 +3,3 @@
 secrets.nix
 gokrazy/monitnerr-1/config.json
 obs/profiles/Programming/service.json
-nixos/lib/vargen/vargen

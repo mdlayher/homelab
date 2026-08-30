@@ -1,7 +1,12 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
-  vars = import ./lib/vars.nix;
+  inventory = config.homelab.inventory;
 
   # Port definitions.
   ports = {
@@ -10,8 +15,6 @@ let
     dhcp4_client = "68";
     dhcp6_client = "546";
     dhcp6_server = "547";
-    http = "80";
-    https = "443";
     mdns = "5353";
     # Different tailscaled ports for different devices to avoid messing with
     # poking nftables firewall holes with miniupnpd or similar.
@@ -29,14 +32,67 @@ let
   all_wans = "wan0, wan1";
 
   # LAN interfaces, segmented into trusted, limited, and untrusted groups.
-  trusted_lans = with vars.interfaces; [
+  trusted_lans = with inventory.interfaces; [
     mgmt0
     lan0
-    lab0
     { name = "ts0"; }
   ];
-  limited_lans = with vars.interfaces; [ guest0 ];
-  untrusted_lans = with vars.interfaces; [ iot0 ];
+  limited_lans = with inventory.interfaces; [ guest0 ];
+  untrusted_lans = with inventory.interfaces; [ iot0 ];
+
+  # LAN hosts which accept inbound Tailscale traffic from the WAN, forwarded
+  # by IPv4 DNAT and IPv6 routing.
+  tailscale_hosts = with inventory.hosts; [
+    {
+      host = nerr-4;
+      port = ports.tailscale.desktop;
+      comment = "desktop";
+    }
+    {
+      host = psframework;
+      port = ports.tailscale.work_laptop;
+      comment = "work laptop";
+    }
+  ];
+
+  # Addresses are secrets from the inventory, so rules reference named sets
+  # which are populated at activation time from a rendered file. Empty sets
+  # fail closed.
+  setName = prefix: name: "${prefix}_${lib.replaceStrings [ "-" "." ] [ "_" "_" ] name}";
+  routerSet = ifi: setName "router" ifi.name;
+  tailscaleSet = ts: setName "tailscale" ts.host.name;
+
+  sets = ''
+    ${lib.concatMapStrings (ifi: ''
+      set ${routerSet ifi}_v4 {
+        type ipv4_addr
+      }
+      set ${routerSet ifi}_v6 {
+        type ipv6_addr
+      }
+    '') (limited_lans ++ untrusted_lans)}
+
+    ${lib.concatMapStrings (ts: ''
+      set ${tailscaleSet ts}_v4 {
+        type ipv4_addr
+      }
+      set ${tailscaleSet ts}_v6 {
+        type ipv6_addr
+      }
+    '') tailscale_hosts}
+  '';
+
+  # Set elements rendered from the inventory secrets.
+  elements =
+    lib.concatMapStrings (ifi: ''
+      add element inet filter ${routerSet ifi}_v4 { ${ifi.ipv4} }
+      add element inet filter ${routerSet ifi}_v6 { ${ifi.lla}, ${ifi.ula} }
+    '') (limited_lans ++ untrusted_lans)
+    + lib.concatMapStrings (ts: ''
+      add element inet filter ${tailscaleSet ts}_v4 { ${ts.host.ipv4} }
+      add element inet filter ${tailscaleSet ts}_v6 { ${ts.host.gua} }
+      add element ip nat tailscale_dnat { ${ts.port} : ${ts.host.ipv4} }
+    '') tailscale_hosts;
 
   # ICMP filtering.
   icmp_rules = ''
@@ -60,12 +116,38 @@ let
     } counter accept
   '';
 
+  nft = "${pkgs.nftables}/bin/nft";
+  elementsFile = config.sops.templates."nftables-inventory.conf".path;
+
 in
 {
+  sops.templates."nftables-inventory.conf" = {
+    content = elements;
+    restartUnits = [ "nftables-inventory.service" ];
+  };
+
+  # Load inventory set elements after the ruleset is (re)loaded, since loading
+  # the ruleset flushes all sets.
+  systemd.services.nftables-inventory = {
+    description = "nftables inventory set elements";
+    after = [ "nftables.service" ];
+    requires = [ "nftables.service" ];
+    partOf = [ "nftables.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${nft} -f ${elementsFile}";
+    };
+  };
+  systemd.services.nftables.serviceConfig.ExecReload = lib.mkAfter [ "${nft} -f ${elementsFile}" ];
+
   networking.nftables = {
     enable = true;
     ruleset = ''
       table inet filter {
+        ${sets}
+
         # Incoming connections to router itself.
         chain input {
           type filter hook input priority 0
@@ -111,12 +193,6 @@ in
           # Default route via NDP.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-advert counter accept
 
-          # router TCP
-          tcp dport {
-            ${ports.http},
-            ${ports.https},
-          } counter accept comment "router WAN TCP"
-
           # router UDP
           udp dport {
             ${ports.tailscale.router},
@@ -136,12 +212,8 @@ in
 
           # Drop traffic trying to cross VLANs or broadcast.
           ${lib.concatMapStrings (ifi: ''
-            iifname ${ifi.name} ip daddr != ${ifi.ipv4} counter drop comment "${ifi.name} traffic leaving IPv4 VLAN"
-
-            iifname ${ifi.name} ip6 daddr != {
-              ${ifi.ipv6.lla},
-              ${ifi.ipv6.ula},
-            } counter drop comment "${ifi.name} traffic leaving IPv6 VLAN"
+            iifname ${ifi.name} ip daddr != @${routerSet ifi}_v4 counter drop comment "${ifi.name} traffic leaving IPv4 VLAN"
+            iifname ${ifi.name} ip6 daddr != @${routerSet ifi}_v6 counter drop comment "${ifi.name} traffic leaving IPv6 VLAN"
           '') (limited_lans ++ untrusted_lans)}
 
           # Allow only necessary router-provided services.
@@ -234,11 +306,10 @@ in
           ct state invalid counter drop
 
           # Tailscale forwarding.
-          ip daddr ${vars.desktop_ipv4} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv4 Tailscale"
-          ip6 daddr ${vars.desktop_ipv6} udp dport ${ports.tailscale.desktop} counter accept comment "desktop IPv6 Tailscale"
-
-          ip daddr ${vars.work_laptop_ipv4} udp dport ${ports.tailscale.work_laptop} counter accept comment "work laptop IPv4 Tailscale"
-          ip6 daddr ${vars.work_laptop_ipv6} udp dport ${ports.tailscale.work_laptop} counter accept comment "work laptop IPv6 Tailscale"
+          ${lib.concatMapStrings (ts: ''
+            ip daddr @${tailscaleSet ts}_v4 udp dport ${ts.port} counter accept comment "${ts.comment} IPv4 Tailscale"
+            ip6 daddr @${tailscaleSet ts}_v6 udp dport ${ts.port} counter accept comment "${ts.comment} IPv6 Tailscale"
+          '') tailscale_hosts}
 
           counter reject
         }
@@ -252,6 +323,11 @@ in
       }
 
       table ip nat {
+        # Inbound UDP port to LAN host, for Tailscale.
+        map tailscale_dnat {
+          type inet_service : ipv4_addr
+        }
+
         chain prerouting {
           type nat hook prerouting priority 0
 
@@ -263,8 +339,7 @@ in
         }
 
         chain prerouting_wans {
-          udp dport ${ports.tailscale.desktop} dnat ${vars.desktop_ipv4} comment "desktop UDPv4 DNAT"
-          udp dport ${ports.tailscale.work_laptop} dnat ${vars.work_laptop_ipv4} comment "work laptop UDPv4 DNAT"
+          dnat to udp dport map @tailscale_dnat comment "Tailscale UDPv4 DNAT"
 
           accept
         }

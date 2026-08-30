@@ -1,14 +1,27 @@
 # sops configuration: which age recipients may decrypt each secrets file.
 #
 # - matt: admin key in ~/.config/sops/age/keys.txt on nerr-4, used to edit secrets
-# - servnerr-4: derived from /etc/ssh/ssh_host_ed25519_key.pub via ssh-to-age,
-#   used by sops-nix to decrypt secrets at activation time
+# - servnerr-4, routnerr-3: derived from each machine's
+#   /etc/ssh/ssh_host_ed25519_key.pub via ssh-to-age, used by sops-nix to
+#   decrypt secrets at activation time
 keys:
   - &matt age136z4kwkfsqlvaa7e6f5c79rzjstg4ktq2lw6zadv23c038jnafssp2mngs
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
+  - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
 creation_rules:
   - path_regex: nixos/servnerr-4/secrets\.yaml$
     key_groups:
       - age:
           - *matt
+          - *servnerr-4
+  - path_regex: nixos/routnerr-3/secrets\.yaml$
+    key_groups:
+      - age:
+          - *matt
+          - *routnerr-3
+  - path_regex: nixos/inventory/secrets\.yaml$
+    key_groups:
+      - age:
+          - *matt
+          - *routnerr-3
           - *servnerr-4

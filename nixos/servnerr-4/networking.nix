@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
   networking = {
@@ -14,23 +14,6 @@
     firewall.enable = false;
   };
 
-  services.tailscale = {
-    enable = true;
-    package = pkgs.unstable.tailscale;
-    interfaceName = "ts0";
-  };
-
-  # Tailscale readiness and DNS tweaks.
-  systemd.network.wait-online.ignoredInterfaces = [ "ts0" ];
-
-  systemd.services.tailscaled = {
-    after = [
-      "network-online.target"
-      "systemd-resolved.service"
-    ];
-    wants = [ "network-online.target" ];
-  };
-
   systemd.network = {
     enable = true;
 
@@ -43,8 +26,13 @@
       matchConfig.Name = "mgmt0";
       networkConfig.DHCP = "ipv4";
       dhcpV4Config.ClientIdentifier = "mac";
-      # Only accept DNS search on this interface.
-      ipv6AcceptRAConfig.UseDomains = true;
+      ipv6AcceptRAConfig = {
+        # Only accept DNS search on this interface.
+        UseDomains = true;
+        # Use a fixed, MAC-free interface identifier for SLAAC addresses so
+        # that the router's DNS records (see nixos/inventory/) are predictable.
+        Token = "static:::10";
+      };
     };
 
     # 10GbE management LAN with bridge.

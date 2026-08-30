@@ -1,18 +1,21 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
-  unstable = import <nixos-unstable-small> { };
-  vars = import ./lib/vars.nix;
-
+  inventory = config.homelab.inventory;
 in
 {
   services.corerad = {
     enable = true;
 
     # Enable as necessary to get development builds of CoreRAD.
-    package = unstable.corerad;
+    package = pkgs.unstable.corerad;
 
-    settings = with vars.interfaces; {
+    settings = with inventory.interfaces; {
       # Base non-interface configuration.
       debug = {
         # No risk exposing these off-host because of the WAN firewall.
@@ -32,7 +35,7 @@ in
         ]
 
         # Downstream advertising interfaces.
-        ++ lib.forEach [ mgmt0 lab0 lan0 guest0 iot0 ] (
+        ++ lib.forEach [ mgmt0 lan0 guest0 iot0 ] (
           ifi:
           {
             name = ifi.name;
@@ -62,17 +65,10 @@ in
               }
             ];
           }
-          // (
-            # Configure DNS search on some trusted LANs, or omit otherwise.
-            #
-            # TODO(mdlayher): probably rename to ifi.trusted.
-            if ifi.internal_dns then
-              {
-                dnssl = [ { domain_names = [ vars.domain ]; } ];
-              }
-            else
-              { }
-          )
+          # Configure DNS search on trusted LANs, or omit otherwise.
+          // lib.optionalAttrs ifi.trusted {
+            dnssl = [ { domain_names = [ inventory.domain ]; } ];
+          }
         );
     };
   };
