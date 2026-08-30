@@ -27,8 +27,11 @@ let
   # works with the same password.
   passwordHash = "/run/host-secrets/password_hash";
 
-  # Repositories cloned into ~/src on linuxdev.
-  repos = [ "bgpdev" ];
+  # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
+  repos = [
+    "bgpdev"
+    "homelab"
+  ];
 
   # Initial herdr configuration, copied into the user's config directory on
   # first boot only so that later edits win. Updates come from nixpkgs, not
@@ -174,7 +177,7 @@ in
             ];
 
             # Re-run the clone job hourly so additions to repos appear without
-            # a restart; the boot-time run comes from claude-remote-control's
+            # a restart; the boot-time run comes from herdr-server's
             # ordering below.
             systemd.timers.dev-repos = {
               wantedBy = [ "timers.target" ];
@@ -182,9 +185,10 @@ in
             };
 
             systemd.services = {
-              # Clone repositories into ~/src if they aren't there yet, using
-              # gh's credentials. Skipped until `gh auth login` has been run as
-              # the user.
+              # Clone repositories into ~/src if they aren't there yet, and
+              # fast-forward existing ones from GitHub when they are on main
+              # with no local changes. Uses gh's credentials; skipped until
+              # `gh auth login` has been run as the user.
               dev-repos = {
                 description = "Clone development repositories";
                 after = [ "network-online.target" ];
@@ -199,16 +203,25 @@ in
                   User = user;
                   WorkingDirectory = home;
                 };
-                script = lib.concatMapStrings (repo: ''
-                  if [ ! -d ${src}/${repo} ]; then
-                    gh repo clone mdlayher/${repo} ${src}/${repo}
-                  fi
-                '') repos;
+                script =
+                  "gh auth setup-git\n"
+                  + lib.concatMapStrings (repo: ''
+                    if [ ! -d ${src}/${repo} ]; then
+                      gh repo clone mdlayher/${repo} ${src}/${repo}
+                    elif [ "$(git -C ${src}/${repo} branch --show-current)" = "main" ] \
+                      && git -C ${src}/${repo} diff --quiet \
+                      && git -C ${src}/${repo} diff --cached --quiet; then
+                      git -C ${src}/${repo} pull --ff-only
+                    fi
+                  '') repos;
               };
 
               # herdr's headless server, so the workspace and its agents come
               # back after a container restart before anyone attaches. Attach
-              # with `herdr` inside, or `herdr --remote` from a desktop.
+              # with `herdr` inside, or `herdr --remote` from a desktop. If no
+              # Claude Code agent is running after startup (nothing restored),
+              # a workspace in ~/src is created with one, once Claude has been
+              # logged in.
               herdr-server = {
                 description = "herdr server";
                 wantedBy = [ "multi-user.target" ];
@@ -224,6 +237,7 @@ in
                   pkgs.unstable.herdr
                   pkgs.fish
                   pkgs.bashInteractive
+                  pkgs.jq
                 ];
                 serviceConfig = {
                   User = user;
@@ -233,52 +247,16 @@ in
                   Restart = "always";
                   RestartSec = "5s";
                 };
-              };
-
-              # Claude Code server mode, so the Claude app can attach sessions
-              # via Remote Control. Claude insists on a terminal and a consent
-              # prompt, so it runs in a detached tmux session on its own tmux
-              # server, out of byobu's reach (attach with `tmux -L claude
-              # attach`), and the prompt is answered automatically. Starts once `claude auth login` has been run as
-              # the user; sessions start in ~/src, since Claude Code never
-              # trusts a home directory itself.
-              claude-remote-control = {
-                description = "Claude Code Remote Control";
-                wantedBy = [ "multi-user.target" ];
-                after = [
-                  "network-online.target"
-                  "dev-repos.service"
-                ];
-                wants = [
-                  "network-online.target"
-                  "dev-repos.service"
-                ];
-                unitConfig.ConditionPathExists = "${home}/.claude/.credentials.json";
-                path = [
-                  pkgs.tmux
-                  pkgs.unstable.claude-code
-                ];
-                environment.TERM = "xterm-256color";
-                serviceConfig = {
-                  # The tmux server is the main process; the unit ends and
-                  # restarts when Claude exits and the session closes.
-                  Type = "forking";
-                  User = user;
-                  WorkingDirectory = src;
-                  ExecStart = "${pkgs.tmux}/bin/tmux -L claude new-session -d -s claude claude remote-control --name linuxdev";
-                  ExecStop = "${pkgs.tmux}/bin/tmux -L claude kill-server";
-                  Restart = "always";
-                  RestartSec = "10s";
-                };
-                # Answer the consent prompt if it appears.
                 postStart = ''
                   for _ in $(seq 30); do
-                    if tmux -L claude capture-pane -p -t claude 2>/dev/null | grep -q "Enable Remote Control"; then
-                      tmux -L claude send-keys -t claude y
-                      break
-                    fi
+                    herdr status server >/dev/null 2>&1 && break
                     sleep 1
                   done
+                  [ -f ${home}/.claude/.credentials.json ] || exit 0
+                  if ! herdr agent list | grep -q claude; then
+                    pane=$(herdr workspace create --cwd ${src} --label "~/src" | jq -r .result.root_pane.pane_id)
+                    herdr agent start claude --kind claude --pane "$pane" --timeout 120000
+                  fi
                 '';
               };
             };

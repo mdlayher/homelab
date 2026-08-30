@@ -20,19 +20,16 @@ sudo nixos-container run linuxdev -- networkctl status eth0
 
 # First time, over SSH: join Tailscale, log in to GitHub so the dev-repos
 # service can clone into ~/src, and log in to Claude Code (paste the code from
-# the browser when prompted). The claude-remote-control service then runs
-# Claude Code in server mode inside a tmux session on its own tmux server
-# (so byobu never attaches to it) for the Claude app to attach sessions to;
-# `tmux -L claude attach` shows it.
+# the browser when prompted).
 sudo tailscale up
 gh auth login --git-protocol https
 sudo systemctl start dev-repos
 claude auth login
-sudo systemctl start claude-remote-control
 
 # Day to day: herdr keeps a persistent terminal workspace on linuxdev
-# (herdr-server); agents keep running after detaching (ctrl+b q). Attach
-# inside the container, or from a desktop with herdr installed.
+# (herdr-server), starting Claude Code in ~/src on a fresh session; agents
+# keep running after detaching (ctrl+b q). Attach inside the container, or
+# from a desktop with herdr installed.
 herdr
 herdr --remote mdlayher@linuxdev.dev.lan.servnerr.com
 ```

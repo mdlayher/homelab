@@ -161,8 +161,13 @@ in
   programs = {
     fish = {
       enable = true;
-      # Shell history via atuin, with the up arrow left to fish.
-      interactiveShellInit = "${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source";
+      interactiveShellInit = ''
+        # No greeting.
+        set -g fish_greeting
+
+        # Shell history via atuin, with the up arrow left to fish.
+        ${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source
+      '';
     };
     bash = {
       completion.enable = true;
