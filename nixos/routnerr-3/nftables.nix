@@ -228,7 +228,7 @@ in
         chain input_restricted {
           # Handle some services early due to need for multicast/broadcast.
           udp dport $dhcp4_server udp sport $dhcp4_client counter accept comment "router restricted DHCPv4"
-          udp dport $mdns udp sport $mdns counter accept comment "router restricted mDNS"
+          iifname iot0 udp dport $mdns udp sport $mdns counter accept comment "router iot0 mDNS reflection"
 
           # Drop traffic trying to cross VLANs or broadcast.
           iifname . ip daddr != @router_v4 counter drop comment "traffic leaving IPv4 VLAN"

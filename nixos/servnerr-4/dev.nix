@@ -51,6 +51,11 @@ let
   #
   # Note: pkgs is the host's package set, so pkgs.unstable comes from the
   # nixpkgs-unstable flake input.
+  # Common configuration for a container on dev0. A null token means no fixed
+  # IPv6 identifier and therefore no inventory entry or router deploy: the
+  # container takes a pool DHCP lease and is reached as <hostName>.local over
+  # mDNS. A non-null token pairs with an inventory host for a static lease and
+  # a <name>.dev.lan.servnerr.com record.
   devModule = hostName: token: {
     # The container's own package set needs the unstable overlay for
     # common.nix, and common.nix's sops options must exist even though it
@@ -70,7 +75,12 @@ let
       useDHCP = false;
       # Own DNS via DHCP/RA and resolved rather than the host's resolv.conf.
       useHostResolvConf = false;
-      firewall.allowedTCPPorts = [ 22 ];
+      firewall = {
+        allowedTCPPorts = [ 22 ];
+        # mDNS, so dev0 hosts resolve each other as <name>.local without
+        # router inventory entries (ephemeral containers in particular).
+        allowedUDPPorts = [ 5353 ];
+      };
     };
 
     systemd.network.networks."10-eth0" = {
@@ -78,13 +88,17 @@ let
       networkConfig = {
         DHCP = "ipv4";
         IPv6AcceptRA = true;
+        MulticastDNS = true;
       };
       dhcpV4Config.ClientIdentifier = "mac";
-      ipv6AcceptRAConfig.Token = "static:::${token}";
+      ipv6AcceptRAConfig = lib.mkIf (token != null) { Token = "static:::${token}"; };
     };
 
     services = {
-      resolved.enable = true;
+      resolved = {
+        enable = true;
+        settings.Resolve.MulticastDNS = true;
+      };
       openssh.enable = true;
     };
 
@@ -142,13 +156,14 @@ let
       network 192.0.2.0/24
       network 198.51.100.0/24
       network 203.0.113.0/24
-      no neighbor DEV6 activate
+      neighbor DEV6 activate
      exit-address-family
      !
      address-family ipv6 unicast
       network 2001:db8::/32
       network 2001:db8:1::/48
       network 2001:db8:2::/48
+      neighbor DEV4 activate
       neighbor DEV6 activate
      exit-address-family
     exit
