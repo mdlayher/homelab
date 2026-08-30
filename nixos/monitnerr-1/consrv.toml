@@ -11,32 +11,34 @@ serial = "A64NMAJS"
 baud = 115200
 identities = ["mdlayher"]
 
-# The four ports of the FTDI quad cable share one USB serial number
-# (FT9DX98X), so consrv cannot tell them apart by serial. Match on udev's
-# stable by-id paths instead, which encode the USB interface (if00-if03) of
-# each physical port. TODO: rename quad0-quad3 once each port's target machine
-# is identified.
+# The four ports of the FTDI quad cable share one USB serial number, so each
+# is selected by its USB interface number. TODO: rename quad0-quad3 once each
+# port's target machine is identified.
 [[devices]]
 name = "quad0"
-device = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Cable_FT9DX98X-if00-port0"
+serial = "FT9DX98X"
+interface = 0
 baud = 115200
 identities = ["mdlayher"]
 
 [[devices]]
 name = "quad1"
-device = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Cable_FT9DX98X-if01-port0"
+serial = "FT9DX98X"
+interface = 1
 baud = 115200
 identities = ["mdlayher"]
 
 [[devices]]
 name = "quad2"
-device = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Cable_FT9DX98X-if02-port0"
+serial = "FT9DX98X"
+interface = 2
 baud = 115200
 identities = ["mdlayher"]
 
 [[devices]]
 name = "quad3"
-device = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Cable_FT9DX98X-if03-port0"
+serial = "FT9DX98X"
+interface = 3
 baud = 115200
 identities = ["mdlayher"]
 

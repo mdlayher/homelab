@@ -3,15 +3,17 @@
 { pkgs, ... }:
 
 let
-  consrv = pkgs.buildGoModule rec {
+  consrv = pkgs.buildGoModule {
     pname = "consrv";
-    version = "1.2.1";
+    # main, for multi-port adapter support via the "interface" device option;
+    # drop back to tags once a release after v1.2.1 exists.
+    version = "1.2.1-unstable-2026-08-30";
 
     src = pkgs.fetchFromGitHub {
       owner = "mdlayher";
       repo = "consrv";
-      tag = "v${version}";
-      hash = "sha256-dzodycyLw1l4uLupocZwi564qSxRPzA69W2mnhFX1qc=";
+      rev = "05dd0dbb9cba1e0bf238cdf0fd2a8888d043ca45";
+      hash = "sha256-wUKv1joCiByfa7jT5QkG/joYMiQ0dwdi7pNlSUvnzFg=";
     };
 
     vendorHash = "sha256-n35qr0RcOHKOzpGzYV2DAefp899DHj2TQCpYfyg7ozQ=";
