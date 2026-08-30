@@ -28,6 +28,11 @@ in
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
 
+    # consrv enumerates USB serial adapters once at startup and exits if a
+    # configured device is missing. At boot it races USB enumeration, so keep
+    # restarting until the adapters appear rather than hitting the start limit.
+    unitConfig.StartLimitIntervalSec = 0;
+
     serviceConfig = {
       # Generate a dedicated SSH host key on first start; sshd's host key
       # doubles as the sops decryption key and stays out of reach.
@@ -37,7 +42,8 @@ in
         fi
       '';
       ExecStart = "${consrv}/bin/consrv -c ${./consrv.toml} -k ${hostKey}";
-      Restart = "on-failure";
+      Restart = "always";
+      RestartSec = 2;
 
       # Unprivileged, with access to USB serial devices via the dialout group.
       DynamicUser = true;
