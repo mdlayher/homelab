@@ -90,7 +90,7 @@ let
         isNormalUser = true;
         uid = 1000;
         extraGroups = [ "wheel" ];
-        shell = pkgs.fish;
+        shell = pkgs.bashInteractive;
         hashedPasswordFile = passwordHash;
         openssh.authorizedKeys.keys = hostUser.openssh.authorizedKeys.keys;
       };

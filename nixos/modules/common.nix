@@ -155,14 +155,24 @@ in
     };
   };
 
-  # Programs installed everywhere.
+  # Programs installed everywhere. Login shells are bash so that tools which
+  # pipe POSIX scripts into a login shell over SSH (VS Code Remote-SSH, Claude
+  # Code's Bash tool) work; interactive sessions hand over to fish.
   programs = {
     fish = {
       enable = true;
       # Shell history via atuin, with the up arrow left to fish.
       interactiveShellInit = "${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source";
     };
-    bash.completion.enable = true;
+    bash = {
+      completion.enable = true;
+      interactiveShellInit = ''
+        if [[ $(${pkgs.procps}/bin/ps --no-header --pid=$PPID --format=comm) != "fish" && -z ''${BASH_EXECUTION_STRING} ]]; then
+          shopt -q login_shell && LOGIN_OPTION='--login' || LOGIN_OPTION=""
+          exec ${pkgs.fish}/bin/fish $LOGIN_OPTION
+        fi
+      '';
+    };
     nano.enable = true;
   };
 
@@ -255,7 +265,7 @@ in
           "wheel"
         ];
         hashedPasswordFile = config.sops.secrets."users/matt_password_hash".path;
-        shell = pkgs.fish;
+        shell = pkgs.bashInteractive;
 
         openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)"
