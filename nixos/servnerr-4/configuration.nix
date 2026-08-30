@@ -29,6 +29,9 @@
       efi.canTouchEfiVariables = true;
     };
 
+    # systemd-based initrd.
+    initrd.systemd.enable = true;
+
     # Enable extra filesystems.
     supportedFilesystems = {
       ntfs = true;
