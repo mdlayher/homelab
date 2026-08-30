@@ -27,6 +27,7 @@ in
 
     # Service configuration.
     ./containers.nix
+    ./linuxdev.nix
     ./prometheus.nix
   ];
 
