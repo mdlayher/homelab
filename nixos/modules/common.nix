@@ -1,10 +1,8 @@
-# Base system configuration shared by every flake-managed machine.
-#
-# This is the flake-era successor to nixos/lib/system.nix, which remains in
-# place until routnerr-3 is migrated to the flake.
+# Base system configuration shared by every machine.
 {
   config,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -142,6 +140,13 @@
   services = {
     fstrim.enable = true;
     fwupd.enable = true;
+
+    # SSH keys only, wherever sshd is enabled.
+    openssh.settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+
     prometheus.exporters.node = {
       enable = true;
       enabledCollectors = [
@@ -161,16 +166,17 @@
   # Make systemd manage the hardware watchdog.
   systemd.settings.Manager.RuntimeWatchdogSec = "60s";
 
-  # Secrets are decrypted at activation using the machine's SSH host key. Each
-  # machine sets sops.defaultSopsFile to its own encrypted secrets file.
+  # Secrets are decrypted at activation using the machine's SSH host key.
+  # Secrets shared by every machine live in nixos/secrets/common.yaml; a
+  # machine with secrets of its own sets sops.defaultSopsFile.
   sops = {
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
     # Password hashes must be available before users are created.
-    secrets = {
-      "users/matt_password_hash".neededForUsers = true;
-      "users/root_password_hash".neededForUsers = true;
-    };
+    secrets = lib.genAttrs [ "users/matt_password_hash" "users/root_password_hash" ] (_: {
+      sopsFile = ../secrets/common.yaml;
+      neededForUsers = true;
+    });
   };
 
   users = {

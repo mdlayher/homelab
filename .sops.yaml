@@ -14,12 +14,7 @@ creation_rules:
       - age:
           - *matt
           - *servnerr-4
-  - path_regex: nixos/routnerr-3/secrets\.yaml$
-    key_groups:
-      - age:
-          - *matt
-          - *routnerr-3
-  - path_regex: nixos/inventory/secrets\.yaml$
+  - path_regex: nixos/(secrets/common|inventory/secrets)\.yaml$
     key_groups:
       - age:
           - *matt

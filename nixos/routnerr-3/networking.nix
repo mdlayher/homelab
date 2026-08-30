@@ -3,34 +3,28 @@
 let
   inventory = config.homelab.inventory;
 
-  ethLink = (
-    name:
-    (mac: {
-      matchConfig = {
-        Type = "ether";
-        MACAddress = mac;
-      };
-      linkConfig = {
-        Name = name;
+  ethLink = name: mac: {
+    matchConfig = {
+      Type = "ether";
+      MACAddress = mac;
+    };
+    linkConfig = {
+      Name = name;
 
-        # Hardware tuning. Note that wan0/wan1/mgmt0 all happen to support a max
-        # of 4096 since the NixOS option won't allow "max".
-        RxBufferSize = 4096;
-        TxBufferSize = 4096;
-      };
-    })
-  );
+      # Hardware tuning. Note that wan0/wan1/mgmt0 all happen to support a max
+      # of 4096 since the NixOS option won't allow "max".
+      RxBufferSize = 4096;
+      TxBufferSize = 4096;
+    };
+  };
 
-  vlanNetdev = (
-    name:
-    (id: {
-      netdevConfig = {
-        Name = name;
-        Kind = "vlan";
-      };
-      vlanConfig.Id = id;
-    })
-  );
+  vlanNetdev = name: id: {
+    netdevConfig = {
+      Name = name;
+      Kind = "vlan";
+    };
+    vlanConfig.Id = id;
+  };
 
   # Base configuration for a LAN interface the router serves. The router's
   # addresses and DHCP static leases are secrets from the inventory, rendered

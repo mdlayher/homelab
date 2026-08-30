@@ -19,7 +19,8 @@ Secrets are encrypted with [sops-nix](https://github.com/Mic92/sops-nix) using
 age. Recipients are listed in `.sops.yaml`: each machine's SSH host key (via
 `ssh-to-age`) plus the admin key in `~/.config/sops/age/keys.txt`.
 
-- `<machine>/secrets.yaml`: per-machine secrets (password hashes, tokens)
+- `secrets/common.yaml`: secrets every machine needs (user password hashes)
+- `<machine>/secrets.yaml`: secrets specific to one machine (service tokens)
 - `inventory/secrets.yaml`: network inventory values, see below
 
 ## Inventory
@@ -30,24 +31,24 @@ Every address, prefix, and MAC lives in `inventory/secrets.yaml`:
 
 ```yaml
 site:
-  ula_prefix: fd9e:1a04:f01d          # the ULA /48
+  ula_prefix: fd00:1234:5678          # the ULA /48
 subnets:
   lan0:
-    ipv4_prefix: 192.168.10           # router is .1
-    ula_prefix: fd9e:1a04:f01d:10     # router is ::1
-    gua_prefix: 2600:6c4a:783f:780a   # update if the ISP renumbers
+    ipv4_prefix: 192.0.2             # router is .1
+    ula_prefix: fd00:1234:5678:10     # router is ::1
+    gua_prefix: 2001:db8:0:a   # update if the ISP renumbers
 hosts:
-  matt-4:
-    mac: 14:ac:60:46:8d:91
-    ipv4: 192.168.10.13
-    iid: 16ac:60ff:fe46:8d91          # joined as "<prefix>:<iid>"
+  example:
+    mac: 02:00:5e:00:53:01
+    ipv4: 192.0.2.13
+    iid: 0:5eff:fe00:5301          # joined as "<prefix>:<iid>"
 ```
 
 Per-host `iid` values are exactly four hex groups. How they are chosen is the
 host's `ipv6` mode in `inventory/default.nix`:
 
 - `eui64`: derived from the MAC. Compute it with
-  `nix eval --raw --impure --expr '(import ./nixos/inventory/lib.nix { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }).eui64 "44:5b:ed:f7:ce:da"'`.
+  `nix eval --raw --impure --expr '(import ./nixos/inventory/lib.nix { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }).eui64 "02:00:5e:00:53:01"'`.
 - `token`: the host configures a fixed IID (networkd `Token=static:::10` →
   `0:0:0:10`).
 - `prefixstable`: RFC 7217 stable privacy addresses; record the observed IIDs
@@ -67,8 +68,9 @@ inventory ends up in the Nix store.
 nix develop
 
 # Edit secrets.
+sops nixos/secrets/common.yaml
 sops nixos/inventory/secrets.yaml
-sops nixos/routnerr-3/secrets.yaml
+sops nixos/servnerr-4/secrets.yaml
 
 # Check that every configuration evaluates, and format Nix files.
 nix flake check
@@ -77,11 +79,27 @@ nix fmt
 # Bump inputs (also done weekly by .github/workflows/update-flake-lock.yml).
 nix flake update
 
-# Deploy, on the machine itself. On the router, prefer `test` before `switch`:
-# it activates without a boot entry, so a reboot reverts it.
+# Deploy servnerr-4 from any machine with this checkout (root SSH login is
+# allowed with matt's key), or on the machine itself.
+nixos-rebuild switch --flake .#servnerr-4 --target-host root@servnerr-4
 sudo nixos-rebuild switch --flake /home/matt/src/homelab#servnerr-4
+
+# Deploy the router on the machine itself. Prefer `test` before `switch`: it
+# activates without a boot entry, so a reboot reverts it.
 sudo nixos-rebuild test --flake /home/matt/src/homelab#routnerr-3
 ```
 
-`system.autoUpgrade` rebuilds nightly from `github:mdlayher/homelab`, so
-upgrades roll out when a `flake.lock` bump lands on `main`.
+## Upgrades
+
+`system.autoUpgrade` on every machine rebuilds nightly from
+`github:mdlayher/homelab`, so upgrades roll out when a `flake.lock` bump lands
+on `main`. The `update-flake-lock` workflow opens that PR weekly and enables
+auto-merge, and the `nix` workflow evaluates and builds every machine on each
+PR. For this to work end to end, the repository needs:
+
+- an `UPDATE_FLAKE_LOCK_TOKEN` secret holding a personal access token with
+  contents and pull request write access, so that the PR triggers CI
+- auto-merge enabled, with a branch protection rule on `main` requiring the
+  `nix` workflow's checks
+
+Without those, the PR is still opened and can be merged by hand.

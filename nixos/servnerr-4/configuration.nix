@@ -1,5 +1,22 @@
 { config, pkgs, ... }:
 
+let
+  # Grafana dashboards from the repository, rewritten to reference the
+  # provisioned Prometheus datasource by name.
+  dashboards =
+    pkgs.runCommand "grafana-dashboards"
+      {
+        nativeBuildInputs = [ pkgs.jq ];
+      }
+      ''
+        mkdir -p $out
+        for f in ${../../grafana}/*.json; do
+          jq 'del(.id, .__inputs, .__requires)' "$f" \
+            | sed -e 's/''${DS_SERVNERR-3_PROMETHEUS}/Prometheus/g' -e 's/servnerr-3 Prometheus/Prometheus/g' \
+            > "$out/$(basename "$f")"
+        done
+      '';
+in
 {
   imports = [
     # Hardware and base system configuration. The shared base system lives in
@@ -83,6 +100,28 @@
 
     grafana = {
       enable = true;
+
+      # Declarative datasource and dashboards; anything else in the Grafana
+      # database is disposable.
+      provision = {
+        enable = true;
+        datasources.settings.datasources = [
+          {
+            name = "Prometheus";
+            type = "prometheus";
+            uid = "prometheus";
+            url = "http://localhost:${toString config.services.prometheus.port}";
+            isDefault = true;
+          }
+        ];
+        dashboards.settings.providers = [
+          {
+            name = "homelab";
+            options.path = dashboards;
+          }
+        ];
+      };
+
       settings = {
         # Bind to all interfaces.
         server.http_addr = "";
@@ -95,14 +134,10 @@
     };
 
     # Enable the OpenSSH daemon.
-    openssh = {
-      enable = true;
-      settings.PasswordAuthentication = false;
-    };
+    openssh.enable = true;
   };
 
-  # root SSH key for remote builds.
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3+HUx05h15g95ID/lWbU5uvF6TLr2XESmthQjU7qvR NixOS distributed build"
-  ];
+  # root SSH login with matt's key, for remote deploys and builds:
+  #   nixos-rebuild switch --flake .#servnerr-4 --target-host root@servnerr-4
+  users.users.root.openssh.authorizedKeys.keys = config.users.users.matt.openssh.authorizedKeys.keys;
 }

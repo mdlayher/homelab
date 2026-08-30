@@ -1040,8 +1040,8 @@
       {
         "allValue": null,
         "current": {
-          "text": "servnerr-3",
-          "value": "servnerr-3"
+          "text": "servnerr-4",
+          "value": "servnerr-4"
         },
         "datasource": "servnerr-3 Prometheus",
         "definition": "",

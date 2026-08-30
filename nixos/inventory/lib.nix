@@ -1,7 +1,7 @@
 # Helpers for computing IPv6 interface identifiers by hand, for example:
 #
 #   nix eval --raw --impure --expr \
-#     '(import ./nixos/inventory/lib.nix { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }).eui64 "44:5b:ed:f7:ce:da"'
+#     '(import ./nixos/inventory/lib.nix { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }).eui64 "02:00:5e:00:53:01"'
 #
 # The result is the "iid" value stored for a host in secrets.yaml: exactly four
 # hex groups, joined to a subnet prefix as "<prefix>:<iid>".

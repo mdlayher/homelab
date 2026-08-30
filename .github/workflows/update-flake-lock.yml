@@ -9,15 +9,21 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
-      # Opens a PR bumping flake.lock. Merging it is what rolls new nixpkgs
-      # out to machines via system.autoUpgrade.
+      # Opens a PR bumping flake.lock. A personal access token (not the
+      # default GITHUB_TOKEN) is required so that the PR triggers the nix
+      # workflow.
       - uses: DeterminateSystems/update-flake-lock@v24
+        id: update
         with:
+          token: ${{ secrets.UPDATE_FLAKE_LOCK_TOKEN }}
           pr-title: "flake.lock: update"
           pr-labels: dependencies
+      # Merge automatically once the required nix checks pass, which is what
+      # rolls new nixpkgs out to machines via system.autoUpgrade.
+      - if: steps.update.outputs.pull-request-number != ''
+        run: gh pr merge --auto --rebase "${{ steps.update.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_FLAKE_LOCK_TOKEN }}

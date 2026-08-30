@@ -78,11 +78,10 @@ in
           expr = "rate(corerad_advertiser_router_advertisement_inconsistencies_total[5m]) > 0";
           annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} received an IPv6 router advertisement with inconsistent configuration compared to its own.";
         }
-        # We are advertising 2 prefixes per interface out of GUA /56 (assume a
-        # static /40) and ULA /48.
+        # Every interface advertises exactly 2 prefixes: one GUA and one ULA.
         {
           alert = "CoreRADAdvertiserMissingPrefix";
-          expr = ''(count by(instance, interface) (corerad_advertiser_prefix_autonomous{prefix=~"2600:6c4a:78.*|fd9e:1a04:f01d:.*"} == 1) != bool 2) == 1'';
+          expr = "count by(instance, interface) (corerad_advertiser_prefix_autonomous == 1) != 2";
           for = "1m";
           annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is advertising an incorrect number of IPv6 prefixes for SLAAC.";
         }

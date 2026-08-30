@@ -15,3 +15,16 @@ jobs:
       # Evaluates every nixosConfiguration and the other flake outputs.
       - run: nix flake check
       - run: nix fmt -- --ci
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        host: [routnerr-3, servnerr-4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      # Builds the full system closure, which runs build-time checks such as
+      # nft --check, promtool, and amtool that evaluation alone does not.
+      - run: nix build --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel

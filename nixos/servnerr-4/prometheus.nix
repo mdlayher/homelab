@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -17,66 +18,88 @@ let
   grafanaUrl = self config.services.grafana.settings.server.http_port;
   plexUrl = self 32400;
 
-  # Exporters which may run on hosts in the inventory below, keyed by job name.
-  # Ports for exporters running on this machine come from their NixOS options
-  # so they can't drift.
-  exporterJobs = {
-    apcupsd.port = exporters.apcupsd.port;
-    blackbox.port = exporters.blackbox.port;
-    consrv.port = 9288;
-    coredns.port = 9153;
-    corerad.port = 9430;
-    node.port = exporters.node.port;
-    zrepl.port = zreplPort;
+  # Extracts the port from a "host:port" or ":port" listen address.
+  portOf = addr: lib.toInt (lib.last (lib.splitString ":" addr));
 
-    # Prusa exporter: https://github.com/pstrobl96/prusa_exporter
-    prusa_prusalink = {
-      port = 10009;
-      metrics_path = "/metrics/prusalink";
-    };
-    prusa_udp = {
-      port = 10009;
-      metrics_path = "/metrics/udp";
-    };
-  };
+  # Finds the port of the CoreDNS prometheus plugin in a Corefile.
+  corednsPort =
+    corefile:
+    let
+      matches = lib.filter (m: m != null) (
+        map (line: builtins.match ".*prometheus :([0-9]+).*" line) (lib.splitString "\n" corefile)
+      );
+    in
+    lib.toInt (lib.head (lib.head matches));
 
-  # Hosts scraped by this Prometheus: which exporter jobs each runs, whether
-  # its SSH banner should be probed, whether it runs 24/7 (alerts = false for
-  # PCs which are often off), and whether it is a router.
-  hosts = {
-    "${hostName}" = {
-      exporters = [
-        "apcupsd"
-        "blackbox"
-        "node"
-        "prusa_prusalink"
-        "prusa_udp"
-        "zrepl"
-      ];
-      ssh = true;
+  # Exporters which are probed through by other jobs and don't need scraping
+  # themselves.
+  probeExporters = [ "snmp" ];
+
+  # Scrape jobs discovered from every NixOS machine in this flake: each enabled
+  # Prometheus exporter, plus the metrics endpoints of services which expose
+  # their own. Hosts running sshd get an SSH banner probe, and hosts sending
+  # router advertisements are routers for alerting purposes.
+  nixosHosts = lib.mapAttrs (
+    _: system:
+    let
+      cfg = system.config;
+
+      # Removed exporters throw when read, so probe them with tryEval.
+      enabled =
+        name: e:
+        let
+          r = builtins.tryEval (e.enable or false);
+        in
+        r.success && r.value && !(lib.elem name probeExporters);
+    in
+    {
+      jobs =
+        lib.mapAttrs (_: e: { inherit (e) port; }) (
+          lib.filterAttrs enabled cfg.services.prometheus.exporters
+        )
+        // lib.optionalAttrs cfg.services.coredns.enable {
+          coredns.port = corednsPort cfg.services.coredns.config;
+        }
+        // lib.optionalAttrs cfg.services.corerad.enable {
+          corerad.port = portOf cfg.services.corerad.settings.debug.address;
+        }
+        // lib.optionalAttrs cfg.services.zrepl.enable {
+          zrepl.port = portOf (lib.head cfg.services.zrepl.settings.global.monitoring).listen;
+        };
+      ssh = cfg.services.openssh.enable;
+      router = cfg.services.corerad.enable;
+    }
+  ) inputs.self.nixosConfigurations;
+
+  # Everything else: machines not managed by this flake, and exporters which
+  # aren't NixOS services. alerts = false for PCs which are often off.
+  otherHosts = {
+    monitnerr-1.jobs = {
+      consrv.port = 9288;
+      node.port = 9100;
     };
     nerr-4 = {
-      exporters = [
-        "apcupsd"
-        "node"
-      ];
+      jobs = {
+        apcupsd.port = 9162;
+        node.port = 9100;
+      };
       ssh = true;
       alerts = false;
     };
-    monitnerr-1.exporters = [
-      "consrv"
-      "node"
-    ];
-    routnerr-3 = {
-      exporters = [
-        "coredns"
-        "corerad"
-        "node"
-      ];
-      ssh = true;
-      router = true;
+    # Prusa exporter: https://github.com/pstrobl96/prusa_exporter
+    "${hostName}".jobs = {
+      prusa_prusalink = {
+        port = 10009;
+        metrics_path = "/metrics/prusalink";
+      };
+      prusa_udp = {
+        port = 10009;
+        metrics_path = "/metrics/udp";
+      };
     };
   };
+
+  hosts = lib.recursiveUpdate nixosHosts otherHosts;
 
   # Blackbox HTTP probe targets: local service health endpoints and devices.
   probes = [
@@ -95,29 +118,31 @@ let
     "ups01.ipv4"
   ];
 
-  # zrepl's Prometheus listener is configured in storage.nix as ":port".
-  zreplPort = lib.toInt (
-    lib.removePrefix ":" (lib.head config.services.zrepl.settings.global.monitoring).listen
-  );
-
   # NixOS exporters running on this machine which probe jobs are relabeled
   # through.
   local = exporter: "${hostName}:${toString exporters.${exporter}.port}";
 
-  # Hosts in the inventory running the given exporter job, as host:port targets.
-  targetsFor =
-    job:
-    lib.mapAttrsToList (host: _: "${host}:${toString exporterJobs.${job}.port}") (
-      lib.filterAttrs (_: h: lib.elem job (h.exporters or [ ])) hosts
-    );
-
-  # Hosts in the inventory with SSH banner probing enabled.
-  sshTargets = lib.mapAttrsToList (host: _: "${host}:22") (
-    lib.filterAttrs (_: h: h.ssh or false) hosts
-  );
-
   # Hosts in the inventory matching a predicate, by name.
   hostsWhere = pred: lib.attrNames (lib.filterAttrs (_: pred) hosts);
+
+  # One static scrape job per distinct job name, targeting every host which
+  # runs it. Job settings beyond the port come from the first host defining
+  # them.
+  jobNames = lib.unique (lib.concatMap (h: lib.attrNames h.jobs) (lib.attrValues hosts));
+  exporterJobs = lib.genAttrs jobNames (
+    job:
+    let
+      running = lib.filterAttrs (_: h: h.jobs ? ${job}) hosts;
+      settings = lib.head (lib.attrValues running);
+    in
+    (staticScrape job (lib.mapAttrsToList (host: h: "${host}:${toString h.jobs.${job}.port}") running))
+    // lib.optionalAttrs (settings.jobs.${job} ? metrics_path) {
+      inherit (settings.jobs.${job}) metrics_path;
+    }
+  );
+
+  # Hosts with SSH banner probing enabled.
+  sshTargets = map (host: "${host}:22") (hostsWhere (h: h.ssh or false));
 
   alerts = import ./prometheus-alerts.nix {
     inherit lib;
@@ -127,49 +152,37 @@ let
   };
 
   # Scrape a list of static targets for a job.
-  staticScrape = (
-    job_name: targets: {
-      inherit job_name;
-      static_configs = [ { inherit targets; } ];
-    }
-  );
+  staticScrape = job_name: targets: {
+    inherit job_name;
+    static_configs = [ { inherit targets; } ];
+  };
 
-  # Scrape a target with the specified module, interval, and list of targets.
-  blackboxScrape = (module: blackboxScrapeJobName module module);
-
-  # Same as blackboxScrape, but allow customizing the job name.
-  blackboxScrapeJobName = (
-    job: module: interval: targets: {
-      job_name = "blackbox_${job}";
-      scrape_interval = "${interval}";
-      metrics_path = "/probe";
-      params = {
-        module = [ "${module}" ];
-      };
-      relabel_configs = relabelTarget (local "blackbox");
-      static_configs = [ { inherit targets; } ];
-    }
-  );
+  # Scrape targets through a blackbox exporter module at an interval.
+  blackboxScrape = module: interval: targets: {
+    job_name = "blackbox_${module}";
+    scrape_interval = interval;
+    metrics_path = "/probe";
+    params.module = [ module ];
+    relabel_configs = relabelTarget (local "blackbox");
+    static_configs = [ { inherit targets; } ];
+  };
 
   # Produces a relabeling configuration that replaces the instance label with
   # the HTTP target parameter.
-  relabelTarget = (
-    target: [
-      {
-        source_labels = [ "__address__" ];
-        target_label = "__param_target";
-      }
-      {
-        source_labels = [ "__param_target" ];
-        target_label = "instance";
-      }
-      {
-        target_label = "__address__";
-        replacement = "${target}";
-      }
-    ]
-  );
-
+  relabelTarget = target: [
+    {
+      source_labels = [ "__address__" ];
+      target_label = "__param_target";
+    }
+    {
+      source_labels = [ "__param_target" ];
+      target_label = "instance";
+    }
+    {
+      target_label = "__address__";
+      replacement = target;
+    }
+  ];
 in
 {
   # Secrets consumed by prometheus and alertmanager.
@@ -242,7 +255,7 @@ in
       blackbox = {
         enable = true;
         configFile = pkgs.writeText "blackbox.yml" (
-          builtins.toJSON ({
+          builtins.toJSON {
             modules = {
               http_2xx.prober = "http";
               ssh_banner = {
@@ -250,7 +263,7 @@ in
                 tcp.query_response = [ { expect = "^SSH-2.0-"; } ];
               };
             };
-          })
+          }
         );
       };
 
@@ -264,41 +277,32 @@ in
       };
     };
 
-    scrapeConfigs =
-      # One static job per exporter, targeting every inventory host running it.
-      (lib.mapAttrsToList (
-        job: cfg:
-        (staticScrape job (targetsFor job))
-        // lib.optionalAttrs (cfg ? metrics_path) { inherit (cfg) metrics_path; }
-      ) exporterJobs)
-      ++ [
-        # Home Assistant requires a more custom configuration.
+    scrapeConfigs = lib.attrValues exporterJobs ++ [
+      # Home Assistant requires a more custom configuration.
+      {
+        job_name = "homeassistant";
+        metrics_path = "/api/prometheus";
+        authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
+        static_configs = [ { targets = [ "hass:8123" ]; } ];
+      }
+
+      # Blackbox probes for HTTP endpoints.
+      (blackboxScrape "http_2xx" "15s" probes)
+      # The SSH banner check produces a fair amount of log spam, so only scrape
+      # it once a minute.
+      (blackboxScrape "ssh_banner" "1m" sshTargets)
+
+      # SNMP relabeling configuration required to properly replace the instance
+      # names and query the correct devices.
+      (lib.mkMerge [
+        (staticScrape snmpCyberpowerJob snmpCyberpower)
         {
-          job_name = "homeassistant";
-          metrics_path = "/api/prometheus";
-          authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
-          static_configs = [ { targets = [ "hass:8123" ]; } ];
+          metrics_path = "/snmp";
+          params.module = [ "cyberpower" ];
+          relabel_configs = relabelTarget (local "snmp");
         }
-
-        # Blackbox probes for HTTP endpoints.
-        (blackboxScrape "http_2xx" "15s" probes)
-        # The SSH banner check produces a fair amount of log spam, so only scrape
-        # it once a minute.
-        (blackboxScrape "ssh_banner" "1m" sshTargets)
-
-        # SNMP relabeling configuration required to properly replace the instance
-        # names and query the correct devices.
-        (lib.mkMerge [
-          (staticScrape snmpCyberpowerJob snmpCyberpower)
-          {
-            metrics_path = "/snmp";
-            params = {
-              module = [ "cyberpower" ];
-            };
-            relabel_configs = relabelTarget (local "snmp");
-          }
-        ])
-      ];
+      ])
+    ];
 
     rules = [ (builtins.toJSON alerts) ];
   };

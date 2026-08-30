@@ -132,8 +132,6 @@ let
       # - every day from the last 2 weeks
       # - every week from the last 2 months
       # - every month from the last 2 years
-      #
-      # TODO(mdlayher): verify retention after a couple weeks!
       grid = "1x1h(keep=all) | 24x1h | 14x1d | 8x7d | 24x30d";
       regex = "^zrepl_.*";
     }

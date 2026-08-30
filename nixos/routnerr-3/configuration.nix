@@ -18,10 +18,6 @@ in
 
   system.stateVersion = "23.05";
 
-  # Secrets for this machine, encrypted with sops. Edit with:
-  #   sops nixos/routnerr-3/secrets.yaml
-  sops.defaultSopsFile = ./secrets.yaml;
-
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
   boot.kernelParams = [ "console=ttyS0,115200n8" ];
 
@@ -46,7 +42,7 @@ in
         "net.ipv6.conf.all.autoconf" = 0;
         "net.ipv6.conf.all.use_tempaddr" = 0;
 
-        # On wired WANs, allow IPv6 autoconfiguration and tempory address use.
+        # On wired WANs, allow IPv6 autoconfiguration and temporary address use.
         "net.ipv6.conf.wan0.accept_ra" = 2;
         "net.ipv6.conf.wan0.autoconf" = 1;
         "net.ipv6.conf.wan1.accept_ra" = 2;
@@ -87,10 +83,7 @@ in
     # Enable the OpenSSH daemon.
     openssh = {
       enable = true;
-      settings = {
-        PasswordAuthentication = false;
-        PermitRootLogin = "no";
-      };
+      settings.PermitRootLogin = "no";
     };
   };
 }
