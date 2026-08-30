@@ -210,11 +210,6 @@ in
 
     globalConfig.scrape_interval = "15s";
 
-    extraFlags = [
-      "--storage.tsdb.retention=1825d"
-      "--web.enable-admin-api"
-    ];
-
     alertmanager = {
       enable = true;
       webExternalUrl = alertmanagerUrl;
