@@ -115,6 +115,19 @@ let
     "${prometheusUrl}/-/healthy"
   ];
 
+  # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
+  # internet reachability, latency, and loss are tracked per address family.
+  # Probes follow the router's default routing policy, so they observe the
+  # active WAN path only; a failed standby WAN is not visible here.
+  pings = [
+    "1.1.1.1"
+    "2606:4700:4700::1111"
+  ];
+
+  # Blackbox DNS probe targets: the router's CoreDNS, exercising resolution of
+  # a known internal name end to end rather than just process liveness.
+  dnsServers = [ "routnerr-3:53" ];
+
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
@@ -309,6 +322,15 @@ in
           builtins.toJSON {
             modules = {
               http_2xx.prober = "http";
+              # The NixOS module grants CAP_NET_RAW for ICMP probes.
+              icmp.prober = "icmp";
+              dns_lan = {
+                prober = "dns";
+                dns = {
+                  query_name = "servnerr-4.${domain}";
+                  query_type = "A";
+                };
+              };
               ssh_banner = {
                 prober = "tcp";
                 tcp.query_response = [ { expect = "^SSH-2.0-"; } ];
@@ -337,8 +359,11 @@ in
         static_configs = [ { targets = [ "hass:8123" ]; } ];
       }
 
-      # Blackbox probes for HTTP endpoints.
+      # Blackbox probes for HTTP endpoints, internet reachability per address
+      # family, and end to end DNS resolution through the router.
       (blackboxScrape "http_2xx" "15s" probes)
+      (blackboxScrape "icmp" "15s" pings)
+      (blackboxScrape "dns_lan" "1m" dnsServers)
       # The SSH banner check produces a fair amount of log spam, so only scrape
       # it once a minute.
       (blackboxScrape "ssh_banner" "1m" sshTargets)

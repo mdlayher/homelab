@@ -68,6 +68,14 @@ in
           annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} reports a critical warning.";
         }
         {
+          alert = "ZFSPoolUnhealthy";
+          # 0 is ONLINE; anything greater is DEGRADED, FAULTED, OFFLINE,
+          # UNAVAIL, REMOVED, or SUSPENDED.
+          expr = "zfs_pool_health > 0";
+          for = "5m";
+          annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} is unhealthy.";
+        }
+        {
           alert = "DiskUsageHigh";
           expr = ''(1 - node_filesystem_free_bytes{fstype=~"ext4|vfat"} / node_filesystem_size_bytes) > 0.75'';
           for = "1m";
