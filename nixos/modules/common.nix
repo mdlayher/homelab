@@ -46,6 +46,14 @@ in
   time.timeZone = "America/Detroit";
 
   environment = {
+    # Git configuration from nixos/dotfiles as the system-wide defaults;
+    # per-user configuration still overrides.
+    etc = {
+      gitconfig.source = ../dotfiles/git/gitconfig;
+      gitignore.source = ../dotfiles/git/gitignore;
+      "git-allowed-signers".source = ../dotfiles/git/allowed_signers;
+    };
+
     # terminfo for terminals which SSH in (e.g. xterm-ghostty).
     enableAllTerminfo = true;
 
@@ -171,6 +179,17 @@ in
     };
     bash = {
       completion.enable = true;
+      # Keep a stable path to the newest forwarded SSH agent socket, so
+      # long-lived sessions (e.g. herdr panes) not descended from an SSH login
+      # can still reach the agent for git commit signing.
+      loginShellInit = ''
+        if [[ -S "$SSH_AUTH_SOCK" && "$SSH_AUTH_SOCK" != "$HOME/.ssh/agent.sock" ]]; then
+          mkdir -p "$HOME/.ssh"
+          ln -sf "$SSH_AUTH_SOCK" "$HOME/.ssh/agent.sock"
+        elif [[ -z "$SSH_AUTH_SOCK" ]]; then
+          export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+        fi
+      '';
       interactiveShellInit = ''
         if [[ $(${pkgs.procps}/bin/ps --no-header --pid=$PPID --format=comm) != "fish" && -z ''${BASH_EXECUTION_STRING} ]]; then
           shopt -q login_shell && LOGIN_OPTION='--login' || LOGIN_OPTION=""

@@ -254,7 +254,11 @@ in
                   done
                   [ -f ${home}/.claude/.credentials.json ] || exit 0
                   if ! herdr agent list | grep -q claude; then
-                    pane=$(herdr workspace create --cwd ${src} --label "~/src" | jq -r .result.root_pane.pane_id)
+                    # Reuse an idle pane sitting in ~/src before creating one.
+                    pane=$(herdr pane list | jq -r "[.result.panes[] | select(.cwd == \"${src}\" and .foreground_cwd == \"${src}\")][0].pane_id // empty")
+                    if [ -z "$pane" ]; then
+                      pane=$(herdr workspace create --cwd ${src} --label "~/src" | jq -r .result.root_pane.pane_id)
+                    fi
                     herdr agent start claude --kind claude --pane "$pane" --timeout 120000
                   fi
                 '';

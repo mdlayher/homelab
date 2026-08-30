@@ -1,0 +1,5 @@
+.claude/
+.vscode/
+*.test
+cover.out
+t

@@ -1,0 +1,37 @@
+[user]
+	useConfigOnly = true
+[alias]
+	a = add
+	b = branch
+	co = checkout
+	c = commit
+	s = status
+	st = status
+	id = "! git config user.name \"$(git config user.$1.name)\"; git config user.email \"$(git config user.$1.email)\"; git config user.signingkey \"$(git config user.$1.signingkey)\"; git config http.cookiefile \"$(git config user.$1.httpCookiefile)\"; :"
+[core]
+	excludesfile = /etc/gitignore
+	pager = less --tabs 4
+[diff]
+	algorithm = patience
+[user "personal"]
+	name = Matt Layher
+	email = mdlayher@gmail.com
+	signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)"
+	httpCookiefile = /home/mdlayher/.gitcookies_personal
+[init]
+	defaultBranch = main
+[advice]
+	addIgnoredFile = false
+	skippedCherryPicks = false
+[pull]
+	rebase = true
+[commit]
+	gpgsign = true
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	allowedSignersFile = /etc/git-allowed-signers
+[bash]
+	showInformativeStatus = true
+[push]
+	autoSetupRemote = true
