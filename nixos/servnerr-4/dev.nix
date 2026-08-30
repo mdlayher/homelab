@@ -6,6 +6,7 @@
 # DNS record; the veth MAC is read from the container after its first start.
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -29,20 +30,24 @@ let
   # Repositories cloned into ~/src on linuxdev.
   repos = [ "bgpdev" ];
 
-  # Shell dotfiles from nixos/dotfiles, packaged into fish's vendor
-  # directories, which fish searches from the system profile.
-  dotfiles = pkgs.runCommand "dotfiles" { } ''
-    install -Dm444 -t $out/share/fish/vendor_conf.d ${../dotfiles/fish/conf.d}/*.fish
-    install -Dm444 -t $out/share/fish/vendor_functions.d ${../dotfiles/fish/functions}/*.fish
-  '';
-
-  # Common configuration for a container on dev0: addresses from the router
-  # (DHCPv4 plus SLAAC with a fixed, MAC-free interface identifier matching
-  # the inventory's DNS record), SSH for the user, and a few tools.
+  # Common configuration for a container on dev0: the base system from
+  # modules/common.nix, addresses from the router (DHCPv4 plus SLAAC with a
+  # fixed, MAC-free interface identifier matching the inventory's DNS record),
+  # and SSH for the user.
   #
   # Note: pkgs is the host's package set, so pkgs.unstable comes from the
   # nixpkgs-unstable flake input.
   devModule = hostName: token: {
+    # The container's own package set needs the unstable overlay for
+    # common.nix, and common.nix's sops options must exist even though it
+    # declares secrets for machines only.
+    imports = [
+      ../modules/common.nix
+      ../modules/unstable.nix
+      inputs.sops-nix.nixosModules.sops
+    ];
+    _module.args.inputs = inputs;
+
     system.stateVersion = "26.05";
 
     networking = {
@@ -64,64 +69,12 @@ let
       ipv6AcceptRAConfig.Token = "static:::${token}";
     };
 
-    i18n.defaultLocale = "en_US.UTF-8";
-    time.timeZone = "America/Detroit";
-
-    nix.settings.experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
-
-    programs = {
-      fish = {
-        enable = true;
-        # Shell history via atuin, with the up arrow left to fish.
-        interactiveShellInit = "${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source";
-      };
-      bash.completion.enable = true;
-    };
-
-    environment = {
-      # terminfo for terminals which SSH in (e.g. xterm-ghostty).
-      enableAllTerminfo = true;
-
-      # Put ~/bin in PATH.
-      homeBinInPath = true;
-      variables.EDITOR = "nano";
-    };
-
-    # Standard directories in the user's home.
-    systemd.tmpfiles.rules = [
-      "d ${home}/bin 0755 ${user} users -"
-      "d ${home}/tmp 0755 ${user} users -"
-    ];
-
     services = {
       resolved.enable = true;
-
-      # Same monitoring as the machines; scraped by Prometheus on the host.
-      prometheus.exporters.node = {
-        enable = true;
-        enabledCollectors = [
-          "ethtool"
-          "systemd"
-        ];
-        openFirewall = true;
-      };
-
-      # SSH keys only, never as root.
-      openssh = {
-        enable = true;
-        settings = {
-          PasswordAuthentication = false;
-          KbdInteractiveAuthentication = false;
-          PermitRootLogin = "no";
-        };
-      };
+      openssh.enable = true;
     };
 
     users = {
-      mutableUsers = false;
       users.${user} = {
         isNormalUser = true;
         uid = 1000;
@@ -131,23 +84,6 @@ let
         openssh.authorizedKeys.keys = hostUser.openssh.authorizedKeys.keys;
       };
     };
-
-    environment.systemPackages = with pkgs; [
-      dotfiles
-
-      atuin
-      bashInteractive
-      bind
-      byobu
-      curl
-      fish
-      git
-      jq
-      nano
-      ripgrep
-      tcpdump
-      tmux
-    ];
   };
 
   # A container on dev0. modules are added to the common configuration and
@@ -220,12 +156,6 @@ in
               package = pkgs.unstable.tailscale;
               interfaceName = "ts0";
             };
-
-            # ~/src exists regardless of whether repositories have been cloned.
-            systemd.tmpfiles.rules = [ "d ${src} 0755 ${user} users -" ];
-
-            # GOPATH in the home directory, so `go install` lands in ~/bin.
-            environment.variables.GOPATH = home;
 
             # Re-run the clone job hourly so additions to repos appear without
             # a restart; the boot-time run comes from claude-remote-control's
@@ -313,8 +243,9 @@ in
               # releases closely.
               unstable.claude-code
 
-              # Go toolchain and tooling; go-tools provides staticcheck.
-              unstable.go_1_27
+              # Go toolchain and tooling; go-tools provides staticcheck. Takes
+              # precedence over the base system's Go.
+              (lib.hiPrio unstable.go_1_27)
               unstable.gopls
               gofumpt
               go-tools

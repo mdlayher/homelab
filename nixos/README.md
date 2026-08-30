@@ -8,7 +8,7 @@ of this repository. Individual machines have their own directories:
 
 Shared configuration lives in `modules/`:
 
-- `modules/common.nix`: base system, users, nix settings, auto-upgrade
+- `modules/common.nix`: base system for machines and containers: packages, shell with the dotfiles from `dotfiles/`, users, nix settings, auto-upgrade
 - `modules/inventory.nix`: exposes the network inventory as `config.homelab.inventory`
 - `modules/tailscale.nix`: Tailscale client
 - `modules/unstable.nix`: exposes the `nixpkgs-unstable` input as `pkgs.unstable`

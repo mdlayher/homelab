@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 
 let
   inventory = config.homelab.inventory;
@@ -56,12 +56,6 @@ in
       efi.canTouchEfiVariables = true;
     };
   };
-
-  # Packages specific to this machine. The base package set is defined in
-  # nixos/modules/common.nix.
-  environment.systemPackages = with pkgs; [
-    bind
-  ];
 
   services = {
     # Allow mDNS to reflect between VLANs where necessary for devices such as
