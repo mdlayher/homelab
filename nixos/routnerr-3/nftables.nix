@@ -101,6 +101,7 @@ in
       define trusted_lans = ${ifnames trusted}
       define restricted_lans = ${ifnames restricted}
       define all_lans = ${ifnames (trusted ++ restricted)}
+      define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
       define dns = 53
       define dhcp4_server = 67
@@ -128,7 +129,18 @@ in
           type ipv6_addr . inet_service
         }
 
-        chain icmp_allow {
+        # Drop packets from physical LANs whose source address does not belong
+        # on the interface they arrived on. The kernel exempts DHCP/DAD
+        # (unspecified source to broadcast/multicast).
+        chain prerouting {
+          type filter hook prerouting priority raw
+          policy accept
+
+          iifname $physical_lans fib saddr . iif oif missing counter drop comment "spoofed source"
+        }
+
+        # ICMP allowed from LANs: pings, errors, and neighbor discovery.
+        chain icmp_lan {
           ip6 nexthdr icmpv6 icmpv6 type {
             echo-request,
             echo-reply,
@@ -149,6 +161,23 @@ in
           } counter accept
         }
 
+        # ICMP allowed from WANs: only errors needed for working PMTU and
+        # connectivity, no pings. Replies to our own pings are established.
+        chain icmp_wan {
+          ip6 nexthdr icmpv6 icmpv6 type {
+            destination-unreachable,
+            packet-too-big,
+            time-exceeded,
+            parameter-problem,
+          } counter accept
+
+          ip protocol icmp icmp type {
+            destination-unreachable,
+            time-exceeded,
+            parameter-problem,
+          } counter accept
+        }
+
         # Incoming connections to the router itself.
         chain input {
           type filter hook input priority 0
@@ -163,9 +192,9 @@ in
             222.184.0.0/13,
           } counter drop comment "malicious subnets"
 
-          jump icmp_allow
-
           iifname $wans jump input_wan
+
+          jump icmp_lan
 
           # Always allow router solicitation from any LAN.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-solicit counter accept
@@ -173,18 +202,26 @@ in
           iifname { lo, $trusted_lans } counter accept comment "localhost and trusted LANs to router"
           iifname $restricted_lans jump input_restricted
 
+          limit rate 10/minute burst 20 packets log prefix "nft input reject: "
           counter reject
         }
 
+        # From the internet: silently drop everything not explicitly allowed.
         chain input_wan {
+          jump icmp_wan
+
           # Default route via NDP.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-advert counter accept
+          ip6 nexthdr icmpv6 icmpv6 type {
+            nd-neighbor-solicit,
+            nd-neighbor-advert,
+          } counter accept
 
           udp dport $tailscale_router counter accept comment "router WAN Tailscale"
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
-          counter reject
+          counter drop
         }
 
         chain input_restricted {
@@ -200,6 +237,7 @@ in
           tcp dport $dns counter accept comment "router restricted TCP"
           udp dport $dns counter accept comment "router restricted UDP"
 
+          limit rate 10/minute burst 20 packets log prefix "nft input restricted drop: "
           counter drop
         }
 
@@ -216,22 +254,31 @@ in
           ct state {established, related} counter accept
           ct state invalid counter drop
 
-          # Restricted LANs may never initiate connections to trusted LANs.
-          iifname $restricted_lans oifname $trusted_lans counter drop
+          iifname $wans jump forward_wan
 
-          # ICMP is otherwise allowed everywhere, including restricted LANs to
-          # the internet.
-          jump icmp_allow
+          # Restricted LANs may only initiate connections to the internet:
+          # never to trusted LANs, nor to each other.
+          iifname $restricted_lans oifname $all_lans counter drop comment "restricted LANs to LANs"
+
+          jump icmp_lan
 
           iifname $trusted_lans oifname $wans counter accept comment "trusted LANs to all WANs"
           iifname $trusted_lans oifname $all_lans counter accept comment "trusted LANs to all LANs"
           iifname $restricted_lans oifname $wans counter accept comment "restricted LANs only to WANs"
 
-          # Inbound from the WAN: only Tailscale to specific hosts.
-          iifname $wans ip daddr . udp dport @tailscale_v4 counter accept comment "Tailscale IPv4 forwarding"
-          iifname $wans ip6 daddr . udp dport @tailscale_v6 counter accept comment "Tailscale IPv6 forwarding"
-
+          limit rate 10/minute burst 20 packets log prefix "nft forward reject: "
           counter reject
+        }
+
+        # From the internet to LANs: only ICMP errors and Tailscale to
+        # specific hosts; silently drop the rest.
+        chain forward_wan {
+          jump icmp_wan
+
+          ip daddr . udp dport @tailscale_v4 counter accept comment "Tailscale IPv4 forwarding"
+          ip6 daddr . udp dport @tailscale_v6 counter accept comment "Tailscale IPv6 forwarding"
+
+          counter drop
         }
       }
 
