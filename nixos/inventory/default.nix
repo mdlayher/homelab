@@ -59,6 +59,7 @@
       vlan = 20;
       trusted = false;
       hosts = {
+        "frrdev.dev".ipv6 = "token";
         "linuxdev.dev".ipv6 = "token";
       };
     };

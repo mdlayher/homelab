@@ -4,7 +4,7 @@ NixOS configurations for my machines, built from the `flake.nix` at the root
 of this repository. Individual machines have their own directories:
 
 - `routnerr-3/`: home router (WAN, VLANs, DHCP, DNS, IPv6 RAs, nftables)
-- `servnerr-4/`: home server (monitoring, hypervisor, NAS)
+- `servnerr-4/`: home server (monitoring, hypervisor, NAS, development containers)
 
 Shared configuration lives in `modules/`:
 
@@ -27,6 +27,9 @@ age. Recipients are listed in `.sops.yaml`: each machine's SSH host key (via
 
 `inventory/default.nix` declares the network's structure: subnets (VLAN ID,
 trust level) and the hosts on them, with each host's IPv6 addressing mode.
+Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
+router's DHCP and DNS. `dev0` is carried tagged to servnerr-4 for its
+containers, so its switch port must be a trunk with VLAN 20 allowed.
 Every address, prefix, and MAC lives in `inventory/secrets.yaml`:
 
 ```yaml
