@@ -28,6 +28,13 @@ in
     {
       name = "default";
       rules = [
+        # Always firing; routed to an external heartbeat so that silence from
+        # this Prometheus and Alertmanager pair is itself noticed.
+        {
+          alert = "Watchdog";
+          expr = "vector(1)";
+          annotations.summary = "Prometheus and Alertmanager on {{ $externalURL }} are alive.";
+        }
         {
           alert = "InstanceDown";
           expr = "up{instance!~${excludedInstances},job!~${excludedJobsRegex}} == 0";
@@ -39,6 +46,26 @@ in
           expr = "probe_success{instance!~${excludedInstances},job!~${excludedJobsRegex}} == 0";
           for = "5m";
           annotations.summary = "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
+        }
+        # Any failed systemd unit, on any machine: this covers failed nightly
+        # upgrades, sops secrets, and services which died after a switch.
+        {
+          alert = "SystemdUnitFailed";
+          expr = ''node_systemd_unit_state{state="failed"} == 1'';
+          for = "5m";
+          annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has failed.";
+        }
+        {
+          alert = "SmartStatusFailed";
+          expr = "smartctl_device_smart_status == 0";
+          for = "5m";
+          annotations.summary = "Disk {{ $labels.device }} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} reports SMART failure.";
+        }
+        {
+          alert = "SmartCriticalWarning";
+          expr = "smartctl_device_critical_warning > 0";
+          for = "5m";
+          annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} reports a critical warning.";
         }
         {
           alert = "DiskUsageHigh";

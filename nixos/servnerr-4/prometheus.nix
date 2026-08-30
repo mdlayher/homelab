@@ -53,7 +53,7 @@ let
         let
           r = builtins.tryEval (e.enable or false);
         in
-        r.success && r.value && !(lib.elem name ignoredExporters);
+        !(lib.elem name ignoredExporters) && r.success && r.value;
     in
     {
       jobs =
@@ -191,6 +191,7 @@ in
   # Secrets consumed by prometheus and alertmanager.
   sops.secrets = {
     "alertmanager/discord_webhook_url".restartUnits = [ "alertmanager.service" ];
+    "alertmanager/deadman_url".restartUnits = [ "alertmanager.service" ];
     "prometheus/homeassistant_token" = {
       owner = "prometheus";
       restartUnits = [ "prometheus.service" ];
@@ -201,6 +202,7 @@ in
   # systemd credentials rather than a file owned by a static user.
   systemd.services.alertmanager.serviceConfig.LoadCredential = [
     "discord_webhook_url:${config.sops.secrets."alertmanager/discord_webhook_url".path}"
+    "deadman_url:${config.sops.secrets."alertmanager/deadman_url".path}"
   ];
 
   # Prometheus monitoring server and exporter configuration.
@@ -224,12 +226,32 @@ in
           group_interval = "10s";
           repeat_interval = "1h";
           receiver = "default";
+          routes = [
+            # Dead man's switch: keep pinging the heartbeat service while the
+            # Watchdog alert fires; it pages when the pings stop.
+            {
+              matchers = [ "alertname = Watchdog" ];
+              receiver = "deadman";
+              group_wait = "0s";
+              group_interval = "1m";
+              repeat_interval = "2m";
+            }
+          ];
         };
         receivers = [
           {
             name = "default";
             discord_configs = [
               { webhook_url_file = "/run/credentials/alertmanager.service/discord_webhook_url"; }
+            ];
+          }
+          {
+            name = "deadman";
+            webhook_configs = [
+              {
+                url_file = "/run/credentials/alertmanager.service/deadman_url";
+                send_resolved = false;
+              }
             ];
           }
         ];

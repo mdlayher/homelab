@@ -147,12 +147,27 @@
       KbdInteractiveAuthentication = false;
     };
 
-    prometheus.exporters.node = {
+    prometheus.exporters = {
+      node = {
+        enable = true;
+        enabledCollectors = [
+          "ethtool"
+          "systemd"
+        ];
+      };
+
+      # Disk health; alerts are raised by Prometheus on servnerr-4.
+      smartctl.enable = true;
+    };
+
+    # Monitor disks and run SMART self-tests. Alerting happens through the
+    # smartctl exporter rather than smartd's own notifications.
+    smartd = {
       enable = true;
-      enabledCollectors = [
-        "ethtool"
-        "systemd"
-      ];
+      notifications = {
+        mail.enable = false;
+        wall.enable = false;
+      };
     };
   };
 
