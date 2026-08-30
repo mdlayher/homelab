@@ -30,6 +30,7 @@ let
   # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
   repos = [
     "bgpdev"
+    "consrv"
     "homelab"
   ];
 
@@ -312,6 +313,14 @@ in
         {
           # Tailscale needs /dev/net/tun and CAP_NET_ADMIN.
           enableTun = true;
+
+          # linuxdev hosts long-lived agent sessions, so never restart it on a
+          # host switch. Config changes are applied to the running container
+          # with `systemctl reload container@linuxdev`, which activates the new
+          # system inside via switch-to-configuration; changes to the container
+          # scaffolding itself (bind mounts, networking, tun) still need a
+          # manual `systemctl restart container@linuxdev`.
+          restartIfChanged = false;
         };
 
     frrdev =
