@@ -73,6 +73,7 @@ let
     lan0 = "20-lan0";
     iot0 = "25-iot0";
     guest0 = "30-guest0";
+    dev0 = "40-dev0";
   };
 
   # Drop-ins rendered from inventory secrets, keyed by networkd unit name.
@@ -197,6 +198,7 @@ in
         "lan0"
         "iot0"
         "guest0"
+        "dev0"
       ];
     };
 
@@ -215,6 +217,10 @@ in
     # Guest VLAN.
     netdevs."30-guest0" = vlanNetdev "guest0" inventory.interfaces.guest0.vlan;
     networks."30-guest0" = lanNetwork inventory.interfaces.guest0;
+
+    # Development VLAN.
+    netdevs."40-dev0" = vlanNetdev "dev0" inventory.interfaces.dev0.vlan;
+    networks."40-dev0" = lanNetwork inventory.interfaces.dev0;
   };
 
   # Advertise routes to the Tailscale network.

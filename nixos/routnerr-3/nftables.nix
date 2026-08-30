@@ -8,8 +8,8 @@
 let
   inventory = config.homelab.inventory;
 
-  # Interface groups. Restricted LANs (guest, IoT) may only reach the internet
-  # and a few router services; trusted LANs may reach everything.
+  # Interface groups. Restricted LANs (guest, IoT, dev) may only reach the
+  # internet and a few router services; trusted LANs may reach everything.
   wans = [
     "wan0"
     "wan1"
@@ -22,6 +22,7 @@ let
   restricted = with inventory.interfaces; [
     guest0
     iot0
+    dev0
   ];
 
   # Produces an nftables set of interface names.

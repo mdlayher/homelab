@@ -53,6 +53,16 @@
       trusted = false;
     };
 
+    # Development VLAN: internet only, for containers on servnerr-4 running
+    # agents and networking experiments.
+    dev0 = {
+      vlan = 20;
+      trusted = false;
+      hosts = {
+        linuxdev.ipv6 = "token";
+      };
+    };
+
     # IoT VLAN: internet only, mDNS reflected from trusted LANs.
     iot0 = {
       vlan = 66;
