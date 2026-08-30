@@ -162,7 +162,7 @@ let
     {{ end -}}
     {{- range .Alerts.Resolved }}
     :white_check_mark: {{ template "homelab.discord.alert" . }}
-    Resolved <t:{{ .EndsAt.Unix }}:R> after {{ .StartsAt | since | humanizeDuration }}
+    Resolved <t:{{ .EndsAt.Unix }}:R> after {{ (.EndsAt.Sub .StartsAt).Seconds | humanizeDuration }}
     {{ end -}}
     {{ end }}
   '';
