@@ -143,6 +143,30 @@ let
     routers = hostsWhere (h: h.router or false);
   };
 
+  # Discord notification body, rendered inside an embed so markdown links
+  # work. One entry per alert: summary, optional description, when it started
+  # (Discord renders <t:..:R> as a relative time), and links to silence it in
+  # Alertmanager (all of the alert's labels pre-filled), to its source query in
+  # Prometheus, and to a runbook if the rule has one.
+  alertmanagerTemplates = pkgs.writeText "homelab.tmpl" ''
+    {{ define "homelab.discord.alert" -}}
+    **{{ .Labels.alertname }}**{{ with .Labels.instance }} on `{{ . }}`{{ end }}{{ with .Annotations.summary }}: {{ . }}{{ end }}
+    {{- with .Annotations.description }}
+    {{ . }}{{ end }}
+    {{- end }}
+
+    {{ define "homelab.discord.message" }}
+    {{- range .Alerts.Firing }}
+    :fire: {{ template "homelab.discord.alert" . }}
+    Since <t:{{ .StartsAt.Unix }}:R> · [Silence]({{ $.ExternalURL }}/#/silences/new?filter=%7B{{ range $i, $l := .Labels.SortedPairs }}{{ if $i }}%2C%20{{ end }}{{ $l.Name }}%3D%22{{ $l.Value | urlquery }}%22{{ end }}%7D) · [Source]({{ .GeneratorURL }}){{ with .Annotations.runbook_url }} · [Runbook]({{ . }}){{ end }}
+    {{ end -}}
+    {{- range .Alerts.Resolved }}
+    :white_check_mark: {{ template "homelab.discord.alert" . }}
+    Resolved <t:{{ .EndsAt.Unix }}:R> after {{ .StartsAt | since | humanizeDuration }}
+    {{ end -}}
+    {{ end }}
+  '';
+
   # Scrape a list of static targets for a job.
   staticScrape = job_name: targets: {
     inherit job_name;
@@ -209,6 +233,8 @@ in
       webExternalUrl = alertmanagerUrl;
 
       configuration = {
+        templates = [ (toString alertmanagerTemplates) ];
+
         route = {
           group_by = [ "alertname" ];
           group_wait = "10s";
@@ -231,7 +257,10 @@ in
           {
             name = "default";
             discord_configs = [
-              { webhook_url_file = "/run/credentials/alertmanager.service/discord_webhook_url"; }
+              {
+                webhook_url_file = "/run/credentials/alertmanager.service/discord_webhook_url";
+                message = ''{{ template "homelab.discord.message" . }}'';
+              }
             ];
           }
           {
