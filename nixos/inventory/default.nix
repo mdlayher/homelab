@@ -24,7 +24,7 @@
       hosts = {
         ap-basement.ipv6 = "eui64";
         ap-livingroom.ipv6 = "eui64";
-        hass.ipv6 = "eui64";
+        hass.ipv6 = "prefixstable";
         monitnerr-1.ipv6 = "eui64";
         nerr-4.ipv6 = "prefixstable";
         pdu01.ipv6 = "eui64";
