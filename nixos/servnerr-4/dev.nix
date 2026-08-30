@@ -30,6 +30,17 @@ let
   # Repositories cloned into ~/src on linuxdev.
   repos = [ "bgpdev" ];
 
+  # Initial herdr configuration, copied into the user's config directory on
+  # first boot only so that later edits win. Updates come from nixpkgs, not
+  # herdr's self-updater; panes run login shells so PATH matches SSH logins.
+  herdrConfig = pkgs.writeText "herdr-config.toml" ''
+    [terminal]
+    shell_mode = "login"
+
+    [update]
+    version_check = false
+  '';
+
   # Common configuration for a container on dev0: the base system from
   # modules/common.nix, addresses from the router (DHCPv4 plus SLAAC with a
   # fixed, MAC-free interface identifier matching the inventory's DNS record),
@@ -157,6 +168,11 @@ in
               interfaceName = "ts0";
             };
 
+            systemd.tmpfiles.rules = [
+              "d ${home}/.config/herdr 0755 ${user} users -"
+              "C ${home}/.config/herdr/config.toml 0644 ${user} users - ${herdrConfig}"
+            ];
+
             # Re-run the clone job hourly so additions to repos appear without
             # a restart; the boot-time run comes from claude-remote-control's
             # ordering below.
@@ -188,6 +204,35 @@ in
                     gh repo clone mdlayher/${repo} ${src}/${repo}
                   fi
                 '') repos;
+              };
+
+              # herdr's headless server, so the workspace and its agents come
+              # back after a container restart before anyone attaches. Attach
+              # with `herdr` inside, or `herdr --remote` from a desktop.
+              herdr-server = {
+                description = "herdr server";
+                wantedBy = [ "multi-user.target" ];
+                after = [
+                  "network-online.target"
+                  "dev-repos.service"
+                ];
+                wants = [
+                  "network-online.target"
+                  "dev-repos.service"
+                ];
+                path = [
+                  pkgs.unstable.herdr
+                  pkgs.fish
+                  pkgs.bashInteractive
+                ];
+                serviceConfig = {
+                  User = user;
+                  WorkingDirectory = src;
+                  ExecStart = "${pkgs.unstable.herdr}/bin/herdr server";
+                  ExecStop = "${pkgs.unstable.herdr}/bin/herdr server stop";
+                  Restart = "always";
+                  RestartSec = "5s";
+                };
               };
 
               # Claude Code server mode, so the Claude app can attach sessions
@@ -242,6 +287,9 @@ in
               # Claude Code and its sandbox dependencies come from unstable to track
               # releases closely.
               unstable.claude-code
+
+              # Persistent terminal workspace for agents; see herdr-server below.
+              unstable.herdr
 
               # Go toolchain and tooling; go-tools provides staticcheck. Takes
               # precedence over the base system's Go.

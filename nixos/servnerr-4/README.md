@@ -29,6 +29,12 @@ gh auth login --git-protocol https
 sudo systemctl start dev-repos
 claude auth login
 sudo systemctl start claude-remote-control
+
+# Day to day: herdr keeps a persistent terminal workspace on linuxdev
+# (herdr-server); agents keep running after detaching (ctrl+b q). Attach
+# inside the container, or from a desktop with herdr installed.
+herdr
+herdr --remote mdlayher@linuxdev.dev.lan.servnerr.com
 ```
 
 To add a container: define it with `devContainer` in `dev.nix`, add a `dev0`
