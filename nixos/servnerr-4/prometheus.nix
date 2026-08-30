@@ -74,8 +74,8 @@ let
     }
   ) inputs.self.nixosConfigurations;
 
-  # Everything else: machines not managed by this flake, and exporters which
-  # aren't NixOS services. alerts = false for PCs which are often off.
+  # Machines not managed by this flake. alerts = false for PCs which are often
+  # off.
   otherHosts = {
     monitnerr-1.jobs = {
       consrv.port = 9288;
@@ -88,17 +88,6 @@ let
       };
       ssh = true;
       alerts = false;
-    };
-    # Prusa exporter: https://github.com/pstrobl96/prusa_exporter
-    "${hostName}".jobs = {
-      prusa_prusalink = {
-        port = 10009;
-        metrics_path = "/metrics/prusalink";
-      };
-      prusa_udp = {
-        port = 10009;
-        metrics_path = "/metrics/udp";
-      };
     };
   };
 
