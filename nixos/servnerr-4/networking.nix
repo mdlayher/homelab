@@ -1,5 +1,8 @@
-{ ... }:
+{ config, ... }:
 
+let
+  inventory = config.homelab.inventory;
+in
 {
   networking = {
     # Host name and ID.
@@ -35,7 +38,8 @@
       };
     };
 
-    # 10GbE management LAN with bridge.
+    # 10GbE management LAN with bridge. The switch port is a trunk: mgmt0
+    # untagged, plus the tagged VLANs below.
     netdevs."11-br0".netdevConfig = {
       Name = "br0";
       Kind = "bridge";
@@ -44,6 +48,37 @@
       matchConfig.Name = "br0";
       networkConfig.DHCP = "ipv4";
       dhcpV4Config.ClientIdentifier = "mac";
+
+      # Tagged VLANs carried over br0 for containers.
+      vlan = [ "dev0" ];
+    };
+
+    # Development VLAN, bridged into br-dev0 for containers (see linuxdev.nix).
+    # The host itself has no presence on it: no addresses, no RA.
+    netdevs."12-dev0" = {
+      netdevConfig = {
+        Name = "dev0";
+        Kind = "vlan";
+      };
+      vlanConfig.Id = inventory.interfaces.dev0.vlan;
+    };
+    networks."12-dev0" = {
+      matchConfig.Name = "dev0";
+      bridge = [ "br-dev0" ];
+      networkConfig.LinkLocalAddressing = "no";
+    };
+    netdevs."12-br-dev0".netdevConfig = {
+      Name = "br-dev0";
+      Kind = "bridge";
+    };
+    networks."12-br-dev0" = {
+      matchConfig.Name = "br-dev0";
+      networkConfig = {
+        LinkLocalAddressing = "no";
+        IPv6AcceptRA = false;
+        ConfigureWithoutCarrier = true;
+      };
+      linkConfig.RequiredForOnline = "no";
     };
 
     # 10GbE NIC tied to bridge.
