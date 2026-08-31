@@ -46,8 +46,8 @@ let
   # first boot only so that later edits win; keep it mirroring the live
   # config inside the container. Updates come from nixpkgs, not herdr's
   # self-updater; panes run login shells so PATH matches SSH logins. Toasts
-  # go to the outer terminal so agent notifications also reach remote
-  # attaches, and worktree checkouts open under ~/src/worktrees.
+  # stay in-app (outer-terminal delivery proved noisy), and worktree
+  # checkouts open under ~/src/worktrees.
   herdrConfig = pkgs.writeText "herdr-config.toml" ''
     onboarding = false
 
@@ -69,7 +69,7 @@ let
     show_agent_labels_on_pane_borders = false
 
     [ui.toast]
-    delivery = "terminal"
+    delivery = "herdr"
   '';
 
   # Common configuration for a container on dev0: the base system from
