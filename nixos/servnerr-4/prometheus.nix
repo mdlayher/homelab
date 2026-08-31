@@ -76,7 +76,7 @@ let
 
   # Containers on those machines which have a dev0 inventory entry, by their
   # DNS name. Other containers share their host's network and need nothing.
-  inherit (config.homelab.inventory) domain roles;
+  inherit (config.homelab.inventory) domain roles tailnetDomain;
   containerHosts = lib.listToAttrs (
     lib.concatMap (
       system:
@@ -108,9 +108,6 @@ let
   });
 
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
-
-  # Tailnet MagicDNS suffix for Tailscale Services names.
-  tailnetDomain = "taild07ab.ts.net";
 
   # Blackbox HTTP probe targets: local service health endpoints and devices,
   # plus the same health endpoints through their Tailscale Services TLS

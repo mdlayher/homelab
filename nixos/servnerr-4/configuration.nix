@@ -124,8 +124,14 @@ in
       };
 
       settings = {
-        # Bind to all interfaces.
-        server.http_addr = "";
+        server = {
+          # Bind to all interfaces.
+          http_addr = "";
+
+          # Advertise the Tailscale Services TLS frontend, so links Grafana
+          # generates resolve anywhere on the tailnet.
+          root_url = "https://grafana.${config.homelab.inventory.tailnetDomain}/";
+        };
 
         # NixOS 26.05 no longer ships a default secret_key. Grafana was reset
         # (fresh /var/lib/grafana) when switching to the flake, so this key is

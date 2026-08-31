@@ -15,6 +15,10 @@
   # Internal DNS domain for trusted LANs.
   domain = "lan.servnerr.com";
 
+  # Tailnet MagicDNS suffix, under which machines and Tailscale Services
+  # (see nixos/modules/tailscale-serve.nix) get their names.
+  tailnetDomain = "taild07ab.ts.net";
+
   # Stable role names for machines whose hostnames carry a generation number.
   # Configuration on other machines references roles rather than hostnames,
   # so replacing hardware only touches this file, the new machine's own
