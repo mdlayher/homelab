@@ -43,14 +43,33 @@ let
   ];
 
   # Initial herdr configuration, copied into the user's config directory on
-  # first boot only so that later edits win. Updates come from nixpkgs, not
-  # herdr's self-updater; panes run login shells so PATH matches SSH logins.
+  # first boot only so that later edits win; keep it mirroring the live
+  # config inside the container. Updates come from nixpkgs, not herdr's
+  # self-updater; panes run login shells so PATH matches SSH logins. Toasts
+  # go to the outer terminal so agent notifications also reach remote
+  # attaches, and worktree checkouts open under ~/src/worktrees.
   herdrConfig = pkgs.writeText "herdr-config.toml" ''
+    onboarding = false
+
     [terminal]
     shell_mode = "login"
 
     [update]
     version_check = false
+
+    [keys]
+    focus_agent = "prefix+alt+1..9"
+
+    [worktrees]
+    directory = "~/src/worktrees"
+
+    [ui]
+    agent_panel_sort = "priority"
+    status_indicators = "dots"
+    show_agent_labels_on_pane_borders = false
+
+    [ui.toast]
+    delivery = "terminal"
   '';
 
   # Common configuration for a container on dev0: the base system from
@@ -278,14 +297,20 @@ in
                   pkgs.fish
                   pkgs.bashInteractive
                 ];
+                # Install the Claude Code integration (a hook in ~/.claude)
+                # and the herdr skill before each start so both track the
+                # herdr package version. The hook reports agent session IDs,
+                # letting herdr resume conversations with `claude --resume`
+                # after a restart; the skill lets a Claude session drive
+                # herdr's panes and agents when asked.
+                preStart = ''
+                  herdr integration install claude
+                  mkdir -p ${home}/.claude/skills/herdr
+                  herdr --skill > ${home}/.claude/skills/herdr/SKILL.md
+                '';
                 serviceConfig = {
                   User = user;
                   WorkingDirectory = src;
-                  # Install the Claude Code integration (a hook in ~/.claude)
-                  # before each start so it tracks the herdr package version.
-                  # Agent panes then report their session IDs, letting herdr
-                  # resume them with `claude --resume` after a restart.
-                  ExecStartPre = "${pkgs.unstable.herdr}/bin/herdr integration install claude";
                   ExecStart = "${pkgs.unstable.herdr}/bin/herdr server";
                   ExecStop = "${pkgs.unstable.herdr}/bin/herdr server stop";
                   Restart = "always";
