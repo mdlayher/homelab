@@ -38,7 +38,10 @@ in
     description = ''
       Tailscale Services hosted by this machine: service names (without the
       svc: prefix) to endpoint mappings of "tcp:<port>" on the service's
-      virtual IP to a local http://, https://, or tcp:// target.
+      virtual IP to a local http://, https://, tcp://, or
+      tls-terminated-tcp:// target. The target scheme selects the serve mode:
+      tls-terminated-tcp terminates TLS with a certificate for the service
+      name and forwards plaintext to the local port.
     '';
   };
 

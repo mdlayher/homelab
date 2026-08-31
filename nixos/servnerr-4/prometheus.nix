@@ -232,12 +232,22 @@ let
 in
 {
   # Stable tailnet names for the monitoring web UIs, e.g.
-  # http://grafana.<tailnet>.ts.net; see nixos/modules/tailscale-serve.nix.
-  homelab.tailscale.services = {
-    alertmanager."tcp:80" = "http://127.0.0.1:${toString config.services.prometheus.alertmanager.port}";
-    grafana."tcp:80" = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
-    prometheus."tcp:80" = "http://127.0.0.1:${toString config.services.prometheus.port}";
-  };
+  # https://grafana.<tailnet>.ts.net; see nixos/modules/tailscale-serve.nix.
+  # Port 443 terminates TLS with an automatically provisioned certificate for
+  # the service name and forwards plaintext to the local backend; port 80
+  # stays as a plain HTTP convenience.
+  homelab.tailscale.services =
+    let
+      web = port: {
+        "tcp:80" = "http://127.0.0.1:${toString port}";
+        "tcp:443" = "tls-terminated-tcp://127.0.0.1:${toString port}";
+      };
+    in
+    {
+      alertmanager = web config.services.prometheus.alertmanager.port;
+      grafana = web config.services.grafana.settings.server.http_port;
+      prometheus = web config.services.prometheus.port;
+    };
 
   # Secrets consumed by prometheus and alertmanager.
   sops.secrets = {
