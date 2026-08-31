@@ -68,6 +68,14 @@ in
           annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} reports a critical warning.";
         }
         {
+          alert = "TLSCertificateExpiringSoon";
+          # Tailscale renews service certificates automatically well before
+          # expiry, so anything under 7 days means renewal is broken.
+          expr = "probe_ssl_earliest_cert_expiry - time() < 7 * 86400";
+          for = "1h";
+          annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 7 days.";
+        }
+        {
           alert = "ZFSPoolUnhealthy";
           # 0 is ONLINE; anything greater is DEGRADED, FAULTED, OFFLINE,
           # UNAVAIL, REMOVED, or SUSPENDED.

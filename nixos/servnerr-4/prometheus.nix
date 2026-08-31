@@ -109,13 +109,23 @@ let
 
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
 
-  # Blackbox HTTP probe targets: local service health endpoints and devices.
+  # Tailnet MagicDNS suffix for Tailscale Services names.
+  tailnetDomain = "taild07ab.ts.net";
+
+  # Blackbox HTTP probe targets: local service health endpoints and devices,
+  # plus the same health endpoints through their Tailscale Services TLS
+  # frontends, which also validates the certificates; see the
+  # TLSCertificateExpiringSoon alert.
   probes = [
     "http://living-room-myq-hub.iot.ipv4"
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
     "${plexUrl}/identity"
     "${prometheusUrl}/-/healthy"
+
+    "https://alertmanager.${tailnetDomain}/-/healthy"
+    "https://grafana.${tailnetDomain}/api/health"
+    "https://prometheus.${tailnetDomain}/-/healthy"
   ];
 
   # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
