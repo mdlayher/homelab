@@ -53,7 +53,7 @@ in
       vlan = [ "dev0" ];
     };
 
-    # Development VLAN, bridged into br-dev0 for containers (see linuxdev.nix).
+    # Development VLAN, bridged into br-dev0 for containers (see dev.nix).
     # The host itself has no presence on it: no addresses, no RA.
     netdevs."12-dev0" = {
       netdevConfig = {

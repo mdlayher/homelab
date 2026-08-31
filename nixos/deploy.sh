@@ -27,8 +27,8 @@ export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 # only derivations and sources are copied, and everything else comes from the
 # binary cache.
 #
-# DEPLOY_USER overrides the SSH user during the matt -> mdlayher migration.
-user=${DEPLOY_USER:-matt}
+# DEPLOY_USER overrides the SSH user if necessary.
+user=${DEPLOY_USER:-mdlayher}
 
 cd "$(dirname "$0")/.."
 exec nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \

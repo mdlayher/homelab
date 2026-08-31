@@ -13,9 +13,6 @@
 
   system.stateVersion = "26.05";
 
-  # Transitional: this machine uses the new admin username.
-  homelab.user = "mdlayher";
-
   # The Pi's hardware watchdog (bcm2835_wdt) tops out around 15 seconds, so
   # the 60 second default from common.nix does not fit.
   systemd.settings.Manager.RuntimeWatchdogSec = lib.mkForce "10s";

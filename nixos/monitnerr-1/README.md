@@ -19,7 +19,7 @@ binary cache.
    removed): declare `monitnerr-1.ipv6 = "eui64"` on `mgmt0` in
    `nixos/inventory/default.nix`, and add its `mac`, `ipv4`, and `iid` to
    `nixos/inventory/secrets.yaml`, computing the EUI-64 IID from the MAC with
-   the `lib.nix` helper; see nixos/README.md. Deploy routnerr-3 to publish
+   the `lib.nix` helper; see nixos/README.md. Deploy the router to publish
    DHCP and DNS records.
 3. Add the machine's SSH host key as a sops recipient, so that the user
    password hashes in `nixos/secrets/common.yaml` (required at activation) and

@@ -50,7 +50,7 @@ inventory, the new machine's own directory, and `flake.nix`. During a
 generation swap, append the new machine to the role: consumers which fan out
 over every holder cover both machines until the old one is removed.
 Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
-router's DHCP and DNS. `dev0` is carried tagged to servnerr-4 for its
+router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed.
 Every address, prefix, and MAC lives in `inventory/secrets.yaml`:
 
@@ -105,15 +105,15 @@ nix fmt
 nix flake update
 
 # Deploy from any machine with this checkout: evaluates locally, then builds
-# and activates over SSH as matt with a sudo prompt. Prefer `test` before
+# and activates over SSH as mdlayher with a sudo prompt. Prefer `test` before
 # `switch` on the router: it activates without a boot entry, so a reboot
 # reverts it.
-nixos/deploy.sh servnerr-4
-nixos/deploy.sh routnerr-3 test
-nixos/deploy.sh routnerr-3 switch
+nixos/deploy.sh <host>
+nixos/deploy.sh <host> test
+nixos/deploy.sh <host> switch
 
 # Or on the machine itself.
-sudo nixos-rebuild switch --flake /home/matt/src/homelab#servnerr-4
+sudo nixos-rebuild switch --flake /home/mdlayher/src/homelab#<host>
 ```
 
 ## Upgrades

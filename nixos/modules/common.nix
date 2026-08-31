@@ -26,7 +26,7 @@ in
 {
   options.homelab.user = lib.mkOption {
     type = lib.types.str;
-    default = "matt";
+    default = "mdlayher";
     description = "Name of the primary administrative user on machines.";
   };
 
@@ -247,7 +247,7 @@ in
           openFirewall = !isHost;
         };
 
-        # Disk health; alerts are raised by Prometheus on servnerr-4.
+        # Disk health; alerts are raised by Prometheus on the server.
         smartctl.enable = isHost;
       };
 
@@ -294,7 +294,7 @@ in
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
       # Password hashes must be available before users are created.
-      secrets = lib.genAttrs [ "users/matt_password_hash" "users/root_password_hash" ] (_: {
+      secrets = lib.genAttrs [ "users/mdlayher_password_hash" "users/root_password_hash" ] (_: {
         sopsFile = ../secrets/common.yaml;
         neededForUsers = true;
       });
@@ -314,7 +314,7 @@ in
             "dialout"
             "wheel"
           ];
-          hashedPasswordFile = config.sops.secrets."users/matt_password_hash".path;
+          hashedPasswordFile = config.sops.secrets."users/mdlayher_password_hash".path;
           shell = pkgs.bashInteractive;
 
           openssh.authorizedKeys.keys = [

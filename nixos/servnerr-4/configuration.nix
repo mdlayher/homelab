@@ -33,9 +33,6 @@ in
 
   system.stateVersion = "22.11";
 
-  # Transitional: this machine uses the new admin username.
-  homelab.user = "mdlayher";
-
   # Secrets for this machine, encrypted with sops. Edit with:
   #   sops nixos/servnerr-4/secrets.yaml
   sops = {

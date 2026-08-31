@@ -130,7 +130,7 @@ let
       hostBridge = "br-dev0";
 
       bindMounts.${passwordHash} = {
-        hostPath = config.sops.secrets."users/matt_password_hash".path;
+        hostPath = config.sops.secrets."users/mdlayher_password_hash".path;
         isReadOnly = true;
       };
 

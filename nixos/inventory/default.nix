@@ -72,7 +72,7 @@
       trusted = false;
     };
 
-    # Development VLAN: internet only, for containers on servnerr-4 running
+    # Development VLAN: internet only, for containers on the server running
     # agents and networking experiments.
     dev0 = {
       vlan = 20;

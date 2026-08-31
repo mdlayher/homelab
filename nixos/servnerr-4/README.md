@@ -9,7 +9,7 @@ duties. It's a custom built machine with an AMD Ryzen 9 3900x processor.
 `nixos/inventory/`), bridged through `br-dev0` on the 10GbE NIC. They reach the
 internet and each other, but not the rest of the LAN. Each gets a static lease
 and a `<name>.dev.lan.servnerr.com` record from its inventory entry, and
-`mdlayher` can SSH in with matt's key and password from the host.
+`mdlayher` can SSH in with the host admin user's key and password.
 
 ```sh
 # Root shell in a container, from the host.
