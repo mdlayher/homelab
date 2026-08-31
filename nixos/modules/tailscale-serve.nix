@@ -62,7 +62,8 @@ in
           ${tailscale}/bin/tailscale status >/dev/null 2>&1 && break
           sleep 2
         done
-        exec ${tailscale}/bin/tailscale serve set-config ${serveConfig} --all
+        # Flags must precede the filename despite the CLI's usage string.
+        exec ${tailscale}/bin/tailscale serve set-config --all ${serveConfig}
       '';
     };
   };
