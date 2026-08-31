@@ -296,6 +296,8 @@ in
                   pkgs.unstable.herdr
                   pkgs.fish
                   pkgs.bashInteractive
+                  # The server shells out to git for worktree create/remove.
+                  pkgs.git
                 ];
                 # Install the Claude Code integration (a hook in ~/.claude)
                 # and the herdr skill before each start so both track the
