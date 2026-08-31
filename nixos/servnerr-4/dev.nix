@@ -34,7 +34,12 @@ let
     "bgpdev"
     "bmp"
     "consrv"
+    "ethtool"
     "homelab"
+    "ndp"
+    "netlink"
+    "socket"
+    "vsock"
   ];
 
   # Initial herdr configuration, copied into the user's config directory on
