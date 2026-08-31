@@ -21,12 +21,16 @@ shift $(( $# >= 2 ? 2 : 1 ))
 export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 }experimental-features = nix-command flakes"
 
-# Log in as matt and escalate with sudo, prompting for the password; root SSH
-# login is disabled everywhere. Paths built locally are unsigned and matt is
-# not a trusted user on the machines, so build on the machine itself: only
-# derivations and sources are copied, and everything else comes from the
+# Log in as the admin user and escalate with sudo, prompting for the password;
+# root SSH login is disabled everywhere. Paths built locally are unsigned and
+# the user is not trusted on the machines, so build on the machine itself:
+# only derivations and sources are copied, and everything else comes from the
 # binary cache.
+#
+# DEPLOY_USER overrides the SSH user during the matt -> mdlayher migration.
+user=${DEPLOY_USER:-matt}
+
 cd "$(dirname "$0")/.."
 exec nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
   "$action" --flake ".#$host" \
-  --build-host "matt@$host" --target-host "matt@$host" --sudo --ask-sudo-password "$@"
+  --build-host "$user@$host" --target-host "$user@$host" --sudo --ask-sudo-password "$@"

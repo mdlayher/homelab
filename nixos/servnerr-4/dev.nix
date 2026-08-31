@@ -16,12 +16,12 @@ let
   inventory = config.homelab.inventory;
   dev0 = inventory.interfaces.dev0;
 
-  # The user inside the containers. The host's matt account provides its SSH
-  # key and password hash, but the name is mdlayher going forward.
+  # The user inside the containers. The host's admin account provides its SSH
+  # key and password hash.
   user = "mdlayher";
   home = "/home/${user}";
   src = "${home}/src";
-  hostUser = config.users.users.matt;
+  hostUser = config.users.users.${config.homelab.user};
 
   # The host's decrypted password hash, shared into each container so sudo
   # works with the same password.
