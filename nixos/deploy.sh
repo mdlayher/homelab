@@ -31,6 +31,16 @@ export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 user=${DEPLOY_USER:-mdlayher}
 
 cd "$(dirname "$0")/.."
-exec nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
+nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
   "$action" --flake ".#$host" \
   --build-host "$user@$host" --target-host "$user@$host" --sudo --ask-sudo-password "$@"
+
+# The linuxdev container is never restarted by a host switch so that agent
+# sessions inside survive; its new inner configuration is instead activated
+# with a reload once the new host system is live (switch or test, not boot).
+# Passwordless via a sudoers rule next to the container definition. Changes
+# to the container scaffolding itself (bind mounts, networking, tun) still
+# need a manual restart, which kills sessions.
+if [[ $host == servnerr-4 && ( $action == switch || $action == test ) ]]; then
+  ssh "$user@$host" sudo systemctl reload container@linuxdev.service
+fi

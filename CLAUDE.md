@@ -6,9 +6,11 @@ Guidance for agents working in this repository.
 
 - Never commit or push without explicit approval; Matt drives git.
 - Agent sessions usually run inside the `linuxdev` container on servnerr-4.
-  Deploys to servnerr-4 do not restart it (`restartIfChanged = false`), but
-  changes to its container scaffolding (bind mounts, networking, tun) need a
-  manual restart, which kills the session — flag those before deploying.
+  Deploys to servnerr-4 do not restart it (`restartIfChanged = false`);
+  deploy.sh instead reloads it, which activates the new inner configuration
+  in place and restarts only the inner units that changed. Changes to its
+  container scaffolding (bind mounts, networking, tun) still need a manual
+  restart, which kills the session — flag those before deploying.
 
 ## Deploys and upgrades
 
