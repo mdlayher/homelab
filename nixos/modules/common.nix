@@ -302,7 +302,6 @@ in
         uid = 1000;
         extraGroups = [
           "dialout"
-          "libvirtd"
           "wheel"
         ];
         hashedPasswordFile = config.sops.secrets."users/matt_password_hash".path;

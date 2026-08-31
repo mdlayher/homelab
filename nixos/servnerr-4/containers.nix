@@ -30,9 +30,4 @@
     };
   };
 
-  # libvirtd hypervisor.
-  virtualisation.libvirtd = {
-    enable = true;
-    onBoot = "start";
-  };
 }
