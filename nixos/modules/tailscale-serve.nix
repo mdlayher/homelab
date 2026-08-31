@@ -17,13 +17,35 @@
 let
   cfg = config.homelab.tailscale.services;
 
+  # The configuration file format cannot express TLS termination as of
+  # tailscale 1.102 (its TCP apply path only accepts tcp:// and unix://
+  # targets), so those endpoints are split out and applied with the CLI's
+  # --tls-terminated-tcp flag after the base configuration.
+  isTLS = target: lib.hasPrefix "tls-terminated-tcp://" target;
+
+  baseServices = lib.filterAttrs (_: endpoints: endpoints != { }) (
+    lib.mapAttrs (_: lib.filterAttrs (_: target: !isTLS target)) cfg
+  );
+
   serveConfig = pkgs.writeText "tailscale-serve.json" (
     builtins.toJSON {
       version = "0.0.1";
       services = lib.mapAttrs' (
         name: endpoints: lib.nameValuePair "svc:${name}" { inherit endpoints; }
-      ) cfg;
+      ) baseServices;
     }
+  );
+
+  tlsCommands = lib.concatLists (
+    lib.mapAttrsToList (
+      name: endpoints:
+      lib.mapAttrsToList (
+        port: target:
+        "${tailscale}/bin/tailscale serve --service=svc:${name} "
+        + "--tls-terminated-tcp=${lib.removePrefix "tcp:" port} "
+        + lib.removePrefix "tls-terminated-tcp://" target
+      ) (lib.filterAttrs (_: isTLS) endpoints)
+    ) cfg
   );
 
   tailscale = config.services.tailscale.package;
@@ -51,7 +73,10 @@ in
       after = [ "tailscaled.service" ];
       requires = [ "tailscaled.service" ];
       wantedBy = [ "multi-user.target" ];
-      restartTriggers = [ serveConfig ];
+      restartTriggers = [
+        serveConfig
+        (builtins.toJSON tlsCommands)
+      ];
 
       serviceConfig = {
         Type = "oneshot";
@@ -59,14 +84,17 @@ in
       };
 
       # tailscaled may still be connecting at boot; failure after the retries
-      # surfaces through the SystemdUnitFailed alert.
+      # surfaces through the SystemdUnitFailed alert. set-config --all clears
+      # all previous serve state before the TLS endpoints are layered on, so
+      # each run converges on exactly this configuration.
       script = ''
         for _ in $(seq 30); do
           ${tailscale}/bin/tailscale status >/dev/null 2>&1 && break
           sleep 2
         done
         # Flags must precede the filename despite the CLI's usage string.
-        exec ${tailscale}/bin/tailscale serve set-config --all ${serveConfig}
+        ${tailscale}/bin/tailscale serve set-config --all ${serveConfig}
+        ${lib.concatLines tlsCommands}
       '';
     };
   };
