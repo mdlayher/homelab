@@ -12,8 +12,8 @@ require (
 	github.com/mdlayher/metricslite v0.0.0-20220406114248-d75c70dd4887
 	github.com/prometheus/client_golang v1.20.5
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
-	golang.org/x/crypto v0.31.0
-	golang.org/x/net v0.32.0
+	golang.org/x/crypto v0.52.0
+	golang.org/x/net v0.56.0
 	golang.org/x/sync v0.10.0
 )
 
@@ -27,7 +27,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mdlayher/consrv v1.2.1
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.61.0 // indirect
