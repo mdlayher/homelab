@@ -279,7 +279,9 @@ in
   # Prometheus monitoring server and exporter configuration.
   services.prometheus = {
     enable = true;
-    webExternalUrl = prometheusUrl;
+    # Advertise the Tailscale Services TLS frontend, so links in alerts and
+    # the web UI resolve anywhere on the tailnet.
+    webExternalUrl = "https://prometheus.${tailnetDomain}/";
 
     # Credential files are not visible to promtool in the build sandbox.
     checkConfig = "syntax-only";
@@ -288,7 +290,8 @@ in
 
     alertmanager = {
       enable = true;
-      webExternalUrl = alertmanagerUrl;
+      # As above: silence links in Discord notifications use this URL.
+      webExternalUrl = "https://alertmanager.${tailnetDomain}/";
 
       configuration = {
         templates = [ (toString alertmanagerTemplates) ];
