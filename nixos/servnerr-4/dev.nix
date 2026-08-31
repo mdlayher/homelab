@@ -299,8 +299,11 @@ in
               # releases closely.
               unstable.claude-code
 
-              # Persistent terminal workspace for agents; see herdr-server below.
+              # Persistent terminal workspace for agents; see herdr-server
+              # below. Its Claude Code integration hook needs python3 to
+              # report agent session IDs, and exits silently without it.
               unstable.herdr
+              python3
 
               # Go toolchain and tooling; go-tools provides staticcheck. Takes
               # precedence over the base system's Go.
