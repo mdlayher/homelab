@@ -29,7 +29,10 @@ let
 
   # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
   repos = [
+    "bfd"
+    "bgp"
     "bgpdev"
+    "bmp"
     "consrv"
     "homelab"
   ];
