@@ -299,6 +299,13 @@ in
               gh
             ];
 
+            # Per-repository dev shells (e.g. bgpdev's nix flake) activated on
+            # cd via direnv, with nix-direnv caching the flake evaluation.
+            programs.direnv = {
+              enable = true;
+              nix-direnv.enable = true;
+            };
+
             # Let the VS Code Remote-SSH server, which VS Code downloads as a
             # prebuilt dynamically linked binary, run on NixOS.
             programs.nix-ld = {
