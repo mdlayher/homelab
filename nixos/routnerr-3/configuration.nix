@@ -18,6 +18,9 @@ in
 
   system.stateVersion = "23.05";
 
+  # Transitional: this machine uses the new admin username.
+  homelab.user = "mdlayher";
+
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
   boot.kernelParams = [ "console=ttyS0,115200n8" ];
 
