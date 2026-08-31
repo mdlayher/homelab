@@ -15,6 +15,21 @@
   # Internal DNS domain for trusted LANs.
   domain = "lan.servnerr.com";
 
+  # Stable role names for machines whose hostnames carry a generation number.
+  # Configuration on other machines references roles rather than hostnames,
+  # so replacing hardware only touches this file, the new machine's own
+  # directory, and flake.nix.
+  #
+  # Each role lists its holders in precedence order: the first entry is the
+  # primary, and during a generation swap the new machine is appended, so
+  # consumers which fan out over every holder (such as Prometheus) cover
+  # both machines until the old one is removed.
+  roles = {
+    router = [ "routnerr-3" ];
+    server = [ "servnerr-4" ];
+    monitor = [ "monitnerr-1" ];
+  };
+
   # Subnets by router interface name. VLAN 0 is the untagged management LAN.
   subnets = {
     # Physical management LAN: servers and network infrastructure.

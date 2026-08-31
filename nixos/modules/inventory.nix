@@ -123,7 +123,7 @@ in
 
   config = {
     homelab.inventory = {
-      inherit (inventory) domain;
+      inherit (inventory) domain roles;
       inherit interfaces;
       ulaPrefix = placeholder "site/ula_prefix";
       hosts = lib.listToAttrs (
