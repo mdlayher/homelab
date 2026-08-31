@@ -5,18 +5,16 @@
 let
   consrv = pkgs.buildGoModule {
     pname = "consrv";
-    # main, for multi-port adapter support via the "interface" device option;
-    # drop back to tags once a release after v1.2.1 exists.
-    version = "1.2.1-unstable-2026-08-30";
+    version = "1.3.0";
 
     src = pkgs.fetchFromGitHub {
       owner = "mdlayher";
       repo = "consrv";
-      rev = "05dd0dbb9cba1e0bf238cdf0fd2a8888d043ca45";
-      hash = "sha256-wUKv1joCiByfa7jT5QkG/joYMiQ0dwdi7pNlSUvnzFg=";
+      rev = "v1.3.0";
+      hash = "sha256-0tUt4fXqpWLmGXo9S4KBHafbyDickfbOCjLpZXERsDk=";
     };
 
-    vendorHash = "sha256-n35qr0RcOHKOzpGzYV2DAefp899DHj2TQCpYfyg7ozQ=";
+    vendorHash = "sha256-/kU1hGu1LLHxy7Df7bu+9Qg6upu23BcV8j7xVOMFcTA=";
 
     subPackages = [ "cmd/consrv" ];
   };
