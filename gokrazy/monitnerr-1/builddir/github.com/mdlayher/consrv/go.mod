@@ -12,8 +12,8 @@ require (
 	github.com/mdlayher/metricslite v0.0.0-20220406114248-d75c70dd4887
 	github.com/prometheus/client_golang v1.20.5
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
-	golang.org/x/crypto v0.31.0
-	golang.org/x/net v0.32.0
+	golang.org/x/crypto v0.52.0
+	golang.org/x/net v0.56.0
 	golang.org/x/sync v0.10.0
 )
 
