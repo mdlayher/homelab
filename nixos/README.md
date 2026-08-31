@@ -12,7 +12,22 @@ Shared configuration lives in `modules/`:
 - `modules/common.nix`: base system for machines and containers: packages, shell with the dotfiles from `dotfiles/`, users, nix settings, auto-upgrade
 - `modules/inventory.nix`: exposes the network inventory as `config.homelab.inventory`
 - `modules/tailscale.nix`: Tailscale client
+- `modules/tailscale-serve.nix`: Tailscale Services hosted by a machine, see below
 - `modules/unstable.nix`: exposes the `nixpkgs-unstable` input as `pkgs.unstable`
+
+## Tailscale Services
+
+Well-known service names on the tailnet (`grafana`, `prometheus`,
+`alertmanager` on the server; `consrv` on the monitor) decouple frequently
+used endpoints from generation-numbered hostnames: `homelab.tailscale.services`
+on each machine renders a serve configuration which is applied declaratively at
+activation. The tailnet side is manual, once per service, in the admin console:
+
+1. Define the service (`svc:<name>`) with its `tcp:` port on the Services page.
+2. Give the hosting machine a tag-based identity (service hosts cannot be
+   user-owned devices).
+3. Approve the machine as a host for the service, or add an auto-approval
+   policy for its tag.
 
 ## Secrets
 
@@ -28,6 +43,12 @@ age. Recipients are listed in `.sops.yaml`: each machine's SSH host key (via
 
 `inventory/default.nix` declares the network's structure: subnets (VLAN ID,
 trust level) and the hosts on them, with each host's IPv6 addressing mode.
+Its top-level `roles` map lists the machines holding each role (`router`,
+`server`, `monitor`) in precedence order: configuration on other machines
+references `inventory.roles.<role>`, so a hardware swap only touches the
+inventory, the new machine's own directory, and `flake.nix`. During a
+generation swap, append the new machine to the role: consumers which fan out
+over every holder cover both machines until the old one is removed.
 Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to servnerr-4 for its
 containers, so its switch port must be a trunk with VLAN 20 allowed.

@@ -76,7 +76,7 @@ let
 
   # Containers on those machines which have a dev0 inventory entry, by their
   # DNS name. Other containers share their host's network and need nothing.
-  inherit (config.homelab.inventory) domain;
+  inherit (config.homelab.inventory) domain roles;
   containerHosts = lib.listToAttrs (
     lib.concatMap (
       system:
@@ -92,8 +92,6 @@ let
   # Machines not managed by this flake (alerts = false for PCs which are often
   # off), plus jobs which discover cannot find on managed machines.
   otherHosts = {
-    # consrv exposes its own metrics endpoint; see nixos/monitnerr-1/consrv.nix.
-    monitnerr-1.jobs.consrv.port = 9288;
     nerr-4 = {
       jobs = {
         apcupsd.port = 9162;
@@ -102,7 +100,12 @@ let
       ssh = true;
       alerts = false;
     };
-  };
+  }
+  # consrv exposes its own metrics endpoint on every monitor role holder; see
+  # the monitor host's consrv.nix.
+  // lib.genAttrs roles.monitor (_: {
+    jobs.consrv.port = 9288;
+  });
 
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
 
@@ -124,9 +127,10 @@ let
     "2606:4700:4700::1111"
   ];
 
-  # Blackbox DNS probe targets: the router's CoreDNS, exercising resolution of
-  # a known internal name end to end rather than just process liveness.
-  dnsServers = [ "routnerr-3:53" ];
+  # Blackbox DNS probe targets: CoreDNS on every router role holder,
+  # exercising resolution of a known internal name end to end rather than
+  # just process liveness.
+  dnsServers = map (name: "${name}:53") roles.router;
 
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
@@ -227,6 +231,14 @@ let
   ];
 in
 {
+  # Stable tailnet names for the monitoring web UIs, e.g.
+  # http://grafana.<tailnet>.ts.net; see nixos/modules/tailscale-serve.nix.
+  homelab.tailscale.services = {
+    alertmanager."tcp:80" = "http://127.0.0.1:${toString config.services.prometheus.alertmanager.port}";
+    grafana."tcp:80" = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
+    prometheus."tcp:80" = "http://127.0.0.1:${toString config.services.prometheus.port}";
+  };
+
   # Secrets consumed by prometheus and alertmanager.
   sops.secrets = {
     "alertmanager/discord_webhook_url".restartUnits = [ "alertmanager.service" ];

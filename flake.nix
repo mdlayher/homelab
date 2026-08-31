@@ -38,6 +38,7 @@
             ./nixos/modules/unstable.nix
             ./nixos/modules/inventory.nix
             ./nixos/modules/tailscale.nix
+            ./nixos/modules/tailscale-serve.nix
             sops-nix.nixosModules.sops
             ./nixos/${name}/configuration.nix
             { networking.hostName = name; }

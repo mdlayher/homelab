@@ -24,6 +24,10 @@ let
   hostKey = "/var/lib/consrv/host_key";
 in
 {
+  # Stable tailnet name for the serial consoles on the standard SSH port:
+  # ssh router@consrv.<tailnet>.ts.net; see nixos/modules/tailscale-serve.nix.
+  homelab.tailscale.services.consrv."tcp:22" = "tcp://127.0.0.1:2222";
+
   systemd.services.consrv = {
     description = "consrv serial console SSH server";
     documentation = [ "https://github.com/mdlayher/consrv" ];
