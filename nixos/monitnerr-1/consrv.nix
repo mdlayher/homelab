@@ -3,7 +3,11 @@
 { pkgs, ... }:
 
 let
-  consrv = pkgs.buildGoModule {
+  # consrv 1.3.0 requires go >= 1.27, newer than the stable release's default
+  # Go toolchain.
+  buildGoModule = pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; };
+
+  consrv = buildGoModule {
     pname = "consrv";
     version = "1.3.0";
 
