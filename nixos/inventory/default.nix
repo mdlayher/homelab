@@ -60,7 +60,6 @@
         servnerr-4.ipv6 = "token";
         switch-core.ipv6 = "eui64";
         switch-livingroom.ipv6 = "eui64";
-        switch-office.ipv6 = "eui64";
         ups01.ipv6 = "eui64";
       };
     };
