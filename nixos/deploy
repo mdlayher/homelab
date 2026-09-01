@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 # Deploys a machine from this flake over SSH.
 #
-# Usage: nixos/deploy <host> [action] [nixos-rebuild args...]
+# Usage: nixos/deploy <host>|--all [action] [nixos-rebuild args...]
 #
 # action is one of switch (default), test, boot, or dry-activate. On the
 # router, prefer test first: it activates without a boot entry, so a reboot
-# reverts it.
+# reverts it. --all deploys every machine in blast-radius order: the monitor,
+# then the server, then the router.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <host> [switch|test|boot|dry-activate] [nixos-rebuild args...]" >&2
+  echo "usage: $0 <host>|--all [switch|test|boot|dry-activate] [nixos-rebuild args...]" >&2
   exit 2
 fi
 
-host=$1
+if [[ $1 == --all ]]; then
+  hosts=(monitnerr-1 servnerr-4 routnerr-3)
+else
+  hosts=("$1")
+fi
 action=${2:-switch}
 shift $(( $# >= 2 ? 2 : 1 ))
 
@@ -21,26 +26,39 @@ shift $(( $# >= 2 ? 2 : 1 ))
 export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 }experimental-features = nix-command flakes"
 
-# Log in as the admin user and escalate with sudo, prompting for the password;
-# root SSH login is disabled everywhere. Paths built locally are unsigned and
-# the user is not trusted on the machines, so build on the machine itself:
-# only derivations and sources are copied, and everything else comes from the
-# binary cache.
+# Log in as the admin user and escalate with sudo, which authenticates
+# against the forwarded FIDO2 keys: a pause during activation is waiting for
+# a YubiKey touch. Without a key at hand, append --ask-sudo-password for the
+# password fallback. Root SSH login is disabled everywhere. Paths built
+# locally are unsigned and the user is not trusted on the machines, so build
+# on the machine itself: only derivations and sources are copied, and
+# everything else comes from the binary cache.
 #
 # DEPLOY_USER overrides the SSH user if necessary.
 user=${DEPLOY_USER:-mdlayher}
 
 cd "$(dirname "$0")/.."
-nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
-  "$action" --flake ".#$host" \
-  --build-host "$user@$host" --target-host "$user@$host" --sudo --ask-sudo-password "$@"
 
-# The linuxdev container is never restarted by a host switch so that agent
-# sessions inside survive; its new inner configuration is instead activated
-# with a reload once the new host system is live (switch or test, not boot).
-# Passwordless via a sudoers rule next to the container definition. Changes
-# to the container scaffolding itself (bind mounts, networking, tun) still
-# need a manual restart, which kills sessions.
-if [[ $host == servnerr-4 && ( $action == switch || $action == test ) ]]; then
-  ssh "$user@$host" sudo systemctl reload container@linuxdev.service
-fi
+# Share the user's SSH connection multiplexer with nix's own store
+# connections, which otherwise open (and separately authenticate) their own:
+# one live master means one FIDO2 touch covers the whole deploy.
+export NIX_SSHOPTS="-o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h:%p -o ControlPersist=1h${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
+
+echo "deploy: a pause at activation may be waiting for a YubiKey touch" >&2
+for host in "${hosts[@]}"; do
+  echo "deploy: $action $host" >&2
+  nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
+    "$action" --flake ".#$host" \
+    --build-host "$user@$host" --target-host "$user@$host" --sudo "$@"
+
+  # The linuxdev container is never restarted by a host switch so that agent
+  # sessions inside survive; its new inner configuration is instead activated
+  # with a reload once the new host system is live (switch or test, not
+  # boot). The reload's sudo rides the brief credential cache from the
+  # activation above, so it needs no extra touch. Changes to the container
+  # scaffolding itself (bind mounts, networking, tun) still need a manual
+  # restart, which kills sessions.
+  if [[ $host == servnerr-4 && ( $action == switch || $action == test ) ]]; then
+    ssh "$user@$host" sudo systemctl reload container@linuxdev.service
+  fi
+done

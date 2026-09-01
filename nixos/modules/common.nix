@@ -246,23 +246,6 @@ in
       nano.enable = true;
     };
 
-    # Let the admin user trigger an immediate rebuild from the flake on GitHub
-    # without a password, so agents and CI can roll out merged changes on
-    # demand. This only changes deploy timing, not trust: main already becomes
-    # root on every machine nightly via system.autoUpgrade below. Everything
-    # else sudo still prompts, including deploy's ad-hoc activations.
-    security.sudo.extraRules = lib.mkIf isHost [
-      {
-        users = [ user ];
-        commands = [
-          {
-            command = "/run/current-system/sw/bin/systemctl start nixos-upgrade.service";
-            options = [ "NOPASSWD" ];
-          }
-        ];
-      }
-    ];
-
     # sudo authenticates against the forwarded SSH agent's FIDO2 keys in
     # place of a password: every sudo costs a YubiKey touch, on machines and
     # inside dev containers alike, including sessions reusing an open
@@ -271,12 +254,23 @@ in
     security.pam = {
       rssh = {
         enable = true;
-        settings.auth_key_file = "/etc/ssh/${user}_fido_keys";
+        settings = {
+          auth_key_file = "/etc/ssh/${user}_fido_keys";
+          # Prompt when waiting for a touch instead of pausing silently.
+          cue = true;
+        };
       };
       services.sudo.rssh = true;
     };
-    security.sudo.extraConfig = ''
-      Defaults env_keep += "SSH_AUTH_SOCK"
+    # On machines, cache sudo authentication briefly across sessions so a
+    # deploy's back-to-back remote sudo commands cost one touch, not one
+    # each (they arrive as separate TTY-less SSH sessions, which the
+    # default per-TTY cache cannot span). Containers keep per-invocation
+    # touches: agents share the admin's user there, and the cache window
+    # would be theirs too. SSH_AUTH_SOCK survives sudo via the rssh module's
+    # own env_keep.
+    security.sudo.extraConfig = lib.optionalString isHost ''
+      Defaults timestamp_type=global, timestamp_timeout=2
     '';
 
     services = {

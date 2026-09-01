@@ -14,9 +14,11 @@ Guidance for agents working in this repository.
 
 ## Deploys and upgrades
 
-- `nixos/deploy <host>` deploys from the local checkout and prompts for a
-  sudo password: it must run in a real terminal. Agent-driven shells cannot
-  answer the prompt (and would echo the password); ask Matt to run it.
+- `nixos/deploy <host>` deploys from the local checkout; sudo on the machine
+  authenticates by challenging Matt's forwarded FIDO2 keys, pausing for a
+  YubiKey touch only he can perform. Agent-driven deploys stall at that
+  touch (an unexpected blink he will decline); ask Matt to run it. Without
+  a key at hand he appends --ask-sudo-password for the password fallback.
 - `system.autoUpgrade` applies origin/main to every machine nightly (~04:00).
   Anything merged to main deploys itself within a day — deploy from the local
   tree first, then merge, or be ready for the nightly to apply it.

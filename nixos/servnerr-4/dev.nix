@@ -200,23 +200,6 @@ let
   frrConfigFile = "/run/host-secrets/frr.conf";
 in
 {
-  # Let the admin user reload linuxdev without a password, so deploy can
-  # activate the container's new inner configuration right after a host
-  # switch (linuxdev never restarts on a switch; see restartIfChanged below).
-  # Reload only activates configuration that already became root via the
-  # deploy, so this changes convenience, not trust.
-  security.sudo.extraRules = [
-    {
-      users = [ config.homelab.user ];
-      commands = [
-        {
-          command = "/run/current-system/sw/bin/systemctl reload container@linuxdev.service";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
   containers = {
     linuxdev =
       devContainer "linuxdev" "10"

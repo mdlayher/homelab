@@ -13,6 +13,7 @@ end
 
 complete -c deploy -f
 complete -c deploy -n 'test (count (commandline -opc)) -eq 1' -a '(__deploy_hosts)' -d machine
+complete -c deploy -n 'test (count (commandline -opc)) -eq 1' -a '--all' -d 'monitor, then server, then router'
 complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'switch' -d 'activate and add boot entry (default)'
 complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'test' -d 'activate without boot entry; reboot reverts'
 complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'boot' -d 'boot entry only, no activation'
