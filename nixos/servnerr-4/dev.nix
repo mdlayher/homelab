@@ -344,9 +344,12 @@ in
 
             # Per-repository dev shells (e.g. bgpdev's nix flake) activated on
             # cd via direnv, with nix-direnv caching the flake evaluation.
+            # Skip the wall of exported variables on each activation; loading
+            # notices and errors still print.
             programs.direnv = {
               enable = true;
               nix-direnv.enable = true;
+              settings.global.hide_env_diff = true;
             };
 
             # Let the VS Code Remote-SSH server, which VS Code downloads as a
