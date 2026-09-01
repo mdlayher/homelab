@@ -28,7 +28,9 @@ let
 
   # Relay one connection to the newest live forwarded SSH agent socket. sshd
   # drops a socket per session under ~/.ssh/agent; ssh-add exits 2 only when
-  # nothing answers on the other end.
+  # nothing answers on the other end. Having no live socket at all is normal
+  # (no SSH session around) and exits 0 so the unit doesn't report failure;
+  # socat reserves nonzero exits for real relay errors.
   agentRelay = pkgs.writeShellScript "ssh-agent-relay" ''
     for sock in $(${pkgs.coreutils}/bin/ls -t ${home}/.ssh/agent/ 2>/dev/null); do
       sock=${home}/.ssh/agent/$sock
@@ -37,7 +39,8 @@ let
         exec ${pkgs.socat}/bin/socat STDIO "UNIX-CONNECT:$sock"
       fi
     done
-    exit 1
+    echo "no live agent socket, dropping connection" >&2
+    exit 0
   '';
 in
 {
