@@ -35,3 +35,7 @@
 	showInformativeStatus = true
 [push]
 	autoSetupRemote = true
+# Fetches use HTTPS with gh's read-only token and work unattended; pushes
+# rewrite to SSH, which requires the admin's forwarded agent.
+[url "git@github.com:mdlayher/"]
+	pushInsteadOf = https://github.com/mdlayher/

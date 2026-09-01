@@ -325,6 +325,12 @@ in
               gh
             ];
 
+            # GitHub's published host key, pinned so SSH pushes (rewritten
+            # from HTTPS by the shared gitconfig) verify without a
+            # trust-on-first-use prompt.
+            programs.ssh.knownHosts."github.com".publicKey =
+              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+
             # SSH to the machines rides the tailnet (dev0 cannot reach the
             # LAN) and requires a FIDO2 touch per connection, so multiplex
             # connections: one touch covers a deploy's parallel sessions and
