@@ -195,6 +195,14 @@ let
     excludedHosts = hostsWhere (h: !(h.alerts or true));
     excludedJobs = [ snmpCyberpowerJob ];
     routers = hostsWhere (h: h.router or false);
+    # Every host expected to ship logs to Loki: the machines themselves plus
+    # their containers, whose journals the hosting machine ships; see
+    # nixos/modules/alloy.nix.
+    logHosts =
+      lib.attrNames nixosHosts
+      ++ lib.concatMap (system: lib.attrNames system.config.containers) (
+        lib.attrValues inputs.self.nixosConfigurations
+      );
   };
 
   # Discord notification body, rendered inside an embed so markdown links
@@ -302,6 +310,9 @@ in
 
     # Credential files are not visible to promtool in the build sandbox.
     checkConfig = "syntax-only";
+
+    # Accept recording rules remote-written by Loki's ruler; see loki.nix.
+    extraFlags = [ "--web.enable-remote-write-receiver" ];
 
     globalConfig.scrape_interval = "15s";
 

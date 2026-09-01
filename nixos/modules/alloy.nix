@@ -65,6 +65,32 @@ in
         source_labels = ["__journal__systemd_unit"]
         target_label  = "unit"
       }
+
+      // Collapse units with one uniquely named instance per connection or
+      // login, so each does not mint a new stream: sshd and the ssh-agent
+      // relay (the ssh_banner probe alone would create one per minute per
+      // machine), and logind's numbered session scopes. Stable instances
+      // (container@, serial-getty@) keep their names.
+      rule {
+        source_labels = ["unit"]
+        regex         = "sshd@.+"
+        replacement   = "sshd.service"
+        target_label  = "unit"
+      }
+
+      rule {
+        source_labels = ["unit"]
+        regex         = "ssh-agent-relay@.+"
+        replacement   = "ssh-agent-relay.service"
+        target_label  = "unit"
+      }
+
+      rule {
+        source_labels = ["unit"]
+        regex         = "session-.+\\.scope"
+        replacement   = "session.scope"
+        target_label  = "unit"
+      }
     }
 
     loki.source.journal "journal" {

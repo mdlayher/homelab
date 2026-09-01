@@ -8,6 +8,8 @@
   excludedJobs,
   # Hosts acting as routers, whose CoreRAD default route comes from the WAN.
   routers,
+  # Hosts expected to ship their journals to Loki.
+  logHosts,
 }:
 
 let
@@ -54,6 +56,19 @@ in
           expr = ''node_systemd_unit_state{state="failed"} == 1'';
           for = "5m";
           annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has failed.";
+        }
+        # Loki's ruler records per-host log line counts into Prometheus (see
+        # nixos/servnerr-4/loki.nix); a host absent from the metric has
+        # shipped nothing for over an hour, even though its Alloy may still
+        # report up. Every host firing at once means the ruler or its remote
+        # write path is broken, not the shippers.
+        {
+          alert = "HostLogsStalled";
+          expr = lib.concatMapStringsSep " or " (
+            host: ''absent(host:log_lines:count1h{host="${host}"})''
+          ) logHosts;
+          for = "30m";
+          annotations.summary = "{{ $labels.host }} has shipped no logs to Loki for over an hour.";
         }
         {
           alert = "SmartStatusFailed";
