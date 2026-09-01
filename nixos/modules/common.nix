@@ -94,9 +94,10 @@ in
         gitignore.source = ../dotfiles/git/gitignore;
         "git-allowed-signers".source = ../dotfiles/git/allowed_signers;
 
-        # Keys accepted for SSH from the development container; see fidoKeys
-        # above and the sshd Match block below.
-        "ssh/${user}_linuxdev_keys" = lib.mkIf isHost {
+        # Keys accepted for SSH from the development container (sshd Match
+        # below, machines only) and for sudo everywhere (pam_rssh below);
+        # see fidoKeys above.
+        "ssh/${user}_fido_keys" = {
           text = lib.concatLines fidoKeys;
           mode = "0444";
         };
@@ -262,6 +263,22 @@ in
       }
     ];
 
+    # sudo authenticates against the forwarded SSH agent's FIDO2 keys in
+    # place of a password: every sudo costs a YubiKey touch, on machines and
+    # inside dev containers alike, including sessions reusing an open
+    # ControlMaster socket. With no agent forwarded, PAM falls through to
+    # the password as before.
+    security.pam = {
+      rssh = {
+        enable = true;
+        settings.auth_key_file = "/etc/ssh/${user}_fido_keys";
+      };
+      services.sudo.rssh = true;
+    };
+    security.sudo.extraConfig = ''
+      Defaults env_keep += "SSH_AUTH_SOCK"
+    '';
+
     services = {
       # SSH keys only, wherever sshd is enabled, and never as root: deploys log
       # in as the admin user and escalate with sudo.
@@ -280,7 +297,7 @@ in
       # tailnet IPs, its only route to the machines.
       openssh.extraConfig = lib.mkIf isHost ''
         Match User ${user} Address ${inventory.tailnetHosts.linuxdev.ipv4},${inventory.tailnetHosts.linuxdev.ipv6}
-          AuthorizedKeysFile /etc/ssh/${user}_linuxdev_keys
+          AuthorizedKeysFile /etc/ssh/${user}_fido_keys
       '';
 
       prometheus.exporters = {

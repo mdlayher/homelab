@@ -351,17 +351,33 @@ in
             programs.ssh.extraConfig =
               let
                 machines = lib.flatten (lib.attrValues inventory.roles);
+                # dev0 neighbors from the inventory, reached over the dev
+                # VLAN by their LAN names, minus this container itself.
+                neighbors = lib.filter (n: n != "linuxdev.dev") (map (h: h.name) dev0.hosts);
+                shortName = n: lib.head (lib.splitString "." n);
               in
               ''
                 Host ${lib.concatStringsSep " " machines} *.${inventory.tailnetDomain}
                   ControlMaster auto
                   ControlPath ~/.ssh/cm-%r@%h:%p
                   ControlPersist 1h
+                  # sudo on the machines challenges the forwarded agent's
+                  # FIDO2 keys in place of a password.
+                  ForwardAgent yes
               ''
               + lib.concatMapStrings (m: ''
                 Host ${m}
                   HostName ${m}.${inventory.tailnetDomain}
-              '') machines;
+              '') machines
+              # Forward the agent to dev0 neighbors so their sudo can
+              # challenge the FIDO2 keys too. dev0 is untrusted and gets no
+              # answers for the dev DNS records, so neighbors resolve over
+              # mDNS as <name>.local.
+              + lib.concatMapStrings (n: ''
+                Host ${shortName n} ${shortName n}.local
+                  HostName ${shortName n}.local
+                  ForwardAgent yes
+              '') neighbors;
 
             # Per-repository dev shells (e.g. bgpdev's nix flake) activated on
             # cd via direnv, with nix-direnv caching the flake evaluation.
