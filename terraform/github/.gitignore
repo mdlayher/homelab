@@ -1,0 +1,7 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State stays local: the only resources are branch rules, whose content is
+# already in this repository.
+terraform.tfstate
+terraform.tfstate.backup
