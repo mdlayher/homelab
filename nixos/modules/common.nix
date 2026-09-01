@@ -279,11 +279,18 @@ in
       };
     };
 
-    # Nightly rebuild from the flake published on GitHub. Upgrades happen when
-    # flake.lock is bumped on main; see .github/workflows/update-flake-lock.yml.
-    system.autoUpgrade = lib.mkIf isHost {
-      enable = true;
-      flake = "github:mdlayher/homelab";
+    system = {
+      # Nightly rebuild from the flake published on GitHub. Upgrades happen when
+      # flake.lock is bumped on main; see .github/workflows/update-flake-lock.yml.
+      autoUpgrade = lib.mkIf isHost {
+        enable = true;
+        flake = "github:mdlayher/homelab";
+      };
+
+      # Record the repository revision which produced this system, so update
+      # notifications can link to the commit. Dirty local builds have no
+      # revision and are announced without a link.
+      configurationRevision = inputs.self.rev or null;
     };
 
     systemd = {
@@ -303,6 +310,53 @@ in
         # Created ahead of the agent relay socket, which would otherwise make
         # a root-owned ~/.ssh on first boot.
         ++ [ "d ${home}/.ssh 0700 ${user} users -" ];
+
+      # Announce every newly activated system generation to Discord, so
+      # nightly upgrades and manual deploys are visible without logging in.
+      # The path unit fires whenever the system profile is switched; the
+      # service also runs at boot to catch generations first activated by a
+      # reboot, and the state file suppresses repeat announcements.
+      paths.update-notify = lib.mkIf isHost {
+        description = "Watch for newly activated system generations";
+        wantedBy = [ "multi-user.target" ];
+        pathConfig.PathChanged = "/nix/var/nix/profiles/system";
+      };
+      services.update-notify = lib.mkIf isHost {
+        description = "Discord system update notification";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          StateDirectory = "update-notify";
+          Restart = "on-failure";
+          RestartSec = "1min";
+        };
+        # An embed rather than plain content: Discord only renders markdown
+        # links inside embeds, and the commit link is the point.
+        script = ''
+          current="$(readlink /nix/var/nix/profiles/system)"
+          state=/var/lib/update-notify/last
+          if [ -f "$state" ] && [ "$current" = "$(cat "$state")" ]; then
+            exit 0
+          fi
+
+          profile=/nix/var/nix/profiles/system
+          version="$(cat "$profile"/nixos-version)"
+          rev="$("$profile"/sw/bin/nixos-version --json | ${pkgs.jq}/bin/jq -r '.configurationRevision // empty')"
+
+          desc="Applied $version (''${current%-link})"
+          if [ -n "$rev" ]; then
+            desc="$desc · [''${rev:0:7}](https://github.com/mdlayher/homelab/commit/$rev)"
+          fi
+
+          ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
+            '{embeds: [{title: $title, description: $desc}]}' \
+            | ${pkgs.curl}/bin/curl -sfS -m 10 -H 'Content-Type: application/json' -d @- \
+                "$(cat ${config.sops.secrets."discord/webhook_url".path})"
+          echo "$current" > "$state"
+        '';
+      };
 
       # A stable SSH agent path for sessions which outlive the SSH login that
       # spawned them (e.g. herdr panes): each connection is relayed to the
@@ -337,10 +391,15 @@ in
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
       # Password hashes must be available before users are created.
-      secrets = lib.genAttrs [ "users/mdlayher_password_hash" "users/root_password_hash" ] (_: {
-        sopsFile = ../secrets/common.yaml;
-        neededForUsers = true;
-      });
+      secrets =
+        lib.genAttrs [ "users/mdlayher_password_hash" "users/root_password_hash" ] (_: {
+          sopsFile = ../secrets/common.yaml;
+          neededForUsers = true;
+        })
+        // {
+          # Webhook for update-notify above.
+          "discord/webhook_url".sopsFile = ../secrets/common.yaml;
+        };
     };
 
     users = {

@@ -256,9 +256,11 @@ in
       prometheus = web config.services.prometheus.port;
     };
 
-  # Secrets consumed by prometheus and alertmanager.
+  # Secrets consumed by prometheus and alertmanager. The Discord webhook is
+  # the shared one from modules/common.nix, which update notifications also
+  # post to.
   sops.secrets = {
-    "alertmanager/discord_webhook_url".restartUnits = [ "alertmanager.service" ];
+    "discord/webhook_url".restartUnits = [ "alertmanager.service" ];
     "alertmanager/deadman_url".restartUnits = [ "alertmanager.service" ];
     "prometheus/homeassistant_token" = {
       owner = "prometheus";
@@ -269,7 +271,7 @@ in
   # alertmanager runs with DynamicUser, so hand it the Discord webhook URL via
   # systemd credentials rather than a file owned by a static user.
   systemd.services.alertmanager.serviceConfig.LoadCredential = [
-    "discord_webhook_url:${config.sops.secrets."alertmanager/discord_webhook_url".path}"
+    "discord_webhook_url:${config.sops.secrets."discord/webhook_url".path}"
     "deadman_url:${config.sops.secrets."alertmanager/deadman_url".path}"
   ];
 
