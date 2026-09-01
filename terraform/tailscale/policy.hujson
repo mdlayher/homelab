@@ -36,6 +36,17 @@
 			"src":    ["tag:dev"],
 			"dst":    ["tag:hass:8123"],
 		},
+
+		// Deploys run from the development container's interactive panes:
+		// SSH to the machines rides the tailnet, since dev0 cannot reach the
+		// LAN. Network access alone grants nothing here — the machines
+		// authenticate only the admin's SSH key, which exists in the
+		// container solely through his forwarded agent.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:infra:22"],
+		},
 	],
 
 	// Tailscale Services.
