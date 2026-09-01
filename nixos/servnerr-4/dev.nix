@@ -27,6 +27,14 @@ let
   # works with the same password.
   passwordHash = "/run/host-secrets/password_hash";
 
+  # A dedicated non-FIDO SSH keypair for linuxdev, so agents there can reach
+  # dev0 neighbors unattended: the VLAN is restricted and its posture is
+  # effectively open between its own hosts. The private key is a sops secret
+  # bind mounted into linuxdev only; every dev0 container accepts the public
+  # key below.
+  devSSHKey = "/run/host-secrets/dev_ssh_key";
+  devSSHPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF9vB/Zp10y3S5plND/mb+eVzXe6/XCi1ysB2QApOiU9 linuxdev dev0";
+
   # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
   repos = [
     "bfd"
@@ -137,7 +145,7 @@ let
         extraGroups = [ "wheel" ];
         shell = pkgs.bashInteractive;
         hashedPasswordFile = passwordHash;
-        openssh.authorizedKeys.keys = hostUser.openssh.authorizedKeys.keys;
+        openssh.authorizedKeys.keys = hostUser.openssh.authorizedKeys.keys ++ [ devSSHPublicKey ];
       };
     };
   };
@@ -362,15 +370,23 @@ in
                 Host ${m}
                   HostName ${m}.${inventory.tailnetDomain}
               '') machines
-              # Forward the agent to dev0 neighbors so their sudo can
-              # challenge the FIDO2 keys too. dev0 is untrusted and gets no
-              # answers for the dev DNS records, so neighbors resolve over
-              # mDNS as <name>.local.
+              # dev0 neighbors authenticate with the dedicated dev0 key (see
+              # devSSHKey), touch-free; IdentitiesOnly keeps the forwarded
+              # agent's FIDO2 keys out of authentication, though the agent is
+              # still forwarded so sudo can challenge them. dev0 is untrusted
+              # and gets no answers for the dev DNS records, so neighbors
+              # resolve over mDNS as <name>.local; the *.local pattern also
+              # covers ephemeral containers with no inventory entry.
               + lib.concatMapStrings (n: ''
-                Host ${shortName n} ${shortName n}.local
+                Host ${shortName n}
                   HostName ${shortName n}.local
+              '') neighbors
+              + ''
+                Host ${lib.concatStringsSep " " (map shortName neighbors)} *.local
                   ForwardAgent yes
-              '') neighbors;
+                  IdentityFile ${devSSHKey}
+                  IdentitiesOnly yes
+              '';
 
             # Per-repository dev shells (e.g. bgpdev's nix flake) activated on
             # cd via direnv, with nix-direnv caching the flake evaluation.
@@ -396,6 +412,12 @@ in
         {
           # Tailscale needs /dev/net/tun and CAP_NET_ADMIN.
           enableTun = true;
+
+          # The dev0 SSH private key, for this container only.
+          bindMounts.${devSSHKey} = {
+            hostPath = config.sops.secrets."dev/ssh_key".path;
+            isReadOnly = true;
+          };
 
           # linuxdev hosts long-lived agent sessions, so never restart it on a
           # host switch. Config changes are applied to the running container
@@ -434,4 +456,8 @@ in
     mode = "0444";
     restartUnits = [ "container@frrdev.service" ];
   };
+
+  # Owned by the admin user (uid 1000, the user in the containers as well) so
+  # ssh inside linuxdev can read it through the bind mount.
+  sops.secrets."dev/ssh_key".owner = config.homelab.user;
 }
