@@ -19,6 +19,16 @@
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";
 
+  # Tailnet addresses referenced in configuration. Tailscale assigns them
+  # when a node joins and they are stable for the node's lifetime; a node
+  # replacement must be reflected here. sshd on the machines matches the
+  # development container's source addresses to require the admin's FIDO2
+  # key; see nixos/modules/common.nix.
+  tailnetHosts.linuxdev = {
+    ipv4 = "100.81.251.109";
+    ipv6 = "fd7a:115c:a1e0::212e:fb6e";
+  };
+
   # Stable role names for machines whose hostnames carry a generation number.
   # Configuration on other machines references roles rather than hostnames,
   # so replacing hardware only touches this file, the new machine's own

@@ -342,6 +342,27 @@ in
               gh
             ];
 
+            # SSH to the machines rides the tailnet (dev0 cannot reach the
+            # LAN) and requires a FIDO2 touch per connection, so multiplex
+            # connections: one touch covers a deploy's parallel sessions and
+            # an hour of work. Short machine names come from the inventory
+            # roles and resolve to tailnet names, so panes need no MagicDNS
+            # search domain.
+            programs.ssh.extraConfig =
+              let
+                machines = lib.flatten (lib.attrValues inventory.roles);
+              in
+              ''
+                Host ${lib.concatStringsSep " " machines} *.${inventory.tailnetDomain}
+                  ControlMaster auto
+                  ControlPath ~/.ssh/cm-%r@%h:%p
+                  ControlPersist 1h
+              ''
+              + lib.concatMapStrings (m: ''
+                Host ${m}
+                  HostName ${m}.${inventory.tailnetDomain}
+              '') machines;
+
             # Per-repository dev shells (e.g. bgpdev's nix flake) activated on
             # cd via direnv, with nix-direnv caching the flake evaluation.
             # Skip the wall of exported variables on each activation; loading

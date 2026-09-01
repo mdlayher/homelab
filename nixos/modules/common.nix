@@ -3,6 +3,7 @@
 {
   config,
   inputs,
+  inventory,
   lib,
   pkgs,
   ...
@@ -25,6 +26,16 @@ let
 
   # The admin user's home, on machines and in containers alike.
   home = config.users.users.${user}.home;
+
+  # The admin's FIDO2 keys, the only ones accepted for SSH from the
+  # development container: each signature requires a physical touch on the
+  # workstation or laptop the agent is forwarded from. One entry per
+  # hardware key, so any single key can be revoked or lost safely.
+  fidoKeys = [
+    "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBFP2wHqgmf7UPkRaoCg47yjiAGYAVNggMFLsB0WMU23IYqpfa2jbKvAc5ZFWGiDNJQYpF0KbhLXK35k/apN3UKMAAAAEc3NoOg== mdlayher home yubikey"
+    "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIFlR2YATqrkugEKD0YSYQdH2wkTWao+jDw2g/v8NiJtPAAAABHNzaDo= mdlayher desk yubikey"
+    "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIE0983a+KBZlq0d/R978t3cCd19kt8y/DIDDvDr57NW5AAAABHNzaDo= mdlayher travel yubikey"
+  ];
 
   # Relay one connection to the newest live forwarded SSH agent socket. sshd
   # drops a socket per session under ~/.ssh/agent; ssh-add exits 2 only when
@@ -82,6 +93,13 @@ in
         gitconfig.source = ../dotfiles/git/gitconfig;
         gitignore.source = ../dotfiles/git/gitignore;
         "git-allowed-signers".source = ../dotfiles/git/allowed_signers;
+
+        # Keys accepted for SSH from the development container; see fidoKeys
+        # above and the sshd Match block below.
+        "ssh/${user}_linuxdev_keys" = lib.mkIf isHost {
+          text = lib.concatLines fidoKeys;
+          mode = "0444";
+        };
       };
 
       # terminfo for terminals which SSH in (e.g. xterm-ghostty).
@@ -252,6 +270,18 @@ in
         KbdInteractiveAuthentication = false;
         PermitRootLogin = "no";
       };
+
+      # SSH from the development container accepts only the admin's FIDO2
+      # key. Its signatures happen on the workstation the agent is forwarded
+      # from and each demands a physical YubiKey touch, so an unattended
+      # agent holding the forwarded socket cannot authenticate — an
+      # unexpected blink on the desk is a login to decline. Every other
+      # source keeps the regular key file. The addresses are the container's
+      # tailnet IPs, its only route to the machines.
+      openssh.extraConfig = lib.mkIf isHost ''
+        Match User ${user} Address ${inventory.tailnetHosts.linuxdev.ipv4},${inventory.tailnetHosts.linuxdev.ipv6}
+          AuthorizedKeysFile /etc/ssh/${user}_linuxdev_keys
+      '';
 
       prometheus.exporters = {
         node = {
