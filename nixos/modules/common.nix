@@ -17,7 +17,6 @@ let
   # Dotfiles from nixos/dotfiles packaged into fish's vendor directories,
   # which fish searches from the system profile for every user.
   dotfiles = pkgs.runCommand "dotfiles" { } ''
-    install -Dm444 -t $out/share/fish/vendor_completions.d ${../dotfiles/fish/completions}/*.fish
     install -Dm444 -t $out/share/fish/vendor_conf.d ${../dotfiles/fish/conf.d}/*.fish
     install -Dm444 -t $out/share/fish/vendor_functions.d ${../dotfiles/fish/functions}/*.fish
   '';

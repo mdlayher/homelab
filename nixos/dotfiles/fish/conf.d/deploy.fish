@@ -1,5 +1,8 @@
 # Completions for nixos/deploy: machine names from the sibling machine
-# directories of the deploy script being invoked, then the action.
+# directories of the deploy script being invoked, then the action. Lives in
+# conf.d rather than a completions directory because fish only autoloads
+# completion files for commands resolvable in PATH, and deploy is always
+# invoked by path.
 
 function __deploy_hosts
     set -l script (commandline -opc)[1]
