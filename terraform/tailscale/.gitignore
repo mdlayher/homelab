@@ -1,0 +1,8 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State stays local for now: the only resource is the policy file, whose
+# content is already in this repository. Revisit before managing resources
+# whose state would carry secrets (auth keys).
+terraform.tfstate
+terraform.tfstate.backup

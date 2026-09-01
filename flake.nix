@@ -69,6 +69,7 @@
               age
               go
               nixfmt
+              opentofu
               sops
               ssh-to-age
             ];

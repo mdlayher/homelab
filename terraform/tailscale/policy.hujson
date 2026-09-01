@@ -1,0 +1,89 @@
+// Tailnet policy, applied with OpenTofu; see main.tf. Rules refer to
+// machines by tag or service name.
+{
+	"tagOwners": {
+		// Development containers with unattended agents.
+		"tag:dev":   ["autogroup:admin"],
+		// Home Assistant appliance.
+		"tag:hass":  ["autogroup:admin"],
+		// Infrastructure machines with services.
+		"tag:infra": ["autogroup:admin"],
+		// The router (superset of tag:infra): exit node.
+		"tag:router": ["autogroup:admin"],
+	},
+
+	"acls": [
+		// Personal devices (phone and other untagged logins) reach every
+		// device on the tailnet.
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:hass:*", "tag:infra:*"],
+		},
+
+		// Only personal devices route through the exit node offered by the
+		// router; tagged machines have their own internet paths.
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:internet:*"],
+		},
+
+		// The development container reaches the Home Assistant API, which
+		// performs its own bearer-token authentication.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:hass:8123"],
+		},
+	],
+
+	// Tailscale Services.
+	"grants": [
+		// Personal devices reach every service.
+		{
+			"src": ["autogroup:member"],
+			"dst": [
+				"svc:alertmanager",
+				"svc:consrv",
+				"svc:grafana",
+				"svc:prometheus",
+			],
+			"ip": ["*"],
+		},
+
+		// The development container reads metrics and alerts only: no
+		// Grafana (it has its own auth and state) and no serial consoles.
+		{
+			"src": ["tag:dev"],
+			"dst": [
+				"svc:alertmanager",
+				"svc:prometheus",
+			],
+			"ip": ["tcp:80", "tcp:443"],
+		},
+	],
+
+	// The router self-approves as an exit node; infrastructure machines
+	// self-approve as hosts for their services.
+	"autoApprovers": {
+		"exitNode": ["tag:router"],
+		"services": {
+			"svc:alertmanager": ["tag:infra"],
+			"svc:consrv":       ["tag:infra"],
+			"svc:grafana":      ["tag:infra"],
+			"svc:prometheus":   ["tag:infra"],
+		},
+	},
+
+	// Tailscale SSH between personal devices, with check mode requiring
+	// reauthentication.
+	"ssh": [
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot", "root"],
+		},
+	],
+}
