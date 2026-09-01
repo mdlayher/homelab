@@ -60,7 +60,21 @@
 				"svc:alertmanager",
 				"svc:prometheus",
 			],
-			"ip": ["tcp:80", "tcp:443"],
+			"ip": ["tcp:443"],
+		},
+
+		// The server's blackbox exporter probes the web services end to end
+		// through the serve path (https://<name>.<tailnet>.ts.net), so the
+		// ServiceDown alerts cover TLS and serve, not just the backends.
+		// svc:consrv is not probed this way.
+		{
+			"src": ["tag:infra"],
+			"dst": [
+				"svc:alertmanager",
+				"svc:grafana",
+				"svc:prometheus",
+			],
+			"ip": ["tcp:443"],
 		},
 	],
 
