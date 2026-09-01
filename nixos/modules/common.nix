@@ -35,6 +35,7 @@ let
     "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBFP2wHqgmf7UPkRaoCg47yjiAGYAVNggMFLsB0WMU23IYqpfa2jbKvAc5ZFWGiDNJQYpF0KbhLXK35k/apN3UKMAAAAEc3NoOg== mdlayher home yubikey"
     "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIFlR2YATqrkugEKD0YSYQdH2wkTWao+jDw2g/v8NiJtPAAAABHNzaDo= mdlayher desk yubikey"
     "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIE0983a+KBZlq0d/R978t3cCd19kt8y/DIDDvDr57NW5AAAABHNzaDo= mdlayher travel yubikey"
+    "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAII3E30S3ZzFWjq12oPTG/+8fDe2NIk9IWyjZtY9Lo/00AAAABHNzaDo= mdlayher laptop yubikey"
   ];
 
   # Relay one connection to the newest live forwarded SSH agent socket. sshd
