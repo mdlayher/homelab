@@ -37,9 +37,12 @@ Guidance for agents working in this repository.
 - Renaming or removing a secret key must land in the SAME commit as every Nix
   reference to it, or nightly activation fails (sops-nix aborts on a missing
   declared key). Recipients are unchanged by edits, so no `updatekeys`.
-- The admin age key lives at `~/.config/sops/age/keys.txt` (also inside
-  linuxdev). For scripted edits without printing plaintext, use sed as the
-  editor: `EDITOR="sed -i s/old:/new:/" sops <file>`.
+- The admin age key lives at `~/.config/sops/age/keys.txt` on the
+  workstation only; the linuxdev container holds no decryption key, so
+  agents cannot read or edit secrets. For sops changes, compose the exact
+  command for Matt to run (`!` in the prompt works). For scripted edits
+  without printing plaintext, use sed as the editor:
+  `EDITOR="sed -i s/old:/new:/" sops <file>`.
 - Secrets with `neededForUsers` decrypt before users are created; user
   password hashes must stay in that set.
 
