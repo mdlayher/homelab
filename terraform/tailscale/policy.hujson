@@ -51,6 +51,21 @@
 
 	// Tailscale Services.
 	"grants": [
+		// Any device may relay through the router's peer relay: it is the
+		// one machine with an unfiltered public UDP presence and a leg on
+		// every VLAN, so it serves pairs that cannot connect directly -
+		// notably a phone on cellular reaching hosts with no WAN port
+		// forward - without a distant DERP server. Relayed payloads remain
+		// end-to-end encrypted WireGuard.
+		{
+			"src": ["*"],
+			"dst": ["tag:router"],
+			"app": {
+				"tailscale.com/cap/relay": [],
+			},
+		},
+
+
 		// Personal devices reach every service.
 		{
 			"src": ["autogroup:member"],

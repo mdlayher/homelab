@@ -32,6 +32,12 @@ let
   # poking nftables firewall holes with miniupnpd or similar.
   tailscale = {
     router = 41461;
+    # Peer relay: tailnet pairs which cannot connect directly - notably a
+    # phone on cellular reaching hosts with no WAN port forward - relay
+    # through this machine instead of a distant DERP server. Payloads are
+    # WireGuard, encrypted end to end; usage is gated by a tailnet policy
+    # grant.
+    relay = 41462;
     forwards = with inventory.hosts; [
       {
         host = nerr-4;
@@ -130,6 +136,9 @@ in
   };
   systemd.services.nftables.serviceConfig.ExecReload = lib.mkAfter [ "${nft} -f ${elementsFile}" ];
 
+  # Advertise this machine as a tailnet peer relay on the port opened above.
+  services.tailscale.extraSetFlags = [ "--relay-server-port=${toString tailscale.relay}" ];
+
   systemd.services.nftables-exporter = {
     description = "Prometheus nftables exporter";
     after = [ "network.target" ];
@@ -169,6 +178,7 @@ in
       define dhcp6_server = 547
       define mdns = 5353
       define tailscale_router = ${toString tailscale.router}
+      define tailscale_relay = ${toString tailscale.relay}
 
       table inet filter {
         # Named counters for notable drops and rejects, readable as one list
@@ -283,6 +293,7 @@ in
           } counter accept
 
           udp dport $tailscale_router counter accept comment "router WAN Tailscale"
+          udp dport $tailscale_relay counter accept comment "router WAN peer relay"
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
@@ -301,6 +312,7 @@ in
           # Allow only necessary router-provided services.
           tcp dport $dns counter accept comment "router restricted TCP"
           udp dport $dns counter accept comment "router restricted UDP"
+          udp dport $tailscale_relay counter accept comment "router restricted peer relay"
 
           limit rate 10/minute burst 20 packets log prefix "nft input restricted drop: "
           counter name restricted_input_drop drop
