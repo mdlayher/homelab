@@ -22,6 +22,23 @@ let
   '';
 
   users = lib.filter (u: u.isNormalUser) (lib.attrValues config.users.users);
+
+  # The admin user's home, on machines and in containers alike.
+  home = config.users.users.${user}.home;
+
+  # Relay one connection to the newest live forwarded SSH agent socket. sshd
+  # drops a socket per session under ~/.ssh/agent; ssh-add exits 2 only when
+  # nothing answers on the other end.
+  agentRelay = pkgs.writeShellScript "ssh-agent-relay" ''
+    for sock in $(${pkgs.coreutils}/bin/ls -t ${home}/.ssh/agent/ 2>/dev/null); do
+      sock=${home}/.ssh/agent/$sock
+      SSH_AUTH_SOCK=$sock ${pkgs.openssh}/bin/ssh-add -l >/dev/null 2>&1
+      if [ $? -ne 2 ]; then
+        exec ${pkgs.socat}/bin/socat STDIO "UNIX-CONNECT:$sock"
+      fi
+    done
+    exit 1
+  '';
 in
 {
   options.homelab.user = lib.mkOption {
@@ -189,14 +206,11 @@ in
       };
       bash = {
         completion.enable = true;
-        # Keep a stable path to the newest forwarded SSH agent socket, so
-        # long-lived sessions (e.g. herdr panes) not descended from an SSH login
-        # can still reach the agent for git commit signing.
+        # Long-lived sessions not descended from an SSH login (e.g. herdr
+        # panes) reach a forwarded SSH agent through the relay socket below,
+        # e.g. for git commit signing.
         loginShellInit = ''
-          if [[ -S "$SSH_AUTH_SOCK" && "$SSH_AUTH_SOCK" != "$HOME/.ssh/agent.sock" ]]; then
-            mkdir -p "$HOME/.ssh"
-            ln -sf "$SSH_AUTH_SOCK" "$HOME/.ssh/agent.sock"
-          elif [[ -z "$SSH_AUTH_SOCK" ]]; then
+          if [[ -z "$SSH_AUTH_SOCK" ]]; then
             export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
           fi
         '';
@@ -277,14 +291,43 @@ in
       settings.Manager.RuntimeWatchdogSec = lib.mkIf isHost "60s";
 
       # Standard directories in every user's home.
-      tmpfiles.rules = lib.concatMap (
-        u:
-        map (dir: "d ${u.home}/${dir} 0755 ${u.name} ${u.group} -") [
-          "bin"
-          "src"
-          "tmp"
-        ]
-      ) users;
+      tmpfiles.rules =
+        lib.concatMap (
+          u:
+          map (dir: "d ${u.home}/${dir} 0755 ${u.name} ${u.group} -") [
+            "bin"
+            "src"
+            "tmp"
+          ]
+        ) users
+        # Created ahead of the agent relay socket, which would otherwise make
+        # a root-owned ~/.ssh on first boot.
+        ++ [ "d ${home}/.ssh 0700 ${user} users -" ];
+
+      # A stable SSH agent path for sessions which outlive the SSH login that
+      # spawned them (e.g. herdr panes): each connection is relayed to the
+      # newest forwarded agent socket which still answers, so a dead SSH
+      # session can never strand git signing or sudo behind a stale socket.
+      sockets.ssh-agent-relay = {
+        description = "SSH agent relay socket";
+        wantedBy = [ "sockets.target" ];
+        socketConfig = {
+          ListenStream = "${home}/.ssh/agent.sock";
+          Accept = true;
+          SocketUser = user;
+          SocketMode = "0600";
+        };
+      };
+      services."ssh-agent-relay@" = {
+        description = "SSH agent relay";
+        serviceConfig = {
+          User = user;
+          ExecStart = agentRelay;
+          StandardInput = "socket";
+          StandardOutput = "socket";
+          StandardError = "journal";
+        };
+      };
     };
 
     # Secrets are decrypted at activation using the machine's SSH host key.
