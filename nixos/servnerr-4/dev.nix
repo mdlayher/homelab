@@ -323,6 +323,10 @@ in
               go-tools
 
               gh
+
+              # logcli, for querying Loki logs over the tailnet; see
+              # nixos/servnerr-4/loki.nix.
+              grafana-loki
             ];
 
             # GitHub's published host key, pinned so SSH pushes (rewritten

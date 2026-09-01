@@ -1,8 +1,9 @@
 # Managed with OpenTofu (tofu, from the flake dev shell), applied from the
 # workstation. The tailnet API credential is an OAuth client scoped to policy
-# file writes only, provided via the TAILSCALE_OAUTH_CLIENT_ID and
-# TAILSCALE_OAUTH_CLIENT_SECRET environment variables; it is never stored in
-# this repository or on the development container.
+# file and services writes only, and owning tag:infra so it may tag the
+# services it creates. It is provided via the TAILSCALE_OAUTH_CLIENT_ID and
+# TAILSCALE_OAUTH_CLIENT_SECRET environment variables and never stored in this
+# repository or on the development container.
 terraform {
   required_version = ">= 1.8.0"
 

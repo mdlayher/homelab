@@ -11,6 +11,7 @@
     # Service configuration.
     ./containers.nix
     ./dev.nix
+    ./loki.nix
     ./prometheus.nix
   ];
 
@@ -96,6 +97,12 @@
             uid = "prometheus";
             url = "http://localhost:${toString config.services.prometheus.port}";
             isDefault = true;
+          }
+          {
+            name = "Loki";
+            type = "loki";
+            uid = "loki";
+            url = "http://localhost:${toString config.services.loki.configuration.server.http_listen_port}";
           }
         ];
       };

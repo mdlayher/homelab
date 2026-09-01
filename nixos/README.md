@@ -9,6 +9,7 @@ of this repository. Individual machines have their own directories:
 
 Shared configuration lives in `modules/`:
 
+- `modules/alloy.nix`: ships each machine's systemd journal to Loki on the server
 - `modules/common.nix`: base system for machines and containers: packages, shell with the dotfiles from `dotfiles/`, users, nix settings, auto-upgrade
 - `modules/inventory.nix`: exposes the network inventory as `config.homelab.inventory`
 - `modules/tailscale.nix`: Tailscale client
@@ -18,16 +19,14 @@ Shared configuration lives in `modules/`:
 ## Tailscale Services
 
 Well-known service names on the tailnet (`grafana`, `prometheus`,
-`alertmanager` on the server; `consrv` on the monitor) decouple frequently
+`alertmanager`, `loki` on the server; `consrv` on the monitor) decouple frequently
 used endpoints from generation-numbered hostnames: `homelab.tailscale.services`
 on each machine renders a serve configuration which is applied declaratively at
-activation. The tailnet side is manual, once per service, in the admin console:
-
-1. Define the service (`svc:<name>`) with its `tcp:` port on the Services page.
-2. Give the hosting machine a tag-based identity (service hosts cannot be
-   user-owned devices).
-3. Approve the machine as a host for the service, or add an auto-approval
-   policy for its tag.
+activation. The tailnet side lives in `terraform/tailscale/`: `services.tf`
+defines each service (`svc:<name>`) with its `tcp:` ports, and the
+`autoApprovers` policy in `policy.hujson` approves the hosting machine by its
+tag. The only manual step is giving a new machine a tag-based identity
+(service hosts cannot be user-owned devices).
 
 ## Secrets
 

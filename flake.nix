@@ -34,6 +34,7 @@
         nixpkgs.lib.nixosSystem {
           specialArgs = { inherit inputs inventory; };
           modules = [
+            ./nixos/modules/alloy.nix
             ./nixos/modules/common.nix
             ./nixos/modules/unstable.nix
             ./nixos/modules/inventory.nix

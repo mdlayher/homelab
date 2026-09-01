@@ -16,10 +16,19 @@ let
   prometheusUrl = self config.services.prometheus.port;
   alertmanagerUrl = self config.services.prometheus.alertmanager.port;
   grafanaUrl = self config.services.grafana.settings.server.http_port;
+  lokiUrl = self config.services.loki.configuration.server.http_listen_port;
   plexUrl = self 32400;
 
   # Extracts the port from a "host:port" or ":port" listen address.
   portOf = addr: lib.toInt (lib.last (lib.splitString ":" addr));
+
+  # Finds the port of Alloy's HTTP server from its listen address flag; see
+  # nixos/modules/alloy.nix.
+  alloyPort =
+    cfg:
+    portOf (
+      lib.head (lib.filter (lib.hasPrefix "--server.http.listen-addr=") cfg.services.alloy.extraFlags)
+    );
 
   # Finds the port of the CoreDNS prometheus plugin in a Corefile.
   corednsPort =
@@ -58,11 +67,17 @@ let
         lib.mapAttrs (_: e: { inherit (e) port; }) (
           lib.filterAttrs enabled cfg.services.prometheus.exporters
         )
+        // lib.optionalAttrs cfg.services.alloy.enable {
+          alloy.port = alloyPort cfg;
+        }
         // lib.optionalAttrs cfg.services.coredns.enable {
           coredns.port = corednsPort cfg.services.coredns.config;
         }
         // lib.optionalAttrs cfg.services.corerad.enable {
           corerad.port = portOf cfg.services.corerad.settings.debug.address;
+        }
+        // lib.optionalAttrs cfg.services.loki.enable {
+          loki.port = cfg.services.loki.configuration.server.http_listen_port;
         }
         // lib.optionalAttrs cfg.services.zrepl.enable {
           zrepl.port = portOf (lib.head cfg.services.zrepl.settings.global.monitoring).listen;
@@ -117,11 +132,13 @@ let
     "http://living-room-myq-hub.iot.ipv4"
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
+    "${lokiUrl}/ready"
     "${plexUrl}/identity"
     "${prometheusUrl}/-/healthy"
 
     "https://alertmanager.${tailnetDomain}/-/healthy"
     "https://grafana.${tailnetDomain}/api/health"
+    "https://loki.${tailnetDomain}/ready"
     "https://prometheus.${tailnetDomain}/-/healthy"
   ];
 
@@ -253,6 +270,7 @@ in
     {
       alertmanager = web config.services.prometheus.alertmanager.port;
       grafana = web config.services.grafana.settings.server.http_port;
+      loki = web config.services.loki.configuration.server.http_listen_port;
       prometheus = web config.services.prometheus.port;
     };
 

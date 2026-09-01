@@ -4,9 +4,10 @@
 # declaratively at activation; set-config --all overwrites everything, so
 # removing a service here removes it from the node.
 #
-# The tailnet side is managed in the admin console: define each service
-# (svc:<name>) with its tcp port, give this machine a tag-based identity, and
-# approve it as a service host.
+# The tailnet side is managed in terraform/tailscale/: services.tf defines
+# each service (svc:<name>) with its tcp ports, and policy.hujson auto-approves
+# this machine as a service host by its tag. The machine's tag-based identity
+# itself is assigned in the admin console.
 {
   config,
   lib,

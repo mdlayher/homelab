@@ -58,17 +58,19 @@
 				"svc:alertmanager",
 				"svc:consrv",
 				"svc:grafana",
+				"svc:loki",
 				"svc:prometheus",
 			],
 			"ip": ["*"],
 		},
 
-		// The development container reads metrics and alerts only: no
-		// Grafana (it has its own auth and state) and no serial consoles.
+		// The development container reads metrics, alerts, and logs only:
+		// no Grafana (it has its own auth and state) and no serial consoles.
 		{
 			"src": ["tag:dev"],
 			"dst": [
 				"svc:alertmanager",
+				"svc:loki",
 				"svc:prometheus",
 			],
 			"ip": ["tcp:443"],
@@ -83,6 +85,7 @@
 			"dst": [
 				"svc:alertmanager",
 				"svc:grafana",
+				"svc:loki",
 				"svc:prometheus",
 			],
 			"ip": ["tcp:443"],
@@ -97,6 +100,7 @@
 			"svc:alertmanager": ["tag:infra"],
 			"svc:consrv":       ["tag:infra"],
 			"svc:grafana":      ["tag:infra"],
+			"svc:loki":         ["tag:infra"],
 			"svc:prometheus":   ["tag:infra"],
 		},
 	},
