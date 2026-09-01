@@ -200,7 +200,7 @@ let
   frrConfigFile = "/run/host-secrets/frr.conf";
 in
 {
-  # Let the admin user reload linuxdev without a password, so deploy.sh can
+  # Let the admin user reload linuxdev without a password, so deploy can
   # activate the container's new inner configuration right after a host
   # switch (linuxdev never restarts on a switch; see restartIfChanged below).
   # Reload only activates configuration that already became root via the

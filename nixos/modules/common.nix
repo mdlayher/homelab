@@ -17,6 +17,7 @@ let
   # Dotfiles from nixos/dotfiles packaged into fish's vendor directories,
   # which fish searches from the system profile for every user.
   dotfiles = pkgs.runCommand "dotfiles" { } ''
+    install -Dm444 -t $out/share/fish/vendor_completions.d ${../dotfiles/fish/completions}/*.fish
     install -Dm444 -t $out/share/fish/vendor_conf.d ${../dotfiles/fish/conf.d}/*.fish
     install -Dm444 -t $out/share/fish/vendor_functions.d ${../dotfiles/fish/functions}/*.fish
   '';
@@ -231,7 +232,7 @@ in
     # without a password, so agents and CI can roll out merged changes on
     # demand. This only changes deploy timing, not trust: main already becomes
     # root on every machine nightly via system.autoUpgrade below. Everything
-    # else sudo still prompts, including deploy.sh's ad-hoc activations.
+    # else sudo still prompts, including deploy's ad-hoc activations.
     security.sudo.extraRules = lib.mkIf isHost [
       {
         users = [ user ];

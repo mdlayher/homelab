@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deploys a machine from this flake over SSH.
 #
-# Usage: nixos/deploy.sh <host> [action] [nixos-rebuild args...]
+# Usage: nixos/deploy <host> [action] [nixos-rebuild args...]
 #
 # action is one of switch (default), test, boot, or dry-activate. On the
 # router, prefer test first: it activates without a boot entry, so a reboot

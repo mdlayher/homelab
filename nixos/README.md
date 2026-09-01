@@ -108,9 +108,9 @@ nix flake update
 # and activates over SSH as mdlayher with a sudo prompt. Prefer `test` before
 # `switch` on the router: it activates without a boot entry, so a reboot
 # reverts it.
-nixos/deploy.sh <host>
-nixos/deploy.sh <host> test
-nixos/deploy.sh <host> switch
+nixos/deploy <host>
+nixos/deploy <host> test
+nixos/deploy <host> switch
 
 # Or on the machine itself.
 sudo nixos-rebuild switch --flake /home/mdlayher/src/homelab#<host>

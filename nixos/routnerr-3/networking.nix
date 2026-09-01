@@ -106,10 +106,9 @@ in
   services.resolved = {
     enable = true;
     settings.Resolve = {
-      Domains = [
-        inventory.domain
-        "taild07ab.ts.net"
-      ];
+      # The tailnet domain is routed to tailscaled via the tsdns0 dummy from
+      # modules/tailscale.nix, not through CoreDNS.
+      Domains = [ inventory.domain ];
       DNS = [
         "::1"
         "127.0.0.1"

@@ -7,14 +7,14 @@ Guidance for agents working in this repository.
 - Never commit or push without explicit approval; Matt drives git.
 - Agent sessions usually run inside the `linuxdev` container on servnerr-4.
   Deploys to servnerr-4 do not restart it (`restartIfChanged = false`);
-  deploy.sh instead reloads it, which activates the new inner configuration
+  deploy instead reloads it, which activates the new inner configuration
   in place and restarts only the inner units that changed. Changes to its
   container scaffolding (bind mounts, networking, tun) still need a manual
   restart, which kills the session — flag those before deploying.
 
 ## Deploys and upgrades
 
-- `nixos/deploy.sh <host>` deploys from the local checkout and prompts for a
+- `nixos/deploy <host>` deploys from the local checkout and prompts for a
   sudo password: it must run in a real terminal. Agent-driven shells cannot
   answer the prompt (and would echo the password); ask Matt to run it.
 - `system.autoUpgrade` applies origin/main to every machine nightly (~04:00).
@@ -23,7 +23,7 @@ Guidance for agents working in this repository.
 - Do not trigger `nixos-upgrade.service` right after a push: the GitHub flake
   tarball is cached (~1h TTL) and can apply a stale main. Deploy from a local
   checkout instead, or wait out the TTL.
-- On the router, always `deploy.sh routnerr-3 test` first (a reboot reverts
+- On the router, always `deploy routnerr-3 test` first (a reboot reverts
   it), verify, then `boot` or `switch`. Serial consoles for the router and
   server are reachable via consrv on the monitor if SSH is lost.
 - To prove a refactor is a no-op, compare

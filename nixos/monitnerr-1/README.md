@@ -32,7 +32,7 @@ binary cache.
    sops updatekeys nixos/inventory/secrets.yaml
    ```
 
-4. Deploy: `nixos/deploy.sh monitnerr-1 boot`, then reboot into the new
+4. Deploy: `nixos/deploy monitnerr-1 boot`, then reboot into the new
    system.
 5. Verify `hardware-configuration.nix` against `nixos-generate-config` output
    on the machine.
