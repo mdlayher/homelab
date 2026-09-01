@@ -1,22 +1,5 @@
 { config, pkgs, ... }:
 
-let
-  # Grafana dashboards from the repository, rewritten to reference the
-  # provisioned Prometheus datasource by name.
-  dashboards =
-    pkgs.runCommand "grafana-dashboards"
-      {
-        nativeBuildInputs = [ pkgs.jq ];
-      }
-      ''
-        mkdir -p $out
-        for f in ${../../grafana}/*.json; do
-          jq 'del(.id, .__inputs, .__requires)' "$f" \
-            | sed -e 's/''${DS_SERVNERR-3_PROMETHEUS}/Prometheus/g' -e 's/servnerr-3 Prometheus/Prometheus/g' \
-            > "$out/$(basename "$f")"
-        done
-      '';
-in
 {
   imports = [
     # Hardware and base system configuration. The shared base system lives in
@@ -102,8 +85,8 @@ in
     grafana = {
       enable = true;
 
-      # Declarative datasource and dashboards; anything else in the Grafana
-      # database is disposable.
+      # Declarative datasource; anything else in the Grafana database is
+      # disposable. Dashboards will be rebuilt from scratch.
       provision = {
         enable = true;
         datasources.settings.datasources = [
@@ -113,12 +96,6 @@ in
             uid = "prometheus";
             url = "http://localhost:${toString config.services.prometheus.port}";
             isDefault = true;
-          }
-        ];
-        dashboards.settings.providers = [
-          {
-            name = "homelab";
-            options.path = dashboards;
           }
         ];
       };

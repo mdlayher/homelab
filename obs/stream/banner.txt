@@ -1,1 +1,0 @@
-@mdlayher | github.com/mdlayher | Go, networking, fun!

@@ -1,5 +1,0 @@
-{
-    "bitrate": 12000,
-    "preset": "veryfast",
-    "rate_control": "CBR"
-}
