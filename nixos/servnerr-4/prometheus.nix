@@ -120,6 +120,44 @@ let
   # the monitor host's consrv.nix.
   // lib.genAttrs roles.monitor (_: {
     jobs.consrv.port = 9288;
+  })
+  # nftables_exporter runs on every router role holder; see the router
+  # host's nftables.nix. The exporter mirrors nftables faithfully, so the
+  # homelab naming conventions are split into labels here: accounting
+  # counters named <lan>_wan_<dir> gain device and direction, and per-host
+  # set elements keyed "<ifname> . <addr>" gain device and address.
+  // lib.genAttrs roles.router (_: {
+    jobs.nftables = {
+      port = 9630;
+      metric_relabel_configs =
+        let
+          split =
+            source: regex: fields:
+            {
+              source_labels = [ source ];
+              inherit regex;
+            }
+            // fields;
+        in
+        [
+          (split "name" "(.+)_wan_(in|out)" {
+            target_label = "device";
+            replacement = "$1";
+          })
+          (split "name" "(.+)_wan_(in|out)" {
+            target_label = "direction";
+            replacement = "$2";
+          })
+          (split "element" "(.+) \\. (.+)" {
+            target_label = "device";
+            replacement = "$1";
+          })
+          (split "element" "(.+) \\. (.+)" {
+            target_label = "address";
+            replacement = "$2";
+          })
+        ];
+    };
   });
 
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
@@ -149,7 +187,15 @@ let
   pings = [
     "1.1.1.1"
     "2606:4700:4700::1111"
-  ];
+  ]
+  # Liveness for the cloud-managed switches and APs in the management LAN
+  # inventory, which expose no SNMP or local API; ping is the only local
+  # signal that they are alive.
+  ++ map (h: "${h.name}.ipv4") (
+    lib.filter (
+      h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
+    ) config.homelab.inventory.interfaces.mgmt0.hosts
+  );
 
   # Blackbox DNS probe targets: CoreDNS on every router role holder,
   # exercising resolution of a known internal name end to end rather than
@@ -184,6 +230,9 @@ let
     (staticScrape job (lib.mapAttrsToList (host: h: "${host}:${toString h.jobs.${job}.port}") running))
     // lib.optionalAttrs (settings.jobs.${job} ? metrics_path) {
       inherit (settings.jobs.${job}) metrics_path;
+    }
+    // lib.optionalAttrs (settings.jobs.${job} ? metric_relabel_configs) {
+      inherit (settings.jobs.${job}) metric_relabel_configs;
     }
   );
 
@@ -403,12 +452,13 @@ in
         );
       };
 
-      # SNMP exporter with data file from release 0.26.0.
+      # SNMP exporter with the data file from release 0.30.1, matching the
+      # packaged exporter; the sha256 pins the content regardless of the tag.
       snmp = {
         enable = true;
         configurationPath = builtins.fetchurl {
-          url = "https://raw.githubusercontent.com/prometheus/snmp_exporter/44f8732988e726bad3f13d5779f1da7705178642/snmp.yml";
-          sha256 = "01pq2kadrjrzp33qigvv8gxj4vxbsxmi790d07hij45bich6jyar";
+          url = "https://raw.githubusercontent.com/prometheus/snmp_exporter/v0.30.1/snmp.yml";
+          sha256 = "1m12khms588cch43wmglz2fsxh9i15am3imvqa4i8k7lhw5yn0sf";
         };
       };
     };

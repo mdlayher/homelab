@@ -72,6 +72,41 @@ let
 
   nft = "${pkgs.nftables}/bin/nft";
   elementsFile = config.sops.templates."nftables-inventory.conf".path;
+
+  # Prometheus exporter for the named counters and per-host set counters in
+  # the accounting rules below, read via netlink at scrape time; built from
+  # source in this repository (not packaged in nixpkgs). The server scrapes
+  # it on port 9630, per the exporter default port allocations wiki; see
+  # nixos/servnerr-4/prometheus.nix.
+  # Go 1.27 from unstable, matching the toolchain used everywhere else.
+  nftables_exporter = (pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; }) {
+    pname = "nftables_exporter";
+    version = "0.1.0";
+    src = ../../go/internal/nftables_exporter;
+    vendorHash = "sha256-IOX2K4bBnhDq88PBU1yOmpZhBa3OXrgIohBBpmv9LZ0=";
+  };
+
+  # LAN interface names for per-LAN WAN accounting, including the tailnet
+  # interface so exit node traffic is counted.
+  lans = map (ifi: ifi.name or ifi) (trusted ++ restricted);
+
+  # Address families for the per-host WAN accounting sets. Keys concatenate
+  # the LAN interface with the host address, so a host appearing on two LANs
+  # is accounted separately per interface.
+  protos = [
+    {
+      v = "4";
+      type = "ifname . ipv4_addr";
+      outKey = "iifname . ip saddr";
+      inKey = "oifname . ip daddr";
+    }
+    {
+      v = "6";
+      type = "ifname . ipv6_addr";
+      outKey = "iifname . ip6 saddr";
+      inKey = "oifname . ip6 daddr";
+    }
+  ];
 in
 {
   sops.templates."nftables-inventory.conf" = {
@@ -95,6 +130,29 @@ in
   };
   systemd.services.nftables.serviceConfig.ExecReload = lib.mkAfter [ "${nft} -f ${elementsFile}" ];
 
+  systemd.services.nftables-exporter = {
+    description = "Prometheus nftables exporter";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = "${nftables_exporter}/bin/nftables_exporter";
+      Restart = "always";
+
+      # Reading nftables over netlink needs CAP_NET_ADMIN; everything else
+      # is locked down.
+      DynamicUser = true;
+      AmbientCapabilities = [ "CAP_NET_ADMIN" ];
+      CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
+      NoNewPrivileges = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      PrivateTmp = true;
+      ProtectKernelTunables = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+    };
+  };
+
   networking.nftables = {
     enable = true;
     ruleset = ''
@@ -113,6 +171,18 @@ in
       define tailscale_router = ${toString tailscale.router}
 
       table inet filter {
+        # Named counters for notable drops and rejects, readable as one list
+        # with 'nft list counters' and exported to Prometheus; see
+        # nftables-counters. Multiple rules may share one counter.
+        counter spoofed_drop {}
+        counter input_reject {}
+        counter wan_input_drop {}
+        counter restricted_crossvlan_drop {}
+        counter restricted_input_drop {}
+        counter restricted_forward_drop {}
+        counter forward_reject {}
+        counter wan_forward_drop {}
+
         # Router addresses on restricted LANs: the only local destinations
         # those LANs may talk to.
         set router_v4 {
@@ -137,7 +207,7 @@ in
           type filter hook prerouting priority raw
           policy accept
 
-          iifname $physical_lans fib saddr . iif oif missing counter drop comment "spoofed source"
+          iifname $physical_lans fib saddr . iif oif missing counter name spoofed_drop drop comment "spoofed source"
         }
 
         # ICMP allowed from LANs: pings, errors, and neighbor discovery.
@@ -187,12 +257,6 @@ in
           ct state {established, related} counter accept
           ct state invalid counter drop
 
-          ip saddr {
-            49.64.0.0/11,
-            218.92.0.0/16,
-            222.184.0.0/13,
-          } counter drop comment "malicious subnets"
-
           iifname $wans jump input_wan
 
           jump icmp_lan
@@ -204,7 +268,7 @@ in
           iifname $restricted_lans jump input_restricted
 
           limit rate 10/minute burst 20 packets log prefix "nft input reject: "
-          counter reject
+          counter name input_reject reject
         }
 
         # From the internet: silently drop everything not explicitly allowed.
@@ -222,7 +286,7 @@ in
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
-          counter drop
+          counter name wan_input_drop drop
         }
 
         chain input_restricted {
@@ -231,15 +295,15 @@ in
           iifname iot0 udp dport $mdns udp sport $mdns counter accept comment "router iot0 mDNS reflection"
 
           # Drop traffic trying to cross VLANs or broadcast.
-          iifname . ip daddr != @router_v4 counter drop comment "traffic leaving IPv4 VLAN"
-          iifname . ip6 daddr != @router_v6 counter drop comment "traffic leaving IPv6 VLAN"
+          iifname . ip daddr != @router_v4 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv4 VLAN"
+          iifname . ip6 daddr != @router_v6 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv6 VLAN"
 
           # Allow only necessary router-provided services.
           tcp dport $dns counter accept comment "router restricted TCP"
           udp dport $dns counter accept comment "router restricted UDP"
 
           limit rate 10/minute burst 20 packets log prefix "nft input restricted drop: "
-          counter drop
+          counter name restricted_input_drop drop
         }
 
         chain output {
@@ -259,7 +323,7 @@ in
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.
-          iifname $restricted_lans oifname $all_lans counter drop comment "restricted LANs to LANs"
+          iifname $restricted_lans oifname $all_lans counter name restricted_forward_drop drop comment "restricted LANs to LANs"
 
           jump icmp_lan
 
@@ -268,7 +332,7 @@ in
           iifname $restricted_lans oifname $wans counter accept comment "restricted LANs only to WANs"
 
           limit rate 10/minute burst 20 packets log prefix "nft forward reject: "
-          counter reject
+          counter name forward_reject reject
         }
 
         # From the internet to LANs: only ICMP errors and Tailscale to
@@ -279,7 +343,59 @@ in
           ip daddr . udp dport @tailscale_v4 counter accept comment "Tailscale IPv4 forwarding"
           ip6 daddr . udp dport @tailscale_v6 counter accept comment "Tailscale IPv6 forwarding"
 
-          counter drop
+          counter name wan_forward_drop drop
+        }
+      }
+
+      # Traffic accounting, hooked after the filter table's forward chain so
+      # only accepted traffic is counted. The filter's early established
+      # shortcut hides most bytes from its per-rule counters; this chain sees
+      # every forwarded packet regardless of connection state.
+      table inet accounting {
+        ${lib.concatMapStrings (lan: ''
+          counter ${lan}_wan_out {}
+          counter ${lan}_wan_in {}
+        '') lans}
+
+        # Per-host WAN accounting: hosts are learned from traffic as dynamic
+        # set elements, each carrying its own counter. update refreshes an
+        # element's timeout on every packet, so an element expires only after
+        # total silence for the timeout. The timeout just needs to outlive
+        # the scrape interval comfortably: once Prometheus has seen a count,
+        # expiry loses nothing (a returning host restarts at zero, which
+        # increase() absorbs as a counter reset), and a short timeout stops
+        # rotated IPv6 privacy addresses and departed hosts from lingering
+        # as stale series. The forward hook sits inside NAT and DNAT, so
+        # both directions see real LAN addresses.
+        ${lib.concatMapStrings (proto: ''
+          set host${proto.v}_wan_out {
+            type ${proto.type}
+            size 4096
+            flags dynamic, timeout
+            timeout 5m
+            counter
+          }
+          set host${proto.v}_wan_in {
+            type ${proto.type}
+            size 4096
+            flags dynamic, timeout
+            timeout 5m
+            counter
+          }
+        '') protos}
+        chain forward {
+          type filter hook forward priority 5
+          policy accept
+
+          ${lib.concatMapStrings (lan: ''
+            iifname ${lan} oifname $wans counter name ${lan}_wan_out
+            iifname $wans oifname ${lan} counter name ${lan}_wan_in
+          '') lans}
+
+          ${lib.concatMapStrings (proto: ''
+            iifname $all_lans oifname $wans update @host${proto.v}_wan_out { ${proto.outKey} }
+            iifname $wans oifname $all_lans update @host${proto.v}_wan_in { ${proto.inKey} }
+          '') protos}
         }
       }
 

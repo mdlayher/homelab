@@ -1,0 +1,104 @@
+name: Go
+
+# Lints, builds, and tests every Go module under go/. Most commits here touch
+# Nix, not Go, so the workflow only runs when Go code (or this file) changes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "go/**"
+      - ".github/workflows/go.yml"
+  pull_request:
+    paths:
+      - "go/**"
+      - ".github/workflows/go.yml"
+
+permissions:
+  contents: read
+
+# Superseded runs on the same ref are pointless; cancel them. Never cancel
+# main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  modules:
+    name: Discover modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.discover.outputs.modules }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Discover Go modules
+        id: discover
+        # Modules are enumerated at run time rather than hardcoded: a stale
+        # hardcoded list would either fail the job or silently skip new
+        # modules.
+        run: |
+          modules="$(find go -name go.mod -exec dirname {} \; | sort | jq -R . | jq -cs .)"
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Discovered: $modules"
+
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    needs: modules
+    strategy:
+      matrix:
+        module: ${{ fromJSON(needs.modules.outputs.modules) }}
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          # The modules target the latest stable Go release, so there is no
+          # oldstable leg: an older toolchain could not satisfy go.mod's go
+          # directive without silently downloading a newer one anyway. The
+          # "stable" alias tracks the current release so this needs no edits.
+          go-version: stable
+          check-latest: true
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: gofumpt
+        run: |
+          # The repo is held to gofumpt (a stricter superset of gofmt).
+          # Unpinned for the same reason as staticcheck below.
+          go install mvdan.cc/gofumpt@latest
+          files="$("$(go env GOPATH)/bin/gofumpt" -l .)"
+          if [ -n "$files" ]; then
+            echo "The following files are not gofumpt'd:"
+            echo "$files"
+            echo
+            "$(go env GOPATH)/bin/gofumpt" -d .
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: staticcheck
+        run: |
+          # Unpinned on purpose: staticcheck ships a new release for each Go
+          # release and an old pin silently stops understanding new language
+          # constructs. A pin can be introduced later if @latest ever breaks
+          # the build; the failure mode is loud and easy to diagnose.
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          "$(go env GOPATH)/bin/staticcheck" ./...
+
+      - name: go build
+        run: go build ./...
+
+      - name: go test
+        run: go test -race -v ./...
