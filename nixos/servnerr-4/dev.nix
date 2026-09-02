@@ -112,10 +112,20 @@ let
       # Own DNS via DHCP/RA and resolved rather than the host's resolv.conf.
       useHostResolvConf = false;
       firewall = {
-        allowedTCPPorts = [ 22 ];
-        # mDNS, so dev0 hosts resolve each other as <name>.local without
-        # router inventory entries (ephemeral containers in particular).
-        allowedUDPPorts = [ 5353 ];
+        allowedTCPPorts = [
+          22
+          # BGP, so any dev0 container can accept peering.
+          179
+        ];
+        allowedUDPPorts = [
+          # single-hop BFD control, which conntrack never sees as a reply:
+          # both endpoints send to destination port 3784, so each direction
+          # must be admitted on its own.
+          3784
+          # mDNS, so dev0 hosts resolve each other as <name>.local without
+          # router inventory entries (ephemeral containers in particular).
+          5353
+        ];
       };
     };
 
@@ -136,6 +146,18 @@ let
         settings.Resolve.MulticastDNS = true;
       };
       openssh.enable = true;
+    };
+
+    # Packet capture for agents without sudo: cap_net_raw captures and
+    # cap_net_admin flips promiscuous mode, while tcpdump itself runs as the
+    # unprivileged user, so -z and -w carry no privilege. The capabilities
+    # attach to this binary alone and are not inherited by its children.
+    security.wrappers.tcpdump = {
+      source = "${pkgs.tcpdump}/bin/tcpdump";
+      capabilities = "cap_net_raw,cap_net_admin+ep";
+      owner = "root";
+      group = "users";
+      permissions = "u+rx,g+rx";
     };
 
     users = {
@@ -437,8 +459,6 @@ in
       devContainer "frrdev" "11"
         [
           {
-            networking.firewall.allowedTCPPorts = [ 179 ];
-
             services.frr = {
               bgpd.enable = true;
               bfdd.enable = true;
