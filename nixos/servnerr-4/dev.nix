@@ -263,12 +263,16 @@ in
             };
 
             systemd.services = {
-              # Clone repositories into ~/src if they aren't there yet, and
-              # fast-forward existing ones from GitHub when they are on main
-              # with no local changes and main tracks an upstream: a repo
-              # mid-migration can sit on an upstream-less main, and pulling
-              # there would fail the whole unit. Uses gh's credentials;
-              # skipped until `gh auth login` has been run as the user.
+              # Clone repositories into ~/src/<repo>/main if they aren't
+              # there yet, and fast-forward existing ones from GitHub when
+              # they are on main with no local changes and main tracks an
+              # upstream: a repo mid-migration can sit on an upstream-less
+              # main, and pulling there would fail the whole unit. Each repo
+              # directory holds one worktree per branch, with main as the
+              # primary clone; agents work in sibling worktrees, so this job
+              # never contends with them for a checkout. Uses gh's
+              # credentials; skipped until `gh auth login` has been run as
+              # the user.
               dev-repos = {
                 description = "Clone development repositories";
                 after = [ "network-online.target" ];
@@ -286,13 +290,13 @@ in
                 script =
                   "gh auth setup-git\n"
                   + lib.concatMapStrings (repo: ''
-                    if [ ! -d ${src}/${repo} ]; then
-                      gh repo clone mdlayher/${repo} ${src}/${repo}
-                    elif [ "$(git -C ${src}/${repo} branch --show-current)" = "main" ] \
-                      && git -C ${src}/${repo} rev-parse --abbrev-ref 'main@{upstream}' >/dev/null 2>&1 \
-                      && git -C ${src}/${repo} diff --quiet \
-                      && git -C ${src}/${repo} diff --cached --quiet; then
-                      git -C ${src}/${repo} pull --ff-only
+                    if [ ! -d ${src}/${repo}/main ]; then
+                      gh repo clone mdlayher/${repo} ${src}/${repo}/main
+                    elif [ "$(git -C ${src}/${repo}/main branch --show-current)" = "main" ] \
+                      && git -C ${src}/${repo}/main rev-parse --abbrev-ref 'main@{upstream}' >/dev/null 2>&1 \
+                      && git -C ${src}/${repo}/main diff --quiet \
+                      && git -C ${src}/${repo}/main diff --cached --quiet; then
+                      git -C ${src}/${repo}/main pull --ff-only
                     fi
                   '') repos;
               };
