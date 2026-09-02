@@ -98,6 +98,35 @@ in
           for = "5m";
           annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} is unhealthy.";
         }
+        # A full pool cannot receive replication streams, and zrepl's
+        # receiver-side pruning only runs after a successful receive, so a
+        # full replication target never frees itself. Root datasets only:
+        # children share the pool's available space.
+        {
+          alert = "ZFSPoolOutOfSpace";
+          expr = ''zfs_dataset_available_bytes{name!~${raw ".*/.*"}} == 0'';
+          for = "5m";
+          annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} has no available space.";
+        }
+        # Errors from an attempted replication run. Unreachable targets (the
+        # cold backup pools when detached) report -1 from failed planning
+        # rather than a positive count, so this only fires when a run reached
+        # a filesystem and failed.
+        {
+          alert = "ZreplReplicationFailing";
+          expr = "zrepl_replication_filesystem_errors > 0";
+          for = "1h";
+          annotations.summary = "zrepl job {{ $labels.zrepl_job }} on {{ $labels.instance }} has had filesystem replication errors for over an hour.";
+        }
+        # A job which has succeeded since daemon start but then stopped. The
+        # timestamp resets to zero on restart, and never-successful jobs (the
+        # detached cold pools) stay at zero, so both are excluded here; the
+        # errors alert above covers jobs failing outright.
+        {
+          alert = "ZreplReplicationStalled";
+          expr = "(time() - zrepl_replication_last_successful) > 24*60*60 and zrepl_replication_last_successful > 0";
+          annotations.summary = "zrepl job {{ $labels.zrepl_job }} on {{ $labels.instance }} has not replicated successfully in over 24 hours.";
+        }
         {
           alert = "DiskUsageHigh";
           expr = ''(1 - node_filesystem_free_bytes{fstype=~"ext4|vfat"} / node_filesystem_size_bytes) > 0.75'';

@@ -109,10 +109,8 @@ let
   otherHosts = {
     nerr-4 = {
       jobs = {
-        apcupsd.port = 9162;
         node.port = 9100;
       };
-      ssh = true;
       alerts = false;
     };
   }
