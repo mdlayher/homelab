@@ -229,15 +229,9 @@ in
           # https://zrepl.github.io/quickstart/fan_out_replication.html.
           (snap "primary")
           (sourceLocal "primary" "secondary")
-          (sourceLocal "primary" "backup0")
-          (sourceLocal "primary" "backup1")
 
-          # Pull primary into backup pools:
-          # -  hot: pull into secondary
-          # - cold: pull into backup{0,1} (if available)
+          # Pull primary into the hot backup pool.
           (pullLocal "primary" "secondary")
-          (pullLocalEncrypted "primary" "backup0")
-          (pullLocalEncrypted "primary" "backup1")
         ];
       };
     };
