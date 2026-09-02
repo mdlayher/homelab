@@ -55,7 +55,8 @@ let
   # config inside the container. Updates come from nixpkgs, not herdr's
   # self-updater; panes run login shells so PATH matches SSH logins. Toasts
   # stay in-app (outer-terminal delivery proved noisy), and worktree
-  # checkouts open under ~/src/worktrees.
+  # checkouts open under ~/src, where each repo is a directory of one
+  # worktree per branch (~/src/<repo>/main plus feature siblings).
   herdrConfig = pkgs.writeText "herdr-config.toml" ''
     onboarding = false
 
@@ -69,7 +70,7 @@ let
     focus_agent = "prefix+alt+1..9"
 
     [worktrees]
-    directory = "~/src/worktrees"
+    directory = "~/src"
 
     [ui]
     agent_panel_sort = "priority"
