@@ -92,6 +92,12 @@ let
     vendorHash = "sha256-IOX2K4bBnhDq88PBU1yOmpZhBa3OXrgIohBBpmv9LZ0=";
   };
 
+  # dn42 peering (see dn42.nix): tunnel interfaces are dn42-<peer> and are
+  # matched by wildcard so the ruleset does not change per peer; only the
+  # per-peer WireGuard listen ports on the WANs do.
+  dn42 = config.homelab.dn42;
+  dn42Ports = lib.mapAttrsToList (_: peer: toString peer.port) dn42.peers;
+
   # LAN interface names for per-LAN WAN accounting, including the tailnet
   # interface so exit node traffic is counted.
   lans = map (ifi: ifi.name or ifi) (trusted ++ restricted);
@@ -172,6 +178,8 @@ in
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
       define dns = 53
+      define bgp = 179
+      define bfd_control = 3784
       define dhcp4_server = 67
       define dhcp4_client = 68
       define dhcp6_client = 546
@@ -192,6 +200,8 @@ in
         counter restricted_forward_drop {}
         counter forward_reject {}
         counter wan_forward_drop {}
+        counter dn42_input_drop {}
+        counter dn42_forward_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
         # those LANs may talk to.
@@ -269,6 +279,7 @@ in
           ct state invalid counter drop
 
           iifname $wans jump input_wan
+          iifname "dn42-*" jump input_dn42
 
           jump icmp_lan
 
@@ -295,10 +306,28 @@ in
 
           udp dport $tailscale_router counter accept comment "router WAN Tailscale"
           udp dport $tailscale_relay counter accept comment "router WAN peer relay"
+          ${lib.optionalString (dn42Ports != [ ])
+            ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
+          }
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
           counter name wan_input_drop drop
+        }
+
+        # From dn42 peers to the router itself: BGP and BFD sessions, plus
+        # pings, which are dn42 etiquette. No router services otherwise.
+        # TODO: open $dns here once CoreDNS serves mdlayher.dn42 on the
+        # ns1 glue addresses; the shared recursive resolver must not be
+        # exposed to dn42.
+        chain input_dn42 {
+          jump icmp_lan
+
+          tcp dport $bgp counter accept comment "router dn42 BGP"
+          udp dport $bfd_control counter accept comment "router dn42 BFD"
+
+          limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
+          counter name dn42_input_drop drop
         }
 
         chain input_restricted {
@@ -329,10 +358,24 @@ in
           type filter hook forward priority 0
           policy drop
 
+          # Clamp TCP MSS to the dn42 tunnel MTU in both directions, before
+          # the established shortcut so inbound SYN/ACKs are also clamped.
+          oifname "dn42-*" tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
+          iifname "dn42-*" tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
+
           ct state {established, related} counter accept
+
+          # dn42 routing is commonly asymmetric, so peer-to-peer transit is
+          # accepted before the conntrack invalid drop, which would discard
+          # flows whose other direction takes a different peer.
+          iifname "dn42-*" oifname "dn42-*" counter accept comment "dn42 peer transit"
+
           ct state invalid counter drop
 
           iifname $wans jump forward_wan
+
+          # dn42 peers may never initiate toward LANs or WANs.
+          iifname "dn42-*" counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.

@@ -51,11 +51,11 @@ over every holder cover both machines until the old one is removed.
 Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed.
-Every address, prefix, and MAC lives in `inventory/secrets.yaml`:
+Every address, prefix, and MAC lives in `inventory/secrets.yaml`, except the
+site ULA /48, which is publicly registered and declared as plain data in
+`inventory/default.nix`:
 
 ```yaml
-site:
-  ula_prefix: fd00:1234:5678          # the ULA /48
 subnets:
   lan0:
     ipv4_prefix: 192.0.2             # router is .1

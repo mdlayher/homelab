@@ -15,6 +15,9 @@
   # Internal DNS domain for trusted LANs.
   domain = "lan.servnerr.com";
 
+  # The site ULA /48. Public by choice: https://ula.ungleich.ch/.
+  ulaPrefix = "fd9e:1a04:f01d::/48";
+
   # Tailnet MagicDNS suffix, under which machines and Tailscale Services
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";

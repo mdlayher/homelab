@@ -47,10 +47,7 @@ let
     ]
     ++ iidKeys name host;
 
-  allKeys = [
-    "site/ula_prefix"
-  ]
-  ++ lib.concatLists (
+  allKeys = lib.concatLists (
     lib.mapAttrsToList (
       name: subnet: subnetKeys name ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
     ) inventory.subnets
@@ -114,10 +111,11 @@ in
     type = lib.types.raw;
     readOnly = true;
     description = ''
-      Network inventory with addresses as sops placeholders. ulaPrefix is the
-      site's ULA /48 (first three groups). Interfaces carry the router's
-      addresses and prefixes plus their hosts; hosts carry mac, ipv4, and
-      ula/gua (null when the host has no known IPv6 address).
+      Network inventory with addresses as sops placeholders, except
+      ulaPrefix, the site's ULA /48 in CIDR notation as plain data.
+      Interfaces carry the router's addresses and prefixes plus their
+      hosts; hosts carry mac, ipv4, and ula/gua (null when the host has no
+      known IPv6 address).
     '';
   };
 
@@ -130,7 +128,8 @@ in
         tailnetDomain
         ;
       inherit interfaces;
-      ulaPrefix = placeholder "site/ula_prefix";
+      # Plain data, not a placeholder; see the note in the inventory.
+      inherit (inventory) ulaPrefix;
       hosts = lib.listToAttrs (
         lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)
       );

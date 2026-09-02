@@ -15,6 +15,11 @@ creation_rules:
       - age:
           - *mdlayher
           - *servnerr-4
+  - path_regex: nixos/routnerr-3/secrets\.yaml$
+    key_groups:
+      - age:
+          - *mdlayher
+          - *routnerr-3
   - path_regex: nixos/(secrets/common|inventory/secrets)\.yaml$
     key_groups:
       - age:

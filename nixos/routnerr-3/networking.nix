@@ -77,16 +77,9 @@ let
   };
 
   # Drop-ins rendered from inventory secrets, keyed by networkd unit name.
-  dropIns = {
-    # We own the ULA /48, create a blanket unreachable route which will be
-    # superseded by more specific /64s.
-    "5-lo" = ''
-      [Route]
-      Destination=${inventory.ulaPrefix}::/48
-      Type=unreachable
-    '';
-  }
-  // lib.mapAttrs' (name: unit: lib.nameValuePair unit (lanDropIn inventory.interfaces.${name})) lans;
+  dropIns = lib.mapAttrs' (
+    name: unit: lib.nameValuePair unit (lanDropIn inventory.interfaces.${name})
+  ) lans;
 in
 {
   networking = {
@@ -141,8 +134,17 @@ in
 
     config.networkConfig.SpeedMeter = "yes";
 
-    # Loopback. The ULA unreachable route comes from the inventory drop-in.
-    networks."5-lo".matchConfig.Name = "lo";
+    # Loopback. We own the ULA /48: a blanket unreachable route which is
+    # superseded by the more specific /64s on each LAN.
+    networks."5-lo" = {
+      matchConfig.Name = "lo";
+      routes = [
+        {
+          Destination = inventory.ulaPrefix;
+          Type = "unreachable";
+        }
+      ];
+    };
 
     # Wired WAN: Spectrum 1GbE.
     links."10-wan0" = ethLink "wan0" "f4:90:ea:00:c7:8d";

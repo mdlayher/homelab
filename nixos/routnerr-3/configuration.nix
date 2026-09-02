@@ -14,6 +14,7 @@ in
     # Networking daemons.
     ./coredns.nix
     ./corerad.nix
+    ./dn42.nix
   ];
 
   system.stateVersion = "23.05";
