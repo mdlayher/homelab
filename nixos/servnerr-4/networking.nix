@@ -13,8 +13,19 @@ in
     useNetworkd = true;
     useDHCP = false;
 
-    # No local firewall.
-    firewall.enable = false;
+    # Local firewall: the tailnet rides its own ACLs, SSH and tailscale open
+    # their own ports, and loopback is free, which covers Prometheus scraping
+    # this machine's exporters and probing its services. The LAN may reach
+    # only the ports below.
+    firewall = {
+      trustedInterfaces = [ "ts0" ];
+      allowedTCPPorts = [
+        # Loki push, for the other machines' alloy.
+        config.services.loki.configuration.server.http_listen_port
+        # Plex, for LAN clients.
+        32400
+      ];
+    };
   };
 
   systemd.network = {

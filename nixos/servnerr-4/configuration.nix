@@ -80,6 +80,8 @@
         DEVICE
         UPSCLASS standalone
         UPSMODE disable
+        # The NIS server's only consumer is the local apcupsd exporter.
+        NISIP 127.0.0.1
       '';
     };
 

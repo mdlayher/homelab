@@ -11,6 +11,9 @@
     enable = true;
     package = pkgs.unstable.tailscale;
     interfaceName = "ts0";
+    # Open this machine's tailscale UDP port so LAN peers connect directly.
+    # A no-op on the router, which runs its own nftables ruleset.
+    openFirewall = true;
     # The router's DNS is authoritative on the LAN. Left to its own devices,
     # tailscaled injects the tailnet domain as the FIRST search domain and
     # claims the default DNS route, so single-label names resolve to tailnet

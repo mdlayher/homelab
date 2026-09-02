@@ -6,8 +6,20 @@
     useNetworkd = true;
     useDHCP = false;
 
-    # No local firewall.
-    firewall.enable = false;
+    # Local firewall: the tailnet rides its own ACLs, SSH and tailscale open
+    # their own ports, and the LAN may reach only the ports below.
+    firewall = {
+      trustedInterfaces = [ "ts0" ];
+      allowedTCPPorts = [
+        # consrv: svc:consrv is the usual path, but serial consoles are
+        # break-glass access, so the trusted LAN keeps direct reach too.
+        2222
+        # Scraped by the server: node exporter, consrv metrics, alloy.
+        9100
+        9288
+        12345
+      ];
+    };
   };
 
   systemd.network = {

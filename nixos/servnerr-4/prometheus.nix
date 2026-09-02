@@ -368,6 +368,9 @@ in
       # As above: silence links in Discord notifications use this URL.
       webExternalUrl = "https://alertmanager.${tailnetDomain}/";
 
+      # Single node: don't listen for cluster gossip.
+      extraFlags = [ "--cluster.listen-address=" ];
+
       configuration = {
         templates = [ (toString alertmanagerTemplates) ];
 
