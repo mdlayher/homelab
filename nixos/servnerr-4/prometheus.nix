@@ -107,6 +107,11 @@ let
   # Machines not managed by this flake (alerts = false for PCs which are often
   # off), plus jobs which discover cannot find on managed machines.
   otherHosts = {
+    hass = {
+      jobs = {
+        alloy.port = 12345;
+      };
+    };
     nerr-4 = {
       jobs = {
         node.port = 9100;

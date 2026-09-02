@@ -217,6 +217,7 @@ in
           type filter hook prerouting priority raw
           policy accept
 
+          iifname $physical_lans fib saddr . iif oif missing limit rate 10/minute burst 20 packets log prefix "nft spoofed drop: "
           iifname $physical_lans fib saddr . iif oif missing counter name spoofed_drop drop comment "spoofed source"
         }
 

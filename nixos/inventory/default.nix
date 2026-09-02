@@ -44,6 +44,17 @@
     monitor = [ "monitnerr-1" ];
   };
 
+  # Stable service names, published in internal DNS as <service>.svc.<domain>
+  # resolving to the primary holder of the named role. Devices which cannot
+  # join the tailnet (appliances, add-on containers) may hardcode these names
+  # to reach a service independent of the machine currently serving that
+  # role: a generation swap moves the name when the role's holder list is
+  # reordered, and hardcoded clients follow it at their next lookup.
+  services = {
+    loki = "server";
+    prometheus = "server";
+  };
+
   # Subnets by router interface name. VLAN 0 is the untagged management LAN.
   subnets = {
     # Physical management LAN: servers and network infrastructure.

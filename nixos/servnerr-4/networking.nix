@@ -20,7 +20,8 @@ in
     firewall = {
       trustedInterfaces = [ "ts0" ];
       allowedTCPPorts = [
-        # Loki push, for the other machines' alloy.
+        # Loki push, for the other machines' alloy and for LAN devices which
+        # cannot join the tailnet, via loki.svc; see the router's coredns.nix.
         config.services.loki.configuration.server.http_listen_port
         # Plex, for LAN clients.
         32400

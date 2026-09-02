@@ -98,13 +98,30 @@ in
           for = "5m";
           annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} is unhealthy.";
         }
+        # Jobs excluded from InstanceDown flap too often for a 5 minute
+        # window, but a full day of failed scrapes means the target is dead
+        # rather than flaky.
+        {
+          alert = "InstanceDownLong";
+          expr = "avg_over_time(up{job=~${excludedJobsRegex}}[1d]) == 0";
+          annotations.summary = "{{ $labels.instance }} of flaky job {{ $labels.job }} has been down for an entire day.";
+        }
+        # Early warning before ZFSPoolOutOfSpace below: a nearly full pool
+        # still has room to act. Root datasets only: children share the
+        # pool's available space.
+        {
+          alert = "ZFSPoolUsageHigh";
+          expr = "zfs_dataset_used_bytes{name!~${raw ".*/.*"}} / (zfs_dataset_used_bytes{name!~${raw ".*/.*"}} + zfs_dataset_available_bytes{name!~${raw ".*/.*"}}) > 0.9";
+          for = "15m";
+          annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} is over 90% full.";
+        }
         # A full pool cannot receive replication streams, and zrepl's
         # receiver-side pruning only runs after a successful receive, so a
         # full replication target never frees itself. Root datasets only:
         # children share the pool's available space.
         {
           alert = "ZFSPoolOutOfSpace";
-          expr = ''zfs_dataset_available_bytes{name!~${raw ".*/.*"}} == 0'';
+          expr = "zfs_dataset_available_bytes{name!~${raw ".*/.*"}} == 0";
           for = "5m";
           annotations.summary = "ZFS pool {{ $labels.pool }} on {{ $labels.instance }} has no available space.";
         }
