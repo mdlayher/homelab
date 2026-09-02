@@ -67,6 +67,9 @@ let
         lib.mapAttrs (_: e: { inherit (e) port; }) (
           lib.filterAttrs enabled cfg.services.prometheus.exporters
         )
+        // lib.optionalAttrs cfg.services.prometheus.alertmanager.enable {
+          alertmanager.port = cfg.services.prometheus.alertmanager.port;
+        }
         // lib.optionalAttrs cfg.services.alloy.enable {
           alloy.port = alloyPort cfg;
         }
@@ -76,8 +79,14 @@ let
         // lib.optionalAttrs cfg.services.corerad.enable {
           corerad.port = portOf cfg.services.corerad.settings.debug.address;
         }
+        // lib.optionalAttrs cfg.services.grafana.enable {
+          grafana.port = cfg.services.grafana.settings.server.http_port;
+        }
         // lib.optionalAttrs cfg.services.loki.enable {
           loki.port = cfg.services.loki.configuration.server.http_listen_port;
+        }
+        // lib.optionalAttrs cfg.services.prometheus.enable {
+          prometheus.port = cfg.services.prometheus.port;
         }
         // lib.optionalAttrs cfg.services.zrepl.enable {
           zrepl.port = portOf (lib.head cfg.services.zrepl.settings.global.monitoring).listen;
@@ -166,12 +175,11 @@ let
 
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
 
-  # Blackbox HTTP probe targets: local service health endpoints and devices,
-  # plus the same health endpoints through their Tailscale Services TLS
-  # frontends, which also validates the certificates; see the
+  # Blackbox HTTP probe targets: local service health endpoints, plus the
+  # same endpoints through their Tailscale Services TLS frontends, which
+  # also validates the certificates; see the
   # TailscaleTLSCertificateExpiringSoon alert.
   probes = [
-    "http://living-room-myq-hub.iot.ipv4"
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
     "${lokiUrl}/ready"
