@@ -92,14 +92,15 @@
       trusted = false;
     };
 
-    # Development VLAN: internet only, for containers on the server running
-    # agents and networking experiments.
+    # Development VLAN: internet only, for containers and microvms on the
+    # server running agents and networking experiments.
     dev0 = {
       vlan = 20;
       trusted = false;
       hosts = {
         "frrdev.dev".ipv6 = "token";
         "linuxdev.dev".ipv6 = "token";
+        "quicdev.dev".ipv6 = "token";
       };
     };
 

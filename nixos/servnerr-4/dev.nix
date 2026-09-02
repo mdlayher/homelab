@@ -1,9 +1,14 @@
-# Development containers on the restricted dev0 VLAN, bridged via br-dev0 (see
-# networking.nix). They can reach the internet and each other, but not the
-# rest of the LAN.
+# Development containers and microvms on the restricted dev0 VLAN, bridged
+# via br-dev0 (see networking.nix). They can reach the internet and each
+# other, but not the rest of the LAN.
+#
+# Containers share the host kernel and are the default; a microvm carries its
+# own kernel for work the host kernel cannot do (out-of-tree modules), at the
+# cost of a restart on every host switch which changes it.
 #
 # Each container has a dev0 entry in nixos/inventory/ for its static lease and
-# DNS record; the veth MAC is read from the container after its first start.
+# DNS record; the veth MAC is read from the container after its first start,
+# while a microvm's MAC is fixed here and copied into the inventory.
 {
   config,
   inputs,
@@ -197,6 +202,181 @@ let
       config.imports = [ (devModule hostName token) ] ++ modules;
     } extra;
 
+  # A microvm on dev0, the VM analog of devContainer. The guest's tap
+  # interface joins br-dev0 (see networking.nix), so it takes the same DHCP
+  # lease, RA token, and mDNS presence as a container would. The MAC is the
+  # guest's own and pairs with the host's inventory entry for its static
+  # lease; the machine ID keeps the journal under one directory across
+  # restarts.
+  #
+  # Monitoring works like a container's, not a machine's: dev0 cannot push
+  # to Loki, so the guest journal is written through a virtiofs share to
+  # /var/lib/microvms/<name>/journal, which the host's alloy ships (see
+  # nixos/modules/alloy.nix), and the server scrapes node_exporter through
+  # the guest's dev0 inventory entry (see prometheus.nix).
+  devVM =
+    hostName: token: mac: machineId: modules: extra:
+    lib.recursiveUpdate {
+      config = {
+        imports = [ (devModule hostName token) ] ++ modules;
+
+        # A VM is not detected the way a container is; take the container
+        # semantics from common.nix explicitly (no sops, upgrades, or
+        # hardware services).
+        homelab.isMachine = false;
+
+        # The host's password hash cannot be shared into the guest without
+        # exposing a whole secrets directory over virtiofs, so the user has
+        # no password: SSH is key-only regardless, sudo works when a
+        # forwarded agent answers the FIDO2 challenge, and the qemu console
+        # (host access only) logs in directly.
+        users.users.${user}.hashedPasswordFile = lib.mkForce null;
+        services.getty.autologinUser = user;
+
+        # The home volume starts empty. Own the home directory explicitly:
+        # tmpfiles otherwise creates it root-owned as the parent of the
+        # entries devModule places under it, and the user cannot write
+        # to their own home.
+        systemd.tmpfiles.rules = [ "d ${home} 0700 ${user} users -" ];
+
+        # The root filesystem is a tmpfs, so host keys under /etc would be
+        # regenerated on every boot and clients would see a changed key
+        # after each restart. Keep them on the persistent state volume.
+        services.openssh.hostKeys = [
+          {
+            path = "/var/lib/ssh/ssh_host_ed25519_key";
+            type = "ed25519";
+          }
+          {
+            path = "/var/lib/ssh/ssh_host_rsa_key";
+            type = "rsa";
+            bits = 4096;
+          }
+        ];
+
+        # The guest interface is named by PCI slot rather than eth0; match
+        # the fixed MAC instead.
+        systemd.network.networks."10-eth0".matchConfig = lib.mkForce {
+          MACAddress = mac;
+        };
+
+        microvm = {
+          hypervisor = "qemu";
+          vcpu = 4;
+          mem = 4096;
+          inherit machineId;
+
+          interfaces = [
+            {
+              type = "tap";
+              id = "vm-${hostName}";
+              inherit mac;
+            }
+          ];
+
+          shares = [
+            # The host store, read-only; the guest cannot build with nix.
+            {
+              tag = "ro-store";
+              source = "/nix/store";
+              mountPoint = "/nix/.ro-store";
+              proto = "virtiofs";
+            }
+            # Guest journal, read by the host's alloy; see above.
+            {
+              tag = "journal";
+              source = "/var/lib/microvms/${hostName}/journal";
+              mountPoint = "/var/log/journal";
+              proto = "virtiofs";
+            }
+          ];
+
+          # Persistent state; paths are relative to
+          # /var/lib/microvms/<name> on the host.
+          volumes = [
+            {
+              image = "var.img";
+              mountPoint = "/var";
+              size = 4096;
+            }
+            {
+              image = "home.img";
+              mountPoint = "/home";
+              size = 16384;
+            }
+          ];
+        };
+      };
+    } extra;
+
+  # The kernel QUIC module (IPPROTO_QUIC sockets) from lxin/quic, not yet
+  # merged upstream or packaged in nixpkgs. Pinned by revision: upstream tags
+  # no releases. One source for both the kernel module and its userspace
+  # handshake library.
+  quicSrc = pkgs.fetchFromGitHub {
+    owner = "lxin";
+    repo = "quic";
+    rev = "bf47121683d987b0b20c79397704a6ae13911f88";
+    hash = "sha256-FduHHKZRj01iXLw6F+71SVcFiSrVPtrNhETRMKbpdL0=";
+  };
+  quicVersion = "0-unstable-2026-08-19";
+
+  # quic.ko built out of tree against the given kernel via kbuild directly:
+  # the repo's autotools install step hardcodes /usr/include and runs depmod
+  # and rmmod, none of which fit a Nix build.
+  quicModules =
+    kernel:
+    pkgs.stdenv.mkDerivation {
+      pname = "quic-modules";
+      version = quicVersion;
+      src = quicSrc;
+
+      nativeBuildInputs = kernel.moduleBuildDependencies;
+
+      # Upstream guards the kernel's recvmsg signature change behind a
+      # placeholder future version; the change is already in 6.18.
+      postPatch = ''
+        substituteInPlace modules/net/quic/socket.c \
+          --replace-fail "KERNEL_VERSION(7, 1, 0)" "KERNEL_VERSION(6, 18, 0)"
+      '';
+
+      # kernel.makeFlags is for building the kernel itself and breaks
+      # external module builds; a native build needs nothing beyond kbuild's
+      # own configuration.
+      buildPhase = ''
+        runHook preBuild
+        make -j"$NIX_BUILD_CORES" \
+          -C ${kernel.dev}/lib/modules/${kernel.modDirVersion}/build \
+          M=$PWD/modules/net/quic ROOTDIR=$PWD/modules \
+          CONFIG_IP_QUIC=m modules
+        runHook postBuild
+      '';
+
+      installPhase = ''
+        runHook preInstall
+        install -Dm444 modules/net/quic/quic.ko \
+          $out/lib/modules/${kernel.modDirVersion}/extra/quic.ko
+        runHook postInstall
+      '';
+    };
+
+  # libquic and headers: the userspace side of lxin/quic, which performs the
+  # TLS handshake over a QUIC socket via gnutls and hands the connection to
+  # the kernel.
+  libquic = pkgs.stdenv.mkDerivation {
+    pname = "libquic";
+    version = quicVersion;
+    src = quicSrc;
+
+    nativeBuildInputs = with pkgs; [
+      autoreconfHook
+      pkg-config
+    ];
+    buildInputs = [ pkgs.gnutls ];
+
+    configureFlags = [ "--without-modules" ];
+  };
+
   # FRR configuration for frrdev. The dev0 prefixes are inventory secrets, so
   # this is rendered by sops-nix on the host and bind mounted into the
   # container. Any external AS on dev0 may peer (dynamic neighbors); the
@@ -241,6 +421,56 @@ let
   frrConfigFile = "/run/host-secrets/frr.conf";
 in
 {
+  # MicroVM host support for devVM above: per-VM systemd units, taps, and
+  # virtiofs, with state under /var/lib/microvms.
+  imports = [ inputs.microvm.nixosModules.host ];
+
+  # QUIC protocol development against the kernel QUIC module. A VM rather
+  # than a container: the module is out of tree, and loading experimental
+  # kernel code on the server would put storage and every service in the
+  # blast radius, while a VM confines a crash and lets the kernel change
+  # without a host reboot. Reached from linuxdev as quicdev.local with the
+  # shared dev0 SSH key, like any dev container.
+  #
+  # Unlike a container's veth, the MAC is chosen here and must match the
+  # inventory's quicdev.dev entry (nixos/inventory/secrets.yaml) for the
+  # router's static lease.
+  microvm.vms.quicdev = devVM "quicdev" "12" "02:00:00:00:00:12" "5ebc7d0a-fa7b-70d0-8573-cb9552ed092c" [
+    (
+      { config, ... }:
+      {
+        boot = {
+          # The machines' 2026 LTS kernel, with the QUIC module built
+          # against it. The VM may diverge from the machines here freely,
+          # e.g. to test newer kernels or the upstream patch series.
+          kernelPackages = pkgs.linuxPackages_6_18;
+          extraModulePackages = [ (quicModules config.boot.kernelPackages.kernel) ];
+          kernelModules = [ "quic" ];
+        };
+
+        # Compile and link against libquic and gnutls outside nix builds
+        # (the guest's store is read-only): ad hoc gcc and Go cgo find
+        # headers and libraries through the system profile. Everything in
+        # the profile comes from one nixpkgs evaluation, so the library
+        # path stays coherent.
+        environment = {
+          systemPackages = [
+            libquic
+            pkgs.gnutls
+            pkgs.gnutls.dev
+          ];
+          pathsToLink = [ "/include" ];
+          variables = {
+            CPATH = "/run/current-system/sw/include";
+            LIBRARY_PATH = "/run/current-system/sw/lib";
+            LD_LIBRARY_PATH = "/run/current-system/sw/lib";
+            PKG_CONFIG_PATH = "/run/current-system/sw/lib/pkgconfig";
+          };
+        };
+      }
+    )
+  ] { };
+
   containers = {
     linuxdev =
       devContainer "linuxdev" "10"

@@ -1,5 +1,6 @@
-# Base system configuration shared by every machine and container. Settings
-# which only make sense on a physical machine are gated on !boot.isContainer.
+# Base system configuration shared by every machine, container, and microvm.
+# Settings which only make sense on a physical machine are gated on
+# homelab.isMachine.
 {
   config,
   inputs,
@@ -10,7 +11,7 @@
 }:
 
 let
-  isHost = !config.boot.isContainer;
+  isHost = config.homelab.isMachine;
 
   # The primary administrative user on machines.
   user = config.homelab.user;
@@ -60,6 +61,15 @@ in
     type = lib.types.str;
     default = "mdlayher";
     description = "Name of the primary administrative user on machines.";
+  };
+
+  # Containers are detected; microvm guests cannot be (boot.isContainer is
+  # false in a VM) and must set this to false themselves, taking the same
+  # guest semantics as containers: no sops, upgrades, or hardware services.
+  options.homelab.isMachine = lib.mkOption {
+    type = lib.types.bool;
+    default = !config.boot.isContainer;
+    description = "Whether this configuration is a physical machine rather than a container or VM guest.";
   };
 
   config = {

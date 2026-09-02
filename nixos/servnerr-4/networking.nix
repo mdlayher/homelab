@@ -91,6 +91,14 @@ in
       Name = "br-dev0";
       Kind = "bridge";
     };
+    # MicroVM tap interfaces (see dev.nix) join the dev VLAN bridge, making
+    # their guests dev0 citizens exactly like the containers.
+    networks."12-vm-dev0" = {
+      matchConfig.Name = "vm-*";
+      bridge = [ "br-dev0" ];
+      networkConfig.LinkLocalAddressing = "no";
+      linkConfig.RequiredForOnline = "no";
+    };
     networks."12-br-dev0" = {
       matchConfig.Name = "br-dev0";
       networkConfig = {

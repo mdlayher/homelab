@@ -37,6 +37,19 @@ let
       labels        = {job = "systemd-journal"}
     }
   '') (lib.attrNames config.containers);
+
+  # Journals of this machine's microvms, likewise read from the host
+  # filesystem: each guest writes its journal through a virtiofs share; see
+  # nixos/servnerr-4/dev.nix.
+  microvmSources = lib.concatMapStrings (name: ''
+
+    loki.source.journal "microvm_${lib.replaceStrings [ "-" ] [ "_" ] name}" {
+      path          = "/var/lib/microvms/${name}/journal"
+      forward_to    = [loki.write.server.receiver]
+      relabel_rules = loki.relabel.journal.rules
+      labels        = {job = "systemd-journal"}
+    }
+  '') (lib.attrNames (config.microvm.vms or { }));
 in
 {
   services.alloy = {
@@ -98,7 +111,7 @@ in
       relabel_rules = loki.relabel.journal.rules
       labels        = {job = "systemd-journal"}
     }
-    ${containerSources}
+    ${containerSources}${microvmSources}
     // Push to Loki on the server over the LAN.
     loki.write "server" {
       ${endpoints}

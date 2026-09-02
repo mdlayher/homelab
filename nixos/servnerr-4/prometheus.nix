@@ -98,18 +98,24 @@ let
   # Every NixOS machine in this flake, by host name.
   nixosHosts = lib.mapAttrs (_: system: discover system.config) inputs.self.nixosConfigurations;
 
-  # Containers on those machines which have a dev0 inventory entry, by their
-  # DNS name. Other containers share their host's network and need nothing.
+  # Containers and microvm guests on those machines which have a dev0
+  # inventory entry, by their DNS name. Other containers share their host's
+  # network and need nothing.
   inherit (config.homelab.inventory) domain roles tailnetDomain;
   containerHosts = lib.listToAttrs (
     lib.concatMap (
       system:
+      let
+        guests =
+          lib.mapAttrs (_: c: c.config) system.config.containers
+          // lib.mapAttrs (_: vm: vm.config.config) (system.config.microvm.vms or { });
+      in
       lib.concatMap (
         name:
         lib.optional (config.homelab.inventory.hosts ? "${name}.dev") (
-          lib.nameValuePair "${name}.dev.${domain}" (discover system.config.containers.${name}.config)
+          lib.nameValuePair "${name}.dev.${domain}" (discover guests.${name})
         )
-      ) (lib.attrNames system.config.containers)
+      ) (lib.attrNames guests)
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 
@@ -257,13 +263,13 @@ let
     excludedJobs = [ snmpCyberpowerJob ];
     routers = hostsWhere (h: h.router or false);
     # Every host expected to ship logs to Loki: the machines themselves plus
-    # their containers, whose journals the hosting machine ships; see
-    # nixos/modules/alloy.nix.
+    # their containers and microvms, whose journals the hosting machine
+    # ships; see nixos/modules/alloy.nix.
     logHosts =
       lib.attrNames nixosHosts
-      ++ lib.concatMap (system: lib.attrNames system.config.containers) (
-        lib.attrValues inputs.self.nixosConfigurations
-      );
+      ++ lib.concatMap (
+        system: lib.attrNames system.config.containers ++ lib.attrNames (system.config.microvm.vms or { })
+      ) (lib.attrValues inputs.self.nixosConfigurations);
   };
 
   # Discord notification body, rendered inside an embed so markdown links
