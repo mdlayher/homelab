@@ -6,7 +6,7 @@
 
 let
   inherit (config.services.loki) dataDir;
-  inherit (config.homelab.inventory) tailnetDomain;
+  inherit (config.homelab.inventory) hosts tailnetDomain;
 
   # Log-derived rules, evaluated continuously by the ruler: alerts cover what
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
@@ -63,6 +63,55 @@ let
   rulesDir = pkgs.writeTextDir "fake/logs.yaml" (builtins.toJSON rules);
 in
 {
+  # The raw syslog format below is gated behind alloy's experimental
+  # stability level.
+  services.alloy.extraFlags = [ "--stability.level=experimental" ];
+
+  # Syslog from devices that cannot run alloy. Rendered through sops at
+  # activation because the relabeling below matches inventory addresses.
+  sops.templates."alloy-syslog.alloy" = {
+    content = ''
+      loki.source.syslog "lan" {
+        listener {
+          address       = "0.0.0.0:5514"
+          protocol      = "udp"
+          // The CyberPower cards each speak their own almost-RFC3164
+          // dialect and no two firmwares agree, so ship each datagram
+          // verbatim rather than parsing it.
+          syslog_format = "raw"
+          labels        = {job = "syslog"}
+        }
+        relabel_rules = loki.relabel.syslog.rules
+        forward_to    = [loki.write.server.receiver]
+      }
+
+      // Label messages with a host name by sender address, mirroring the
+      // host label on journal streams. Raw mode parses nothing, and the
+      // cards' self-reported identities are unusable anyway.
+      loki.relabel "syslog" {
+        forward_to = []
+
+        rule {
+          source_labels = ["__syslog_connection_ip_address"]
+          regex         = "${hosts.ups01.ipv4}"
+          replacement   = "ups01"
+          target_label  = "host"
+        }
+
+        rule {
+          source_labels = ["__syslog_connection_ip_address"]
+          regex         = "${hosts.pdu01.ipv4}"
+          replacement   = "pdu01"
+          target_label  = "host"
+        }
+      }
+    '';
+    mode = "0444";
+    restartUnits = [ "alloy.service" ];
+  };
+
+  environment.etc."alloy/syslog.alloy".source = config.sops.templates."alloy-syslog.alloy".path;
+
   services.loki = {
     enable = true;
 

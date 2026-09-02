@@ -26,6 +26,10 @@ in
         # Plex, for LAN clients.
         32400
       ];
+      allowedUDPPorts = [
+        # Syslog from devices that cannot run alloy.
+        5514
+      ];
     };
   };
 
@@ -50,16 +54,20 @@ in
       };
     };
 
-    # 10GbE management LAN with bridge. The switch port is a trunk: mgmt0
-    # untagged, plus the tagged VLANs below.
+    # 10GbE bridge carrying the tagged container VLANs below. The host
+    # itself is addressed only on mgmt0: a second address on the same LAN
+    # makes ingress asymmetric, and the firewall's reverse path filter
+    # drops such traffic.
     netdevs."11-br0".netdevConfig = {
       Name = "br0";
       Kind = "bridge";
     };
     networks."11-br0" = {
       matchConfig.Name = "br0";
-      networkConfig.DHCP = "ipv4";
-      dhcpV4Config.ClientIdentifier = "mac";
+      networkConfig = {
+        LinkLocalAddressing = "no";
+        IPv6AcceptRA = false;
+      };
 
       # Tagged VLANs carried over br0 for containers.
       vlan = [ "dev0" ];
