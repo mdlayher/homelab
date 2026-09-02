@@ -129,5 +129,19 @@
 			"dst":    ["autogroup:self"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
+
+		// Personal devices into the development container as the admin
+		// user, keyless: the break-glass path from a device that is not on
+		// the tailnet, via the admin console's SSH Console. The container
+		// is tagged, so the user is named rather than autogroup:nonroot;
+		// the machines beyond it still require the admin's FIDO2 key. The
+		// check gates new connections only; open sessions outlive it.
+		{
+			"action":      "check",
+			"checkPeriod": "1h",
+			"src":         ["autogroup:member"],
+			"dst":         ["tag:dev"],
+			"users":       ["mdlayher"],
+		},
 	],
 }

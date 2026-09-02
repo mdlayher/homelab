@@ -244,10 +244,19 @@ in
             networking.firewall.trustedInterfaces = [ "ts0" ];
 
             # Remote development from anywhere. Join once with `tailscale up`.
+            #
+            # Tailscale SSH takes over port 22 for tailnet peers: logins are
+            # authenticated by tailnet identity under the policy's ssh rules
+            # (terraform/tailscale/policy.hujson), with no key on the client.
+            # This is the break-glass path from a device that is not on the
+            # tailnet, via the admin console's SSH Console in any browser.
+            # sshd still serves dev0. Toggling the flag hangs connections
+            # open to the container's tailnet address.
             services.tailscale = {
               enable = true;
               package = pkgs.unstable.tailscale;
               interfaceName = "ts0";
+              extraSetFlags = [ "--ssh" ];
             };
 
             systemd.tmpfiles.rules = [
