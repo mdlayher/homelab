@@ -169,7 +169,7 @@ let
   # Blackbox HTTP probe targets: local service health endpoints and devices,
   # plus the same health endpoints through their Tailscale Services TLS
   # frontends, which also validates the certificates; see the
-  # TLSCertificateExpiringSoon alert.
+  # TailscaleTLSCertificateExpiringSoon alert.
   probes = [
     "http://living-room-myq-hub.iot.ipv4"
     "${alertmanagerUrl}/-/healthy"
@@ -391,9 +391,9 @@ in
           receiver = "default";
           routes = [
             # Dead man's switch: keep pinging the heartbeat service while the
-            # Watchdog alert fires; it pages when the pings stop.
+            # PrometheusWatchdog alert fires; it pages when the pings stop.
             {
-              matchers = [ "alertname = Watchdog" ];
+              matchers = [ "alertname = PrometheusWatchdog" ];
               receiver = "deadman";
               group_wait = "0s";
               group_interval = "1m";
@@ -485,7 +485,30 @@ in
       # Blackbox probes for HTTP endpoints, internet reachability per address
       # family, and end to end DNS resolution through the router.
       (blackboxScrape "http_2xx" "15s" probes)
-      (blackboxScrape "icmp" "15s" pings)
+      # ICMP targets also carry a family label so alerts distinguish the IPv4
+      # and IPv6 WAN paths; IPv6 literals are the only ICMP targets with
+      # colons. The family rules run first, while __address__ still holds the
+      # probe target rather than the blackbox exporter.
+      (
+        (blackboxScrape "icmp" "15s" pings)
+        // {
+          relabel_configs = [
+            {
+              source_labels = [ "__address__" ];
+              regex = ".*:.*";
+              target_label = "family";
+              replacement = "ipv6";
+            }
+            {
+              source_labels = [ "__address__" ];
+              regex = "[^:]*";
+              target_label = "family";
+              replacement = "ipv4";
+            }
+          ]
+          ++ relabelTarget (local "blackbox");
+        }
+      )
       (blackboxScrape "dns_lan" "1m" dnsServers)
       # The SSH banner check produces a fair amount of log spam, so only scrape
       # it once a minute.
