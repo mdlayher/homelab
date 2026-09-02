@@ -495,6 +495,9 @@ in
         {
           metrics_path = "/snmp";
           params.module = [ "cyberpower" ];
+          # The CyberPower cards speak SNMPv1 only; without this the exporter
+          # defaults to public_v2 and every walk times out.
+          params.auth = [ "public_v1" ];
           relabel_configs = relabelTarget (local "snmp");
         }
       ])
