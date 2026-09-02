@@ -110,6 +110,7 @@ let
     hass = {
       jobs = {
         alloy.port = 12345;
+        node.port = 9100;
       };
     };
     nerr-4 = {
