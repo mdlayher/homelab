@@ -364,6 +364,9 @@ in
     # Credential files are not visible to promtool in the build sandbox.
     checkConfig = "syntax-only";
 
+    # A year of history; disk is plentiful.
+    retentionTime = "365d";
+
     # Accept recording rules remote-written by Loki's ruler; see loki.nix.
     extraFlags = [ "--web.enable-remote-write-receiver" ];
 

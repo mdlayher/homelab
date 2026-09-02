@@ -187,7 +187,8 @@ in
         retention_enabled = true;
         delete_request_store = "filesystem";
       };
-      limits_config.retention_period = "90d";
+      # A year of history; disk is plentiful.
+      limits_config.retention_period = "365d";
 
       analytics.reporting_enabled = false;
     };
