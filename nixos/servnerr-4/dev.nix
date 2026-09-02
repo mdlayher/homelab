@@ -103,6 +103,11 @@ let
       inputs.sops-nix.nixosModules.sops
     ];
     _module.args.inputs = inputs;
+    # The raw inventory as flake.nix hands it to the machines, for shared
+    # modules such as modules/tailscale.nix. The host's rendered copy
+    # (config.homelab.inventory) carries sops placeholders which only the
+    # host renders, so it is not the one to share.
+    _module.args.inventory = import ../inventory;
 
     system.stateVersion = "26.05";
 
@@ -245,6 +250,16 @@ in
 
             # Remote development from anywhere. Join once with `tailscale up`.
             #
+            # The shared client module keeps accept-dns off and routes only
+            # the tailnet domain to tailscaled via the tsdns0 dummy. Without
+            # it, tailscaled's "~." route on ts0 outranks eth0's default and
+            # the tailnet's DNS config takes over: public names go to its
+            # global resolvers instead of the router, and the LAN domain is
+            # split to the router's mgmt0 address, which dev0 cannot reach.
+            # The dummy needs CAP_NET_ADMIN (granted with enableTun) and the
+            # host's dummy driver, which the host's own tsdns0 keeps loaded.
+            imports = [ ../modules/tailscale.nix ];
+
             # Tailscale SSH takes over port 22 for tailnet peers: logins are
             # authenticated by tailnet identity under the policy's ssh rules
             # (terraform/tailscale/policy.hujson), with no key on the client.
@@ -252,12 +267,7 @@ in
             # tailnet, via the admin console's SSH Console in any browser.
             # sshd still serves dev0. Toggling the flag hangs connections
             # open to the container's tailnet address.
-            services.tailscale = {
-              enable = true;
-              package = pkgs.unstable.tailscale;
-              interfaceName = "ts0";
-              extraSetFlags = [ "--ssh" ];
-            };
+            services.tailscale.extraSetFlags = [ "--ssh" ];
 
             systemd.tmpfiles.rules = [
               "d ${home}/.config/herdr 0755 ${user} users -"
