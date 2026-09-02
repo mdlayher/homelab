@@ -2,11 +2,75 @@
 # the systemd journal from every machine; see nixos/modules/alloy.nix for the
 # shipping side. Queries run through Grafana, or logcli against the
 # svc:loki Tailscale Service; see nixos/servnerr-4/prometheus.nix.
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inherit (config.services.loki) dataDir;
   inherit (config.homelab.inventory) hosts tailnetDomain;
+
+  # Journal streams which can carry authentication failures: sshd, sudo in a
+  # (collapsed) session scope, and unitless audit messages.
+  authUnits = ''job="systemd-journal", unit=~"sshd.service|session.scope|user@.+.service|"'';
+
+  # One line per failed attempt, anchored so the log's second mention of the
+  # same attempt does not count it twice. Unknown accounts: sshd logs
+  # "Invalid user X from ..." and later "Connection closed by invalid user X
+  # ..." for the same connection. Known accounts: sshd's "Connection closed
+  # by authenticating user X ..." is its only record of a connection that
+  # named a real account and never authenticated (a bot trying root, or a
+  # declined FIDO2 touch), and a rejected sudo or login password logs both
+  # unix_chkpwd's "password check failed for user (X)" and pam_unix's
+  # "authentication failure; ...". Password authentication is disabled
+  # everywhere, so sshd's "Failed password" never appears. The server's
+  # ssh_banner probe hangs up before naming a user and logs only
+  # "Connection closed by <addr> port N [preauth]", which nothing here
+  # matches.
+  invalidUserLine = "^Invalid user ";
+  authFailureLine = "^(Connection closed by authenticating user |password check failed for user )";
+
+  # The lines matching a pattern, from streams matching any extra selector;
+  # the per-host count an alert compares, and the Grafana Explore link its
+  # logs_url annotation carries to the source addresses (which stay in the
+  # lines rather than becoming alert labels).
+  failures = line: extra: "{${extra}${authUnits}} |~ `${line}`";
+  countFailures = line: "sum by (host) (count_over_time(${failures line ""} [15m]))";
+  failureLogs = line: exploreURL (failures line ''host="__host__", '');
+
+  # A Grafana Explore link running a LogQL query against Loki over the last
+  # few hours, for alert annotations that should lead straight to the lines
+  # behind the count. The query holds a "__host__" placeholder, swapped for
+  # the ruler's label template after URL encoding so the braces survive.
+  exploreURL =
+    expr:
+    let
+      panes = builtins.toJSON {
+        a = {
+          datasource = "loki";
+          queries = [
+            {
+              refId = "A";
+              inherit expr;
+              datasource = {
+                type = "loki";
+                uid = "loki";
+              };
+            }
+          ];
+          range = {
+            from = "now-3h";
+            to = "now";
+          };
+        };
+      };
+    in
+    lib.replaceStrings [ "__host__" ] [ "{{ $labels.host }}" ] (
+      "https://grafana.${tailnetDomain}/explore?schemaVersion=1&orgId=1&panes=" + lib.escapeURL panes
+    );
 
   # Log-derived rules, evaluated continuously by the ruler: alerts cover what
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
@@ -37,10 +101,26 @@ let
           }
           {
             alert = "PAMAuthFailures";
-            # sshd, sudo in a (collapsed) session scope, and unitless audit
-            # messages.
-            expr = ''sum by (host) (count_over_time({job="systemd-journal", unit=~"sshd.service|session.scope|user@.+.service|"} |~ `(?i)(failed password|invalid user|authentication failure|password check failed)` [15m])) > 5'';
-            annotations.summary = "{{ $labels.host }} logged more than 5 authentication failures in 15 minutes.";
+            # Failures against accounts that exist. A mistyped sudo
+            # password or a declined touch is one or two in a row and stays
+            # under the threshold; SSHInvalidUsers below covers the scanners
+            # guessing account names, which are noisier at a lower count.
+            expr = "${countFailures authFailureLine} > 3";
+            annotations = {
+              summary = "{{ $labels.host }} logged more than 3 authentication failures for existing accounts in 15 minutes.";
+              logs_url = failureLogs authFailureLine;
+            };
+          }
+          {
+            alert = "SSHInvalidUsers";
+            # No legitimate client names an account that does not exist, so
+            # a couple of these means a scanner has found the SSH port: the
+            # first sign of a firewall hole. One tolerates a typo.
+            expr = "${countFailures invalidUserLine} > 1";
+            annotations = {
+              summary = "{{ $labels.host }} logged {{ $value }} SSH attempts for nonexistent accounts in 15 minutes.";
+              logs_url = failureLogs invalidUserLine;
+            };
           }
           {
             # Restart= loops do not fail the unit, so SystemdUnitFailed never

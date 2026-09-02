@@ -270,7 +270,8 @@ let
   # work. One entry per alert: summary, optional description, when it started
   # (Discord renders <t:..:R> as a relative time), and links to silence it in
   # Alertmanager (all of the alert's labels pre-filled), to its source query in
-  # Prometheus, and to a runbook if the rule has one.
+  # Prometheus, to the matching log lines in Grafana if the rule provides a
+  # logs_url annotation (see loki.nix), and to a runbook if it has one.
   alertmanagerTemplates = pkgs.writeText "homelab.tmpl" ''
     {{ define "homelab.discord.alert" -}}
     **{{ .Labels.alertname }}**{{ with .Labels.instance }} on `{{ . }}`{{ end }}{{ with .Annotations.summary }}: {{ . }}{{ end }}
@@ -281,7 +282,7 @@ let
     {{ define "homelab.discord.message" }}
     {{- range .Alerts.Firing }}
     :fire: {{ template "homelab.discord.alert" . }}
-    Since <t:{{ .StartsAt.Unix }}:R> · [Silence]({{ $.ExternalURL }}/#/silences/new?filter=%7B{{ range $i, $l := .Labels.SortedPairs }}{{ if $i }}%2C%20{{ end }}{{ $l.Name }}%3D%22{{ $l.Value | urlquery }}%22{{ end }}%7D) · [Source]({{ .GeneratorURL }}){{ with .Annotations.runbook_url }} · [Runbook]({{ . }}){{ end }}
+    Since <t:{{ .StartsAt.Unix }}:R> · [Silence]({{ $.ExternalURL }}/#/silences/new?filter=%7B{{ range $i, $l := .Labels.SortedPairs }}{{ if $i }}%2C%20{{ end }}{{ $l.Name }}%3D%22{{ $l.Value | urlquery }}%22{{ end }}%7D) · [Source]({{ .GeneratorURL }}){{ with .Annotations.logs_url }} · [Logs]({{ . }}){{ end }}{{ with .Annotations.runbook_url }} · [Runbook]({{ . }}){{ end }}
     {{ end -}}
     {{- range .Alerts.Resolved }}
     :white_check_mark: {{ template "homelab.discord.alert" . }}
