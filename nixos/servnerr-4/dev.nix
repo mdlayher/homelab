@@ -265,8 +265,10 @@ in
             systemd.services = {
               # Clone repositories into ~/src if they aren't there yet, and
               # fast-forward existing ones from GitHub when they are on main
-              # with no local changes. Uses gh's credentials; skipped until
-              # `gh auth login` has been run as the user.
+              # with no local changes and main tracks an upstream: a repo
+              # mid-migration can sit on an upstream-less main, and pulling
+              # there would fail the whole unit. Uses gh's credentials;
+              # skipped until `gh auth login` has been run as the user.
               dev-repos = {
                 description = "Clone development repositories";
                 after = [ "network-online.target" ];
@@ -287,6 +289,7 @@ in
                     if [ ! -d ${src}/${repo} ]; then
                       gh repo clone mdlayher/${repo} ${src}/${repo}
                     elif [ "$(git -C ${src}/${repo} branch --show-current)" = "main" ] \
+                      && git -C ${src}/${repo} rev-parse --abbrev-ref 'main@{upstream}' >/dev/null 2>&1 \
                       && git -C ${src}/${repo} diff --quiet \
                       && git -C ${src}/${repo} diff --cached --quiet; then
                       git -C ${src}/${repo} pull --ff-only
