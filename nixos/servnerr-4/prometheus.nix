@@ -200,11 +200,15 @@ let
 
   # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
   # internet reachability, latency, and loss are tracked per address family.
-  # Probes follow the router's default routing policy, so they observe the
-  # active WAN path only; a failed standby WAN is not visible here.
+  # Two providers, so loss on one path can be told apart from loss on the
+  # WAN itself. Probes follow the router's default routing policy, so they
+  # observe the active WAN path only; a failed standby WAN is not visible
+  # here.
   pings = [
     "1.1.1.1"
     "2606:4700:4700::1111"
+    "8.8.8.8"
+    "2001:4860:4860::8888"
   ]
   # Liveness for the cloud-managed switches and APs in the management LAN
   # inventory, which expose no SNMP or local API; ping is the only local

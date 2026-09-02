@@ -125,10 +125,14 @@ let
           {
             # Restart= loops do not fail the unit, so SystemdUnitFailed never
             # sees them; the scheduled-restart message names the unit in the
-            # log line.
+            # log line. It is extracted as "service" because "unit" is the
+            # stream's own label, always init.scope for these lines.
             alert = "SystemdUnitCrashLooping";
-            expr = ''sum by (host) (count_over_time({job="systemd-journal", unit="init.scope"} |= `Scheduled restart job` [10m])) > 5'';
-            annotations.summary = "A unit on {{ $labels.host }} is restarting repeatedly; check its journal.";
+            expr = ''sum by (host, service) (count_over_time({job="systemd-journal", unit="init.scope"} |= `Scheduled restart job` | regexp `^(?P<service>[^:]+): Scheduled restart job` [10m])) > 5'';
+            annotations = {
+              summary = "{{ $labels.service }} on {{ $labels.host }} is restarting repeatedly; check its journal.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="init.scope"} |= `Scheduled restart job`'';
+            };
           }
           {
             record = "host:log_lines:count1h";
