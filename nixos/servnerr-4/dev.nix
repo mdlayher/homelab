@@ -173,7 +173,10 @@ let
   # this is rendered by sops-nix on the host and bind mounted into the
   # container. Any external AS on dev0 may peer (dynamic neighbors); the
   # documentation prefixes are advertised without import checks so nothing
-  # needs to exist in the container's routing table.
+  # needs to exist in the container's routing table. BFD is offered on both
+  # peer groups for interop testing against agent BFD implementations; peers
+  # which never speak BFD still establish, since bgpd only tears down on an
+  # up-to-down transition.
   frrConfig = ''
     hostname frrdev
     !
@@ -183,8 +186,10 @@ let
      no bgp network import-check
      neighbor DEV4 peer-group
      neighbor DEV4 remote-as external
+     neighbor DEV4 bfd
      neighbor DEV6 peer-group
      neighbor DEV6 remote-as external
+     neighbor DEV6 bfd
      bgp listen range ${dev0.ipv4Prefix}.0/24 peer-group DEV4
      bgp listen range ${dev0.ulaPrefix}::/64 peer-group DEV6
      !
@@ -436,11 +441,47 @@ in
 
             services.frr = {
               bgpd.enable = true;
+              bfdd.enable = true;
               configFile = frrConfigFile;
             };
 
-            # vtysh access for the user.
-            users.users.${user}.extraGroups = [ "frrvty" ];
+            # vtysh access for the user, plus the frr group so agents can
+            # read frr-owned files (logs and the like) without sudo.
+            users.users.${user}.extraGroups = [
+              "frrvty"
+              "frr"
+            ];
+
+            # Agents in this container operate FRR unattended, and sudo's
+            # FIDO2 touch (or password) is unavailable to them. Allow daemon
+            # lifecycle control of frr alone without authentication; the
+            # verbs are enumerated so nothing interactive (e.g. systemctl
+            # edit) rides along.
+            security.sudo.extraRules = [
+              {
+                users = [ user ];
+                commands =
+                  lib.concatMap
+                    (
+                      verb:
+                      map
+                        (unit: {
+                          command = "/run/current-system/sw/bin/systemctl ${verb} ${unit}";
+                          options = [ "NOPASSWD" ];
+                        })
+                        [
+                          "frr"
+                          "frr.service"
+                        ]
+                    )
+                    [
+                      "start"
+                      "stop"
+                      "restart"
+                      "reload"
+                    ];
+              }
+            ];
           }
         ]
         {
