@@ -174,6 +174,18 @@ in
           expr = ''(time() - node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"}) > 26*60*60 and node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"} > 0'';
           annotations.summary = "{{ $labels.instance }} has not run nixos-upgrade.timer in over 26 hours.";
         }
+        # `nixos-rebuild test` activates a system without recording it in the
+        # system profile, so a reboot (or the next nightly upgrade) silently
+        # reverts it; `boot` records one the machine is not yet running. The
+        # metric comes from each machine's textfile collector; see
+        # nixos/modules/system-metrics.nix. An hour is plenty to verify a
+        # test deploy and follow it with boot or switch.
+        {
+          alert = "NixOSSystemUnpersisted";
+          expr = "nixos_system_unpersisted == 1";
+          for = "1h";
+          annotations.summary = "{{ $labels.instance }} has run a system other than its profile's for over an hour: a test deploy a reboot would revert, or a boot deploy awaiting one.";
+        }
         # NVMe wear estimate: 100% is the rated endurance, and the value may
         # keep counting past it. 80% leaves months of lead time at current
         # write rates.

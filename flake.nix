@@ -38,6 +38,7 @@
             ./nixos/modules/common.nix
             ./nixos/modules/unstable.nix
             ./nixos/modules/inventory.nix
+            ./nixos/modules/system-metrics.nix
             ./nixos/modules/tailscale.nix
             ./nixos/modules/tailscale-serve.nix
             sops-nix.nixosModules.sops
