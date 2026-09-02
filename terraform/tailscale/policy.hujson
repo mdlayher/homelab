@@ -138,7 +138,6 @@
 		// check gates new connections only; open sessions outlive it.
 		{
 			"action":      "check",
-			"checkPeriod": "1h",
 			"src":         ["autogroup:member"],
 			"dst":         ["tag:dev"],
 			"users":       ["mdlayher"],
