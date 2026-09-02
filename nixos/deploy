@@ -42,14 +42,48 @@ cd "$(dirname "$0")/.."
 # Share the user's SSH connection multiplexer with nix's own store
 # connections, which otherwise open (and separately authenticate) their own:
 # one live master means one FIDO2 touch covers the whole deploy.
-export NIX_SSHOPTS="-o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h:%p -o ControlPersist=1h${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
+sshopts=(-o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h:%p -o ControlPersist=1h)
+export NIX_SSHOPTS="${sshopts[*]}${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
+
+# Provenance for the target's journal: which tree is being deployed, and by
+# whom, so a later investigation can tell a deploy (test from a dirty
+# checkout included) from a manual change on the machine. Written by the
+# unprivileged SSH user through logger, so it costs no extra sudo touch;
+# journalctl -t deploy on the machine, or unit="session.scope" in Loki,
+# finds the lines. Dirtiness follows nix's definition: modified tracked
+# files, not untracked ones, which is also what strips the revision from the
+# built system. The closing line is best effort: a deploy that succeeded
+# and then lost SSH is still a successful deploy.
+rev="$(git rev-parse --short=12 HEAD)"
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if git diff-index --quiet HEAD --; then dirty=no; else dirty=yes; fi
+by="$(id -un)@$(hostname -s)"
+log() {
+  local host=$1
+  shift
+  ssh "${sshopts[@]}" "$user@$host" logger -t deploy -- "$@"
+}
 
 echo "deploy: a pause at activation may be waiting for a YubiKey touch" >&2
 for host in "${hosts[@]}"; do
   echo "deploy: $action $host" >&2
+  if [[ $action != dry-activate ]]; then
+    log "$host" "$action starting: rev=$rev branch=$branch dirty=$dirty user=$by"
+  fi
+  status=0
   nix run --inputs-from . nixpkgs#nixos-rebuild-ng -- \
     "$action" --flake ".#$host" \
-    --build-host "$user@$host" --target-host "$user@$host" --sudo "$@"
+    --build-host "$user@$host" --target-host "$user@$host" --sudo "$@" || status=$?
+  if [[ $action != dry-activate ]]; then
+    if [[ $status -eq 0 ]]; then
+      log "$host" "$action finished: rev=$rev" || echo "deploy: could not log to $host" >&2
+    else
+      log "$host" "$action failed: rev=$rev status=$status" || echo "deploy: could not log to $host" >&2
+    fi
+  fi
+  if [[ $status -ne 0 ]]; then
+    exit "$status"
+  fi
 
   # The linuxdev container is never restarted by a host switch so that agent
   # sessions inside survive; its new inner configuration is instead activated
@@ -59,6 +93,6 @@ for host in "${hosts[@]}"; do
   # scaffolding itself (bind mounts, networking, tun) still need a manual
   # restart, which kills sessions.
   if [[ $host == servnerr-4 && ( $action == switch || $action == test ) ]]; then
-    ssh "$user@$host" sudo systemctl reload container@linuxdev.service
+    ssh "${sshopts[@]}" "$user@$host" sudo systemctl reload container@linuxdev.service
   fi
 done
