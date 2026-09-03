@@ -304,10 +304,10 @@ in
           expire 7200;
         }
 
-        protocol rpki rpki_milu {
+        protocol rpki rpki_launchpadx {
           roa4 { table dn42_roa; };
           roa6 { table dn42_roa_v6; };
-          remote "rpki.dn42.milu.moe" port 8082;
+          remote "rpki.dn42.launchpadx.top" port 8082;
           refresh 600;
           retry 300;
           expire 7200;
