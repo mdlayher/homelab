@@ -45,7 +45,7 @@ let
   # of the repository's sops files, and API tokens encrypted to it under
   # secrets/. Agents share the admin's uid, so the credentials live in a
   # uid of their own, reachable only through sudo -u, which pam_rssh gates
-  # with a YubiKey touch on every invocation (timestamp_timeout=0 below).
+  # with a YubiKey touch on every invocation (no sudo cache; see common.nix).
   # Reads work by path: the gate user is in the users group and the admin's
   # home is group-readable in this container alone; writes need the group
   # write bit, which the admin's half grants for the duration of an edit.
@@ -670,19 +670,17 @@ in
 
             # The one way into the gate: the admin may run the gated half
             # as the gate user, never as root, and every invocation costs a
-            # touch since nothing is cached. The wheel rule from common.nix
-            # still exists, so this rule declares the intended path rather
-            # than the only one; the touch is the gate either way.
-            security.sudo = {
-              extraRules = [
-                {
-                  users = [ user ];
-                  runAs = gateUser;
-                  commands = [ { command = "${sopsGateRun}/bin/sops-gate-run"; } ];
-                }
-              ];
-              extraConfig = "Defaults:${user} timestamp_timeout=0";
-            };
+            # touch since common.nix caches no sudo credentials. The wheel
+            # rule from common.nix still exists, so this rule declares the
+            # intended path rather than the only one; the touch is the gate
+            # either way.
+            security.sudo.extraRules = [
+              {
+                users = [ user ];
+                runAs = gateUser;
+                commands = [ { command = "${sopsGateRun}/bin/sops-gate-run"; } ];
+              }
+            ];
 
             # Re-run the clone job hourly so additions to repos appear without
             # a restart; the boot-time run comes from herdr-server's

@@ -273,17 +273,14 @@ in
       };
       services.sudo.rssh = true;
     };
-    # On machines, cache sudo authentication briefly across sessions so a
-    # deploy's back-to-back remote sudo commands cost one touch, not one
-    # each (they arrive as separate TTY-less SSH sessions, which the
-    # default per-TTY cache cannot span). Containers set nothing here and
-    # get sudo's own default, a five-minute cache per terminal; the
-    # development container, where agents share the admin's user, turns
-    # the cache off entirely (see servnerr-4/dev.nix). SSH_AUTH_SOCK
-    # survives sudo via the rssh module's own env_keep.
-    security.sudo.extraConfig = lib.optionalString isHost ''
-      Defaults timestamp_type=global, timestamp_timeout=2
-    '';
+    # No sudo credential cache anywhere: every sudo is its own touch. sudo's
+    # default five-minute cache would let any process sharing the admin's
+    # uid (agents in the development container, or anything riding an open
+    # SSH multiplexer to a machine) escalate silently after a touch meant
+    # for something else. Deploys need no cache since nixos/deploy runs all
+    # of a deploy's privileged steps under one sudo. SSH_AUTH_SOCK survives
+    # sudo via the rssh module's own env_keep.
+    security.sudo.extraConfig = "Defaults timestamp_timeout=0";
 
     services = {
       # SSH keys only, wherever sshd is enabled, and never as root: deploys log

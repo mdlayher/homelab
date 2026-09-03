@@ -32,11 +32,18 @@ tag. The only manual step is giving a new machine a tag-based identity
 
 Secrets are encrypted with [sops-nix](https://github.com/Mic92/sops-nix) using
 age. Recipients are listed in `.sops.yaml`: each machine's SSH host key (via
-`ssh-to-age`) plus the admin key in `~/.config/sops/age/keys.txt`.
+`ssh-to-age`), the admin key in `~/.config/sops/age/keys.txt` on the
+workstation, and the development container's secrets gate, a dedicated user
+whose key is generated in place and reached only through `sudo -u` behind a
+YubiKey touch (`sops-gate`, see `servnerr-4/dev.nix`).
 
 - `secrets/common.yaml`: secrets every machine needs (user password hashes)
 - `<machine>/secrets.yaml`: secrets specific to one machine (service tokens)
 - `inventory/secrets.yaml`: network inventory values, see below
+- `../secrets/<tool>.yaml`: API credentials the admin uses from the
+  development container (tofu modules, gh), encrypted to the admin and the
+  gate only; keys are named after the environment variables their consumers
+  read
 
 ## Inventory
 
@@ -91,10 +98,15 @@ inventory ends up in the Nix store.
 # Enter a shell with sops, age, ssh-to-age, go, and nixfmt.
 nix develop
 
-# Edit secrets.
+# Edit secrets on the workstation with the admin key...
 sops nixos/secrets/common.yaml
 sops nixos/inventory/secrets.yaml
 sops nixos/servnerr-4/secrets.yaml
+
+# ...or from the development container through the gate, one touch each.
+sops-gate edit nixos/secrets/common.yaml
+sops-gate tofu-plan tailscale
+sops-gate tofu-apply github
 
 # Check that every configuration evaluates, and format Nix files.
 nix flake check
