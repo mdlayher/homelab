@@ -86,22 +86,27 @@ let
         sops exec-env "$secrets" "$(printf '%q ' "$@")"
       }
 
-      # terraform/<module> is read in place; everything tofu writes (provider
-      # plugins, the backend record, the plan, the state) goes under the
-      # gate's state directory. Credentials come from secrets/<module>.yaml.
+      # terraform/<module> is read in place; everything tofu writes goes
+      # under the gate's state directory in the usual layout: the state and
+      # the plan beside a .terraform data dir holding provider plugins and
+      # the backend record. The data dir must not be the state's own
+      # directory, since tofu keeps that record at
+      # $TF_DATA_DIR/terraform.tfstate, the same name as the state itself.
+      # Credentials come from secrets/<module>.yaml.
       tofu_plan() {
-        local module=$1 dir secrets
+        local module=$1 dir secrets state
         dir=terraform/$module
         secrets=secrets/$module.yaml
+        state=${gateState}/tofu/$module
         if [[ ! -d $dir || ! -f $secrets ]]; then
           echo "sops-gate: $dir/ and $secrets must exist under the current directory" >&2
           exit 1
         fi
-        export TF_DATA_DIR=${gateState}/tofu/$module
+        export TF_DATA_DIR=$state/.terraform
         mkdir -p "$TF_DATA_DIR"
         tofu -chdir="$dir" init -input=false \
-          -backend-config="path=$TF_DATA_DIR/terraform.tfstate" >/dev/null
-        with_env "$secrets" tofu -chdir="$dir" plan -input=false -out="$TF_DATA_DIR/plan.tfplan"
+          -backend-config="path=$state/terraform.tfstate" >/dev/null
+        with_env "$secrets" tofu -chdir="$dir" plan -input=false -out="$state/plan.tfplan"
       }
 
       tofu_apply() {
