@@ -197,8 +197,9 @@ in
       lla = "fe80::ade0";
     };
 
-    # wg show is the only way to see a tunnel's handshake and transfer
-    # counters; bird2 (which carries birdc) arrives with services.bird.
+    # wg show is how to read a tunnel's handshake and transfer counters at
+    # the shell, the same data the exporter below publishes; bird2 (which
+    # carries birdc) arrives with services.bird.
     environment.systemPackages = [ pkgs.wireguard-tools ];
 
     assertions =
@@ -483,6 +484,22 @@ in
     services.prometheus.exporters.bird = {
       enable = true;
       birdVersion = 2;
+    };
+
+    # Tunnel health beneath the BGP sessions: handshake age and byte
+    # counters per peer, discovered and scraped the same way. This is
+    # MindFlavor's exporter from nixpkgs, which shells out to
+    # `wg show all dump` under CAP_NET_ADMIN. Its metrics carry an
+    # interface label, so dn42-<peer> already names the peer; the
+    # exporter's friendly name mapping reads a wg-quick configuration file,
+    # which these networkd-managed tunnels do not have, and would only
+    # repeat what the interface name says.
+    services.prometheus.exporters.wireguard = {
+      enable = true;
+      # Export the age of each peer's last handshake alongside its UNIX
+      # timestamp, so the alert compares one number to a threshold rather
+      # than subtracting the router's clock from the server's.
+      latestHandshakeDelay = true;
     };
   };
 }

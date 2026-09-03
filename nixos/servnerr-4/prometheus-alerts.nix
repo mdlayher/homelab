@@ -319,6 +319,36 @@ in
           for = "1h";
           annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 7 days.";
         }
+        # As with BIRDExporterFailing: a failed scrape drops the handshake
+        # metrics rather than zeroing them, so the rule below goes quiet
+        # exactly when the exporter does. Overlapping PrometheusInstanceDown
+        # is the point, naming the consequence.
+        {
+          alert = "WireGuardExporterDown";
+          expr = ''up{job="wireguard"} == 0'';
+          for = "5m";
+          annotations.summary = "The WireGuard exporter on {{ $labels.instance }} is down, so dn42 tunnel handshakes are unmonitored.";
+        }
+        # Nothing else notices a dead dn42 tunnel this quickly: BGP holds for
+        # 240 seconds before the session drops, and BIRDBGPSessionDown then
+        # waits 10 minutes on top of that. WireGuard rehandshakes roughly
+        # every two minutes while traffic flows, and BGP keepalives guarantee
+        # traffic, so three minutes of silence means the tunnel is gone
+        # rather than idle. That reasoning is specific to dn42 peers, hence
+        # the interface match: a future tunnel carrying no keepalives would
+        # need its own threshold. A peer which has never handshaken reports a
+        # delay measured from the epoch and fires immediately, which is the
+        # right answer for a tunnel that never came up. Rates on the byte
+        # counters would add nothing: the handshakes are themselves driven by
+        # that traffic, so a tunnel whose bytes stop moving goes stale within
+        # a handshake interval anyway, and a live tunnel carrying no useful
+        # routes is what the BIRD rules above catch.
+        {
+          alert = "WireGuardPeerHandshakeStale";
+          expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "dn42-.*"}} > 180";
+          for = "5m";
+          annotations.summary = "WireGuard tunnel {{ $labels.interface }} on {{ $labels.instance }} last handshook {{ $value | humanizeDuration }} ago.";
+        }
         # A full pool cannot receive replication streams, and zrepl's
         # receiver-side pruning only runs after a successful receive, so a
         # full replication target never frees itself. Root datasets only:
