@@ -157,10 +157,30 @@ let
   # every verb, and for edit first grants the group write bit sops needs
   # to rewrite the file in place. git does not carry the bit across
   # checkouts, so it is granted every time and taken back afterwards.
+  #
+  # A secrets file that does not exist yet is created here first, as an
+  # empty document encrypted to the recipients its path selects in
+  # .sops.yaml. Encrypting needs only those public recipients, so this
+  # side does it with no key and no touch, and the file belongs to the
+  # admin like every other secrets file. Left to the gated side, sops
+  # cannot start from nothing: it reads a missing file as an error and a
+  # zero-byte one as "sops metadata not found".
   sopsGate = pkgs.writeShellApplication {
     name = "sops-gate";
+    runtimeInputs = with pkgs; [
+      coreutils
+      sops
+    ];
     text = ''
       if [[ ''${1:-} == edit && -n ''${2:-} ]]; then
+        if [[ ! -e $2 ]]; then
+          echo '{}' > "$2"
+          # Leave no plaintext stub behind if no creation rule matches.
+          if ! sops encrypt -i "$2"; then
+            rm -f "$2"
+            exit 1
+          fi
+        fi
         chmod g+w "$2"
         trap 'chmod g-w "$2"' EXIT
       fi

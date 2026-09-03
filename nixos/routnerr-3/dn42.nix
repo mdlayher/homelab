@@ -61,6 +61,13 @@ let
       networkConfig = {
         LinkLocalAddressing = "no";
         IPv6AcceptRA = false;
+        # dn42 routing is asymmetric and the tunnels carry IPv4 with IPv6
+        # next hops, so the kernel's default loose rp_filter (from systemd's
+        # 50-default.conf sysctls) would drop replies arriving over a
+        # different peer than the one the FIB prefers. The wiki says to
+        # disable it (https://dn42.dev/howto/wireguard); doing so per tunnel
+        # leaves the LANs' spoof check in nftables.nix untouched.
+        IPv4ReversePathFilter = "no";
       };
     }
   ) cfg.peers;
@@ -181,6 +188,19 @@ in
   };
 
   config = {
+    # Kioubit: https://dn42.g-load.eu.
+    homelab.dn42.peers.kioubit = {
+      asn = 4242423914;
+      publicKey = "6Cylr9h1xFduAO+5nyXhFI1XJ0+Sw9jCpCDvcqErF1s=";
+      endpoint = "us2.g-load.eu:20060";
+      port = 23914;
+      lla = "fe80::ade0";
+    };
+
+    # wg show is the only way to see a tunnel's handshake and transfer
+    # counters; bird2 (which carries birdc) arrives with services.bird.
+    environment.systemPackages = [ pkgs.wireguard-tools ];
+
     assertions =
       let
         ports = lib.mapAttrsToList (_: peer: peer.port) cfg.peers;
