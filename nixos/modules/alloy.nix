@@ -84,6 +84,18 @@ in
       // relay (the ssh_banner probe alone would create one per minute per
       // machine), and logind's numbered session scopes. Stable instances
       // (container@, serial-getty@) keep their names.
+      // Deploy provenance lines (nixos/deploy) come from a short-lived
+      // logger in an SSH session: journald often cannot read the sender's
+      // cgroup before it exits, so their unit is missing as often as not.
+      // Key them off the syslog identifier instead, so {unit="deploy"}
+      // finds every one.
+      rule {
+        source_labels = ["__journal_syslog_identifier"]
+        regex         = "deploy"
+        replacement   = "deploy"
+        target_label  = "unit"
+      }
+
       rule {
         source_labels = ["unit"]
         regex         = "sshd@.+"

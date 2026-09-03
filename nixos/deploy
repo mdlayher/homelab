@@ -49,8 +49,8 @@ export NIX_SSHOPTS="${sshopts[*]}${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
 # whom, so a later investigation can tell a deploy (test from a dirty
 # checkout included) from a manual change on the machine. Written by the
 # unprivileged SSH user through logger, so it costs no extra sudo touch;
-# journalctl -t deploy on the machine, or unit="session.scope" in Loki,
-# finds the lines. Dirtiness follows nix's definition: modified tracked
+# journalctl -t deploy on the machine, or unit="deploy" in Loki, finds
+# the lines. Dirtiness follows nix's definition: modified tracked
 # files, not untracked ones, which is also what strips the revision from the
 # built system. The closing line is best effort: a deploy that succeeded
 # and then lost SSH is still a successful deploy.
