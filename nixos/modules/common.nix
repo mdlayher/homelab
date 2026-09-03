@@ -276,10 +276,11 @@ in
     # On machines, cache sudo authentication briefly across sessions so a
     # deploy's back-to-back remote sudo commands cost one touch, not one
     # each (they arrive as separate TTY-less SSH sessions, which the
-    # default per-TTY cache cannot span). Containers keep per-invocation
-    # touches: agents share the admin's user there, and the cache window
-    # would be theirs too. SSH_AUTH_SOCK survives sudo via the rssh module's
-    # own env_keep.
+    # default per-TTY cache cannot span). Containers set nothing here and
+    # get sudo's own default, a five-minute cache per terminal; the
+    # development container, where agents share the admin's user, turns
+    # the cache off entirely (see servnerr-4/dev.nix). SSH_AUTH_SOCK
+    # survives sudo via the rssh module's own env_keep.
     security.sudo.extraConfig = lib.optionalString isHost ''
       Defaults timestamp_type=global, timestamp_timeout=2
     '';

@@ -40,6 +40,129 @@ let
   devSSHKey = "/run/host-secrets/dev_ssh_key";
   devSSHPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF9vB/Zp10y3S5plND/mb+eVzXe6/XCi1ysB2QApOiU9 linuxdev dev0";
 
+  # The secrets gate for linuxdev. A dedicated user holds the credentials
+  # the admin uses from the container: an age identity that is a recipient
+  # of the repository's sops files, and API tokens encrypted to it under
+  # secrets/. Agents share the admin's uid, so the credentials live in a
+  # uid of their own, reachable only through sudo -u, which pam_rssh gates
+  # with a YubiKey touch on every invocation (timestamp_timeout=0 below).
+  # Reads work by path: the gate user is in the users group and the admin's
+  # home is group-readable in this container alone; writes need the group
+  # write bit, which the admin's half grants for the duration of an edit.
+  gateUser = "sops-gate";
+  gateState = "/var/lib/${gateUser}";
+  gateKey = "${gateState}/keys.txt";
+
+  # The gated half, run as the gate user; its store path is the only
+  # command the sudo rule permits. Plaintext (sops's editor temp file, the
+  # tofu plan, the environment carrying a token) exists only in this uid.
+  sopsGateRun = pkgs.writeShellApplication {
+    name = "sops-gate-run";
+    runtimeInputs = with pkgs; [
+      age
+      coreutils
+      nano
+      opentofu
+      sops
+    ];
+    text = ''
+      # Verbs:
+      #   decrypt <file>                    print a sops file's plaintext
+      #   edit <file>                       edit a sops file in place with nano
+      #   exec-env <secrets> -- <cmd...>    run cmd with the file's values in its environment
+      #   tofu-plan <module>                init and plan terraform/<module>
+      #   tofu-apply <module>               init, plan, confirm on the tty, apply
+      export SOPS_AGE_KEY_FILE=${gateKey}
+
+      usage() {
+        echo "usage: sops-gate {decrypt|edit} <file> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module>" >&2
+        exit 2
+      }
+
+      # sops exec-env takes one string for /bin/sh -c; quote each argument.
+      with_env() {
+        local secrets=$1
+        shift
+        sops exec-env "$secrets" "$(printf '%q ' "$@")"
+      }
+
+      # terraform/<module> is read in place; everything tofu writes (provider
+      # plugins, the backend record, the plan, the state) goes under the
+      # gate's state directory. Credentials come from secrets/<module>.yaml.
+      tofu_plan() {
+        local module=$1 dir secrets
+        dir=terraform/$module
+        secrets=secrets/$module.yaml
+        if [[ ! -d $dir || ! -f $secrets ]]; then
+          echo "sops-gate: $dir/ and $secrets must exist under the current directory" >&2
+          exit 1
+        fi
+        export TF_DATA_DIR=${gateState}/tofu/$module
+        mkdir -p "$TF_DATA_DIR"
+        tofu -chdir="$dir" init -input=false \
+          -backend-config="path=$TF_DATA_DIR/terraform.tfstate" >/dev/null
+        with_env "$secrets" tofu -chdir="$dir" plan -input=false -out="$TF_DATA_DIR/plan.tfplan"
+      }
+
+      tofu_apply() {
+        local module=$1 answer
+        tofu_plan "$module"
+        read -r -p "sops-gate: apply this plan to $module? [y/N] " answer </dev/tty
+        if [[ $answer != y ]]; then
+          echo "sops-gate: not applied" >&2
+          exit 1
+        fi
+        with_env "secrets/$module.yaml" tofu -chdir="terraform/$module" apply -input=false \
+          "${gateState}/tofu/$module/plan.tfplan"
+      }
+
+      verb=''${1:-}
+      shift || true
+      case $verb in
+        decrypt)
+          [[ $# -eq 1 ]] || usage
+          sops decrypt "$1"
+          ;;
+        edit)
+          [[ $# -eq 1 ]] || usage
+          EDITOR=nano sops edit "$1"
+          ;;
+        exec-env)
+          [[ $# -ge 3 && $2 == -- ]] || usage
+          secrets=$1
+          shift 2
+          with_env "$secrets" "$@"
+          ;;
+        tofu-plan)
+          [[ $# -eq 1 ]] || usage
+          tofu_plan "$1"
+          ;;
+        tofu-apply)
+          [[ $# -eq 1 ]] || usage
+          tofu_apply "$1"
+          ;;
+        *)
+          usage
+          ;;
+      esac
+    '';
+  };
+
+  # The admin's half, on PATH in linuxdev: escalates to the gate user for
+  # every verb, and for edit first grants the group write bit sops needs
+  # to rewrite the file in place. git does not carry the bit across
+  # checkouts, so it is granted every time and taken back afterwards.
+  sopsGate = pkgs.writeShellApplication {
+    name = "sops-gate";
+    text = ''
+      if [[ ''${1:-} == edit && -n ''${2:-} ]]; then
+        chmod g+w "$2"
+        trap 'chmod g-w "$2"' EXIT
+      fi
+      /run/wrappers/bin/sudo -u ${gateUser} ${sopsGateRun}/bin/sops-gate-run "$@"
+    '';
+  };
+
   # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
   repos = [
     "bfd"
@@ -499,10 +622,62 @@ in
             # open to the container's tailnet address.
             services.tailscale.extraSetFlags = [ "--ssh" ];
 
+            # The secrets gate; see sopsGateRun above. The admin's home is
+            # group-readable here, and the gate user is the only other
+            # member of users, so the worktree is readable by path from
+            # the gated side and by nothing else.
+            users = {
+              users.${user}.homeMode = "750";
+              users.${gateUser} = {
+                isSystemUser = true;
+                group = gateUser;
+                extraGroups = [ "users" ];
+                home = gateState;
+              };
+              groups.${gateUser} = { };
+            };
+
             systemd.tmpfiles.rules = [
               "d ${home}/.config/herdr 0755 ${user} users -"
               "C ${home}/.config/herdr/config.toml 0644 ${user} users - ${herdrConfig}"
+              "d ${gateState} 0700 ${gateUser} ${gateUser} -"
             ];
+
+            # The gate's age identity, generated in place on first start.
+            # The private key never leaves this directory; the recipient
+            # is logged so it can be added to .sops.yaml.
+            systemd.services.sops-gate-keygen = {
+              description = "Generate the secrets gate age identity";
+              wantedBy = [ "multi-user.target" ];
+              path = [ pkgs.age ];
+              serviceConfig = {
+                Type = "oneshot";
+                User = gateUser;
+              };
+              script = ''
+                if [ ! -f ${gateKey} ]; then
+                  (umask 077; age-keygen -o ${gateKey})
+                  chmod 0400 ${gateKey}
+                fi
+                echo "recipient: $(age-keygen -y ${gateKey})"
+              '';
+            };
+
+            # The one way into the gate: the admin may run the gated half
+            # as the gate user, never as root, and every invocation costs a
+            # touch since nothing is cached. The wheel rule from common.nix
+            # still exists, so this rule declares the intended path rather
+            # than the only one; the touch is the gate either way.
+            security.sudo = {
+              extraRules = [
+                {
+                  users = [ user ];
+                  runAs = gateUser;
+                  commands = [ { command = "${sopsGateRun}/bin/sops-gate-run"; } ];
+                }
+              ];
+              extraConfig = "Defaults:${user} timestamp_timeout=0";
+            };
 
             # Re-run the clone job hourly so additions to repos appear without
             # a restart; the boot-time run comes from herdr-server's
@@ -619,6 +794,9 @@ in
               # logcli, for querying Loki logs over the tailnet; see
               # nixos/servnerr-4/loki.nix.
               grafana-loki
+
+              # The admin's half of the secrets gate; see sopsGate above.
+              sopsGate
             ];
 
             # GitHub's published host key, pinned so SSH pushes (rewritten
