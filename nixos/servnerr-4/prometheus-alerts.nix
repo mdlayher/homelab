@@ -50,6 +50,69 @@ in
           expr = "apcupsd_battery_time_on_seconds > 0";
           annotations.summary = "UPS on {{ $labels.instance }} is running on battery power.";
         }
+        # BFD is opt-in per dn42 peer. The bird exporter reports BFD as
+        # per-session metrics rather than as a protocol, so there is no
+        # bird_protocol_up{proto="BFD"} to key on; this matches one series
+        # per peer that runs it, drawn from bird's own `show bfd sessions`.
+        # Sub-second detection is the whole point of BFD, so a session
+        # still down after 5 minutes has taken its BGP session with it.
+        {
+          alert = "BIRDBFDSessionDown";
+          expr = "bird_bfd_session_up == 0";
+          for = "5m";
+          annotations.summary = "BFD session with {{ $labels.ip }} on interface {{ $labels.interface }} ({{ $labels.instance }}) is down.";
+        }
+        # An Established session carrying nothing is invisible to
+        # BIRDBGPSessionDown, and the router's dn42 import filters fail
+        # closed by design: every route needs a valid ROA, so losing both
+        # RTR feeds past their expire window empties the table while the
+        # session stays up. An import filter that rejects everything after
+        # an edit looks the same. Half an hour is well past the churn of a
+        # bird restart or a session reconverging. The join is explicit
+        # because the exporter attaches a state label to only one of a BGP
+        # protocol's two channels, so a bare `and` matches on it and
+        # silently drops the other address family.
+        {
+          alert = "BIRDBGPNoRoutesImported";
+          expr = ''bird_protocol_prefix_import_count{proto="BGP"} == 0 and on (instance, name, ip_version) bird_protocol_up{proto="BGP"} == 1'';
+          for = "30m";
+          annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is Established but has imported no routes.";
+        }
+        # bird reports a BGP protocol as up only once the session reaches
+        # Established, and one series exists per protocol and address
+        # family, so a peer whose IPv4 channel fails while IPv6 holds still
+        # alerts. dn42 peers are hobby routers that reboot without notice;
+        # 10 minutes skips the ordinary flap and still catches a tunnel
+        # that is really gone.
+        {
+          alert = "BIRDBGPSessionDown";
+          expr = ''bird_protocol_up{proto="BGP"} == 0'';
+          for = "10m";
+          annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is not Established.";
+        }
+        # Every other BIRD alert here is silent while the exporter is,
+        # because a failed birdc socket query drops the protocol metrics
+        # entirely rather than zeroing them. The scrape half overlaps
+        # PrometheusInstanceDown on purpose: this alert names the
+        # consequence, that dn42 is unmonitored until it is fixed.
+        {
+          alert = "BIRDExporterFailing";
+          expr = ''up{job="bird"} == 0 or bird_socket_query_success == 0'';
+          for = "5m";
+          annotations.summary = "The BIRD exporter on {{ $labels.instance }} is failing, so dn42 protocol state is unmonitored.";
+        }
+        # Two RTR servers feed the same ROA tables, so one down is
+        # redundancy doing its job rather than an outage, and the tables
+        # hold their data for the two hour expire window. That leaves
+        # plenty of room to wait out a refresh or retry cycle before
+        # alerting; what this catches ahead of an empty table is the second
+        # feed going the same way.
+        {
+          alert = "BIRDRPKISessionDown";
+          expr = ''bird_protocol_up{proto="RPKI"} == 0'';
+          for = "30m";
+          annotations.summary = "RPKI validator session {{ $labels.name }} on {{ $labels.instance }} is not Established.";
+        }
         # BlackboxServiceDown only sees a probe hard down for 5 straight
         # minutes; sustained partial packet loss never trips it. Probes run
         # every 15s, so the 15m window holds ~60 samples and 0.9 means over

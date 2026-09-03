@@ -333,14 +333,18 @@ in
           expire 7200;
         }
 
-        # Unknown and invalid ROA both reject; the log line is the fastest
-        # way to spot a peer leaking unregistered prefixes.
+        # Unknown and invalid ROA both reject: a peer may only send us
+        # prefixes it has registered. These rejections used to print, but
+        # bird 2.19's filter language has no leveled print (only print and
+        # printn, both fixed at the info class), so the line could not be
+        # kept out of the journal without silencing every other info
+        # message. A single flapping pair re-announcing every minute was
+        # enough to drown the log. The rejected routes are still there to
+        # look at: the channels below keep them filtered, so
+        # `birdc show route filtered` names the prefix and its origin.
         filter dn42_import {
           if is_valid_network() && !is_self_net() then {
-            if (roa_check(dn42_roa, net, bgp_path.last) != ROA_VALID) then {
-              print "[dn42] ROA check failed for ", net, " ASN ", bgp_path.last;
-              reject;
-            }
+            if (roa_check(dn42_roa, net, bgp_path.last) != ROA_VALID) then reject;
             accept;
           }
           reject;
@@ -348,10 +352,7 @@ in
 
         filter dn42_import_v6 {
           if is_valid_network_v6() && !is_self_net_v6() && !is_site_net_v6() then {
-            if (roa_check(dn42_roa_v6, net, bgp_path.last) != ROA_VALID) then {
-              print "[dn42] ROA check failed for ", net, " ASN ", bgp_path.last;
-              reject;
-            }
+            if (roa_check(dn42_roa_v6, net, bgp_path.last) != ROA_VALID) then reject;
             accept;
           }
           reject;
@@ -433,6 +434,23 @@ in
         # (https://dn42.dev/howto/Bird2): path metric, the 9000-route
         # import limit, and IPv4 with extended next hop over one IPv6
         # session all originate there.
+        #
+        # Both channels carry the same pair of table options:
+        #
+        #   import table on
+        #     bird re-runs an import filter that calls roa_check whenever a
+        #     ROA table changes ("rpki reload", on by default), but on a BGP
+        #     channel it can only do so from a kept copy of the pre-filter
+        #     routes. Without one it logs "Automatic RPKI reload not active
+        #     for import" and a route rejected while a validator was cold
+        #     stays rejected until the peer re-announces it. No export table:
+        #     dn42_export has no roa_check to re-run.
+        #
+        #   import keep filtered on
+        #     rejected routes stay in the table, hidden, so
+        #     `birdc show route filtered` shows what the ROA check turned
+        #     away. They count against the channel's filtered counter, not
+        #     the import limit below.
         template bgp dnpeers {
           local as OWNAS;
           path metric on;
@@ -444,12 +462,16 @@ in
             import filter dn42_import;
             export filter dn42_export;
             import limit 9000 action block;
+            import table on;
+            import keep filtered on;
           };
 
           ipv6 {
             import filter dn42_import_v6;
             export filter dn42_export_v6;
             import limit 9000 action block;
+            import table on;
+            import keep filtered on;
           };
         }
 
