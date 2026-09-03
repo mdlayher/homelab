@@ -583,41 +583,44 @@ in
   # Unlike a container's veth, the MAC is chosen here and must match the
   # inventory's quicdev.dev entry (nixos/inventory/secrets.yaml) for the
   # router's static lease.
-  microvm.vms.quicdev = devVM "quicdev" "12" "02:00:00:00:00:12" "5ebc7d0a-fa7b-70d0-8573-cb9552ed092c" [
-    (
-      { config, ... }:
-      {
-        boot = {
-          # The machines' 2026 LTS kernel, with the QUIC module built
-          # against it. The VM may diverge from the machines here freely,
-          # e.g. to test newer kernels or the upstream patch series.
-          kernelPackages = pkgs.linuxPackages_6_18;
-          extraModulePackages = [ (quicModules config.boot.kernelPackages.kernel) ];
-          kernelModules = [ "quic" ];
-        };
+  microvm.vms.quicdev =
+    devVM "quicdev" "12" "02:00:00:00:00:12" "5ebc7d0a-fa7b-70d0-8573-cb9552ed092c"
+      [
+        (
+          { config, ... }:
+          {
+            boot = {
+              # The machines' 2026 LTS kernel, with the QUIC module built
+              # against it. The VM may diverge from the machines here freely,
+              # e.g. to test newer kernels or the upstream patch series.
+              kernelPackages = pkgs.linuxPackages_6_18;
+              extraModulePackages = [ (quicModules config.boot.kernelPackages.kernel) ];
+              kernelModules = [ "quic" ];
+            };
 
-        # Compile and link against libquic and gnutls outside nix builds
-        # (the guest's store is read-only): ad hoc gcc and Go cgo find
-        # headers and libraries through the system profile. Everything in
-        # the profile comes from one nixpkgs evaluation, so the library
-        # path stays coherent.
-        environment = {
-          systemPackages = [
-            libquic
-            pkgs.gnutls
-            pkgs.gnutls.dev
-          ];
-          pathsToLink = [ "/include" ];
-          variables = {
-            CPATH = "/run/current-system/sw/include";
-            LIBRARY_PATH = "/run/current-system/sw/lib";
-            LD_LIBRARY_PATH = "/run/current-system/sw/lib";
-            PKG_CONFIG_PATH = "/run/current-system/sw/lib/pkgconfig";
-          };
-        };
-      }
-    )
-  ] { };
+            # Compile and link against libquic and gnutls outside nix builds
+            # (the guest's store is read-only): ad hoc gcc and Go cgo find
+            # headers and libraries through the system profile. Everything in
+            # the profile comes from one nixpkgs evaluation, so the library
+            # path stays coherent.
+            environment = {
+              systemPackages = [
+                libquic
+                pkgs.gnutls
+                pkgs.gnutls.dev
+              ];
+              pathsToLink = [ "/include" ];
+              variables = {
+                CPATH = "/run/current-system/sw/include";
+                LIBRARY_PATH = "/run/current-system/sw/lib";
+                LD_LIBRARY_PATH = "/run/current-system/sw/lib";
+                PKG_CONFIG_PATH = "/run/current-system/sw/lib/pkgconfig";
+              };
+            };
+          }
+        )
+      ]
+      { };
 
   containers = {
     linuxdev =
