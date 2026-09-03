@@ -4,8 +4,12 @@
 #   to edit secrets
 # - machine keys: derived from each machine's /etc/ssh/ssh_host_ed25519_key.pub
 #   via ssh-to-age, used by sops-nix to decrypt secrets at activation time
+# - linuxdev-gate: the development container's secrets gate, generated in
+#   place by its sops-gate-keygen unit (see nixos/servnerr-4/dev.nix); lets
+#   the admin edit secrets from the container behind a YubiKey touch
 keys:
   - &mdlayher age136z4kwkfsqlvaa7e6f5c79rzjstg4ktq2lw6zadv23c038jnafssp2mngs
+  - &linuxdev-gate age1szssulmqnc0n650xcqvn7rpu2zjwnhrta4tvcm7tpxtmg26lsqysna0fks
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
   - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
   - &monitnerr-1 age15k9ztajdwg8w98t297pml8zq0x37mm5wd85vhxvyqul6zmfpygvsl7akg6
@@ -14,16 +18,26 @@ creation_rules:
     key_groups:
       - age:
           - *mdlayher
+          - *linuxdev-gate
           - *servnerr-4
   - path_regex: nixos/routnerr-3/secrets\.yaml$
     key_groups:
       - age:
           - *mdlayher
+          - *linuxdev-gate
           - *routnerr-3
   - path_regex: nixos/(secrets/common|inventory/secrets)\.yaml$
     key_groups:
       - age:
           - *mdlayher
+          - *linuxdev-gate
           - *monitnerr-1
           - *routnerr-3
           - *servnerr-4
+  # Credentials the admin uses from the development container through the
+  # secrets gate (API tokens for tofu and gh); no machine decrypts these.
+  - path_regex: ^secrets/[^/]+\.yaml$
+    key_groups:
+      - age:
+          - *mdlayher
+          - *linuxdev-gate
