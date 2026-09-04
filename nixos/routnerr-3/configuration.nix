@@ -12,6 +12,7 @@ in
     ./nftables.nix
 
     # Networking daemons.
+    ./cloudflare-ddns.nix
     ./coredns.nix
     ./corerad.nix
     ./dn42.nix
