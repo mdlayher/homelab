@@ -31,6 +31,16 @@
       "systemd-resolved.service"
     ];
     wants = [ "network-online.target" ];
+
+    # tailscaled's port mapper probes the default gateway for NAT-PMP, PCP
+    # and UPnP every few minutes, hoping to open a public port for direct
+    # connections. The router deliberately runs none of those: inbound
+    # direct paths come from its static per-device forwards, its peer relay
+    # or DERP (see the router's nftables.nix), so every probe is dropped and
+    # retried forever, and on the restricted VLANs each one is logged. The
+    # knob turns the mapper off before it sends anything; STUN-discovered
+    # endpoints and everything else are unaffected.
+    environment.TS_DISABLE_PORTMAPPER = "1";
   };
 
   # With accept-dns off, tailnet names would not resolve at all: the tailnet
