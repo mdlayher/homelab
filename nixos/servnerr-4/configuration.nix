@@ -11,6 +11,7 @@
     # Service configuration.
     ./containers.nix
     ./dev.nix
+    ./inventory-metrics.nix
     ./loki.nix
     ./prometheus.nix
   ];

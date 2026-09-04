@@ -66,6 +66,23 @@ in
           denial 4096
         }
         prometheus :9153
+        # Denials only, never successful lookups: the class covers NXDOMAIN
+        # and NODATA, which is the useful half. A device hammering a name
+        # that does not resolve, a search domain that never got configured,
+        # or an appliance calling home to something that is gone all show up
+        # here, at a small fraction of the cost of logging everything. The
+        # router answers roughly 1 query per second (see
+        # CoreDNSUpstreamFailing), so full query logging would be on the
+        # order of 86k lines a day, dwarfing every other journal on this
+        # machine - and it would be a browsing history for every device in
+        # the house, which is not a thing worth keeping for a year.
+        #
+        # This block only, not the internal zone below: a name missing from
+        # the hosts file is answered SERVFAIL rather than NXDOMAIN, so it is
+        # of class error and a log directive there would not see it anyway.
+        log . {
+          class denial
+        }
         forward . tls://8.8.8.8 tls://8.8.4.4 tls://2001:4860:4860::8888 tls://2001:4860:4860::8844 {
           tls_servername dns.google
           health_check 5s

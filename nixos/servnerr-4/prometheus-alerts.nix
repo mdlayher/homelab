@@ -184,6 +184,32 @@ in
           for = "1m";
           annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not sent a multicast router advertisment in more than 20 minutes.";
         }
+        # An ISP renumber invalidates the whole IPv6 layout at once: every
+        # gua_prefix in the inventory secrets, the addresses rendered into
+        # the firewall's sets and networkd's drop-ins, and the AAAA records
+        # CoreDNS serves all go stale together, silently. Nothing else here
+        # notices, because each individual piece stays internally
+        # consistent.
+        #
+        # No new exporter is needed to see it. CoreRAD already publishes
+        # every advertised prefix as a label, and
+        # CoreRADAdvertiserMissingPrefix above establishes the invariant
+        # this leans on: exactly two prefixes per interface, one GUA and
+        # one ULA. A renumber replaces the GUA, so for the length of the
+        # lookback both the old and the new prefix have samples in the
+        # window and the interface's distinct count goes to three. Counting
+        # per interface rather than per router means there is no total to
+        # keep in step as interfaces come and go.
+        #
+        # The alert clears on its own once the old prefix ages out of the
+        # window, which is the right shape: this reports an event, and the
+        # work it implies is updating the inventory secrets.
+        {
+          alert = "CoreRADAdvertiserPrefixChanged";
+          expr = "count by (instance, interface) (count by (instance, interface, prefix) (last_over_time(corerad_advertiser_prefix_on_link[6h]))) > 2";
+          for = "15m";
+          annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has advertised {{ $value }} distinct prefixes in 6 hours; the ISP may have renumbered the delegation.";
+        }
         # All IPv6 prefixes are advertised with SLAAC.
         {
           alert = "CoreRADAdvertiserPrefixNotAutonomous";
@@ -345,6 +371,32 @@ in
           expr = "probe_ssl_earliest_cert_expiry - time() < 7 * 86400";
           for = "1h";
           annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 7 days.";
+        }
+        # The router's two uplinks fail in different ways and neither was
+        # visible before this rule.
+        #
+        # IPv4 is routed by metric: the uplinks carry static and DHCP
+        # metrics set in the router's networking.nix, so losing the
+        # preferred one silently moves every IPv4 flow to the other. It
+        # keeps working, on a different path, and nothing says so.
+        #
+        # IPv6 is not redundant at all: only one uplink offers it, and it
+        # carries the DHCPv6-PD delegation every LAN prefix is carved from.
+        # Losing that link eventually surfaces as
+        # CoreRADMonitorDefaultRouteWANExpiring, but only once the upstream
+        # RA's route lifetime runs down to its last two hours. Carrier says
+        # it in two minutes.
+        #
+        # What carrier cannot see is an uplink that is up but black-holing:
+        # the static route stays installed, so there is no failover and no
+        # carrier change. The ICMP probes to both public anchors cover that
+        # case through BlackboxPacketLoss and BlackboxServiceDown, which is
+        # why this rule does not try to.
+        {
+          alert = "WANLinkDown";
+          expr = "node_network_carrier{instance=~${routerInstances},device=~${raw "wan[0-9]+"}} == 0";
+          for = "2m";
+          annotations.summary = "WAN uplink {{ $labels.device }} on {{ $labels.instance }} has lost carrier.";
         }
         # As with BIRDExporterFailing: a failed scrape drops the handshake
         # metrics rather than zeroing them, so the rule below goes quiet

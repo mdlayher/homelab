@@ -16,6 +16,7 @@ in
     ./coredns.nix
     ./corerad.nix
     ./dn42.nix
+    ./network-snapshot.nix
   ];
 
   system.stateVersion = "23.05";

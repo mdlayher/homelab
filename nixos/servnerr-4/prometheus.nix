@@ -185,6 +185,12 @@ let
   # same endpoints through their Tailscale Services TLS frontends, which
   # also validates the certificates; see the
   # TailscaleTLSCertificateExpiringSoon alert.
+  #
+  # Those four are every certificate this homelab terminates, not a sample:
+  # the only other Tailscale Service is the monitor's consrv, which forwards
+  # plain tcp: with no TLS, and everything else here is probed over plain
+  # HTTP. A fifth TLS frontend appearing anywhere is a prompt to add a probe
+  # for it, since nothing else would notice its certificate expiring.
   probes = [
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
