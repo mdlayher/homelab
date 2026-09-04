@@ -1,0 +1,7 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State stays local: the only resources are public DNS records, whose
+# content is already in the files beside this one.
+terraform.tfstate
+terraform.tfstate.backup
