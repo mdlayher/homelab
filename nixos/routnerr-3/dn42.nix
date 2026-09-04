@@ -372,6 +372,15 @@ in
       lla = "fe80::ade0";
     };
 
+    # highdef: https://highdef.network.
+    homelab.dn42.peers.highdef = {
+      asn = 4242421080;
+      publicKey = "u4WJMAoCHIOeh/+6NWMytNygp+/wrMogB+rwyVzXoEg=";
+      endpoint = "chi.peer.highdef.network:23610";
+      port = 21080;
+      lla = "fe80::113";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The container is not attached to the VLAN yet, so the
     # session sits idle until it is; see the server's dev.nix.
@@ -402,9 +411,13 @@ in
       ];
 
     # The tunnels share one WireGuard private key, generated once with
-    # wg genkey and stored under dn42/wireguard_key; the public half is what
-    # we hand to peers. Only referenced once a peer exists, so the machine
-    # builds before the secrets file does.
+    # wg genkey and stored under dn42/wireguard_key. The public half is not
+    # a secret; it is what we hand to peers, so keep it here rather than
+    # decrypting the private key to recover it:
+    #
+    #   yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=
+    #
+    # Declared only when a peer exists, since nothing but a tunnel reads it.
     sops.secrets."dn42/wireguard_key" = lib.mkIf (cfg.peers != { }) {
       sopsFile = ./secrets.yaml;
       owner = "systemd-network";
