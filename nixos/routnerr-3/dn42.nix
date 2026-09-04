@@ -480,6 +480,25 @@ in
       '';
     };
 
+    # bird resolves its RPKI RTR servers by hostname, through the router's
+    # own resolver (systemd-resolved to CoreDNS on loopback), which in turn
+    # forwards external names over the uplink. So bird must not start until
+    # both DNS and the uplink are up. Without this ordering a reboot can
+    # bring bird up first: the RTR sessions fail to resolve, the ROA tables
+    # stay empty, and the strict dn42 import filter then rejects every route
+    # as ROA-unknown until bird is restarted by hand.
+    systemd.services.bird = {
+      after = [
+        "coredns.service"
+        "nss-lookup.target"
+        "network-online.target"
+      ];
+      wants = [
+        "coredns.service"
+        "network-online.target"
+      ];
+    };
+
     # Scraped automatically by the server's Prometheus exporter discovery.
     services.prometheus.exporters.bird = {
       enable = true;
