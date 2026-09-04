@@ -27,6 +27,18 @@ resource "cloudflare_dns_record" "mdlayher_com_www" {
   proxied = false
 }
 
+# Search Console ownership for the Domain property, which is the only
+# verification method that covers every subdomain. Load-bearing in the same
+# quiet way as the record below: Google re-checks periodically and removing
+# this un-verifies the property, with no symptom until someone looks.
+resource "cloudflare_dns_record" "mdlayher_com_google_site_verification" {
+  zone_id = local.zones["mdlayher.com"]
+  name    = "mdlayher.com"
+  type    = "TXT"
+  content = "\"google-site-verification=ncbTt7WgZOjrLIlJ1dhqZklktP-xQIzgiPoV1K4glrg\""
+  ttl     = 1
+}
+
 # Bluesky handle verification: this is what makes @mdlayher.com resolve to the
 # account. Load-bearing, and easy to lose in a migration because nothing in the
 # zone's visible records hints at it — found only by sweeping underscore names.
