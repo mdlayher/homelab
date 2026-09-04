@@ -22,6 +22,14 @@ let
   # Matches an instance label ("host:port", or a probe URL) for any of hosts.
   hostsRegex = hosts: raw "(${anyOf hosts}):.*";
 
+  # Internal dn42 sessions and links (see the router's dn42.nix): dn42i_ is
+  # the bird protocol prefix, dn42i- the interface prefix. What is on the
+  # other end is an implementation under development rather than a service,
+  # so it is expected to be down, and to be broken on purpose while someone
+  # works on it. The external dn42e_ peers still alert normally.
+  internalProtocols = raw "dn42i_.*";
+  internalInterfaces = raw "dn42i-.*";
+
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
   excludedJobsRegex = raw (anyOf excludedJobs);
@@ -56,12 +64,23 @@ in
         # per peer that runs it, drawn from bird's own `show bfd sessions`.
         # Sub-second detection is the whole point of BFD, so a session
         # still down after 5 minutes has taken its BGP session with it.
+        #
+        # Internal links are excluded by interface, which is the only label
+        # here carrying the naming convention: the exporter's name label is
+        # the BFD protocol's name, not the BGP session's. Exercising a BFD
+        # implementation against bird means watching it fail on purpose.
         {
           alert = "BIRDBFDSessionDown";
-          expr = "bird_bfd_session_up == 0";
+          expr = "bird_bfd_session_up{interface!~${internalInterfaces}} == 0";
           for = "5m";
           annotations.summary = "BFD session with {{ $labels.ip }} on interface {{ $labels.interface }} ({{ $labels.instance }}) is down.";
         }
+        # Internal sessions are excluded for the same reason as in
+        # BIRDBGPSessionDown, and doubly here: their import side is closed
+        # by design, so an Established one imports zero routes forever.
+        # Excluding on the left side alone is enough, since the join can
+        # only produce series which survive it.
+        #
         # An Established session carrying nothing is invisible to
         # BIRDBGPSessionDown, and the router's dn42 import filters fail
         # closed by design: every route needs a valid ROA, so losing both
@@ -74,7 +93,7 @@ in
         # silently drops the other address family.
         {
           alert = "BIRDBGPNoRoutesImported";
-          expr = ''bird_protocol_prefix_import_count{proto="BGP"} == 0 and on (instance, name, ip_version) bird_protocol_up{proto="BGP"} == 1'';
+          expr = ''bird_protocol_prefix_import_count{proto="BGP",name!~${internalProtocols}} == 0 and on (instance, name, ip_version) bird_protocol_up{proto="BGP"} == 1'';
           for = "30m";
           annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is Established but has imported no routes.";
         }
@@ -84,9 +103,17 @@ in
         # alerts. dn42 peers are hobby routers that reboot without notice;
         # 10 minutes skips the ordinary flap and still catches a tunnel
         # that is really gone.
+        #
+        # Internal sessions are named dn42i_* on purpose: the exporter
+        # passes bird's protocol name through as the name label, so the
+        # naming convention is the switch, and a new internal link is
+        # covered without anyone remembering to edit this rule. The BGP
+        # implementation on the other end runs only while someone is
+        # experimenting with it, and a session which is down most of the
+        # time is not news.
         {
           alert = "BIRDBGPSessionDown";
-          expr = ''bird_protocol_up{proto="BGP"} == 0'';
+          expr = ''bird_protocol_up{proto="BGP",name!~${internalProtocols}} == 0'';
           for = "10m";
           annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is not Established.";
         }
@@ -336,7 +363,9 @@ in
         # traffic, so three minutes of silence means the tunnel is gone
         # rather than idle. That reasoning is specific to dn42 peers, hence
         # the interface match: a future tunnel carrying no keepalives would
-        # need its own threshold. A peer which has never handshaken reports a
+        # need its own threshold. The prefix is dn42e- rather than dn42-,
+        # since the latter also matches the dn42i- VLANs, which carry no
+        # WireGuard at all. A peer which has never handshaken reports a
         # delay measured from the epoch and fires immediately, which is the
         # right answer for a tunnel that never came up. Rates on the byte
         # counters would add nothing: the handshakes are themselves driven by
@@ -345,7 +374,7 @@ in
         # routes is what the BIRD rules above catch.
         {
           alert = "WireGuardPeerHandshakeStale";
-          expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "dn42-.*"}} > 180";
+          expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "dn42e-.*"}} > 180";
           for = "5m";
           annotations.summary = "WireGuard tunnel {{ $labels.interface }} on {{ $labels.instance }} last handshook {{ $value | humanizeDuration }} ago.";
         }

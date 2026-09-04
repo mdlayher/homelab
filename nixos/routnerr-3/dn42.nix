@@ -11,6 +11,18 @@
 # The router owns the dn42 presence: tunnels terminate on the WAN's static
 # IPv4 address and the daemon announces our aggregates. The firewall side
 # lives in nftables.nix, keyed off the homelab.dn42 options declared here.
+#
+# dn42 interfaces come in two classes, and the prefix is the trust boundary:
+#
+#   dn42e-<peer>  external. A WireGuard tunnel to somebody else's network.
+#                 Only BGP, BFD and ICMP are accepted from it.
+#   dn42i-<name>  internal. A VLAN carrying our own dn42-addressed hosts.
+#                 Same policy today, but it is the side that may later be
+#                 offered router services such as DNS.
+#
+# nftables and bird both match on those prefixes, so a new interface picks
+# up its class's policy from its name. Keeping one `dn42-*` wildcard for
+# both would silently merge the classes, since it matches either prefix.
 
 let
   cfg = config.homelab.dn42;
@@ -24,9 +36,9 @@ let
   # share one private key, each with its own listen port.
   peerNetdevs = lib.mapAttrs' (
     name: peer:
-    lib.nameValuePair "50-dn42-${name}" {
+    lib.nameValuePair "50-dn42e-${name}" {
       netdevConfig = {
-        Name = "dn42-${name}";
+        Name = "dn42e-${name}";
         Kind = "wireguard";
         MTUBytes = peer.mtu;
       };
@@ -53,8 +65,8 @@ let
 
   peerNetworks = lib.mapAttrs' (
     name: _:
-    lib.nameValuePair "50-dn42-${name}" {
-      matchConfig.Name = "dn42-${name}";
+    lib.nameValuePair "50-dn42e-${name}" {
+      matchConfig.Name = "dn42e-${name}";
       # Sessions run over static link-local addresses; see the lla option
       # for the choice of ours.
       address = [ "${cfg.lla}/64" ];
@@ -76,12 +88,73 @@ let
   # extended next hop. BFD is opt-in per peer.
   peerProtocols = lib.concatStrings (
     lib.mapAttrsToList (name: peer: ''
-      protocol bgp ${birdName "dn42_${name}"} from dnpeers {
-        neighbor ${peer.lla} % 'dn42-${name}' as ${toString peer.asn};
+      protocol bgp ${birdName "dn42e_${name}"} from dnpeers {
+        neighbor ${peer.lla} % 'dn42e-${name}' as ${toString peer.asn};
         ${lib.optionalString peer.bfd "bfd on;"}
       }
     '') cfg.peers
   );
+
+  # The internal dn42 VLAN and the session it carries. Unlike a peer this
+  # needs no tunnel: it is a tagged VLAN on the trunk, listed in the parent
+  # interface's vlan set in networking.nix.
+  #
+  # All of its addressing is dn42 registry space, which is public data (see
+  # the options above), so unlike the site LANs nothing here is an inventory
+  # secret and the whole protocol block can live in the Nix store.
+  dev0Ifname = "dn42i-dev0";
+
+  # A nested indented string dedents to column 0, so every line after the
+  # first needs the enclosing block's indentation added back; the
+  # interpolation site supplies the first line's.
+  indentTail =
+    pad: text:
+    lib.concatStringsSep "\n" (
+      lib.imap0 (i: line: if i == 0 || line == "" then line else "${pad}${line}") (
+        lib.splitString "\n" (lib.removeSuffix "\n" text)
+      )
+    );
+
+  dev0Channels =
+    lib.optionalString cfg.dev0.families.ipv6 ''
+      ipv6 {
+        import filter dn42i_import_v6;
+        export filter dn42_export_v6;
+        import limit 100 action block;
+        import keep filtered on;
+      };
+    ''
+    + lib.optionalString cfg.dev0.families.ipv4 ''
+      ipv4 {
+        # As with the dn42 peers: IPv4 NLRI over the one IPv6 session.
+        extended next hop on;
+        import filter dn42i_import;
+        export filter dn42_export;
+        import limit 100 action block;
+        import keep filtered on;
+      };
+    '';
+
+  dev0Protocol = ''
+    protocol bgp dn42i_dev0 {
+      local ${cfg.dev0.addr6} as OWNAS;
+      neighbor ${cfg.dev0.neighbor} as ${toString cfg.dev0.asn};
+
+      # eBGP with a private ASN, not iBGP: the speaker is its own AS with
+      # no IGP, and an AS_PATH bearing OWNAS is a second, protocol level
+      # reason a route we exported cannot come back in. An internal peer
+      # would instead be able to originate into dn42 with nothing in the
+      # path saying where the route came from.
+      #
+      # Passive: the speaker comes and goes with an experiment, so the
+      # router waits to be connected to rather than retrying into a closed
+      # port and logging every attempt.
+      passive on;
+      ${lib.optionalString cfg.dev0.bfd "bfd on;"}
+
+      ${indentTail "  " dev0Channels}
+    }
+  '';
 in
 {
   options.homelab.dn42 = {
@@ -127,8 +200,8 @@ in
       default = { };
       description = ''
         dn42 peers, keyed by a short name used in the interface name
-        dn42-<name>. Adding the first peer requires the WireGuard private
-        key secret dn42/wireguard_key in this host's secrets.yaml.
+        dn42e-<name>. All tunnels share the WireGuard private key secret
+        dn42/wireguard_key in this host's secrets.yaml.
       '';
       type = lib.types.attrsOf (
         lib.types.submodule {
@@ -185,6 +258,108 @@ in
         }
       );
     };
+
+    # dn42i-dev0: the internal dn42 VLAN and the BGP session it carries,
+    # for the implementation under development in the dev0 container. Named
+    # for its link the way a peer's session is, so it inherits the internal
+    # class's firewall and bird policy from its name.
+    dev0 = {
+      enable = lib.mkEnableOption ''
+        the internal dn42 VLAN dn42i-dev0 and its BGP session. The router
+        exports the dn42 tables over it, so the speaker sees the real
+        routing table rather than synthetic prefixes, and imports nothing
+        from it
+      '';
+      vlan = lib.mkOption {
+        type = lib.types.int;
+        default = 42;
+        description = ''
+          VLAN id, tagged on the same trunk as the site LANs; the parent
+          interface lists it in networking.nix. 42 is a mnemonic, well
+          clear of the site VLAN ids.
+        '';
+      };
+      net6 = lib.mkOption {
+        type = lib.types.str;
+        default = "fde4:d0ad:ee0f:1::/64";
+        description = ''
+          The /64 carried on the VLAN, from our registered allocation. The
+          second one, not the first: the router's own dn42 address sits at
+          the very start of the first /64 on the dummy interface, and a
+          /128 there plus an on-link /64 covering it is needlessly muddy.
+        '';
+      };
+      addr6 = lib.mkOption {
+        type = lib.types.str;
+        default = "fde4:d0ad:ee0f:1::1";
+        description = "The router's address on the VLAN, and the BGP local address.";
+      };
+      addr4 = lib.mkOption {
+        type = lib.types.str;
+        default = "172.20.140.82";
+        description = ''
+          The router's IPv4 address on the VLAN, carried as a /32.
+
+          It exists so the IPv4 channel has a valid next hop to fall back
+          on when a peer declines extended next hop; bird takes one from
+          the session's interface, and an IPv6-only link leaves it none.
+
+          A /32 rather than the whole /28 on-link, which the dn42 client
+          plan eventually wants here: the router already originates
+          172.20.140.80/28 as an unreachable static, and a connected route
+          for the same prefix would compete with it in the FIB. Worth
+          settling when clients actually arrive, not before.
+        '';
+      };
+      neighbor = lib.mkOption {
+        type = lib.types.str;
+        default = "fde4:d0ad:ee0f:1::10";
+        description = ''
+          The speaker's address on the VLAN, and the only BGP neighbor the
+          router accepts there. Chosen rather than learned, so that it
+          holds however the VLAN comes to hand out addresses.
+        '';
+      };
+      asn = lib.mkOption {
+        type = lib.types.int;
+        default = 65002;
+        description = ''
+          The speaker's autonomous system number, from the 16-bit private
+          range. frrdev on the dev0 VLAN uses 65001 (see the server's
+          dev.nix), so the two can run side by side.
+        '';
+      };
+      bfd = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Run BFD with the speaker, as the peers option does per peer.
+        '';
+      };
+      families = {
+        ipv6 = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Carry IPv6 unicast on the session.";
+        };
+        ipv4 = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Carry IPv4 unicast on the session, with the RFC 8950 extended
+            next hop, the way the dn42 peers do.
+
+            A peer which does not advertise extended next hop still
+            establishes and still receives the IPv4 routes: bird falls back
+            to an IPv4 next hop, its own address on the link, rather than
+            refusing the family. So this is safe to leave on while a
+            speaker's extended next hop support is being written; what
+            changes when it lands is the next hop the speaker sees. See
+            addr4 for why the link needs an IPv4 address at all.
+          '';
+        };
+      };
+    };
   };
 
   config = {
@@ -197,6 +372,11 @@ in
       lla = "fe80::ade0";
     };
 
+    # dn42i-dev0, carrying the session with wipbgpd in the development
+    # container. The container is not attached to the VLAN yet, so the
+    # session sits idle until it is; see the server's dev.nix.
+    homelab.dn42.dev0.enable = true;
+
     # wg show is how to read a tunnel's handshake and transfer counters at
     # the shell, the same data the exporter below publishes; bird2 (which
     # carries birdc) arrives with services.bird.
@@ -208,12 +388,16 @@ in
       in
       [
         {
-          assertion = lib.all (name: lib.stringLength name <= 10) (lib.attrNames cfg.peers);
-          message = "dn42 peer names must be <= 10 characters to fit ifname dn42-<name>";
+          assertion = lib.all (name: lib.stringLength name <= 9) (lib.attrNames cfg.peers);
+          message = "dn42 peer names must be <= 9 characters to fit ifname dn42e-<name>";
         }
         {
           assertion = lib.unique ports == ports;
           message = "dn42 peers must use unique WireGuard listen ports";
+        }
+        {
+          assertion = !cfg.dev0.enable || cfg.dev0.families.ipv6 || cfg.dev0.families.ipv4;
+          message = "the dn42i-dev0 session needs at least one address family";
         }
       ];
 
@@ -239,6 +423,15 @@ in
           };
         };
       }
+      // lib.optionalAttrs cfg.dev0.enable {
+        "50-${dev0Ifname}" = {
+          netdevConfig = {
+            Name = dev0Ifname;
+            Kind = "vlan";
+          };
+          vlanConfig.Id = cfg.dev0.vlan;
+        };
+      }
       // peerNetdevs;
 
       networks = {
@@ -248,6 +441,21 @@ in
             "${cfg.addr4}/32"
             "${cfg.addr6}/128"
           ];
+        };
+      }
+      // lib.optionalAttrs cfg.dev0.enable {
+        # No DHCP server and no router advertisements yet: nothing on the
+        # VLAN needs them while both ends are configured by hand. The dn42
+        # client plan wants advertisements shaped quite differently from a
+        # site LAN's (route information, zero default router lifetime), so
+        # they arrive with the clients rather than ahead of them.
+        "50-${dev0Ifname}" = {
+          matchConfig.Name = dev0Ifname;
+          address = [
+            "${cfg.dev0.addr6}/64"
+            "${cfg.dev0.addr4}/32"
+          ];
+          networkConfig.IPv6AcceptRA = false;
         };
       }
       // peerNetworks;
@@ -370,6 +578,39 @@ in
           reject;
         }
 
+        ${lib.optionalString cfg.dev0.enable ''
+          # The internal session exports the two filters above unchanged,
+          # so the speaker under development sees exactly what a dn42 peer
+          # sees, and imports through these: nothing. Its channels keep
+          # filtered routes, so `birdc show route filtered` shows what it
+          # announced while none of it is in the table.
+          #
+          # The reject is the single choke point. Every other protocol here
+          # exports out of the master tables - both kernel protocols, and
+          # each dn42 peer session - so a route which never lands in a
+          # master table can reach neither the FIB nor a peer, whatever the
+          # speaker announces and whatever it writes in the AS_PATH. eBGP
+          # loop detection on OWNAS stands behind that, not in front of it.
+          #
+          # To let the speaker originate test prefixes into dn42, drop the
+          # reject and uncomment the guard: more specifics of our own
+          # allocation, and nothing else. Not the aggregate itself, which
+          # the static protocol below originates. Opening this also installs
+          # what the speaker sends in the kernel's main table pointed at the
+          # VLAN, so open it deliberately.
+          filter dn42i_import_v6 {
+            # if net ~ [ ${cfg.net6}{49,64} ] then accept;
+            reject;
+          }
+
+          # dn42 accepts IPv4 down to /29 only (see is_valid_network), which
+          # leaves exactly two test prefixes inside our /28.
+          filter dn42i_import {
+            # if net ~ [ ${cfg.net4}{29,29} ] then accept;
+            reject;
+          }
+        ''}
+
         protocol device {
           scan time 10;
         }
@@ -420,7 +661,10 @@ in
         }
 
         protocol bfd {
-          interface "dn42-*" {
+          # Both interface classes, named rather than covered by one
+          # wildcard: a bare dn42-* would match either prefix and quietly
+          # merge them again.
+          interface "dn42e-*", "dn42i-*" {
             min rx interval 200 ms;
             min tx interval 200 ms;
             idle tx interval 1000 ms;
@@ -477,6 +721,7 @@ in
         }
 
         ${peerProtocols}
+        ${lib.optionalString cfg.dev0.enable dev0Protocol}
       '';
     };
 
@@ -509,7 +754,7 @@ in
     # counters per peer, discovered and scraped the same way. This is
     # MindFlavor's exporter from nixpkgs, which shells out to
     # `wg show all dump` under CAP_NET_ADMIN. Its metrics carry an
-    # interface label, so dn42-<peer> already names the peer; the
+    # interface label, so dn42e-<peer> already names the peer; the
     # exporter's friendly name mapping reads a wg-quick configuration file,
     # which these networkd-managed tunnels do not have, and would only
     # repeat what the interface name says.

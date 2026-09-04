@@ -194,13 +194,17 @@ in
     # on both Type and MACAddress since VLANs would share the same MAC.
     links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:8e";
     networks."15-mgmt0" = lanNetwork inventory.interfaces.mgmt0 // {
-      # VLANs associated with this physical interface.
+      # VLANs associated with this physical interface. dn42i-dev0 is the
+      # internal dn42 VLAN; it is defined in dn42.nix with the rest of the
+      # dn42 presence, since its addressing is registry space rather than
+      # anything from the inventory.
       vlan = [
         "lan0"
         "iot0"
         "guest0"
         "dev0"
-      ];
+      ]
+      ++ lib.optional config.homelab.dn42.dev0.enable "dn42i-dev0";
     };
 
     # Unused Ethernet and SFP+ links.

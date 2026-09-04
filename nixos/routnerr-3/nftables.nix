@@ -92,9 +92,14 @@ let
     vendorHash = "sha256-IOX2K4bBnhDq88PBU1yOmpZhBa3OXrgIohBBpmv9LZ0=";
   };
 
-  # dn42 peering (see dn42.nix): tunnel interfaces are dn42-<peer> and are
-  # matched by wildcard so the ruleset does not change per peer; only the
-  # per-peer WireGuard listen ports on the WANs do.
+  # dn42 peering (see dn42.nix): interfaces are dn42e-<peer> for the tunnels
+  # to other networks and dn42i-<name> for our own dn42-addressed VLANs.
+  # Both are matched by wildcard so the ruleset does not change per peer or
+  # per VLAN; only the per-peer WireGuard listen ports on the WANs do.
+  #
+  # The two prefixes are never covered by one dn42-* wildcard, which would
+  # match either and merge the trust classes. External is somebody else's
+  # network; internal is ours.
   dn42 = config.homelab.dn42;
   dn42Ports = lib.mapAttrsToList (_: peer: toString peer.port) dn42.peers;
 
@@ -279,7 +284,8 @@ in
           ct state invalid counter drop
 
           iifname $wans jump input_wan
-          iifname "dn42-*" jump input_dn42
+          iifname "dn42e-*" jump input_dn42e
+          iifname "dn42i-*" jump input_dn42i
 
           jump icmp_lan
 
@@ -315,16 +321,31 @@ in
           counter name wan_input_drop drop
         }
 
-        # From dn42 peers to the router itself: BGP and BFD sessions, plus
-        # pings, which are dn42 etiquette. No router services otherwise.
-        # TODO: open $dns here once CoreDNS serves mdlayher.dn42 on the
-        # ns1 glue addresses; the shared recursive resolver must not be
-        # exposed to dn42.
-        chain input_dn42 {
+        # From external dn42 peers to the router itself: BGP and BFD
+        # sessions, plus pings, which are dn42 etiquette. No router
+        # services otherwise, and none are ever added here: this is the
+        # side facing networks we do not run.
+        chain input_dn42e {
           jump icmp_lan
 
-          tcp dport $bgp counter accept comment "router dn42 BGP"
-          udp dport $bfd_control counter accept comment "router dn42 BFD"
+          tcp dport $bgp counter accept comment "router dn42 external BGP"
+          udp dport $bfd_control counter accept comment "router dn42 external BFD"
+
+          limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
+          counter name dn42_input_drop drop
+        }
+
+        # From our own dn42-addressed hosts to the router itself. The same
+        # policy as the external side today, and deliberately a separate
+        # chain: this is where router services for dn42 clients belong.
+        # TODO: open $dns here once CoreDNS serves mdlayher.dn42 on the
+        # ns1 glue addresses; the shared recursive resolver must not be
+        # exposed to dn42, and only this side is ours to serve.
+        chain input_dn42i {
+          jump icmp_lan
+
+          tcp dport $bgp counter accept comment "router dn42 internal BGP"
+          udp dport $bfd_control counter accept comment "router dn42 internal BFD"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop
@@ -360,22 +381,22 @@ in
 
           # Clamp TCP MSS to the dn42 tunnel MTU in both directions, before
           # the established shortcut so inbound SYN/ACKs are also clamped.
-          oifname "dn42-*" tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
-          iifname "dn42-*" tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
+          oifname { "dn42e-*", "dn42i-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
+          iifname { "dn42e-*", "dn42i-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
 
           ct state {established, related} counter accept
 
           # dn42 routing is commonly asymmetric, so peer-to-peer transit is
           # accepted before the conntrack invalid drop, which would discard
           # flows whose other direction takes a different peer.
-          iifname "dn42-*" oifname "dn42-*" counter accept comment "dn42 peer transit"
+          iifname { "dn42e-*", "dn42i-*" } oifname { "dn42e-*", "dn42i-*" } counter accept comment "dn42 transit"
 
           ct state invalid counter drop
 
           iifname $wans jump forward_wan
 
-          # dn42 peers may never initiate toward LANs or WANs.
-          iifname "dn42-*" counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
+          # dn42, ours or anyone's, may never initiate toward LANs or WANs.
+          iifname { "dn42e-*", "dn42i-*" } counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.
