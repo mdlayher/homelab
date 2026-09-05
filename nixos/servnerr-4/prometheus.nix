@@ -10,9 +10,8 @@ let
   inherit (config.networking) hostName;
   inherit (config.services.prometheus) exporters;
 
-  # Services on this machine are reached directly over the LAN or Tailscale by
-  # hostname; nothing is exposed via a public reverse proxy.
-  self = port: "http://${hostName}:${toString port}";
+  # URL of a service on this machine, by port.
+  self = port: "http://${qualify hostName}:${toString port}";
   prometheusUrl = self config.services.prometheus.port;
   alertmanagerUrl = self config.services.prometheus.alertmanager.port;
   grafanaUrl = self config.services.grafana.settings.server.http_port;
@@ -102,6 +101,12 @@ let
   # inventory entry, by their DNS name. Other containers share their host's
   # network and need nothing.
   inherit (config.homelab.inventory) domain roles tailnetDomain;
+
+  # Fully qualify a scrape target's host, so resolution never depends on the
+  # resolver's search list being present. Only a name already ending in the
+  # domain (the dev containers, keyed by DNS name) is left alone: a dot
+  # elsewhere, as in "<host>.ipv4", does not make a name absolute.
+  qualify = name: if lib.hasSuffix ".${domain}" name then name else "${name}.${domain}";
   containerHosts = lib.listToAttrs (
     lib.concatMap (
       system:
@@ -219,7 +224,15 @@ let
   # Liveness for the cloud-managed switches and APs in the management LAN
   # inventory, which expose no SNMP or local API; ping is the only local
   # signal that they are alive.
-  ++ map (h: "${h.name}.ipv4") (
+  #
+  # Fully qualified, as are the SNMP targets below: a relative name with a
+  # dot in it is tried as absolute first, so "<host>.ipv4" cost an NXDOMAIN
+  # on every probe before the search domain rescued it, and made every probe
+  # depend on the resolver's search list. Hosts the inventory gives no IPv6
+  # address have only an A record, so their bare name is enough; the rest
+  # are pinned to IPv4 by name, which also keeps the family label below
+  # truthful for them.
+  ++ map (h: qualify (if h.ula == null then h.name else "${h.name}.ipv4")) (
     lib.filter (
       h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
     ) config.homelab.inventory.interfaces.mgmt0.hosts
@@ -228,19 +241,19 @@ let
   # Blackbox DNS probe targets: CoreDNS on every router role holder,
   # exercising resolution of a known internal name end to end rather than
   # just process liveness.
-  dnsServers = map (name: "${name}:53") roles.router;
+  dnsServers = map (name: "${qualify name}:53") roles.router;
 
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
-  snmpCyberpower = [
-    "pdu01.ipv4"
-    "ups01.ipv4"
+  snmpCyberpower = map qualify [
+    "pdu01"
+    "ups01"
   ];
 
   # NixOS exporters running on this machine which probe jobs are relabeled
   # through.
-  local = exporter: "${hostName}:${toString exporters.${exporter}.port}";
+  local = exporter: "${qualify hostName}:${toString exporters.${exporter}.port}";
 
   # Hosts in the inventory matching a predicate, by name.
   hostsWhere = pred: lib.attrNames (lib.filterAttrs (_: pred) hosts);
@@ -255,7 +268,9 @@ let
       running = lib.filterAttrs (_: h: h.jobs ? ${job}) hosts;
       settings = lib.head (lib.attrValues running);
     in
-    (staticScrape job (lib.mapAttrsToList (host: h: "${host}:${toString h.jobs.${job}.port}") running))
+    (staticScrape job (
+      lib.mapAttrsToList (host: h: "${qualify host}:${toString h.jobs.${job}.port}") running
+    ))
     // lib.optionalAttrs (settings.jobs.${job} ? metrics_path) {
       inherit (settings.jobs.${job}) metrics_path;
     }
@@ -265,13 +280,16 @@ let
   );
 
   # Hosts with SSH banner probing enabled.
-  sshTargets = map (host: "${host}:22") (hostsWhere (h: h.ssh or false));
+  sshTargets = map (host: "${qualify host}:22") (hostsWhere (h: h.ssh or false));
 
+  # Host lists are qualified to match the instance labels the targets above
+  # produce; the rules only ever evaluate current data, so nothing needs to
+  # match the bare names series carried before targets were qualified.
   alerts = import ./prometheus-alerts.nix {
     inherit lib;
-    excludedHosts = hostsWhere (h: !(h.alerts or true));
+    excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
     excludedJobs = [ snmpCyberpowerJob ];
-    routers = hostsWhere (h: h.router or false);
+    routers = map qualify (hostsWhere (h: h.router or false));
     # Every host expected to ship logs to Loki: the machines themselves plus
     # their containers and microvms, whose journals the hosting machine
     # ships; see nixos/modules/alloy.nix.
@@ -453,7 +471,7 @@ in
     alertmanagers = [
       {
         static_configs = [
-          { targets = [ "${hostName}:${toString config.services.prometheus.alertmanager.port}" ]; }
+          { targets = [ "${qualify hostName}:${toString config.services.prometheus.alertmanager.port}" ]; }
         ];
       }
     ];
@@ -504,7 +522,7 @@ in
         job_name = "homeassistant";
         metrics_path = "/api/prometheus";
         authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
-        static_configs = [ { targets = [ "hass:8123" ]; } ];
+        static_configs = [ { targets = [ "${qualify "hass"}:8123" ]; } ];
       }
 
       # Blackbox probes for HTTP endpoints, internet reachability per address

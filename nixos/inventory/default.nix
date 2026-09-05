@@ -65,16 +65,16 @@
       vlan = 0;
       trusted = true;
       hosts = {
-        ap-basement.ipv6 = "eui64";
-        ap-livingroom.ipv6 = "eui64";
+        ap-basement = { };
+        ap-livingroom = { };
         hass.ipv6 = "prefixstable";
         monitnerr-1.ipv6 = "eui64";
         nerr-4.ipv6 = "prefixstable";
-        pdu01.ipv6 = "eui64";
+        pdu01 = { };
         servnerr-4.ipv6 = "token";
         switch-core.ipv6 = "eui64";
         switch-livingroom.ipv6 = "eui64";
-        ups01.ipv6 = "eui64";
+        ups01 = { };
       };
     };
 
