@@ -443,6 +443,14 @@ in
     sops = lib.mkIf isHost {
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
+      # Install secrets from a systemd unit rather than the activation
+      # script, so restartUnits and reloadUnits are applied with systemctl
+      # directly: restarting units from the activation script is deprecated
+      # in NixOS 26.05 and removed in 26.11. Password hashes needed to create
+      # users are still installed by an activation script, which never
+      # restarts anything.
+      useSystemdActivation = true;
+
       # Password hashes must be available before users are created.
       secrets =
         lib.genAttrs [ "users/mdlayher_password_hash" "users/root_password_hash" ] (_: {
