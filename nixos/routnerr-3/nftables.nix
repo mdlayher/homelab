@@ -29,9 +29,12 @@ let
   ifnames = ifis: "{ ${lib.concatMapStringsSep ", " (ifi: ifi.name or ifi) ifis} }";
 
   # Different tailscaled ports for different devices to avoid messing with
-  # poking nftables firewall holes with miniupnpd or similar.
+  # poking nftables firewall holes with miniupnpd or similar. The router
+  # keeps Tailscale's default, which is also the port peers probe blindly
+  # for any address they have not learned a port for; the forwarded hosts
+  # take the ones after it.
   tailscale = {
-    router = 41461;
+    router = 41641;
     # Peer relay: tailnet pairs which cannot connect directly - notably a
     # phone on cellular reaching hosts with no WAN port forward - relay
     # through this machine instead of a distant DERP server. Payloads are
@@ -284,6 +287,15 @@ in
           ct state {established, related} counter accept
           ct state invalid counter drop
 
+          # The router's own router advertisements, multicast to every
+          # host on an advertising interface, loop back into input too.
+          # Trusted LANs accept them and restricted LANs count them as
+          # cross-VLAN traffic, but the internal dn42 chain logged each
+          # one as a drop. They are never for us: discard them quietly
+          # before any interface class sees them. The source is a
+          # link-local address, so the local lookup needs the interface.
+          ip6 nexthdr icmpv6 icmpv6 type nd-router-advert fib saddr . iif type local counter drop comment "router's own advertisements looped back"
+
           iifname $wans jump input_wan
           iifname "dn42e-*" jump input_dn42e
           iifname "dn42i-*" jump input_dn42i
@@ -352,6 +364,13 @@ in
 
           tcp dport $bgp counter accept comment "router dn42 internal BGP"
           udp dport $bfd_control counter accept comment "router dn42 internal BFD"
+
+          # tailscaled on both ends discovers its dn42 address as one more
+          # candidate endpoint, so the hosts here probe the router's dn42
+          # addresses at its tailscaled and peer relay ports. The tailnet
+          # never rides dn42, and there is no per-interface opt-out to
+          # give tailscaled; drop the probes without logging them.
+          udp dport { $tailscale_router, $tailscale_relay } counter drop comment "router dn42 internal Tailscale probes"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop

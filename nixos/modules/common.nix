@@ -283,6 +283,14 @@ in
     security.sudo.extraConfig = "Defaults timestamp_timeout=0";
 
     services = {
+      # Names resolve through DNS everywhere: the site domain from the
+      # router's CoreDNS, the tailnet through MagicDNS, and the development
+      # hosts through mDNS where dev.nix opts a link in. resolved's default
+      # LLMNR covers none of that; it only multicasts single-label lookups
+      # onto every link, dn42 space included, and answers for the machine
+      # there, which is a spoofing vector with nothing to offer.
+      resolved.settings.Resolve.LLMNR = false;
+
       # SSH keys only, wherever sshd is enabled, and never as root: deploys log
       # in as the admin user and escalate with sudo.
       openssh.settings = {
