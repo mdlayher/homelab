@@ -631,6 +631,16 @@ in
                 libquic
                 pkgs.gnutls
                 pkgs.gnutls.dev
+
+                # The rest of the C toolchain lxin/quic's own test suite
+                # needs: autoreconf for its ./autogen.sh, and the openssl
+                # CLI and keyctl for the certificate and PSK keyring
+                # scripts under tests/keys.
+                pkgs.autoconf
+                pkgs.automake
+                pkgs.libtool
+                pkgs.openssl
+                pkgs.keyutils
               ];
               pathsToLink = [ "/include" ];
               variables = {
