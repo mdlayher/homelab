@@ -633,21 +633,30 @@ in
                 pkgs.gnutls.dev
 
                 # The rest of the C toolchain lxin/quic's own test suite
-                # needs: autoreconf for its ./autogen.sh, and the openssl
-                # CLI and keyctl for the certificate and PSK keyring
-                # scripts under tests/keys.
+                # needs: autoreconf for its ./autogen.sh (with m4 behind
+                # libtoolize and autoconf), and the openssl CLI and keyctl
+                # for the certificate and PSK keyring scripts under
+                # tests/keys.
                 pkgs.autoconf
                 pkgs.automake
                 pkgs.libtool
+                pkgs.gnum4
                 pkgs.openssl
                 pkgs.keyutils
               ];
-              pathsToLink = [ "/include" ];
+              # aclocal finds libtool's and pkg-config's macros the same way
+              # gcc finds headers: through the profile, since neither is
+              # installed into automake's own tree here.
+              pathsToLink = [
+                "/include"
+                "/share/aclocal"
+              ];
               variables = {
                 CPATH = "/run/current-system/sw/include";
                 LIBRARY_PATH = "/run/current-system/sw/lib";
                 LD_LIBRARY_PATH = "/run/current-system/sw/lib";
                 PKG_CONFIG_PATH = "/run/current-system/sw/lib/pkgconfig";
+                ACLOCAL_PATH = "/run/current-system/sw/share/aclocal";
               };
             };
           }
