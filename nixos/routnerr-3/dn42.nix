@@ -104,6 +104,9 @@ let
   # secret and the whole protocol block can live in the Nix store.
   dev0Ifname = "dn42i-dev0";
 
+  # The length of our IPv4 allocation, which the VLAN carries on-link.
+  net4Length = lib.last (lib.splitString "/" cfg.net4);
+
   # A nested indented string dedents to column 0, so every line after the
   # first needs the enclosing block's indentation added back; the
   # interpolation site supplies the first line's.
@@ -298,17 +301,17 @@ in
         type = lib.types.str;
         default = "172.20.140.82";
         description = ''
-          The router's IPv4 address on the VLAN, carried as a /32.
+          The router's IPv4 address on the VLAN, which carries the whole
+          of net4 on-link: the VLAN is where our IPv4 hosts live, and the
+          router is their gateway into dn42. The first address after the
+          router's own dn42 address; hosts follow, the speaker in the
+          development container at .83 (see the server's dev.nix). No
+          DHCP serves the VLAN, so a host's address is assigned here by
+          hand.
 
-          It exists so the IPv4 channel has a valid next hop to fall back
-          on when a peer declines extended next hop; bird takes one from
-          the session's interface, and an IPv6-only link leaves it none.
-
-          A /32 rather than the whole /28 on-link, which the dn42 client
-          plan eventually wants here: the router already originates
-          172.20.140.80/28 as an unreachable static, and a connected route
-          for the same prefix would compete with it in the FIB. Worth
-          settling when clients actually arrive, not before.
+          It also gives the IPv4 channel a valid next hop to fall back on
+          when a peer declines extended next hop: bird takes one from the
+          session's interface, and an IPv6-only link would leave it none.
         '';
       };
       neighbor = lib.mkOption {
@@ -316,8 +319,10 @@ in
         default = "fde4:d0ad:ee0f:1::10";
         description = ''
           The speaker's address on the VLAN, and the only BGP neighbor the
-          router accepts there. Chosen rather than learned, so that it
-          holds however the VLAN comes to hand out addresses.
+          router accepts there. Chosen rather than learned: the container
+          forms it from the advertised prefix with a fixed interface
+          identifier (networkd Token=static:::10, the same one it uses on
+          dev0), so it holds however the VLAN comes to hand out addresses.
         '';
       };
       asn = lib.mkOption {
@@ -382,8 +387,9 @@ in
     };
 
     # dn42i-dev0, carrying the session with wipbgpd in the development
-    # container. The container is not attached to the VLAN yet, so the
-    # session sits idle until it is; see the server's dev.nix.
+    # container. The server bridges the VLAN into the container as its
+    # dn42 interface (see the server's networking.nix and dev.nix); the
+    # session stays idle until a speaker listens there.
     homelab.dn42.dev0.enable = true;
 
     # wg show is how to read a tunnel's handshake and transfer counters at
@@ -457,16 +463,17 @@ in
         };
       }
       // lib.optionalAttrs cfg.dev0.enable {
-        # No DHCP server and no router advertisements yet: nothing on the
-        # VLAN needs them while both ends are configured by hand. The dn42
-        # client plan wants advertisements shaped quite differently from a
-        # site LAN's (route information, zero default router lifetime), so
-        # they arrive with the clients rather than ahead of them.
+        # IPv6 comes from router advertisements: CoreRAD serves net6 for
+        # SLAAC on this interface and route information for dn42 (see
+        # corerad.nix), with a zero router lifetime so hosts do not take
+        # the router as a default route. IPv4 has no DHCP: hosts are
+        # assigned within the on-link net4 by hand, with the router as
+        # their static route to dn42.
         "50-${dev0Ifname}" = {
           matchConfig.Name = dev0Ifname;
           address = [
             "${cfg.dev0.addr6}/64"
-            "${cfg.dev0.addr4}/32"
+            "${cfg.dev0.addr4}/${net4Length}"
           ];
           networkConfig.IPv6AcceptRA = false;
         };
@@ -649,12 +656,21 @@ in
         # protocol) is the stronger isolation if ever wanted, at the cost
         # of VRF-aware services and route leaking for LAN clients. prefsrc
         # makes router-originated dn42 traffic use our dn42 addresses.
+        #
+        # The IPv4 aggregate stays out of the kernel while the internal VLAN
+        # carries it on-link: the connected route already terminates
+        # traffic for unassigned addresses, through a failed ARP rather
+        # than a loop back out a tunnel, and a second route for the same
+        # prefix would only compete with it. bird still originates the
+        # aggregate to peers from its own table. The IPv6 aggregate is a
+        # /48 of which the VLAN carries one /64, so it keeps its
+        # unreachable route.
         protocol kernel {
           scan time 20;
           ipv4 {
             import none;
             export filter {
-              if source = RTS_STATIC then accept;
+              if source = RTS_STATIC then ${if cfg.dev0.enable then "reject" else "accept"};
               krt_prefsrc = OWNIP;
               accept;
             };

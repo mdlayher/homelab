@@ -169,12 +169,24 @@ in
           for = "10m";
           annotations.summary = "CoreDNS on {{ $labels.instance }} returned SERVFAIL for over 5% of DNS queries in the last 10 minutes.";
         }
-        # Every interface advertises exactly 2 prefixes: one GUA and one ULA.
+        # Every site LAN advertises exactly 2 prefixes: one GUA and one ULA.
+        # The internal dn42 VLANs have their own rule below.
         {
           alert = "CoreRADAdvertiserMissingPrefix";
-          expr = "count by(instance, interface) (corerad_advertiser_prefix_autonomous == 1) != 2";
+          expr = "count by(instance, interface) (corerad_advertiser_prefix_autonomous{interface!~${internalInterfaces}} == 1) != 2";
           for = "1m";
           annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} is advertising an incorrect number of IPv6 prefixes for SLAAC.";
+        }
+        # An internal dn42 VLAN advertises exactly 1 prefix, its dn42 /64
+        # (see the router's corerad.nix). Anchored on the advertising
+        # interface rather than on the prefix count alone, so an interface
+        # advertising no prefix at all, which has no count to compare, is
+        # caught too.
+        {
+          alert = "CoreRADDN42AdvertiserMissingPrefix";
+          expr = "corerad_interface_advertising{interface=~${internalInterfaces}} == 1 unless on (instance, interface) count by (instance, interface) (corerad_advertiser_prefix_autonomous == 1) == 1";
+          for = "1m";
+          annotations.summary = "CoreRAD ({{ $labels.instance }}) internal dn42 interface {{ $labels.interface }} is not advertising exactly one IPv6 prefix for SLAAC.";
         }
         # All CoreRAD interfaces should multicast IPv6 RAs on a regular basis
         # so hosts don't drop their default route.

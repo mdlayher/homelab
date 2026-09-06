@@ -207,6 +207,7 @@ in
         counter wan_forward_drop {}
         counter dn42_input_drop {}
         counter dn42_forward_drop {}
+        counter dn42_inbound_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
         # those LANs may talk to.
@@ -344,6 +345,11 @@ in
         chain input_dn42i {
           jump icmp_lan
 
+          # CoreRAD answers solicitations on the internal VLAN (see
+          # corerad.nix); the input chain's blanket accept for them comes
+          # after this jump, so it is repeated here.
+          ip6 nexthdr icmpv6 icmpv6 type nd-router-solicit counter accept comment "router dn42 internal router solicitation"
+
           tcp dport $bgp counter accept comment "router dn42 internal BGP"
           udp dport $bfd_control counter accept comment "router dn42 internal BFD"
 
@@ -386,14 +392,23 @@ in
 
           ct state {established, related} counter accept
 
-          # dn42 routing is commonly asymmetric, so peer-to-peer transit is
-          # accepted before the conntrack invalid drop, which would discard
-          # flows whose other direction takes a different peer.
-          iifname { "dn42e-*", "dn42i-*" } oifname { "dn42e-*", "dn42i-*" } counter accept comment "dn42 transit"
+          # dn42 routing between peers is commonly asymmetric, so tunnel to
+          # tunnel transit is accepted before the conntrack invalid drop,
+          # which would discard flows whose other direction takes a
+          # different peer.
+          iifname "dn42e-*" oifname "dn42e-*" counter accept comment "dn42 transit"
 
           ct state invalid counter drop
 
           iifname $wans jump forward_wan
+
+          # Our own dn42 hosts face dn42 the way the LANs face the internet:
+          # they initiate toward it, and it reaches them only through the
+          # established shortcut above and what forward_dn42i allows. No
+          # asymmetry to allow for on this leg: the router is the only path
+          # to our hosts, so conntrack sees both directions of every flow.
+          iifname "dn42i-*" oifname "dn42e-*" counter accept comment "dn42 internal to external"
+          iifname "dn42e-*" oifname "dn42i-*" jump forward_dn42i
 
           # dn42, ours or anyone's, may never initiate toward LANs or WANs.
           iifname { "dn42e-*", "dn42i-*" } counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
@@ -412,6 +427,15 @@ in
           counter name forward_reject reject
         }
 
+        # From dn42 to our own hosts: pings and ICMP errors; silently drop
+        # the rest. A service one of our hosts offers to dn42 is opened
+        # here, per host and port, the way forward_wan opens Tailscale.
+        chain forward_dn42i {
+          jump icmp_lan
+
+          counter name dn42_inbound_drop drop
+        }
+
         # From the internet to LANs: only ICMP errors and Tailscale to
         # specific hosts; silently drop the rest.
         chain forward_wan {
@@ -424,10 +448,10 @@ in
         }
       }
 
-      # Traffic accounting, hooked after the filter table's forward chain so
-      # only accepted traffic is counted. The filter's early established
-      # shortcut hides most bytes from its per-rule counters; this chain sees
-      # every forwarded packet regardless of connection state.
+      # Traffic accounting, hooked after the filter table's chains so only
+      # accepted traffic is counted. The filter's early established shortcut
+      # hides most bytes from its per-rule counters; these chains see every
+      # packet regardless of connection state.
       table inet accounting {
         ${lib.concatMapStrings (lan: ''
           counter ${lan}_wan_out {}
@@ -460,6 +484,19 @@ in
             counter
           }
         '') protos}
+
+        # dn42 traffic by what the router is to it: transit between peers'
+        # tunnels, which passes through; our own hosts' traffic on the
+        # internal VLANs; and what terminates on the router itself, the BGP
+        # and BFD sessions and pings. Transit is counted once, on the way
+        # through; the other two are split by direction, from the router's
+        # or our hosts' point of view.
+        counter dn42_transit {}
+        counter dn42_internal_in {}
+        counter dn42_internal_out {}
+        counter dn42_router_in {}
+        counter dn42_router_out {}
+
         chain forward {
           type filter hook forward priority 5
           policy accept
@@ -473,6 +510,27 @@ in
             iifname $all_lans oifname $wans update @host${proto.v}_wan_out { ${proto.outKey} }
             iifname $wans oifname $all_lans update @host${proto.v}_wan_in { ${proto.inKey} }
           '') protos}
+
+          iifname "dn42e-*" oifname "dn42e-*" counter name dn42_transit
+          iifname "dn42e-*" oifname "dn42i-*" counter name dn42_internal_in
+          iifname "dn42i-*" oifname "dn42e-*" counter name dn42_internal_out
+        }
+
+        # Terminating traffic, hooked after the filter's input chain the
+        # same way, so only what it accepted is counted; the router's own
+        # output is unfiltered.
+        chain input {
+          type filter hook input priority 5
+          policy accept
+
+          iifname "dn42e-*" counter name dn42_router_in
+        }
+
+        chain output {
+          type filter hook output priority 5
+          policy accept
+
+          oifname "dn42e-*" counter name dn42_router_out
         }
       }
 

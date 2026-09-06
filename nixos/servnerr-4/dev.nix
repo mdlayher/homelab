@@ -567,6 +567,29 @@ let
     !
   '';
   frrConfigFile = "/run/host-secrets/frr.conf";
+
+  # The development container's end of the internal dn42 link, for the BGP
+  # implementation under development there: the router's dn42i-dev0 VLAN,
+  # bridged in by networking.nix as a second interface. Its addressing is
+  # dn42 registry space, public data fixed here to match the router's
+  # dn42.nix rather than anything from the inventory.
+  #
+  # IPv6 comes from the router's advertisements: the address from the
+  # VLAN's prefix with the same fixed interface identifier as on dev0,
+  # which forms the neighbor address the router's session expects, and a
+  # route to dn42 from route information, since the router is not a
+  # default router there. IPv4 has no DHCP on the VLAN: the address is the
+  # next of our allocation after the router's own, in the on-link /28, and
+  # the route to dn42's IPv4 space points at the router by hand. dn42
+  # proper only: the router's import filter also accepts the networks dn42
+  # interconnects with (see its dn42.nix), which a host opts into here
+  # rather than being handed by default.
+  dn42 = {
+    ifname = "dn42";
+    addr4 = "172.20.140.83/28";
+    router4 = "172.20.140.82";
+    routes4 = [ "172.20.0.0/14" ];
+  };
 in
 {
   # MicroVM host support for devVM above: per-VM systemd units, taps, and
@@ -649,6 +672,25 @@ in
             # sshd still serves dev0. Toggling the flag hangs connections
             # open to the container's tailnet address.
             services.tailscale.extraSetFlags = [ "--ssh" ];
+
+            # The internal dn42 link; see dn42 above. Not required for
+            # online: the services here wait on dev0, not on dn42.
+            #
+            # What dn42 may reach here is the router's decision (its
+            # nftables.nix: established flows and pings, nothing new); the
+            # firewall in this container is the second line, and its open
+            # ports are for dev0.
+            systemd.network.networks."20-${dn42.ifname}" = {
+              matchConfig.Name = dn42.ifname;
+              address = [ dn42.addr4 ];
+              routes = map (net: {
+                Destination = net;
+                Gateway = dn42.router4;
+              }) dn42.routes4;
+              networkConfig.IPv6AcceptRA = true;
+              ipv6AcceptRAConfig.Token = "static:::10";
+              linkConfig.RequiredForOnline = "no";
+            };
 
             # The secrets gate; see sopsGateRun above. The admin's home is
             # group-readable here, and the gate user is the only other
@@ -906,6 +948,10 @@ in
             hostPath = config.sops.secrets."dev/ssh_key".path;
             isReadOnly = true;
           };
+
+          # The internal dn42 link, a second veth onto the VLAN's bridge
+          # (see networking.nix); the container sees it under this name.
+          extraVeths.${dn42.ifname}.hostBridge = "br-dn42i-dev0";
 
           # linuxdev hosts long-lived agent sessions, so never restart it on a
           # host switch. Config changes are applied to the running container

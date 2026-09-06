@@ -57,7 +57,8 @@ generation swap, append the new machine to the role: consumers which fan out
 over every holder cover both machines until the old one is removed.
 Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
-containers, so its switch port must be a trunk with VLAN 20 allowed.
+containers, so its switch port must be a trunk with VLAN 20 allowed, and
+VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).
 Every address, prefix, and MAC lives in `inventory/secrets.yaml`, except the
 site ULA /48, which is publicly registered and declared as plain data in
 `inventory/default.nix`:

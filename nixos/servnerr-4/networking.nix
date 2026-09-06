@@ -70,7 +70,10 @@ in
       };
 
       # Tagged VLANs carried over br0 for containers.
-      vlan = [ "dev0" ];
+      vlan = [
+        "dev0"
+        "dn42i-dev0"
+      ];
     };
 
     # Development VLAN, bridged into br-dev0 for containers (see dev.nix).
@@ -91,6 +94,54 @@ in
       Name = "br-dev0";
       Kind = "bridge";
     };
+    # The internal dn42 VLAN, bridged into the development container as its
+    # dn42 interface (see dev.nix). Named as the router names it, and with
+    # the VLAN id from its dn42.nix, which owns this VLAN the way the
+    # inventory owns the site LANs: its addressing is dn42 registry space,
+    # so nothing about it is an inventory secret. Like dev0, the host has
+    # no presence on it.
+    netdevs."13-dn42i-dev0" = {
+      netdevConfig = {
+        Name = "dn42i-dev0";
+        Kind = "vlan";
+      };
+      vlanConfig.Id = 42;
+    };
+    networks."13-dn42i-dev0" = {
+      matchConfig.Name = "dn42i-dev0";
+      bridge = [ "br-dn42i-dev0" ];
+      networkConfig.LinkLocalAddressing = "no";
+    };
+    netdevs."13-br-dn42i-dev0".netdevConfig = {
+      Name = "br-dn42i-dev0";
+      Kind = "bridge";
+    };
+    # The host side of the development container's dn42 veth (see dev.nix).
+    # nspawn creates and enslaves it, and systemd's own 80-container-vb
+    # network covers only the primary vb-* veth, so without this it is
+    # unmanaged and the kernel gives it a link-local address it has no use
+    # for as a bridge port. Same treatment as that file, minus LLDP.
+    networks."13-dn42-veth" = {
+      matchConfig = {
+        Kind = "veth";
+        Name = "dn42";
+      };
+      networkConfig = {
+        KeepMaster = true;
+        LinkLocalAddressing = "no";
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+    networks."13-br-dn42i-dev0" = {
+      matchConfig.Name = "br-dn42i-dev0";
+      networkConfig = {
+        LinkLocalAddressing = "no";
+        IPv6AcceptRA = false;
+        ConfigureWithoutCarrier = true;
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+
     # MicroVM tap interfaces (see dev.nix) join the dev VLAN bridge, making
     # their guests dev0 citizens exactly like the containers.
     networks."12-vm-dev0" = {
