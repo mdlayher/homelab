@@ -42,3 +42,28 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_azo" {
   ttl     = 1
   proxied = false
 }
+
+# Single-family variants of azo.dn42, for a peer that wants the WireGuard
+# underlay pinned to one family rather than letting its resolver pick from
+# the apex's A and AAAA. Each is a CNAME to the corresponding current-egress
+# name (see the router's cloudflare-ddns.nix), so it follows a WAN failover
+# within its family: ipv4 tracks whichever WAN egresses v4, ipv6 whichever
+# egresses v6. Return symmetry holds because a family's reply leaves on that
+# family's route regardless of which address the peer targeted.
+resource "cloudflare_dns_record" "mdlayher_net_dn42_azo_ipv4" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv4.azo.dn42.mdlayher.net"
+  type    = "CNAME"
+  content = "ipv4.mdlayher.net"
+  ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "mdlayher_net_dn42_azo_ipv6" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv6.azo.dn42.mdlayher.net"
+  type    = "CNAME"
+  content = "ipv6.mdlayher.net"
+  ttl     = 1
+  proxied = false
+}
