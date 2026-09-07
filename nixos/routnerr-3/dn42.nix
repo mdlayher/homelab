@@ -154,6 +154,11 @@ let
       # port and logging every attempt.
       passive on;
       ${lib.optionalString cfg.dev0.bfd "bfd on;"}
+      # Lab session only; the dn42e_ peers stay quiet. states and events
+      # are a handful of lines per session change, cheap to leave on.
+      # packets is deliberately left out: it logs every UPDATE, roughly
+      # 6000 lines an hour of dn42 churn.
+      ${lib.optionalString cfg.dev0.debug "debug { states, events };"}
 
       ${indentTail "  " dev0Channels}
     }
@@ -341,6 +346,15 @@ in
           Run BFD with the speaker, as the peers option does per peer.
         '';
       };
+      debug = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Turn on BIRD `debug { states, events }` for the lab session, so
+          its state changes and events reach the journal, and thus Loki
+          under {host="routnerr-3", unit="bird.service"}.
+        '';
+      };
       families = {
         ipv6 = lib.mkOption {
           type = lib.types.bool;
@@ -391,6 +405,7 @@ in
     # dn42 interface (see the server's networking.nix and dev.nix); the
     # session stays idle until a speaker listens there.
     homelab.dn42.dev0.enable = true;
+    homelab.dn42.dev0.debug = true;
 
     # wg show is how to read a tunnel's handshake and transfer counters at
     # the shell, the same data the exporter below publishes; bird2 (which
