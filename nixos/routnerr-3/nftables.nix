@@ -186,6 +186,8 @@ in
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
       define dns = 53
+      define http = 80
+      define https = 443
       define bgp = 179
       define bfd_control = 3784
       define dhcp4_server = 67
@@ -329,20 +331,28 @@ in
             ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
           }
 
+          # The dn42 peering page (see azo-page.nix), the only TCP service
+          # the router offers the internet. New connections beyond the rate
+          # fall through to the drop below; the page is a few kilobytes,
+          # and nothing legitimate opens connections at that rate.
+          tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
+
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
           counter name wan_input_drop drop
         }
 
         # From external dn42 peers to the router itself: BGP and BFD
-        # sessions, plus pings, which are dn42 etiquette. No router
-        # services otherwise, and none are ever added here: this is the
-        # side facing networks we do not run.
+        # sessions, plus pings, which are dn42 etiquette, and the peering
+        # page, which exists to be read from here. No router services
+        # otherwise: this is the side facing networks we do not run, and
+        # the page is a static one meant for them.
         chain input_dn42e {
           jump icmp_lan
 
           tcp dport $bgp counter accept comment "router dn42 external BGP"
           udp dport $bfd_control counter accept comment "router dn42 external BFD"
+          tcp dport { $http, $https } counter accept comment "router dn42 external peering page"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop
@@ -364,6 +374,7 @@ in
 
           tcp dport $bgp counter accept comment "router dn42 internal BGP"
           udp dport $bfd_control counter accept comment "router dn42 internal BFD"
+          tcp dport { $http, $https } counter accept comment "router dn42 internal peering page"
 
           # tailscaled on both ends discovers its dn42 address as one more
           # candidate endpoint, so the hosts here probe the router's dn42

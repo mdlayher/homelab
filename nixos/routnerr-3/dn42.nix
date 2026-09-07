@@ -193,6 +193,18 @@ in
       default = "fde4:d0ad:ee0f::1";
       description = "The router's dn42 IPv6 address; also the ns1 glue.";
     };
+    publicKey = lib.mkOption {
+      type = lib.types.str;
+      default = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
+      description = ''
+        Our WireGuard public key, shared by every tunnel. The private half
+        is the secret dn42/wireguard_key in this host's secrets.yaml,
+        generated once with wg genkey; the public half is what we hand to
+        peers, so it is recorded here rather than recovered by decrypting
+        the private key. The peering page (azo-page.nix) publishes it from
+        here.
+      '';
+    };
     lla = lib.mkOption {
       type = lib.types.str;
       default = "fe80::3610";
@@ -431,14 +443,9 @@ in
         }
       ];
 
-    # The tunnels share one WireGuard private key, generated once with
-    # wg genkey and stored under dn42/wireguard_key. The public half is not
-    # a secret; it is what we hand to peers, so keep it here rather than
-    # decrypting the private key to recover it:
-    #
-    #   yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=
-    #
-    # Declared only when a peer exists, since nothing but a tunnel reads it.
+    # The tunnels share one WireGuard private key, whose public half is the
+    # publicKey option above. Declared only when a peer exists, since
+    # nothing but a tunnel reads it.
     sops.secrets."dn42/wireguard_key" = lib.mkIf (cfg.peers != { }) {
       sopsFile = ./secrets.yaml;
       owner = "systemd-network";
