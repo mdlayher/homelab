@@ -412,6 +412,15 @@ in
       lla = "fe80::113";
     };
 
+    # s6v: https://s6v.net, CHI1 node.
+    homelab.dn42.peers.s6v = {
+      asn = 4242423432;
+      publicKey = "4l7IsOWildZ7icY3N5XPrDtnqYmow4MQgAiF49elBwQ=";
+      endpoint = "chi1.dn42.s6v.net:42034";
+      port = 23432;
+      lla = "fe80::3432";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
