@@ -1,6 +1,6 @@
-# Prometheus alerting rules, sorted alphabetically by alert name. Host and
-# job specifics come from the inventory in prometheus.nix rather than being
-# hardcoded here.
+# Prometheus rules: alerting rules sorted alphabetically by alert name, then
+# recording rules. Host and job specifics come from the inventory in
+# prometheus.nix rather than being hardcoded here.
 {
   lib,
   # Hosts which don't run 24/7 and should never raise down alerts.
@@ -302,6 +302,30 @@ in
           expr = ''(time() - node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"}) > 26*60*60 and node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"} > 0'';
           annotations.summary = "{{ $labels.instance }} has not run nixos-upgrade.timer in over 26 hours.";
         }
+        # The case NixOSSystemUnpersisted cannot see: a switch from a tree
+        # with uncommitted changes persists to the profile like any other,
+        # and the machine then runs configuration that exists nowhere but
+        # that working tree. The nightly upgrade rebuilds origin/main at
+        # about 04:00 and replaces it without a word, which is how a change
+        # once ran for half a day and then vanished. The metric comes from
+        # the revision baked into each system; see
+        # nixos/modules/system-metrics.nix.
+        #
+        # The wait is the tradeoff. A test or switch from a dirty tree is how
+        # every change is tried during a working session and must not page,
+        # but a dirty build still running twelve hours later has outlived
+        # the session that made it and is heading for the nightly. A full
+        # day would be quieter still and would almost never fire, since the
+        # nightly resets the metric first; twelve hours leaves time to commit
+        # and merge, or to expect the revert, before it does. Whether the
+        # running commit matches origin/main is a question Prometheus cannot
+        # answer, so this stops at dirtiness.
+        {
+          alert = "NixOSSystemDirty";
+          expr = "nixos_system_dirty == 1";
+          for = "12h";
+          annotations.summary = "{{ $labels.instance }} has run a system built from uncommitted changes for over 12 hours; the nightly upgrade will replace it with main.";
+        }
         # `nixos-rebuild test` activates a system without recording it in the
         # system profile, so a reboot (or the next nightly upgrade) silently
         # reverts it; `boot` records one the machine is not yet running. The
@@ -376,13 +400,19 @@ in
           for = "5m";
           annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has failed.";
         }
+        # Every HTTPS probe target's certificate, whoever issues it: Tailscale
+        # renews its Services certificates itself, and the acme module
+        # renews the ones this flake issues (the router's dn42 peering page,
+        # from Let's Encrypt over DNS-01) from 30 days out, retrying daily.
+        # Both are 90-day certificates, so anything under 14 days means
+        # renewal has been failing for over two weeks, which nothing else
+        # reports. The probes are discovered with the certificates; see
+        # prometheus.nix.
         {
-          alert = "TailscaleTLSCertificateExpiringSoon";
-          # Tailscale renews service certificates automatically well before
-          # expiry, so anything under 7 days means renewal is broken.
-          expr = "probe_ssl_earliest_cert_expiry - time() < 7 * 86400";
+          alert = "TLSCertificateExpiringSoon";
+          expr = "probe_ssl_earliest_cert_expiry - time() < 14 * 86400";
           for = "1h";
-          annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 7 days.";
+          annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 14 days.";
         }
         # The router's two uplinks fail in different ways and neither was
         # visible before this rule.
@@ -487,6 +517,31 @@ in
           alert = "ZreplReplicationStalled";
           expr = "(time() - zrepl_replication_last_successful) > 24*60*60 and zrepl_replication_last_successful > 0";
           annotations.summary = "zrepl job {{ $labels.zrepl_job }} on {{ $labels.instance }} has not replicated successfully in over 24 hours.";
+        }
+      ];
+    }
+    # Recording rules, named level:metric:operations like Loki's
+    # host:log_lines:count1h; see loki.nix.
+    {
+      name = "recording";
+      rules = [
+        # BGP session state changes per hour, as a series to graph and alert
+        # on rather than a query to remember. BIRDBGPSessionDown needs ten
+        # straight minutes down, so a session bouncing every few minutes
+        # never trips it and only shows up here.
+        #
+        # The subquery is load-bearing: the exporter puts a state label
+        # (Established, Active, Idle ... Error: ...) on a BGP protocol's
+        # IPv4 channel, so each state change there starts a new series, each
+        # of them constant for its life, and changes() over the raw metric
+        # counts nothing for IPv4. Collapsing to one series per session and
+        # channel first, at scrape resolution, is what makes the count
+        # right. Not filtered to external peers: the internal dn42i_*
+        # sessions are expected to bounce, and it is the alerts, not the
+        # record, that leave them out.
+        {
+          record = "instance_name_ip_version:bird_protocol_up:changes1h";
+          expr = ''changes((max by (instance, name, ip_version) (bird_protocol_up{proto="BGP"}))[1h:15s])'';
         }
       ];
     }

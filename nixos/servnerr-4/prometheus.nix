@@ -187,15 +187,14 @@ let
   hosts = lib.recursiveUpdate (nixosHosts // containerHosts) otherHosts;
 
   # Blackbox HTTP probe targets: local service health endpoints, plus the
-  # same endpoints through their Tailscale Services TLS frontends, which
-  # also validates the certificates; see the
-  # TailscaleTLSCertificateExpiringSoon alert.
+  # Tailscale Services TLS frontends, which also validates their
+  # certificates; see the TLSCertificateExpiringSoon alert. A new TLS
+  # frontend is a prompt to add its probe, since nothing else would notice
+  # its certificate expiring.
   #
-  # Those four are every certificate this homelab terminates, not a sample:
-  # the only other Tailscale Service is the monitor's consrv, which forwards
-  # plain tcp: with no TLS, and everything else here is probed over plain
-  # HTTP. A fifth TLS frontend appearing anywhere is a prompt to add a probe
-  # for it, since nothing else would notice its certificate expiring.
+  # Certificates a machine in this flake issues through the acme module are
+  # discovered from its configuration instead, so the probe arrives with the
+  # certificate and never before it.
   probes = [
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
@@ -207,7 +206,10 @@ let
     "https://grafana.${tailnetDomain}/api/health"
     "https://loki.${tailnetDomain}/ready"
     "https://prometheus.${tailnetDomain}/-/healthy"
-  ];
+  ]
+  ++ lib.concatMap (
+    system: map (cert: "https://${cert.domain}/") (lib.attrValues system.config.security.acme.certs)
+  ) (lib.attrValues inputs.self.nixosConfigurations);
 
   # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
   # internet reachability, latency, and loss are tracked per address family.

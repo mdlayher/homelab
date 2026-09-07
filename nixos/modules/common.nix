@@ -349,9 +349,12 @@ in
       };
 
       # Record the repository revision which produced this system, so update
-      # notifications can link to the commit. Dirty local builds have no
-      # revision and are announced without a link.
-      configurationRevision = inputs.self.rev or null;
+      # notifications can link to the commit and the textfile collector can
+      # report it (see system-metrics.nix). A tree with uncommitted changes
+      # has no rev; nix offers the commit it was based on with a -dirty
+      # suffix instead, which is what tells a dirty deploy apart from one
+      # the nightly upgrade would reproduce.
+      configurationRevision = inputs.self.rev or inputs.self.dirtyRev or "unknown";
     };
 
     systemd = {
@@ -407,9 +410,13 @@ in
           rev="$("$profile"/sw/bin/nixos-version --json | ${pkgs.jq}/bin/jq -r '.configurationRevision // empty')"
 
           desc="Applied $version (''${current%-link})"
-          if [ -n "$rev" ]; then
-            desc="$desc · [''${rev:0:7}](https://github.com/mdlayher/homelab/commit/$rev)"
-          fi
+          case "$rev" in
+            "" | unknown) ;;
+            # A dirty build is based on a real commit: link that one, and
+            # say the tree had changes on top of it.
+            *-dirty) desc="$desc · [''${rev:0:7}](https://github.com/mdlayher/homelab/commit/''${rev%-dirty}) + uncommitted changes" ;;
+            *) desc="$desc · [''${rev:0:7}](https://github.com/mdlayher/homelab/commit/$rev)" ;;
+          esac
 
           ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
             '{embeds: [{title: $title, description: $desc}]}' \
@@ -418,6 +425,25 @@ in
           echo "$current" > "$state"
         '';
       };
+
+      # Provenance for the nightly upgrade, in the words nixos/deploy uses
+      # for a manual one: the revision running before, and the one it
+      # activated. The lines carry the upgrade syslog identifier, which
+      # nixos/modules/alloy.nix keys into {unit="upgrade"} beside
+      # {unit="deploy"}, so the two histories read together. The case worth
+      # spotting is a finished line whose predecessor was a -dirty
+      # revision: the machine had been running uncommitted configuration,
+      # and the nightly discarded it.
+      services.nixos-upgrade = lib.mkIf isHost (
+        let
+          running = ''"$(/run/current-system/sw/bin/nixos-version --json | ${pkgs.jq}/bin/jq -r '.configurationRevision // "unknown"')"'';
+          log = "${pkgs.util-linux}/bin/logger -t upgrade --";
+        in
+        {
+          preStart = "${log} switch starting: rev=${running}";
+          postStart = "${log} switch finished: rev=${running}";
+        }
+      );
 
       # A stable SSH agent path for sessions which outlive the SSH login that
       # spawned them (e.g. herdr panes): each connection is relayed to the

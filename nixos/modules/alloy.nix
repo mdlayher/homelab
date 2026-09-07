@@ -88,11 +88,14 @@ in
       // logger in an SSH session: journald often cannot read the sender's
       // cgroup before it exits, so their unit is missing as often as not.
       // Key them off the syslog identifier instead, so {unit="deploy"}
-      // finds every one.
+      // finds every one. The nightly upgrade's provenance lines (see
+      // nixos/modules/common.nix) carry the upgrade identifier and get the
+      // same treatment, so {unit=~"deploy|upgrade"} reads both histories
+      // together.
       rule {
         source_labels = ["__journal_syslog_identifier"]
-        regex         = "deploy"
-        replacement   = "deploy"
+        regex         = "(deploy|upgrade)"
+        replacement   = "$1"
         target_label  = "unit"
       }
 
@@ -149,6 +152,21 @@ in
     // these (a few thousand a day, against far larger journals elsewhere).
     loki.process "journal" {
       forward_to = [loki.write.server.receiver]
+
+      // Loki's own journal, which only the server produces: the ruler logs
+      // every evaluation and every query's statistics at info level,
+      // quoting the full query text each time. The rules in
+      // nixos/servnerr-4/loki.nix are content searches ("i/o error", "Out
+      // of memory", ...), so an ad hoc search for the same words matches
+      // hundreds of these lines a day and finds the ruler talking to
+      // itself before anything real. Drop the three chatty callers at
+      // ingest, at info level only, so a query that fails or a ruler that
+      // cannot evaluate still logs at warn or error and lands. The unit
+      // matcher keeps the filters off every other stream.
+      stage.match {
+        selector = "{unit=\"loki.service\"} |= \"level=info\" |~ `caller=(compat|engine|metrics)\\.go`"
+        action   = "drop"
+      }
 
       stage.match {
         selector = "{job=\"systemd-journal\"} |~ \"nft .+ (drop|reject): \""
