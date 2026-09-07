@@ -164,7 +164,7 @@ in
       // cannot evaluate still logs at warn or error and lands. The unit
       // matcher keeps the filters off every other stream.
       stage.match {
-        selector = "{unit=\"loki.service\"} |= \"level=info\" |~ `caller=(compat|engine|metrics)\\.go`"
+        selector = "{unit=\"loki.service\"} |= \"level=info\" |~ \"caller=(compat|engine|metrics).go\""
         action   = "drop"
       }
 
