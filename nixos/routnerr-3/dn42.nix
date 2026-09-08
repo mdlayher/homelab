@@ -437,6 +437,15 @@ in
       lla = "fe80::3432";
     };
 
+    # sidereal: https://sidereal.ca, tor1 node.
+    homelab.dn42.peers.sidereal = {
+      asn = 4242422016;
+      publicKey = "5gReh4Xjyp2spGGabBQVUBVS/IGSrIHPMNaMG5AK2Q0=";
+      endpoint = "tor1.dn42.sidereal.ca:23610";
+      port = 22016;
+      lla = "fe80::2016";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
