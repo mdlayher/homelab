@@ -181,6 +181,32 @@ in
     enable = true;
     recommendedTlsSettings = true;
 
+    # The access log as JSON to the journal, under its own syslog identifier
+    # (no dash: nginx allows only alphanumerics and underscore in a tag) so
+    # it is a separate stream from the error log; alloy counts it into
+    # Prometheus and ships it to Loki, see nixos/modules/alloy.nix. The
+    # default is a file under /var/log/nginx that nothing reads.
+    #
+    # $server_name is the matched server block's configured name, bounded
+    # to the two vhosts ($host is whatever the client sent). proto and
+    # family are the maps in appendHttpConfig, declared later: variables
+    # resolve once the whole config is parsed, but a log_format must
+    # precede the access_log that names it, hence commonHttpConfig. The
+    # client address is kept for forensics, never as a label; Loki keeps
+    # the stream for 30 days, see nixos/servnerr-4/loki.nix.
+    commonHttpConfig = ''
+      log_format access escape=json
+        '{"vhost":"$server_name","status":$status,"method":"$request_method",'
+        '"uri":"$request_uri","proto":"$proto","family":"$tier",'
+        '"tls":"$ssl_protocol","bytes":$body_bytes_sent,"request_time":$request_time,'
+        '"client":"$remote_addr","user_agent":"$http_user_agent","referer":"$http_referer"}';
+      access_log syslog:server=unix:/dev/log,tag=nginx_access,nohostname access;
+
+      # Missing files are 404s in the access log now, not error log lines:
+      # scanners probing the WAN address made thousands a day.
+      log_not_found off;
+    '';
+
     # The tier, from the accepted connection: see the header comment.
     # $server_addr is the address the client connected to, and nginx writes
     # IPv6 without brackets. The regex entries of a map are tried in order,

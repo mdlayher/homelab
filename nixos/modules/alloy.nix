@@ -99,6 +99,19 @@ in
         target_label  = "unit"
       }
 
+      // The router's nginx access log arrives by syslog under its own
+      // identifier (see the router host's azo-page.nix); a stream apart
+      // from the error log's, which the metrics stage below and Loki's
+      // retention select on.
+      // The replacement is not optional: without a capture group the
+      // default "$1" expands to nothing and blanks the unit instead.
+      rule {
+        source_labels = ["__journal_syslog_identifier"]
+        regex         = "nginx_access"
+        replacement   = "nginx_access"
+        target_label  = "unit"
+      }
+
       rule {
         source_labels = ["unit"]
         regex         = "sshd@.+"
@@ -222,6 +235,67 @@ in
             nft_proto     = "",
             nft_spt       = "",
             nft_dpt       = "",
+          }
+        }
+      }
+
+      // The router's nginx access lines, JSON, counted into a Prometheus
+      // counter on this Alloy's own /metrics, which the server already
+      // scrapes. The metrics stage labels its series from the entry's
+      // labels, not the extracted map, so the four bounded fields are
+      // promoted to labels for it and then moved out into structured
+      // metadata with the rest: Loki sees one stream, and no per-request
+      // detail is ever a label.
+      stage.match {
+        selector = "{unit=\"nginx_access\"}"
+
+        stage.json {
+          expressions = {
+            vhost        = "",
+            status       = "",
+            proto        = "",
+            family       = "",
+            method       = "",
+            uri          = "",
+            client       = "",
+            user_agent   = "",
+            request_time = "",
+          }
+        }
+
+        stage.labels {
+          values = {
+            vhost  = "",
+            status = "",
+            proto  = "",
+            family = "",
+          }
+        }
+
+        // An idle series is dropped and returns at zero, a reset that
+        // increase() copes with; a day keeps a quiet page from flickering.
+        stage.metrics {
+          metric.counter {
+            name              = "http_requests_total"
+            prefix            = "nginx_"
+            description       = "HTTP requests served, counted from the nginx access log."
+            match_all         = true
+            action            = "inc"
+            max_idle_duration = "24h"
+          }
+        }
+
+        stage.structured_metadata {
+          values = {
+            vhost        = "",
+            status       = "",
+            proto        = "",
+            family       = "",
+            method       = "",
+            uri          = "",
+            client       = "",
+            user_agent   = "",
+            request_time = "",
           }
         }
       }

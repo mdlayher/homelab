@@ -272,8 +272,23 @@ in
         retention_enabled = true;
         delete_request_store = "filesystem";
       };
-      # A year of history; disk is plentiful.
-      limits_config.retention_period = "365d";
+      limits_config = {
+        # A year of history; disk is plentiful.
+        retention_period = "365d";
+
+        # The router's nginx serves a clearnet page, so its logs hold
+        # visitor addresses from outside the homelab (see the router host's
+        # azo-page.nix); thirty days is enough to answer "did they fetch
+        # the page" and forgets them well inside the year. The counters
+        # alloy derives carry no address and keep Prometheus's retention.
+        retention_stream = [
+          {
+            selector = ''{unit=~"nginx_access|nginx.service"}'';
+            priority = 1;
+            period = "30d";
+          }
+        ];
+      };
 
       analytics.reporting_enabled = false;
     };
