@@ -265,17 +265,30 @@ in
         # Some dn42 networks drop a session whose latency exceeds 100ms, so
         # that is the permissible round trip to any peer, and 80ms leaves
         # margin to act. The metric is the ICMP round trip to a peer's
-        # link-local address across its own tunnel, probed from the router
-        # (see the dn42 peer job in prometheus.nix). A 15 minute average
-        # rather than a `for`, since a path hovering around the line would
-        # keep resetting a timer. A failed probe reports a zero round trip
-        # and only lowers the average; a dead tunnel is the WireGuard and
-        # BIRD rules' to report. External peers only: the job's targets are
-        # the router's dn42 peer set, which has no dn42i-* entries.
+        # link-local address across its own tunnel, probed by the router's
+        # dn42_peer_exporter (see its dn42.nix). A 15 minute average rather
+        # than a `for`, since a path hovering around the line would keep
+        # resetting a timer. A failed probe publishes no round trip at all,
+        # so it neither lowers the average nor fires this; a dead tunnel is
+        # the WireGuard and BIRD rules' to report. External peers only: the
+        # exporter's peers are the router's dn42 peer set, which has no
+        # dn42i-* entries.
         {
           alert = "DN42PeerLatencyHigh";
-          expr = ''avg_over_time(probe_icmp_duration_seconds{job="blackbox_dn42_peer",phase="rtt"}[15m]) > 0.080'';
+          expr = "avg_over_time(dn42_peer_rtt_seconds[15m]) > 0.080";
           annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) has averaged a {{ $value | humanizeDuration }} round trip over 15 minutes, above the 80ms warning line for a 100ms limit.";
+        }
+        # A tunnel that carries small packets but drops full-size ones is
+        # the quiet dn42 failure: the session stays up while large updates
+        # and traffic blackhole. After each answered probe the exporter
+        # sends an echo filling the tunnel's MTU, whose reply is the same
+        # size, so requiring the peer to be up isolates packet size from
+        # plain reachability, and 15 minutes rules out a single lost reply.
+        {
+          alert = "DN42PeerMTUBlackhole";
+          expr = "dn42_peer_up == 1 and dn42_peer_mtu_up == 0";
+          for = "15m";
+          annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) answers small echo requests but not ones filling the tunnel's MTU, so the path drops full-size packets.";
         }
         {
           alert = "FilesystemUsageHigh";

@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  utils,
   ...
 }:
 
@@ -30,6 +31,21 @@ let
 
   # bird protocol names allow underscores but not dashes.
   birdName = name: lib.replaceStrings [ "-" ] [ "_" ] name;
+
+  # Prometheus exporter for the round trip to each peer across its tunnel,
+  # built from source in this repository like nftables_exporter. It sends
+  # ICMPv6 echo requests over a raw socket bound to each tunnel interface,
+  # which is what reaching a link-local address takes: the unprivileged ICMP
+  # datagram socket cannot carry the scope a link-local send requires. The
+  # server scrapes it on port 9631, next to nftables_exporter's wiki
+  # allocation; see nixos/servnerr-4/prometheus.nix.
+  # Go 1.27 from unstable, matching the toolchain used everywhere else.
+  dn42_peer_exporter = (pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; }) {
+    pname = "dn42_peer_exporter";
+    version = "0.1.0";
+    src = ../../go/internal/dn42_peer_exporter;
+    vendorHash = "sha256-Bs0fCNaL5WqI/87XjKYNgI1bjZFyv5/croD4zq1PPe0=";
+  };
 
   # One WireGuard interface per peer: WireGuard routes internally by peer
   # public key, so multiple BGP peers cannot share an interface. All tunnels
@@ -826,40 +842,42 @@ in
       latestHandshakeDelay = true;
     };
 
-    # Latency to each peer across its tunnel: the server's Prometheus
-    # probes every external peer's link-local address through this
-    # instance (see the dn42 peer job in nixos/servnerr-4/prometheus.nix).
-    # It runs here because a link-local address is only reachable from the
-    # interface it lives on, and the tunnels are on this machine; each
-    # target names its tunnel as the address's zone, fe80::x%dn42e-<peer>.
-    #
-    # ip_protocol_fallback stays at its default of true on purpose: that
-    # path resolves with Go's LookupIPAddr, which keeps the zone, while
-    # disabling it switches to LookupIP, which drops it and fails every
-    # send with EINVAL. Preferring IPv6 means the fallback never triggers.
-    services.prometheus.exporters.blackbox = {
-      enable = true;
-      configFile = pkgs.writeText "blackbox.yml" (
-        builtins.toJSON {
-          modules.icmp = {
-            prober = "icmp";
-            icmp.preferred_ip_protocol = "ip6";
-          };
-        }
-      );
-    };
+    # Latency to each external peer across its tunnel, for the
+    # DN42PeerLatencyHigh alert, plus a full-size echo at the tunnel's MTU
+    # (the mtu option above) for DN42PeerMTUBlackhole, since a path that
+    # drops packets of the configured size leaves the session looking
+    # healthy. It runs here because a link-local address is only reachable
+    # from the interface it lives on, and the tunnels are on this machine;
+    # each peer is passed as its link-local address with the tunnel as the
+    # zone, fe80::x%dn42e-<peer>, so a new peer is probed as soon as it is
+    # declared. External peers only: the internal dn42i-* VLANs are not
+    # tunnels and have no peer entry.
+    systemd.services.dn42-peer-exporter = lib.mkIf (cfg.peers != { }) {
+      description = "Prometheus dn42 peer exporter";
+      after = [ "network.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        ExecStart = utils.escapeSystemdExecArgs (
+          [ "${dn42_peer_exporter}/bin/dn42_peer_exporter" ]
+          ++ lib.mapAttrsToList (name: peer: "-peer=${name}=${peer.lla}%dn42e-${name}") cfg.peers
+        );
+        Restart = "always";
 
-    # A link-local destination needs a raw ICMP socket: the exporter module
-    # grants CAP_NET_RAW only as an ambient capability and leaves the
-    # bounding set empty, so the ambient grant is intersected away and the
-    # exporter falls back to an unprivileged ICMP-over-UDP socket. That
-    # socket cannot carry the scope a link-local send requires, and every
-    # probe fails with "sendto: invalid argument"; global targets work
-    # because ping_group_range is open, which is why the other icmp job
-    # never hit this. Restoring the bounding set makes the ambient grant
-    # effective, so the exporter opens the raw socket and the zone in each
-    # target selects the tunnel.
-    systemd.services.prometheus-blackbox-exporter.serviceConfig.CapabilityBoundingSet =
-      lib.mkForce [ "CAP_NET_RAW" ];
+        # The raw ICMPv6 socket needs CAP_NET_RAW, and it must be granted in
+        # both places: systemd intersects the ambient set with the bounding
+        # set, so an ambient grant alone is dropped and the socket fails to
+        # open. Everything else is locked down.
+        DynamicUser = true;
+        AmbientCapabilities = [ "CAP_NET_RAW" ];
+        CapabilityBoundingSet = [ "CAP_NET_RAW" ];
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = true;
+        RestrictNamespaces = true;
+      };
+    };
   };
 }
