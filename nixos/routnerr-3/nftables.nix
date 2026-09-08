@@ -336,6 +336,10 @@ in
           # fall through to the drop below; the page is a few kilobytes,
           # and nothing legitimate opens connections at that rate.
           tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
+          # HTTP/3 for the same page: QUIC over UDP 443. The established
+          # accept above admits the rest of a flow, so only the first
+          # datagram of each new connection is counted against the rate.
+          udp dport $https limit rate 50/second burst 100 packets counter accept comment "router WAN peering page HTTP/3"
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
@@ -353,6 +357,7 @@ in
           tcp dport $bgp counter accept comment "router dn42 external BGP"
           udp dport $bfd_control counter accept comment "router dn42 external BFD"
           tcp dport { $http, $https } counter accept comment "router dn42 external peering page"
+          udp dport $https counter accept comment "router dn42 external peering page HTTP/3"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop
@@ -375,6 +380,7 @@ in
           tcp dport $bgp counter accept comment "router dn42 internal BGP"
           udp dport $bfd_control counter accept comment "router dn42 internal BFD"
           tcp dport { $http, $https } counter accept comment "router dn42 internal peering page"
+          udp dport $https counter accept comment "router dn42 internal peering page HTTP/3"
 
           # tailscaled on both ends discovers its dn42 address as one more
           # candidate endpoint, so the hosts here probe the router's dn42

@@ -67,3 +67,31 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_azo_ipv6" {
   ttl     = 1
   proxied = false
 }
+
+# HTTPS records (RFC 9460) for the names the peering page answers on, so a
+# resolver that asks for them learns HTTP/3 is available before the first
+# connection, instead of after it via the Alt-Svc header the page also
+# sends (see nixos/routnerr-3/azo-page.nix). The azo names are CNAMEs to
+# these three, and a CNAME cannot carry records of its own, so the records
+# live at the targets and reach azo through the alias: the apex for
+# azo.dn42, and the per-family names for its ipv4 and ipv6 variants. A "."
+# target means this same name's addresses, which stay the router's to
+# publish. Clearnet only, like the names themselves; dn42 clients use the
+# router's addresses by number.
+resource "cloudflare_dns_record" "mdlayher_net_https" {
+  for_each = toset([
+    "mdlayher.net",
+    "ipv4.mdlayher.net",
+    "ipv6.mdlayher.net",
+  ])
+
+  zone_id = local.zones["mdlayher.net"]
+  name    = each.key
+  type    = "HTTPS"
+  ttl     = 1
+  data = {
+    priority = 1
+    target   = "."
+    value    = "alpn=\"h3,h2\""
+  }
+}

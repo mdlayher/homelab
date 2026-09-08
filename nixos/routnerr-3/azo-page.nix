@@ -7,11 +7,15 @@
 # way. The page names how the client reached it (IPv4, IPv6, or dn42) from
 # the accepted connection: a connection to one of the router's dn42
 # addresses came through dn42, since those addresses exist nowhere else;
-# anything else is the client's address family.
+# anything else is the client's address family. It also names the HTTP
+# version the request arrived over, and HTTP/3 is enabled so that can be
+# any of the three: the first connection is HTTP/1.1 or HTTP/2 over TCP,
+# and the Alt-Svc header it carries sends the client to QUIC on UDP 443
+# for the next one.
 #
 # v1 is static. The fixed points for a later server to drop into are the
 # certificate under /var/lib/acme/<domain>/, which the acme module renews
-# on its own, and ports 80 and 443 on every address.
+# on its own, and ports 80 and 443, TCP and UDP, on every address.
 {
   config,
   lib,
@@ -35,26 +39,14 @@ let
   # rendered a second time rather than adding a second credential.
   secret = "cloudflare/ddns_token";
 
-  # The vantage tiers, and the HTML file each is served from.
-  tiers = [
-    "ipv4"
-    "ipv6"
-    "dn42"
-  ];
-
-  # The page for one tier: the same page with one line naming the tier. No
-  # scripts and nothing fetched, so each is a single self-contained file.
+  # A single self-contained page: no scripts, nothing fetched. Two facts
+  # about the connection are per request rather than baked in, so the file
+  # names neither and nginx rewrites both on the way out (see the maps and
+  # sub_filter in the vhost): "HTTP" becomes the negotiated version, and
+  # "IP" becomes how the client reached us, IPv4, IPv6, or dn42. The file
+  # reads sensibly on its own.
   page =
-    tier:
     let
-      vantage =
-        {
-          ipv4 = "IPv4";
-          ipv6 = "IPv6";
-          dn42 = "dn42";
-        }
-        .${tier};
-
       peerRows = lib.concatStrings (
         lib.mapAttrsToList (name: peer: ''
           <tr><td>${name}</td><td>AS${toString peer.asn}</td><td>${toString peer.port}</td></tr>
@@ -63,7 +55,7 @@ let
     in
     ''
       <!DOCTYPE html>
-      <html lang="en" class="tier-${tier}">
+      <html lang="en">
       <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -108,7 +100,7 @@ let
       </head>
       <body>
       <h1>AS${toString dn42.asn} <small>azo, dn42</small></h1>
-      <p class="vantage">Connected over ${vantage}.</p>
+      <p class="vantage">Connected via HTTP over IP.</p>
 
       <p>
         The Kalamazoo, Michigan, USA node of a
@@ -152,13 +144,9 @@ let
       </html>
     '';
 
-  # One file per tier; nginx picks by the tier it decided for the
-  # connection.
-  root = pkgs.runCommand "azo-page" { } (
-    lib.concatMapStrings (tier: ''
-      install -Dm444 ${pkgs.writeText "${tier}.html" (page tier)} $out/${tier}.html
-    '') tiers
-  );
+  root = pkgs.runCommand "azo-page" { } ''
+    install -Dm444 ${pkgs.writeText "index.html" page} $out/index.html
+  '';
 in
 {
   sops.templates."acme-cloudflare.env" = {
@@ -209,21 +197,57 @@ in
         "~^1 " dn42;
         "~:" ipv6;
       }
+
+      # The negotiated HTTP version as people write it. nginx reports
+      # HTTP/2 and HTTP/3 with a ".0" minor that nobody else uses; HTTP/1.x
+      # passes through as is.
+      map $server_protocol $proto {
+        default $server_protocol;
+        HTTP/2.0 HTTP/2;
+        HTTP/3.0 HTTP/3;
+      }
+
+      # How the client reached us, cased for display: the tier above with
+      # dn42 left as it is written. Injected into the page the same way the
+      # HTTP version is, so both connection facts are reported alike.
+      map $tier $tier_label {
+        default $tier;
+        ipv4 IPv4;
+        ipv6 IPv6;
+      }
     '';
 
     # One server for every address on 80 and 443: the public name over the
     # clearnet, and the router's dn42 addresses by number from inside dn42,
     # where no public certificate can name the destination, so plain HTTP is
     # left open rather than redirected. The certificate is the one the acme
-    # block above obtains.
+    # block above obtains, and QUIC on UDP 443 uses it too.
     virtualHosts.${domain} = {
       default = true;
       addSSL = true;
       useACMEHost = domain;
 
+      # HTTP/3. quic adds the UDP 443 listeners beside the TCP ones; the
+      # module turns http3 on with it. No client tries QUIC first, so the
+      # header tells one that arrived over TCP where to find it, for a
+      # day. Clients ignore Alt-Svc on plain HTTP, and inside dn42 a
+      # numeric address never matches the certificate anyway, so the
+      # header is harmless where it cannot be followed.
+      quic = true;
+      extraConfig = ''
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+      '';
+
       inherit root;
+      # The version rewrite: the file says "via HTTP over", the response
+      # says which. Once, since the phrase appears once; the type filter
+      # defaults to text/html, which is all that is served here. sub_filter
+      # cannot see through a compressed body, and nothing here compresses
+      # (no gzip, and no gzip_static beside the files).
       locations."= /".extraConfig = ''
-        try_files /$tier.html =404;
+        try_files /index.html =404;
+        sub_filter 'via HTTP over IP' 'via $proto over $tier_label';
+        sub_filter_once on;
       '';
     };
 
