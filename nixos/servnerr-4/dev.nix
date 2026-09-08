@@ -525,6 +525,79 @@ let
     configureFlags = [ "--without-modules" ];
   };
 
+  # The Homa transport (IPPROTO_HOMA sockets) from PlatformLab/HomaModule,
+  # an out-of-tree module with no releases; pinned by revision. Upstream's
+  # main branch targets 6.17, so the kernel the VM runs decides whether the
+  # pinned revision builds; see the patch below.
+  homaSrc = pkgs.fetchFromGitHub {
+    owner = "PlatformLab";
+    repo = "HomaModule";
+    rev = "d8914b8a57aa48c19a2c8130484961585bcbe53c";
+    hash = "sha256-G57zMy1thg8WdKlWGx+WmncRwIHtrav6TEgXqwAcEGQ=";
+  };
+  homaVersion = "0-unstable-2026-09-01";
+
+  # homa.ko built out of tree against the given kernel via kbuild directly:
+  # the repo's own Makefile does the same with KDIR, and its install target
+  # runs modules_install into the running system.
+  homaModules =
+    kernel:
+    pkgs.stdenv.mkDerivation {
+      pname = "homa-modules";
+      version = homaVersion;
+      src = homaSrc;
+
+      nativeBuildInputs = kernel.moduleBuildDependencies;
+
+      # 6.18 dropped the address length out-parameter from a protocol's
+      # recvmsg in favor of the handler setting msg_namelen itself, the
+      # same change quicModules patches around above. Drop this when
+      # upstream moves past 6.17.
+      patches = [ ./homa-recvmsg-6.18.patch ];
+
+      # See quicModules for why kernel.makeFlags is not used.
+      buildPhase = ''
+        runHook preBuild
+        make -j"$NIX_BUILD_CORES" \
+          -C ${kernel.dev}/lib/modules/${kernel.modDirVersion}/build \
+          M=$PWD modules
+        runHook postBuild
+      '';
+
+      installPhase = ''
+        runHook preInstall
+        install -Dm444 homa.ko \
+          $out/lib/modules/${kernel.modDirVersion}/extra/homa.ko
+        runHook postInstall
+      '';
+    };
+
+  # The userspace tools from HomaModule's util/ used for interop testing
+  # against a Go implementation: cp_node, a client/server load generator
+  # speaking Homa RPCs, and homa_prio, which tunes the module's priority
+  # cutoffs from its metrics. There is no library: the uapi is homa.h, whose
+  # structures the Go side mirrors, and which is installed alongside for
+  # checking that mirror from C.
+  homaUtils = pkgs.stdenv.mkDerivation {
+    pname = "homa-utils";
+    version = homaVersion;
+    src = homaSrc;
+
+    makeFlags = [
+      "-C"
+      "util"
+      "cp_node"
+      "homa_prio"
+    ];
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 -t $out/bin util/cp_node util/homa_prio
+      install -Dm444 -t $out/include homa.h
+      runHook postInstall
+    '';
+  };
+
   # FRR configuration for frrdev. The dev0 prefixes are inventory secrets, so
   # this is rendered by sops-nix on the host and bind mounted into the
   # container. Any external AS on dev0 may peer (dynamic neighbors); the
@@ -658,6 +731,41 @@ in
                 PKG_CONFIG_PATH = "/run/current-system/sw/lib/pkgconfig";
                 ACLOCAL_PATH = "/run/current-system/sw/share/aclocal";
               };
+            };
+          }
+        )
+      ]
+      { };
+
+  # Homa transport development against the Homa kernel module, the same
+  # arrangement as quicdev for the same reasons: an out-of-tree module kept
+  # out of the server's kernel. Reached from linuxdev as homadev.local.
+  #
+  # Homa is its own IP protocol (146), neither TCP nor UDP, so loopback
+  # tests inside the guest need no firewall change. Traffic between the
+  # guest and linuxdev would need `ip protocol 146` accepted on both ends,
+  # which is not done here.
+  microvm.vms.homadev =
+    devVM "homadev" "13" "02:00:00:00:00:13" "04a5bd69-5acd-45a1-8586-a65f8e9dea2e"
+      [
+        (
+          { config, ... }:
+          {
+            boot = {
+              # As quicdev: the machines' kernel, free to diverge.
+              kernelPackages = pkgs.linuxPackages_6_18;
+              extraModulePackages = [ (homaModules config.boot.kernelPackages.kernel) ];
+              kernelModules = [ "homa" ];
+            };
+
+            # Only the module's own tools; the Go side needs no C library.
+            # homa_prio is a daemon upstream recommends for performance, run
+            # by hand when a test wants it. homa.h is found by ad hoc gcc
+            # through the profile, as on quicdev.
+            environment = {
+              systemPackages = [ homaUtils ];
+              pathsToLink = [ "/include" ];
+              variables.CPATH = "/run/current-system/sw/include";
             };
           }
         )

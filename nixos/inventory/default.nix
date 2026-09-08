@@ -102,6 +102,7 @@
       trusted = false;
       hosts = {
         "frrdev.dev".ipv6 = "token";
+        "homadev.dev".ipv6 = "token";
         "linuxdev.dev".ipv6 = "token";
         "quicdev.dev".ipv6 = "token";
       };

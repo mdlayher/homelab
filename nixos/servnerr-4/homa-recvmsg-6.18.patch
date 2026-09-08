@@ -1,0 +1,48 @@
+diff --git a/homa_impl.h b/homa_impl.h
+index a8f5c32..2d4f8c4 100644
+--- a/homa_impl.h
++++ b/homa_impl.h
+@@ -673,7 +673,7 @@ int      homa_net_start(struct net *net);
+ __poll_t homa_poll(struct file *file, struct socket *sock,
+ 		   struct poll_table_struct *wait);
+ int      homa_recvmsg(struct sock *sk, struct msghdr *msg, size_t len,
+-		      int flags, int *addr_len);
++		      int flags);
+ void     homa_request_retrans(struct homa_rpc *rpc);
+ int      homa_resend_data(struct homa_rpc *rpc, int start, int end);
+ void     homa_resend_pkt(struct sk_buff *skb, struct homa_rpc *rpc,
+diff --git a/homa_plumbing.c b/homa_plumbing.c
+index 3dd4b79..86e5eb9 100644
+--- a/homa_plumbing.c
++++ b/homa_plumbing.c
+@@ -1342,12 +1342,10 @@ error_dont_end_rpc:
+  * @msg:         Controlling information for the receive.
+  * @len:         Total bytes of space available in msg->msg_iov; not used.
+  * @flags:       Flags from system call; only MSG_DONTWAIT is used.
+- * @addr_len:    Store the length of the sender address here
+  * Return:       The length of the message on success, otherwise a negative
+  *               errno. Sets hsk->error_msg on errors.
+  */
+-int homa_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int flags,
+-		 int *addr_len)
++int homa_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int flags)
+ {
+ 	struct homa_sock *hsk = homa_sk(sk);
+ 	struct homa_recvmsg_args control;
+@@ -1476,14 +1474,14 @@ int homa_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int flags,
+ 		in6->sin6_family = AF_INET6;
+ 		in6->sin6_port = htons(rpc->dport);
+ 		in6->sin6_addr = rpc->peer->addr;
+-		*addr_len = sizeof(*in6);
++		msg->msg_namelen = sizeof(*in6);
+ 	} else {
+ 		struct sockaddr_in *in4 = msg->msg_name;
+ 
+ 		in4->sin_family = AF_INET;
+ 		in4->sin_port = htons(rpc->dport);
+ 		in4->sin_addr.s_addr = ipv6_to_ipv4(rpc->peer->addr);
+-		*addr_len = sizeof(*in4);
++		msg->msg_namelen = sizeof(*in4);
+ 	}
+ 
+ 	if (result < 0) {
