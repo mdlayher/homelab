@@ -205,9 +205,9 @@ let
 
   # Initial herdr configuration, copied into the user's config directory on
   # first boot only so that later edits win; keep it mirroring the live
-  # config inside the container. Updates come from nixpkgs, not herdr's
-  # self-updater; panes run login shells so PATH matches SSH logins. Toasts
-  # stay in-app (outer-terminal delivery proved noisy), and worktree
+  # config inside the container. Updates come from the llm-agents flake, not
+  # herdr's self-updater; panes run login shells so PATH matches SSH logins.
+  # Toasts stay in-app (outer-terminal delivery proved noisy), and worktree
   # checkouts open under ~/src, where each repo is a directory of one
   # worktree per branch (~/src/<repo>/main plus feature siblings).
   herdrConfig = pkgs.writeText "herdr-config.toml" ''
@@ -938,7 +938,7 @@ in
                   "dev-repos.service"
                 ];
                 path = [
-                  pkgs.unstable.herdr
+                  pkgs.unstable.llm-agents.herdr
                   pkgs.fish
                   pkgs.bashInteractive
                   # The server shells out to git for worktree create/remove.
@@ -958,8 +958,8 @@ in
                 serviceConfig = {
                   User = user;
                   WorkingDirectory = src;
-                  ExecStart = "${pkgs.unstable.herdr}/bin/herdr server";
-                  ExecStop = "${pkgs.unstable.herdr}/bin/herdr server stop";
+                  ExecStart = "${pkgs.unstable.llm-agents.herdr}/bin/herdr server";
+                  ExecStop = "${pkgs.unstable.llm-agents.herdr}/bin/herdr server stop";
                   Restart = "always";
                   RestartSec = "5s";
                 };
@@ -967,14 +967,14 @@ in
             };
 
             environment.systemPackages = with pkgs; [
-              # Claude Code and its sandbox dependencies come from unstable to track
-              # releases closely.
-              unstable.claude-code
+              # Claude Code and its sandbox dependencies come from the
+              # llm-agents flake, which packages each release within a day.
+              unstable.llm-agents.claude-code
 
               # Persistent terminal workspace for agents; see herdr-server
               # below. Its Claude Code integration hook needs python3 to
               # report agent session IDs, and exits silently without it.
-              unstable.herdr
+              unstable.llm-agents.herdr
               python3
 
               # Go toolchain and tooling; go-tools provides staticcheck. Takes

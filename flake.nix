@@ -9,6 +9,14 @@
     # update faster than the stable release.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
+    # Coding agents and their tooling, packaged within a day of each release
+    # for those nixpkgs lags behind; built against the unstable channel above
+    # and exposed as pkgs.unstable.llm-agents, see nixos/modules/unstable.nix.
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
     # Secrets management via sops and age.
     sops-nix = {
       url = "github:Mic92/sops-nix";
