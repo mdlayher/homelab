@@ -5,7 +5,8 @@
   lib,
   # Hosts which don't run 24/7 and should never raise down alerts.
   excludedHosts,
-  # Jobs whose targets are too unreliable to raise down alerts.
+  # Jobs whose targets are too unreliable to raise down alerts, or whose
+  # down state other rules already report on better thresholds.
   excludedJobs,
   # Hosts acting as routers, whose CoreRAD default route comes from the WAN.
   routers,
@@ -260,6 +261,21 @@ in
           alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
           expr = ''changes(corerad_monitor_messages_received_total{message="router advertisement"}[30m]) == 0'';
           annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 30 minutes.";
+        }
+        # Some dn42 networks drop a session whose latency exceeds 100ms, so
+        # that is the permissible round trip to any peer, and 80ms leaves
+        # margin to act. The metric is the ICMP round trip to a peer's
+        # link-local address across its own tunnel, probed from the router
+        # (see the dn42 peer job in prometheus.nix). A 15 minute average
+        # rather than a `for`, since a path hovering around the line would
+        # keep resetting a timer. A failed probe reports a zero round trip
+        # and only lowers the average; a dead tunnel is the WireGuard and
+        # BIRD rules' to report. External peers only: the job's targets are
+        # the router's dn42 peer set, which has no dn42i-* entries.
+        {
+          alert = "DN42PeerLatencyHigh";
+          expr = ''avg_over_time(probe_icmp_duration_seconds{job="blackbox_dn42_peer",phase="rtt"}[15m]) > 0.080'';
+          annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) has averaged a {{ $value | humanizeDuration }} round trip over 15 minutes, above the 80ms warning line for a 100ms limit.";
         }
         {
           alert = "FilesystemUsageHigh";

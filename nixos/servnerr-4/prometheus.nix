@@ -49,7 +49,8 @@ let
   # Scrape jobs discovered from a NixOS configuration: each enabled Prometheus
   # exporter, plus the metrics endpoints of services which expose their own.
   # Hosts running sshd get an SSH banner probe, and hosts sending router
-  # advertisements are routers for alerting purposes.
+  # advertisements are routers for alerting purposes. Hosts terminating
+  # external dn42 tunnels carry their peers, for the latency probes below.
   discover =
     cfg:
     let
@@ -92,6 +93,10 @@ let
         };
       ssh = cfg.services.openssh.enable;
       router = cfg.services.corerad.enable;
+      # The option exists only on hosts that import the router's dn42.nix,
+      # and it holds the external peers alone: the internal dn42i-* VLANs
+      # are declared separately and are not tunnels.
+      dn42Peers = cfg.homelab.dn42.peers or { };
     };
 
   # Every NixOS machine in this flake, by host name.
@@ -245,6 +250,23 @@ let
   # just process liveness.
   dnsServers = map (name: "${qualify name}:53") roles.router;
 
+  # Blackbox ICMP probe targets for dn42 peer latency: every external peer
+  # of every host terminating dn42 tunnels, probed through that host's own
+  # blackbox exporter, since a peer's link-local address is reachable only
+  # from its tunnel interface. The target names the tunnel as the address's
+  # zone, fe80::x%dn42e-<peer>. Discovered with the peers, so a new peer is
+  # probed as soon as it is configured; see the router's dn42.nix and the
+  # DN42PeerLatencyHigh alert.
+  dn42PeerJob = "blackbox_dn42_peer";
+  dn42PeerProbes = lib.concatMap (
+    host:
+    lib.mapAttrsToList (name: peer: {
+      peer = name;
+      target = "${peer.lla}%dn42e-${name}";
+      prober = "${qualify host}:${toString hosts.${host}.jobs.blackbox.port}";
+    }) hosts.${host}.dn42Peers
+  ) (hostsWhere (h: h.dn42Peers or { } != { }));
+
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
@@ -290,7 +312,13 @@ let
   alerts = import ./prometheus-alerts.nix {
     inherit lib;
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
-    excludedJobs = [ snmpCyberpowerJob ];
+    # The dn42 peer probes measure round trips, not liveness: the BIRD and
+    # WireGuard rules already report a dead session or tunnel on thresholds
+    # suited to dn42 peers, which flap without notice.
+    excludedJobs = [
+      snmpCyberpowerJob
+      dn42PeerJob
+    ];
     routers = map qualify (hostsWhere (h: h.router or false));
     # Every host expected to ship logs to Loki: the machines themselves plus
     # their containers and microvms, whose journals the hosting machine
@@ -555,6 +583,37 @@ in
         }
       )
       (blackboxScrape "dns_lan" "1m" dnsServers)
+      # dn42 peer latency, probed from the host holding each peer's tunnel.
+      # The prober's address is a temporary label per target rather than a
+      # job setting, so hosts can differ; the instance is the probe target
+      # as in the other blackbox jobs.
+      {
+        job_name = dn42PeerJob;
+        scrape_interval = "15s";
+        metrics_path = "/probe";
+        params.module = [ "icmp" ];
+        static_configs = map (p: {
+          targets = [ p.target ];
+          labels = {
+            inherit (p) peer;
+            __tmp_prober = p.prober;
+          };
+        }) dn42PeerProbes;
+        relabel_configs = [
+          {
+            source_labels = [ "__address__" ];
+            target_label = "__param_target";
+          }
+          {
+            source_labels = [ "__param_target" ];
+            target_label = "instance";
+          }
+          {
+            source_labels = [ "__tmp_prober" ];
+            target_label = "__address__";
+          }
+        ];
+      }
       # The SSH banner check produces a fair amount of log spam, so only scrape
       # it once a minute.
       (blackboxScrape "ssh_banner" "1m" sshTargets)

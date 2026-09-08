@@ -825,5 +825,41 @@ in
       # than subtracting the router's clock from the server's.
       latestHandshakeDelay = true;
     };
+
+    # Latency to each peer across its tunnel: the server's Prometheus
+    # probes every external peer's link-local address through this
+    # instance (see the dn42 peer job in nixos/servnerr-4/prometheus.nix).
+    # It runs here because a link-local address is only reachable from the
+    # interface it lives on, and the tunnels are on this machine; each
+    # target names its tunnel as the address's zone, fe80::x%dn42e-<peer>.
+    #
+    # ip_protocol_fallback stays at its default of true on purpose: that
+    # path resolves with Go's LookupIPAddr, which keeps the zone, while
+    # disabling it switches to LookupIP, which drops it and fails every
+    # send with EINVAL. Preferring IPv6 means the fallback never triggers.
+    services.prometheus.exporters.blackbox = {
+      enable = true;
+      configFile = pkgs.writeText "blackbox.yml" (
+        builtins.toJSON {
+          modules.icmp = {
+            prober = "icmp";
+            icmp.preferred_ip_protocol = "ip6";
+          };
+        }
+      );
+    };
+
+    # A link-local destination needs a raw ICMP socket: the exporter module
+    # grants CAP_NET_RAW only as an ambient capability and leaves the
+    # bounding set empty, so the ambient grant is intersected away and the
+    # exporter falls back to an unprivileged ICMP-over-UDP socket. That
+    # socket cannot carry the scope a link-local send requires, and every
+    # probe fails with "sendto: invalid argument"; global targets work
+    # because ping_group_range is open, which is why the other icmp job
+    # never hit this. Restoring the bounding set makes the ambient grant
+    # effective, so the exporter opens the raw socket and the zone in each
+    # target selects the tunnel.
+    systemd.services.prometheus-blackbox-exporter.serviceConfig.CapabilityBoundingSet =
+      lib.mkForce [ "CAP_NET_RAW" ];
   };
 }
