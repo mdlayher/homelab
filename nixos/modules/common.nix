@@ -375,8 +375,10 @@ in
         # a root-owned ~/.ssh on first boot.
         ++ [ "d ${home}/.ssh 0700 ${user} users -" ];
 
-      # Announce every newly activated system generation to Discord, so
-      # nightly upgrades and manual deploys are visible without logging in.
+      # Announce every newly activated system generation to the Discord ops
+      # channel, so nightly upgrades and manual deploys are visible without
+      # logging in. Alerts go to a separate channel; see the server's
+      # prometheus.nix.
       # The path unit fires whenever the system profile is switched; the
       # service also runs at boot to catch generations first activated by a
       # reboot, and the state file suppresses repeat announcements.
@@ -421,7 +423,7 @@ in
           ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
             '{embeds: [{title: $title, description: $desc}]}' \
             | ${pkgs.curl}/bin/curl -sfS -m 10 -H 'Content-Type: application/json' -d @- \
-                "$(cat ${config.sops.secrets."discord/webhook_url".path})"
+                "$(cat ${config.sops.secrets."discord/ops_webhook_url".path})"
           echo "$current" > "$state"
         '';
       };
@@ -493,7 +495,7 @@ in
         })
         // {
           # Webhook for update-notify above.
-          "discord/webhook_url".sopsFile = ../secrets/common.yaml;
+          "discord/ops_webhook_url".sopsFile = ../secrets/common.yaml;
         };
     };
 

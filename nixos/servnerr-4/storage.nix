@@ -241,17 +241,15 @@ in
   # file mechanism. Render the module-generated zed.rc plus the secret webhook
   # into a sops template and point /etc/zfs/zed.d/zed.rc at it.
   #
-  # ZED has no Discord backend, but Discord webhooks accept Slack-format
-  # payloads at "<webhook_url>/slack", which is what the stored URL includes.
-  sops = {
-    secrets."zfs/discord_webhook_url" = { };
-    templates."zed.rc" = {
-      content = ''
-        ${config.environment.etc."zfs/zed.d/zed.rc".text}
-        ZED_SLACK_WEBHOOK_URL="${config.sops.placeholder."zfs/discord_webhook_url"}"
-      '';
-      restartUnits = [ "zfs-zed.service" ];
-    };
+  # Pool events are alerts, so they share the Discord alerts channel webhook
+  # with alertmanager (declared in prometheus.nix). ZED has no Discord backend,
+  # but Discord webhooks accept Slack-format payloads at "<webhook_url>/slack".
+  sops.templates."zed.rc" = {
+    content = ''
+      ${config.environment.etc."zfs/zed.d/zed.rc".text}
+      ZED_SLACK_WEBHOOK_URL="${config.sops.placeholder."discord/alerts_webhook_url"}/slack"
+    '';
+    restartUnits = [ "zfs-zed.service" ];
   };
   environment.etc."zfs/zed.d/zed.rc".source = lib.mkForce config.sops.templates."zed.rc".path;
 }
