@@ -47,11 +47,15 @@ let
     ]
     ++ iidKeys name host;
 
-  allKeys = lib.concatLists (
-    lib.mapAttrsToList (
-      name: subnet: subnetKeys name ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
-    ) inventory.subnets
-  );
+  allKeys =
+    lib.concatLists (
+      lib.mapAttrsToList (
+        name: subnet: subnetKeys name ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
+      ) inventory.subnets
+    )
+    # The private DNS zones the router answers itself, space-separated; see
+    # the router host's coredns.nix.
+    ++ [ "private_zones" ];
 
   mkHost =
     ifi: name: host:
@@ -115,7 +119,8 @@ in
       ulaPrefix, the site's ULA /48 in CIDR notation as plain data.
       Interfaces carry the router's addresses and prefixes plus their
       hosts; hosts carry mac, ipv4, and ula/gua (null when the host has no
-      known IPv6 address).
+      known IPv6 address). privateZones is the space-separated private DNS
+      zone list.
     '';
   };
 
@@ -130,6 +135,7 @@ in
       inherit interfaces;
       # Plain data, not a placeholder; see the note in the inventory.
       inherit (inventory) ulaPrefix;
+      privateZones = placeholder "private_zones";
       hosts = lib.listToAttrs (
         lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)
       );

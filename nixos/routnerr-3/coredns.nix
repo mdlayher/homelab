@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inventory = config.homelab.inventory;
@@ -43,17 +48,41 @@ let
   ) (lib.attrsToList inventory.services);
 
   credential = "hosts";
+
+  # Private zones: answered NXDOMAIN here, never forwarded or logged. The
+  # names are an inventory secret, so the block is rendered rather than
+  # written into the Corefile, and carries neither log nor prometheus, which
+  # both label their output with the zone. The file plugin rather than
+  # template for the same reason: template's match counter is zone-labelled
+  # and served by the root zone's endpoint regardless. The zone file uses
+  # relative names only, so one file serves every zone without naming any.
+  privateZonesCredential = "private-zones";
+  privateZonesFile = ''
+    ${inventory.privateZones} {
+      file ${pkgs.writeText "coredns-private.zone" ''
+        $TTL 3600
+        @ IN SOA ns hostmaster 1 7200 3600 1209600 3600
+      ''}
+    }
+  '';
 in
 {
-  sops.templates."coredns-hosts" = {
-    content = hostsFile + servicesFile;
-    restartUnits = [ "coredns.service" ];
+  sops.templates = {
+    "coredns-hosts" = {
+      content = hostsFile + servicesFile;
+      restartUnits = [ "coredns.service" ];
+    };
+    "coredns-private-zones" = {
+      content = privateZonesFile;
+      restartUnits = [ "coredns.service" ];
+    };
   };
 
-  # coredns runs with DynamicUser, so hand it the hosts file via systemd
+  # coredns runs with DynamicUser, so hand it the rendered files via systemd
   # credentials.
   systemd.services.coredns.serviceConfig.LoadCredential = [
     "${credential}:${config.sops.templates."coredns-hosts".path}"
+    "${privateZonesCredential}:${config.sops.templates."coredns-private-zones".path}"
   ];
 
   services.coredns = {
@@ -93,6 +122,9 @@ in
       ${inventory.domain} {
         hosts /run/credentials/coredns.service/${credential}
       }
+
+      # Private zones, a server block rendered from the inventory secrets.
+      import /run/credentials/coredns.service/${privateZonesCredential}
     '';
   };
 }
