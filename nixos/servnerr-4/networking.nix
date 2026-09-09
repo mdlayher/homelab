@@ -2,6 +2,27 @@
 
 let
   inventory = config.homelab.inventory;
+
+  # The host's address on the internal dn42 VLAN (see the bridge below),
+  # making it a dn42 host like the container. dn42 registry space matching
+  # the router's dn42.nix and the container's dev.nix: the next IPv4 after
+  # the container's .83, with the same number as interface identifier (::10
+  # is the container's here). Static, as the bridge takes no advertisements,
+  # and dn42 space only, never a default. Our own /48 is routed explicitly:
+  # mgmt0 learns it from the router's advertisements at metric 1024, and
+  # dn42 traffic must take the VLAN.
+  dn42 = {
+    addr4 = "172.20.140.84/28";
+    addr6 = "fde4:d0ad:ee0f:1::84/64";
+    router4 = "172.20.140.82";
+    router6 = "fde4:d0ad:ee0f:1::1";
+    routes4 = [ "172.20.0.0/14" ];
+    routes6 = [
+      "fde4:d0ad:ee0f::/48"
+      "fd00::/8"
+    ];
+    metric = 512;
+  };
 in
 {
   networking = {
@@ -19,6 +40,20 @@ in
     # only the ports below.
     firewall = {
       trustedInterfaces = [ "ts0" ];
+
+      # The ports below open on every interface, the dn42 VLAN included
+      # (see dn42 above). dn42 at large never reaches them: the router's
+      # forward_dn42i chain (its nftables.nix) admits only ICMP and
+      # established flows. The VLAN itself it never sees: the development
+      # container is on-link there, so this drop guards against a neighbor
+      # and backs the router. Nothing new inbound, like the router's WANs;
+      # the host's own flows return as established, and neighbor discovery
+      # is untracked. iptables backend: extraInputRules is a no-op and
+      # extraCommands run after the accepts, so insert at the head. The
+      # bridge holds the address, not its VLAN port.
+      extraCommands = ''
+        ip46tables -I nixos-fw 1 -i br-dn42i-dev0 -m conntrack --ctstate NEW,INVALID -j DROP
+      '';
       allowedTCPPorts = [
         # Loki push, for the other machines' alloy and for LAN devices which
         # cannot join the tailnet, via loki.svc; see the router's coredns.nix.
@@ -55,9 +90,10 @@ in
     };
 
     # 10GbE bridge carrying the tagged container VLANs below. The host
-    # itself is addressed only on mgmt0: a second address on the same LAN
-    # makes ingress asymmetric, and the firewall's reverse path filter
-    # drops such traffic.
+    # itself is addressed only on mgmt0 among the site LANs: a second
+    # address on the same LAN makes ingress asymmetric, and the firewall's
+    # reverse path filter drops such traffic. Its dn42 address below is
+    # another realm with routes of its own, so the two never overlap.
     netdevs."11-br0".netdevConfig = {
       Name = "br0";
       Kind = "bridge";
@@ -98,8 +134,8 @@ in
     # dn42 interface (see dev.nix). Named as the router names it, and with
     # the VLAN id from its dn42.nix, which owns this VLAN the way the
     # inventory owns the site LANs: its addressing is dn42 registry space,
-    # so nothing about it is an inventory secret. Like dev0, the host has
-    # no presence on it.
+    # so nothing about it is an inventory secret. Unlike dev0, the host is
+    # present on it, with an address on the bridge (see dn42 above).
     netdevs."13-dn42i-dev0" = {
       netdevConfig = {
         Name = "dn42i-dev0";
@@ -132,10 +168,27 @@ in
       };
       linkConfig.RequiredForOnline = "no";
     };
+    # The host's dn42 address (see dn42 above), with link-local for
+    # neighbor discovery. Not required for online: services wait on mgmt0.
     networks."13-br-dn42i-dev0" = {
       matchConfig.Name = "br-dn42i-dev0";
+      address = [
+        dn42.addr4
+        dn42.addr6
+      ];
+      routes =
+        map (net: {
+          Destination = net;
+          Gateway = dn42.router4;
+          Metric = dn42.metric;
+        }) dn42.routes4
+        ++ map (net: {
+          Destination = net;
+          Gateway = dn42.router6;
+          Metric = dn42.metric;
+        }) dn42.routes6;
       networkConfig = {
-        LinkLocalAddressing = "no";
+        LinkLocalAddressing = "ipv6";
         IPv6AcceptRA = false;
         ConfigureWithoutCarrier = true;
       };
