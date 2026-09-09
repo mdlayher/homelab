@@ -322,6 +322,28 @@ in
           counter name input_reject reject
         }
 
+        # The router services the internet may reach, for input_wan and
+        # for the restricted LANs, which may reach the router's public
+        # addresses like anyone else. Anything not accepted here falls back
+        # to the calling chain.
+        chain services_wan {
+          udp dport $tailscale_router counter accept comment "router WAN Tailscale"
+          udp dport $tailscale_relay counter accept comment "router WAN peer relay"
+          ${lib.optionalString (dn42Ports != [ ])
+            ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
+          }
+
+          # The dn42 peering page (see azo-page.nix), the only TCP service
+          # the router offers the internet. New connections beyond the rate
+          # fall through to the caller's drop; the page is a few kilobytes,
+          # and nothing legitimate opens connections at that rate.
+          tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
+          # HTTP/3 for the same page: QUIC over UDP 443. The established
+          # accept in input admits the rest of a flow, so only the first
+          # datagram of each new connection is counted against the rate.
+          udp dport $https limit rate 50/second burst 100 packets counter accept comment "router WAN peering page HTTP/3"
+        }
+
         # From the internet: silently drop everything not explicitly allowed.
         chain input_wan {
           jump icmp_wan
@@ -333,21 +355,7 @@ in
             nd-neighbor-advert,
           } counter accept
 
-          udp dport $tailscale_router counter accept comment "router WAN Tailscale"
-          udp dport $tailscale_relay counter accept comment "router WAN peer relay"
-          ${lib.optionalString (dn42Ports != [ ])
-            ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
-          }
-
-          # The dn42 peering page (see azo-page.nix), the only TCP service
-          # the router offers the internet. New connections beyond the rate
-          # fall through to the drop below; the page is a few kilobytes,
-          # and nothing legitimate opens connections at that rate.
-          tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
-          # HTTP/3 for the same page: QUIC over UDP 443. The established
-          # accept above admits the rest of a flow, so only the first
-          # datagram of each new connection is counted against the rate.
-          udp dport $https limit rate 50/second burst 100 packets counter accept comment "router WAN peering page HTTP/3"
+          jump services_wan
 
           ip6 daddr fe80::/64 udp dport $dhcp6_client udp sport $dhcp6_server counter accept comment "router WAN DHCPv6"
 
@@ -413,6 +421,13 @@ in
           # Handle some services early due to need for multicast/broadcast.
           udp dport $dhcp4_server udp sport $dhcp4_client counter accept comment "router restricted DHCPv4"
           iifname iot0 udp dport $mdns udp sport $mdns counter accept comment "router iot0 mDNS reflection"
+
+          # The router's public services are public from here too: a
+          # packet for any of the router's own addresses, its WAN ones
+          # included, may reach what the internet may. The WAN addresses
+          # are not inventory data, so the test is the address being local
+          # rather than a set.
+          fib daddr type local jump services_wan
 
           # Drop traffic trying to cross VLANs or broadcast.
           iifname . ip daddr != @router_v4 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv4 VLAN"
