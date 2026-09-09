@@ -181,6 +181,9 @@ let
   '';
 in
 {
+  # The dn42 CA is trusted here, as on every machine with a dn42 interface.
+  imports = [ ../modules/dn42-ca.nix ];
+
   options.homelab.dn42 = {
     # Registered dn42 resources, maintained by MDLAYHER-MNT in the dn42
     # registry. These are public registry data, not secrets.

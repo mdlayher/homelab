@@ -169,6 +169,7 @@ in
         nmap
         nmon
         nvme-cli
+        openssl
         pciutils
         pkg-config
         pv

@@ -789,7 +789,12 @@ in
             # split to the router's mgmt0 address, which dev0 cannot reach.
             # The dummy needs CAP_NET_ADMIN (granted with enableTun) and the
             # host's dummy driver, which the host's own tsdns0 keeps loaded.
-            imports = [ ../modules/tailscale.nix ];
+            imports = [
+              ../modules/tailscale.nix
+              # A machine with a dn42 interface trusts the dn42 CA; see
+              # the dn42 link below.
+              ../modules/dn42-ca.nix
+            ];
 
             # Tailscale SSH takes over port 22 for tailnet peers: logins are
             # authenticated by tailnet identity under the policy's ssh rules
