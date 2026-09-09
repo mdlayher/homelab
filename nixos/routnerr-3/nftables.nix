@@ -106,6 +106,14 @@ let
   dn42 = config.homelab.dn42;
   dn42Ports = lib.mapAttrsToList (_: peer: toString peer.port) dn42.peers;
 
+  # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
+  # the router's dn42 addresses (see coredns.nix), never recursion, so this
+  # opens no resolver to dn42. Repeated per chain, as both sides may ask.
+  dn42Dns = side: ''
+    ip daddr ${dn42.addr4} meta l4proto { tcp, udp } th dport $dns counter accept comment "router dn42 ${side} DNS"
+    ip6 daddr ${dn42.addr6} meta l4proto { tcp, udp } th dport $dns counter accept comment "router dn42 ${side} DNS"
+  '';
+
   # LAN interface names for per-LAN WAN accounting, including the tailnet
   # interface so exit node traffic is counted.
   lans = map (ifi: ifi.name or ifi) (trusted ++ restricted);
@@ -347,17 +355,25 @@ in
         }
 
         # From external dn42 peers to the router itself: BGP and BFD
-        # sessions, plus pings, which are dn42 etiquette, and the peering
-        # page, which exists to be read from here. No router services
-        # otherwise: this is the side facing networks we do not run, and
-        # the page is a static one meant for them.
+        # sessions, pings and traceroutes (dn42 etiquette), the peering
+        # page, and the nameserver for our domain. No router services
+        # otherwise: this side faces networks we do not run.
         chain input_dn42e {
           jump icmp_lan
 
           tcp dport $bgp counter accept comment "router dn42 external BGP"
           udp dport $bfd_control counter accept comment "router dn42 external BFD"
+          ${dn42Dns "external"}
           tcp dport { $http, $https } counter accept comment "router dn42 external peering page"
           udp dport $https counter accept comment "router dn42 external peering page HTTP/3"
+
+          # UDP traceroute to the router: probes climb from port 33434 and
+          # the trace completes on a port unreachable from the destination
+          # (time exceeded for earlier hops comes from forwarding). Nothing
+          # listens in the range, but it sits inside the ephemeral ports,
+          # where an accepted probe could reach whatever socket is bound
+          # there; a reject states the intended reply instead.
+          udp dport 33434-33534 counter reject with icmpx type port-unreachable comment "router dn42 external traceroute"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop
@@ -366,9 +382,8 @@ in
         # From our own dn42-addressed hosts to the router itself. The same
         # policy as the external side today, and deliberately a separate
         # chain: this is where router services for dn42 clients belong.
-        # TODO: open $dns here once CoreDNS serves mdlayher.dn42 on the
-        # ns1 glue addresses; the shared recursive resolver must not be
-        # exposed to dn42, and only this side is ours to serve.
+        # Only the authoritative nameserver so far; a resolver for this side
+        # would be its own service, never the shared one.
         chain input_dn42i {
           jump icmp_lan
 
@@ -379,6 +394,7 @@ in
 
           tcp dport $bgp counter accept comment "router dn42 internal BGP"
           udp dport $bfd_control counter accept comment "router dn42 internal BFD"
+          ${dn42Dns "internal"}
           tcp dport { $http, $https } counter accept comment "router dn42 internal peering page"
           udp dport $https counter accept comment "router dn42 internal peering page HTTP/3"
 

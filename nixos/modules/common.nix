@@ -162,7 +162,6 @@ in
         magic-wormhole
         minicom
         mkpasswd
-        mtr
         nano
         ndisc6
         nixfmt
@@ -256,6 +255,10 @@ in
         '';
       };
       nano.enable = true;
+      # mtr's sender needs raw sockets for its UDP and TCP modes (ICMP works
+      # from an unprivileged socket): the module wraps mtr-packet with
+      # cap_net_raw and installs the package, so it leaves the list above.
+      mtr.enable = true;
     };
 
     # sudo authenticates against the forwarded SSH agent's FIDO2 keys in

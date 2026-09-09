@@ -212,6 +212,15 @@ in
       default = "fde4:d0ad:ee0f::1";
       description = "The router's dn42 IPv6 address; also the ns1 glue.";
     };
+    domain = lib.mkOption {
+      type = lib.types.str;
+      default = "mdlayher.dn42";
+      description = ''
+        Our registered dn42 domain, delegated with the reverse space of
+        net4 and net6 to ns1 beneath it, glue addr4 and addr6; served by
+        coredns.nix. The apex resolves to the router, i.e. the peering page.
+      '';
+    };
     publicKey = lib.mkOption {
       type = lib.types.str;
       default = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
@@ -491,8 +500,8 @@ in
 
     systemd.network = {
       # A dummy interface holds the router's own dn42 addresses: stable for
-      # BGP router id, loopback-style services (future ns1.mdlayher.dn42),
-      # and as the source of router-originated dn42 traffic.
+      # BGP router id, loopback-style services (ns1, see coredns.nix), and
+      # as the source of router-originated dn42 traffic.
       netdevs = {
         "50-dn42" = {
           netdevConfig = {
