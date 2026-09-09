@@ -98,6 +98,9 @@ in
     time.timeZone = "America/Detroit";
 
     environment = {
+      # bat shares delta's syntax theme (see the gitconfig).
+      variables.BAT_THEME = "Monokai Extended Bright";
+
       # Git configuration from nixos/dotfiles as the system-wide defaults;
       # per-user configuration still overrides.
       etc = {
@@ -131,6 +134,7 @@ in
         age
         atuin
         bashInteractive
+        bat
         bc
         bind
         bintools-unwrapped
@@ -138,6 +142,7 @@ in
         byobu
         comma
         curl
+        delta
         dmidecode
         ethtool
         fastfetch

@@ -10,7 +10,12 @@
 	id = "! git config user.name \"$(git config user.$1.name)\"; git config user.email \"$(git config user.$1.email)\"; git config user.signingkey \"$(git config user.$1.signingkey)\"; git config http.cookiefile \"$(git config user.$1.httpCookiefile)\"; :"
 [core]
 	excludesfile = /etc/gitignore
-	pager = less --tabs 4
+	pager = delta
+[delta]
+	side-by-side = true
+	navigate = true
+	tabs = 4
+	syntax-theme = Monokai Extended Bright
 [diff]
 	algorithm = patience
 [user "personal"]
