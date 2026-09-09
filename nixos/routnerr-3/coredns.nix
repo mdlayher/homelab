@@ -49,6 +49,21 @@ let
 
   credential = "hosts";
 
+  # PTRs for the LANs: the inventory hosts and the router's address on
+  # every LAN, one name per address. Rendered apart from the hosts file,
+  # whose aliases would each become a PTR too.
+  ptrFile =
+    lib.concatMapStrings (
+      host:
+      "${host.ipv4} ${host.name}.${inventory.domain}\n"
+      + lib.optionalString (host.ula != null) "${host.ula} ${host.name}.${inventory.domain}\n"
+    ) (lib.attrValues inventory.hosts)
+    + lib.concatMapStrings (ifi: ''
+      ${ifi.ipv4} ${config.networking.hostName}.${inventory.domain}
+      ${ifi.ula} ${config.networking.hostName}.${inventory.domain}
+    '') (lib.attrValues inventory.interfaces);
+  ptrCredential = "ptr";
+
   # Private zones: answered NXDOMAIN here, never forwarded or logged. The
   # names are an inventory secret, so the block is rendered rather than
   # written into the Corefile, and carries neither log nor prometheus, which
@@ -59,11 +74,15 @@ let
   privateZonesCredential = "private-zones";
   privateZonesFile = ''
     ${inventory.privateZones} {
-      file ${pkgs.writeText "coredns-private.zone" ''
-        $TTL 3600
-        @ IN SOA ns hostmaster 1 7200 3600 1209600 3600
-      ''}
+      file ${emptyZone}
     }
+  '';
+
+  # A zone with nothing in it: every name beneath is NXDOMAIN, and the
+  # relative names let one file serve any zone.
+  emptyZone = pkgs.writeText "coredns-empty.zone" ''
+    $TTL 3600
+    @ IN SOA ns hostmaster 1 7200 3600 1209600 3600
   '';
 
   # dn42 (see dn42.nix): the registry delegates our domain and reverse
@@ -102,10 +121,30 @@ let
   # An address's owner name in that zone: its remaining nibbles.
   ptr6 = addr: lib.concatStringsSep "." (lib.reverseList (lib.drop net6Nibbles (nibbles6 addr)));
 
-  # The apex is the peering page, and the router's addresses reverse to
-  # azo, the site's name as in azo.dn42.mdlayher.net, with the same
-  # single-family names beneath it. Owner names are relative to each
-  # file's zone, so the shared SOA and NS are written out in full.
+  # The site's own reverse zones, answered locally: the ULA /48 from the
+  # inventory, and all of RFC 1918 except dn42's 172.20.0.0/14, since the
+  # LAN prefixes are secrets and no outside resolver can answer for that
+  # space anyway (RFC 6303).
+  ula = lib.splitString "/" inventory.ulaPrefix;
+  ulaRev = "${
+    lib.concatStringsSep "." (
+      lib.reverseList (lib.take (lib.toInt (lib.last ula) / 4) (nibbles6 (lib.head ula)))
+    )
+  }.ip6.arpa";
+  siteRev = lib.concatStringsSep " " (
+    [
+      ulaRev
+      "10.in-addr.arpa"
+      "168.192.in-addr.arpa"
+    ]
+    ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 19 ++ lib.range 24 31)
+  );
+
+  # The apex is the peering page, and the router's addresses, on the
+  # dummy and on the internal VLAN, reverse to azo, the site's name as in
+  # azo.dn42.mdlayher.net, with the same single-family names beneath it.
+  # Owner names are relative to each file's zone, so the shared SOA and
+  # NS are written out in full.
   dn42Soa = ''
     $TTL 3600
     @ IN SOA ns1.${dn42.domain}. hostmaster.${dn42.domain}. 1 7200 3600 1209600 3600
@@ -125,10 +164,12 @@ let
   dn42Rev4Zone = pkgs.writeText "coredns-dn42-rev4.zone" ''
     ${dn42Soa}
     ${ptr4 dn42.addr4} IN PTR azo.${dn42.domain}.
+    ${ptr4 dn42.dev0.addr4} IN PTR azo.${dn42.domain}.
   '';
   dn42Rev6Zone = pkgs.writeText "coredns-dn42-rev6.zone" ''
     ${dn42Soa}
     ${ptr6 dn42.addr6} IN PTR azo.${dn42.domain}.
+    ${ptr6 dn42.dev0.addr6} IN PTR azo.${dn42.domain}.
   '';
 in
 {
@@ -141,6 +182,10 @@ in
       content = privateZonesFile;
       restartUnits = [ "coredns.service" ];
     };
+    "coredns-ptr" = {
+      content = ptrFile;
+      restartUnits = [ "coredns.service" ];
+    };
   };
 
   systemd.services.coredns = {
@@ -149,6 +194,7 @@ in
     serviceConfig.LoadCredential = [
       "${credential}:${config.sops.templates."coredns-hosts".path}"
       "${privateZonesCredential}:${config.sops.templates."coredns-private-zones".path}"
+      "${ptrCredential}:${config.sops.templates."coredns-ptr".path}"
     ];
 
     # The dn42 zones bind the dn42 dummy's addresses, which networkd adds
@@ -219,8 +265,23 @@ in
       # it, both of which resolve through here; any other LAN client that
       # asks gets a name it cannot reach, since the LANs are not routed
       # into dn42.
-      dn42 {
+      # The reverse zones go the same way: 172.20.0.0/14 is dn42's alone,
+      # but fd00::/8 is every ULA, so the site's own /48 is answered by the
+      # block after this one, whose zones are more specific and win.
+      dn42 20.172.in-addr.arpa 21.172.in-addr.arpa 22.172.in-addr.arpa 23.172.in-addr.arpa d.f.ip6.arpa {
         forward . 172.20.0.53 172.23.0.53 fd42:d42:d42:54::1 fd42:d42:d42:53::1
+      }
+
+      # The site's reverse zones, never forwarded: PTRs from the inventory,
+      # and NXDOMAIN from the empty zone for the rest (file runs after
+      # hosts). The hosts plugin keeps only names inside its zones, hence
+      # the domain beside the reverse zones; forward queries never arrive
+      # here, the block is keyed on the reverse zones alone.
+      ${siteRev} {
+        hosts /run/credentials/coredns.service/${ptrCredential} ${inventory.domain} ${siteRev} {
+          fallthrough
+        }
+        file ${emptyZone}
       }
     '';
   };
