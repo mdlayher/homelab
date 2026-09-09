@@ -95,12 +95,11 @@ in
     firewall.enable = false;
   };
 
-  # Use resolved for local DNS lookups, querying through CoreDNS.
+  # Use resolved for local DNS lookups, querying through CoreDNS, which also
+  # serves the tailnet domain (see coredns.nix).
   services.resolved = {
     enable = true;
     settings.Resolve = {
-      # The tailnet domain is routed to tailscaled via the tsdns0 dummy from
-      # modules/tailscale.nix, not through CoreDNS.
       Domains = [ inventory.domain ];
       DNS = [
         "::1"

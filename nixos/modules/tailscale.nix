@@ -1,10 +1,5 @@
 # Tailscale client configuration shared by every machine.
-{
-  inventory,
-  lib,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 
 {
   services.tailscale = {
@@ -43,38 +38,9 @@
     environment.TS_DISABLE_PORTMAPPER = "1";
   };
 
-  # With accept-dns off, tailnet names would not resolve at all: the tailnet
-  # domain is not in public DNS and CoreDNS has no zone for it. Route exactly
-  # that domain (and nothing else: ~ means route-only, no search) to this
-  # machine's own tailscaled resolver, which answers for every peer and
-  # service in its netmap — e.g. the server probing its own
-  # https://<service>.<tailnet> endpoints.
-  #
-  # The config rides a dummy interface because tailscaled owns ts0's resolved
-  # state and reasserts it empty (accept-dns is off) seconds after every
-  # start, wiping anything placed there — ordering cannot win that race.
-  # Which link carries the config is irrelevant to packet flow: routes to the
-  # virtual resolver address are tailscaled's either way.
-  systemd.network = {
-    netdevs."20-tsdns0" = {
-      netdevConfig = {
-        Name = "tsdns0";
-        Kind = "dummy";
-      };
-    };
-    networks."20-tsdns0" = {
-      matchConfig.Name = "tsdns0";
-      networkConfig = {
-        # resolved only activates a DNS scope on links with a global address
-        # (link-local-only links sit in "degraded" and are skipped). The
-        # documentation address never leaves the host: the dummy is NOARP
-        # and nothing routes to it.
-        Address = "192.0.2.53/32";
-        DNS = "100.100.100.100";
-        Domains = "~${inventory.tailnetDomain}";
-        LLMNR = false;
-      };
-      linkConfig.RequiredForOnline = false;
-    };
-  };
+  # With accept-dns off, tailnet names resolve through the router like every
+  # other name: its CoreDNS forwards the tailnet domain to its own tailscaled
+  # (see the router's coredns.nix). Tailnet names on this machine therefore
+  # depend on the router's CoreDNS and tailscaled, not on this machine's own
+  # tailscaled; the router is already its resolver for everything else.
 }

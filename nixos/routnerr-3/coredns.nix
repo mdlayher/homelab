@@ -251,6 +251,20 @@ in
         hosts /run/credentials/coredns.service/${credential}
       }
 
+      # The tailnet: its names exist only in each node's tailscaled, which
+      # answers at the virtual resolver address for the peers and services
+      # in its netmap. Forwarded to the router's own, so every machine
+      # resolves tailnet names through here (see modules/tailscale.nix).
+      # The router is tagged infra and router, so its netmap holds every
+      # device and service the policy grants the fleet
+      # (terraform/tailscale/policy.hujson). No cache: tailscaled answers
+      # from memory with a 5 s TTL. Counted like the root zone, so
+      # CoreDNSUpstreamFailing notices the router's tailscaled going quiet.
+      ${inventory.tailnetDomain} {
+        prometheus :9153
+        forward . 100.100.100.100
+      }
+
       # Private zones, a server block rendered from the inventory secrets.
       import /run/credentials/coredns.service/${privateZonesCredential}
 
