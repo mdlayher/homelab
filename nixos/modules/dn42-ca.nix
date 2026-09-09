@@ -1,7 +1,7 @@
 # Trust for the dn42 certificate authority, on machines with a dn42
-# interface: the router, which peers, and the development container, which
-# sits on the internal dn42 VLAN. Imported by those hosts' own dn42
-# configuration rather than by flake.nix, since a machine with no way into
+# interface: the router, which peers, and the server and development
+# container, which sit on the internal dn42 VLAN. Imported by those hosts'
+# own dn42 configuration rather than by flake.nix, since a machine with no way into
 # dn42 has no use for its CA. The root is constrained by its own name
 # constraints to *.dn42 and dn42's address space, so trusting it says
 # nothing about any other name.
