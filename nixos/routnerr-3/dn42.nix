@@ -494,6 +494,15 @@ in
       lla = "fe80::207";
     };
 
+    # franta: https://dn42.franta.us, us1 node.
+    homelab.dn42.peers.franta = {
+      asn = 4242421033;
+      publicKey = "us1lbET55c+MYkpirulp4BHrLU7rIKqmutcIX9NZ8hY=";
+      endpoint = "us1.dn42.franta.us:23610";
+      port = 21033;
+      lla = "fe80::1033:3610";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
