@@ -458,6 +458,15 @@ in
       lla = "fe80::2016";
     };
 
+    # pixia: buf1 node.
+    homelab.dn42.peers.pixia = {
+      asn = 4242423729;
+      publicKey = "T7o/Vna0wfNAMe8H2VputJdi55V0w+SDZrQvTlLgvjs=";
+      endpoint = "buf1.pixiainfra.pixia.eu.org:23610";
+      port = 23729;
+      lla = "fe80::3729";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
