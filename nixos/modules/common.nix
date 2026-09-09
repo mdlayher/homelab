@@ -400,6 +400,15 @@ in
         };
         # An embed rather than plain content: Discord only renders markdown
         # links inside embeds, and the commit link is the point.
+        #
+        # The path unit fires in the middle of activation, when a changed
+        # resolver (CoreDNS on the router) has been stopped and not yet
+        # started, so the first attempt can fail to resolve the webhook's
+        # host. curl retries cover that gap: resolver errors are not retried
+        # by default, hence --retry-all-errors, and the body is read from
+        # stdin once up front, so a retry resends it. Without this the unit
+        # fails, the switch reports a failed unit, and the announcement
+        # waits for the restart a minute later.
         script = ''
           current="$(readlink /nix/var/nix/profiles/system)"
           state=/var/lib/update-notify/last
@@ -422,7 +431,8 @@ in
 
           ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
             '{embeds: [{title: $title, description: $desc}]}' \
-            | ${pkgs.curl}/bin/curl -sfS -m 10 -H 'Content-Type: application/json' -d @- \
+            | ${pkgs.curl}/bin/curl -sfS -m 10 --retry 5 --retry-delay 2 --retry-all-errors \
+                -H 'Content-Type: application/json' -d @- \
                 "$(cat ${config.sops.secrets."discord/ops_webhook_url".path})"
           echo "$current" > "$state"
         '';
