@@ -51,10 +51,10 @@ let
   # public key, so multiple BGP peers cannot share an interface. All tunnels
   # share one private key, each with its own listen port.
   peerNetdevs = lib.mapAttrs' (
-    name: peer:
-    lib.nameValuePair "50-dn42e-${name}" {
+    _: peer:
+    lib.nameValuePair "50-${peer.interface}" {
       netdevConfig = {
-        Name = "dn42e-${name}";
+        Name = peer.interface;
         Kind = "wireguard";
         MTUBytes = peer.mtu;
       };
@@ -80,9 +80,9 @@ let
   ) cfg.peers;
 
   peerNetworks = lib.mapAttrs' (
-    name: _:
-    lib.nameValuePair "50-dn42e-${name}" {
-      matchConfig.Name = "dn42e-${name}";
+    _: peer:
+    lib.nameValuePair "50-${peer.interface}" {
+      matchConfig.Name = peer.interface;
       # Sessions run over static link-local addresses; see the lla option
       # for the choice of ours.
       address = [ "${cfg.lla}/64" ];
@@ -103,9 +103,9 @@ let
   # One MP-BGP session per peer over IPv6 link-local, IPv4 carried with
   # extended next hop. BFD is opt-in per peer.
   peerProtocols = lib.concatStrings (
-    lib.mapAttrsToList (name: peer: ''
-      protocol bgp ${birdName "dn42e_${name}"} from dnpeers {
-        neighbor ${peer.lla} % 'dn42e-${name}' as ${toString peer.asn};
+    lib.mapAttrsToList (_: peer: ''
+      protocol bgp ${birdName peer.interface} from dnpeers {
+        neighbor ${peer.lla} % '${peer.interface}' as ${toString peer.asn};
         ${lib.optionalString peer.bfd "bfd on;"}
       }
     '') cfg.peers
@@ -247,63 +247,79 @@ in
     peers = lib.mkOption {
       default = { };
       description = ''
-        dn42 peers, keyed by a short name used in the interface name
-        dn42e-<name>. All tunnels share the WireGuard private key secret
-        dn42/wireguard_key in this host's secrets.yaml.
+        dn42 peers, keyed by the name shown on the peering page and in
+        the peer exporter's metrics, and by default the interface name
+        dn42e-<name> (see the interface option). All tunnels share the
+        WireGuard private key secret dn42/wireguard_key in this host's
+        secrets.yaml.
       '';
       type = lib.types.attrsOf (
-        lib.types.submodule {
-          options = {
-            asn = lib.mkOption {
-              type = lib.types.int;
-              description = "The peer's autonomous system number.";
+        lib.types.submodule (
+          { name, ... }:
+          {
+            options = {
+              interface = lib.mkOption {
+                type = lib.types.str;
+                default = "dn42e-${name}";
+                defaultText = lib.literalExpression ''"dn42e-''${name}"'';
+                description = ''
+                  The tunnel's interface name, and after dash-to-underscore
+                  the bird protocol name. Override when the peer's name will
+                  not fit: an ifname is at most 15 characters, and the
+                  dn42e- prefix is what nftables and bird match on.
+                '';
+              };
+              asn = lib.mkOption {
+                type = lib.types.int;
+                description = "The peer's autonomous system number.";
+              };
+              publicKey = lib.mkOption {
+                type = lib.types.str;
+                description = "The peer's WireGuard public key.";
+              };
+              endpoint = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = ''
+                  The peer's WireGuard host:port endpoint, or null when the
+                  peer always initiates to us instead.
+                '';
+              };
+              port = lib.mkOption {
+                type = lib.types.port;
+                description = ''
+                  Our WireGuard listen port for this peer, opened on the WANs
+                  by nftables.nix. The common dn42 convention is 2xxxx where
+                  xxxx is the last four digits of the peer's ASN, e.g.
+                  AS4242420253 listens on 20253; see
+                  https://dn42.burble.com/network/peering/ for an example of
+                  a network documenting it. Pick something else on a last-
+                  four-digits collision (the assertion below will object).
+                '';
+              };
+              lla = lib.mkOption {
+                type = lib.types.str;
+                description = "The peer's link-local address on the tunnel.";
+              };
+              bfd = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = "Run BFD with this peer.";
+              };
+              mtu = lib.mkOption {
+                type = lib.types.int;
+                default = 1420;
+                description = ''
+                  Tunnel MTU. The wiki's guidance is path MTU minus 80 for
+                  WireGuard overhead (https://dn42.dev/howto/wireguard);
+                  1420 assumes a clean 1500 path and matches what most dn42
+                  peers run. Lower it per peer when path MTU discovery says
+                  so.
+                '';
+              };
             };
-            publicKey = lib.mkOption {
-              type = lib.types.str;
-              description = "The peer's WireGuard public key.";
-            };
-            endpoint = lib.mkOption {
-              type = lib.types.nullOr lib.types.str;
-              default = null;
-              description = ''
-                The peer's WireGuard host:port endpoint, or null when the
-                peer always initiates to us instead.
-              '';
-            };
-            port = lib.mkOption {
-              type = lib.types.port;
-              description = ''
-                Our WireGuard listen port for this peer, opened on the WANs
-                by nftables.nix. The common dn42 convention is 2xxxx where
-                xxxx is the last four digits of the peer's ASN, e.g.
-                AS4242420253 listens on 20253; see
-                https://dn42.burble.com/network/peering/ for an example of
-                a network documenting it. Pick something else on a last-
-                four-digits collision (the assertion below will object).
-              '';
-            };
-            lla = lib.mkOption {
-              type = lib.types.str;
-              description = "The peer's link-local address on the tunnel.";
-            };
-            bfd = lib.mkOption {
-              type = lib.types.bool;
-              default = false;
-              description = "Run BFD with this peer.";
-            };
-            mtu = lib.mkOption {
-              type = lib.types.int;
-              default = 1420;
-              description = ''
-                Tunnel MTU. The wiki's guidance is path MTU minus 80 for
-                WireGuard overhead (https://dn42.dev/howto/wireguard);
-                1420 assumes a clean 1500 path and matches what most dn42
-                peers run. Lower it per peer when path MTU discovery says
-                so.
-              '';
-            };
-          };
-        }
+          }
+        )
       );
     };
 
@@ -467,6 +483,17 @@ in
       lla = "fe80::3729";
     };
 
+    # routedbits: https://routedbits.com, chi1 node. The full name is one
+    # character too long for an ifname.
+    homelab.dn42.peers.routedbits = {
+      interface = "dn42e-routedbit";
+      asn = 4242420207;
+      publicKey = "89xUzROs3l/KNPLxDTJz4l5aEH1cmLb22bNgChhRiQo=";
+      endpoint = "router.chi1.routedbits.com:53610";
+      port = 20207;
+      lla = "fe80::207";
+    };
+
     # dn42i-dev0, carrying the session with wipbgpd in the development
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
@@ -485,8 +512,10 @@ in
       in
       [
         {
-          assertion = lib.all (name: lib.stringLength name <= 9) (lib.attrNames cfg.peers);
-          message = "dn42 peer names must be <= 9 characters to fit ifname dn42e-<name>";
+          assertion = lib.all (
+            peer: lib.hasPrefix "dn42e-" peer.interface && lib.stringLength peer.interface <= 15
+          ) (lib.attrValues cfg.peers);
+          message = "dn42 peer interfaces must be dn42e-<name> and at most 15 characters";
         }
         {
           assertion = lib.unique ports == ports;
@@ -889,7 +918,7 @@ in
       serviceConfig = {
         ExecStart = utils.escapeSystemdExecArgs (
           [ "${dn42_peer_exporter}/bin/dn42_peer_exporter" ]
-          ++ lib.mapAttrsToList (name: peer: "-peer=${name}=${peer.lla}%dn42e-${name}") cfg.peers
+          ++ lib.mapAttrsToList (name: peer: "-peer=${name}=${peer.lla}%${peer.interface}") cfg.peers
         );
         Restart = "always";
 
