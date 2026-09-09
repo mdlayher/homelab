@@ -125,6 +125,18 @@ in
 
       # Private zones, a server block rendered from the inventory secrets.
       import /run/credentials/coredns.service/${privateZonesCredential}
+
+      # dn42: the forwarders in the root block are on the internet, where
+      # no dn42 name exists. Names under dn42 go to its anycast resolvers
+      # instead, a0 and a3 of recursive-servers.dn42, which the router
+      # reaches from its own dn42 address. For the machines with a dn42
+      # interface, the router itself and the development container behind
+      # it, both of which resolve through here; any other LAN client that
+      # asks gets a name it cannot reach, since the LANs are not routed
+      # into dn42.
+      dn42 {
+        forward . 172.20.0.53 172.23.0.53 fd42:d42:d42:54::1 fd42:d42:d42:53::1
+      }
     '';
   };
 }
