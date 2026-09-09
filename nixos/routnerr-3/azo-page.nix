@@ -17,6 +17,11 @@
 # certificate from the dn42 CA for anyone who has installed its root, and
 # plain HTTP for everyone else.
 #
+# The page has two renderings, chosen by the Accept header: HTML for a
+# client that asks for it, which every browser does, and plain text for
+# the rest, so curl and an agent get something readable in a terminal
+# with the peering block ready to paste.
+#
 # v1 is static. The fixed points for a later server to drop into are the
 # certificates under /var/lib/acme/<domain>/, which the acme module renews
 # on its own, and ports 80 and 443, TCP and UDP, on every address.
@@ -68,12 +73,17 @@ let
     locations."/".return = "301 $scheme://${prefix}${dn42.domain}$request_uri";
   };
 
-  # A single self-contained page: no scripts, nothing fetched. Two facts
-  # about the connection are per request rather than baked in, so the file
-  # names neither and nginx rewrites both on the way out (see the maps and
-  # sub_filter in the vhost): "HTTP" becomes the negotiated version, and
-  # "IP" the client's address family, prefixed with dn42 when the client
-  # came through it. The file reads sensibly on its own.
+  # The tunnel MTU we run, the one fact on the page that is not an option
+  # in dn42.nix (each peer sets its own there); shared by both renderings.
+  mtu = 1420;
+
+  # The HTML rendering: a single self-contained page, no scripts, nothing
+  # fetched. Two facts about the connection are per request rather than
+  # baked in, so the file names neither and nginx rewrites both on the way
+  # out (see the maps and sub_filter in the vhost): "HTTP" becomes the
+  # negotiated version, and "IP" the client's address family, prefixed
+  # with dn42 when the client came through it. The file reads sensibly on
+  # its own. The text rendering below carries the same phrase.
   page =
     let
       peerRows = lib.concatStrings (
@@ -148,7 +158,7 @@ let
         </td></tr>
         <tr><th>Port</th><td><code>2xxxx</code>, the last four digits of your ASN</td></tr>
         <tr><th>WireGuard key</th><td><code>${dn42.publicKey}</code></td></tr>
-        <tr><th>MTU</th><td><code>1420</code></td></tr>
+        <tr><th>MTU</th><td><code>${toString mtu}</code></td></tr>
         <tr><th>Link-local</th><td><code>${dn42.lla}</code></td></tr>
         <tr><th>Session</th><td>MP-BGP over link-local, IPv4 via extended next hop; BFD on request</td></tr>
         <tr><th>Addresses</th><td><code>${dn42.addr4}</code>, <code>${dn42.addr6}</code></td></tr>
@@ -175,19 +185,101 @@ let
       </html>
     '';
 
+  # The plain text rendering, the same facts from the same options, laid
+  # out for a terminal: wrapped short of 80 columns, no markup, the
+  # peering block as label-value lines that paste cleanly. The one line
+  # nginx rewrites is the same as in the HTML.
+  text =
+    let
+      # A cell padded to the column width, and a labelled row: the label
+      # as the first cell, each further line of a multi-line value
+      # indented past it.
+      col = 16;
+      pad = n: lib.strings.replicate n " ";
+      cell = s: s + pad (col - lib.stringLength s);
+      row =
+        label: lines:
+        lib.concatStringsSep "\n" (
+          lib.imap0 (i: line: (if i == 0 then cell label else pad col) + line) (lib.toList lines)
+        );
+
+      peerRows = lib.concatStrings (
+        lib.mapAttrsToList (
+          name: peer: row name (cell "AS${toString peer.asn}" + toString peer.port) + "\n"
+        ) dn42.peers
+      );
+    in
+    ''
+      AS${toString dn42.asn} azo, dn42
+      Connected via HTTP over IP.
+
+      The Kalamazoo, Michigan, USA node of a dn42 <https://dn42.dev> network
+      run by mdlayher <https://mdlayher.com>. Open to peering: send your ASN,
+      WireGuard public key, endpoint, and link-local address.
+
+      Peering
+
+      ${row "ASN" "AS${toString dn42.asn}"}
+      ${row "Endpoint" [
+        domain
+        "ipv4.${domain} to pin IPv4"
+        "ipv6.${domain} to pin IPv6"
+      ]}
+      ${row "Port" "2xxxx, the last four digits of your ASN"}
+      ${row "WireGuard key" dn42.publicKey}
+      ${row "MTU" (toString mtu)}
+      ${row "Link-local" dn42.lla}
+      ${row "Session" [
+        "MP-BGP over link-local, IPv4 via extended next hop;"
+        "BFD on request"
+      ]}
+      ${row "Addresses" "${dn42.addr4}, ${dn42.addr6}"}
+      ${row "Prefixes" "${dn42.net4}, ${dn42.net6}"}
+      ${row "Routing" "BIRD 2 with ROA validation"}
+
+      Peers
+
+      ${row "Peer" (cell "ASN" + "Our port")}
+      ${peerRows}
+      Inside dn42
+
+      https://${dn42.domain}/ with the dn42 CA root installed
+      http://${dn42.domain}/
+      http://ipv4.${dn42.domain}/ to pin IPv4
+      http://ipv6.${dn42.domain}/ to pin IPv6
+    '';
+
   root = pkgs.runCommand "azo-page" { } ''
     install -Dm444 ${pkgs.writeText "index.html" page} $out/index.html
+    install -Dm444 ${pkgs.writeText "index.txt" text} $out/index.txt
   '';
 
-  # The version rewrite: the file says "via HTTP over", the response says
-  # which. Once, since the phrase appears once; the type filter defaults
-  # to text/html, which is all that is served here. sub_filter cannot see
+  # The HTTP/3 advertisement, for the page vhosts. add_header does not
+  # merge across levels: a location that adds a header of its own loses
+  # every one the server block set, so the page location repeats this.
+  altSvc = ''
+    add_header Alt-Svc 'h3=":443"; ma=86400';
+  '';
+
+  # The page location, shared by both names the page has. Which rendering
+  # is the Accept map's choice ($azo_index, in appendHttpConfig); nginx
+  # types the response by the file's extension, and charset names the
+  # encoding on both, since text/plain carries no meta tag. The version
+  # rewrite: the file says "via HTTP over", the response says which.
+  # Once, since the phrase appears once; the type filter defaults to
+  # text/html alone, so the text rendering is added. sub_filter cannot see
   # through a compressed body, and nothing here compresses (no gzip, and
-  # no gzip_static beside the files). Shared by both names the page has.
+  # no gzip_static beside the files). Vary tells a cache that the body
+  # depends on Accept, so it never hands the text to a browser or the
+  # HTML to curl.
   locations."= /".extraConfig = ''
-    try_files /index.html =404;
+    try_files /$azo_index =404;
+    charset utf-8;
     sub_filter 'via HTTP over IP' 'via $vantage';
     sub_filter_once on;
+    sub_filter_types text/plain;
+    add_header Vary Accept;
+    ${altSvc}
   '';
 in
 {
@@ -301,6 +393,16 @@ in
         default "$proto over $family";
         1 "$proto over dn42 $family";
       }
+
+      # Which rendering of the page a request gets: the HTML when it asks
+      # for that type, which every browser does, and the text otherwise,
+      # which covers curl's default of */*, an agent that sends no Accept,
+      # and one that asks for text/plain. The whole token: the XHTML type
+      # a browser lists beside it also contains "html".
+      map $http_accept $azo_index {
+        default index.txt;
+        "~*text/html" index.html;
+      }
     '';
 
     # One server for every address on 80 and 443: the public name over the
@@ -320,9 +422,7 @@ in
       # numeric address never matches the certificate anyway, so the
       # header is harmless where it cannot be followed.
       quic = true;
-      extraConfig = ''
-        add_header Alt-Svc 'h3=":443"; ma=86400';
-      '';
+      extraConfig = altSvc;
 
       inherit root locations;
     };
@@ -339,9 +439,7 @@ in
       enableACME = true;
       serverAliases = map (prefix: "${prefix}${dn42.domain}") familyPrefixes;
       quic = true;
-      extraConfig = ''
-        add_header Alt-Svc 'h3=":443"; ma=86400';
-      '';
+      extraConfig = altSvc;
       inherit root locations;
     };
 
