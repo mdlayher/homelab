@@ -56,6 +56,16 @@ in
       # bridge holds the address, not its VLAN port.
       extraCommands = ''
         ip46tables -I nixos-fw 1 -i br-dn42i-dev0 -m conntrack --ctstate NEW,INVALID -j DROP
+
+        # Plex broadcasts GDM discovery (UDP 32410-32414) on every
+        # interface, so once the host is on dn42 it broadcasts to that
+        # VLAN's address too, where only the router hears it and drops and
+        # logs it. Drop it outbound on the dn42 leg so it never leaves;
+        # Plex discovery on the real LANs (br0) is untouched. GDM is IPv4
+        # broadcast, so v4 only. -C||-A keeps the rule single across
+        # firewall reloads, which flush nixos-fw but not OUTPUT.
+        iptables -C OUTPUT -o br-dn42i-dev0 -p udp --dport 32410:32414 -j DROP 2>/dev/null ||
+          iptables -A OUTPUT -o br-dn42i-dev0 -p udp --dport 32410:32414 -j DROP
       '';
       allowedTCPPorts = [
         # Loki push, for the other machines' alloy and for LAN devices which
