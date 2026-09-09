@@ -18,6 +18,7 @@ in
     ./corerad.nix
     ./dn42.nix
     ./network-snapshot.nix
+    ./peerfinder.nix
   ];
 
   system.stateVersion = "23.05";

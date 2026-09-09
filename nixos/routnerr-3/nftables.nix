@@ -198,6 +198,7 @@ in
       define https = 443
       define bgp = 179
       define bfd_control = 3784
+      define peerfinder = ${toString dn42.peerfinder.port}
       define dhcp4_server = 67
       define dhcp4_client = 68
       define dhcp6_client = 546
@@ -333,15 +334,24 @@ in
             ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
           }
 
-          # The dn42 peering page (see azo-page.nix), the only TCP service
-          # the router offers the internet. New connections beyond the rate
-          # fall through to the caller's drop; the page is a few kilobytes,
-          # and nothing legitimate opens connections at that rate.
+          # The dn42 peering page (see azo-page.nix). New connections beyond
+          # the rate fall through to the caller's drop; the page is a few
+          # kilobytes, and nothing legitimate opens connections at that rate.
           tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
           # HTTP/3 for the same page: QUIC over UDP 443. The established
           # accept in input admits the rest of a flow, so only the first
           # datagram of each new connection is counted against the rate.
           udp dport $https limit rate 50/second burst 100 packets counter accept comment "router WAN peering page HTTP/3"
+
+          # The dn42 peerfinder agent (see peerfinder.nix), internet-facing
+          # on purpose: its backend connects to the WAN address recorded at
+          # registration, either family. Every request must carry an HMAC
+          # under the 32-byte registration key with a fresh nonce inside a
+          # 30 s window, and targets are parsed as addresses before ping is
+          # spawned, so the rest of the internet gets a closed connection.
+          # Each accepted connection may cost a ping, and the backend
+          # measures rarely, so the rate is far below the page's.
+          tcp dport $peerfinder limit rate 5/second burst 10 packets counter accept comment "router WAN peerfinder"
         }
 
         # From the internet: silently drop everything not explicitly allowed.
