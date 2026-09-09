@@ -140,11 +140,13 @@ let
     ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 19 ++ lib.range 24 31)
   );
 
-  # The apex is the peering page, and the router's addresses, on the
-  # dummy and on the internal VLAN, reverse to azo, the site's name as in
-  # azo.dn42.mdlayher.net, with the same single-family names beneath it.
-  # Owner names are relative to each file's zone, so the shared SOA and
-  # NS are written out in full.
+  # The apex is the peering page, with single-family names beneath it as
+  # on the clearnet and HTTPS records advertising HTTP/3 on all three;
+  # the router's addresses, on the dummy and on the
+  # internal VLAN, reverse to azo, the site's name as in
+  # azo.dn42.mdlayher.net, whose names redirect to the apex's (see
+  # azo-page.nix). Owner names are relative to each file's zone, so the
+  # shared SOA and NS are written out in full.
   dn42Soa = ''
     $TTL 3600
     @ IN SOA ns1.${dn42.domain}. hostmaster.${dn42.domain}. 1 7200 3600 1209600 3600
@@ -154,6 +156,11 @@ let
     ${dn42Soa}
     @ IN A ${dn42.addr4}
     @ IN AAAA ${dn42.addr6}
+    @ IN HTTPS 1 . alpn="h3,h2"
+    ipv4 IN A ${dn42.addr4}
+    ipv4 IN HTTPS 1 . alpn="h3,h2"
+    ipv6 IN AAAA ${dn42.addr6}
+    ipv6 IN HTTPS 1 . alpn="h3,h2"
     ns1 IN A ${dn42.addr4}
     ns1 IN AAAA ${dn42.addr6}
     azo IN A ${dn42.addr4}

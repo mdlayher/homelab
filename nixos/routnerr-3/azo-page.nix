@@ -4,17 +4,21 @@
 #
 # Served from the router, the one host with both a WAN and a dn42 address,
 # so it answers from the clearnet and from inside dn42 without NAT in the
-# way. The page names how the client reached it (IPv4, IPv6, or dn42) from
-# the accepted connection: a connection to one of the router's dn42
-# addresses came through dn42, since those addresses exist nowhere else;
-# anything else is the client's address family. It also names the HTTP
-# version the request arrived over, and HTTP/3 is enabled so that can be
-# any of the three: the first connection is HTTP/1.1 or HTTP/2 over TCP,
-# and the Alt-Svc header it carries sends the client to QUIC on UDP 443
-# for the next one.
+# way. The page names how the client reached it, the address family and
+# dn42 when through it, from the accepted connection: a connection to one
+# of the router's dn42 addresses came through dn42, since those addresses
+# exist nowhere else, and the client's address gives the family. It also
+# names the HTTP version the request arrived over, and HTTP/3 is enabled
+# so that can be any of the three: the first connection is HTTP/1.1 or
+# HTTP/2 over TCP, and the Alt-Svc header it carries sends the client to
+# QUIC on UDP 443 for the next one.
+#
+# Inside dn42 the same page answers under our registry name, with a
+# certificate from the dn42 CA for anyone who has installed its root, and
+# plain HTTP for everyone else.
 #
 # v1 is static. The fixed points for a later server to drop into are the
-# certificate under /var/lib/acme/<domain>/, which the acme module renews
+# certificates under /var/lib/acme/<domain>/, which the acme module renews
 # on its own, and ports 80 and 443, TCP and UDP, on every address.
 {
   config,
@@ -39,12 +43,37 @@ let
   # rendered a second time rather than adding a second credential.
   secret = "cloudflare/ddns_token";
 
+  # The dn42 CA's ACME service, run by burble inside dn42: HTTP-01, which
+  # the router reaches from its own dn42 address, resolving the name
+  # through the dn42 forwarder in coredns.nix; the validation request
+  # arrives on port 80 of our dn42 address, open in nftables.nix. The
+  # service's own certificate is dn42-signed too, and lego trusts it the
+  # way everything on this machine does, through the system store, where
+  # dn42.nix puts the dn42 root (see nixos/modules/dn42-ca.nix).
+  # Certificates are issued for 30 days; renewing at 20 on the daily timer
+  # leaves enough attempts before one lapses.
+  dn42Acme = "https://acme.burble.dn42/v1/dn42/acme/directory";
+
+  # The single-family names inside dn42, beneath the apex as on the
+  # clearnet; see the zone in coredns.nix.
+  familyPrefixes = [
+    "ipv4."
+    "ipv6."
+  ];
+
+  # A redirect vhost from an azo name to its counterpart under the apex.
+  azoRedirect = prefix: {
+    addSSL = true;
+    useACMEHost = dn42.domain;
+    locations."/".return = "301 $scheme://${prefix}${dn42.domain}$request_uri";
+  };
+
   # A single self-contained page: no scripts, nothing fetched. Two facts
   # about the connection are per request rather than baked in, so the file
   # names neither and nginx rewrites both on the way out (see the maps and
   # sub_filter in the vhost): "HTTP" becomes the negotiated version, and
-  # "IP" becomes how the client reached us, IPv4, IPv6, or dn42. The file
-  # reads sensibly on its own.
+  # "IP" the client's address family, prefixed with dn42 when the client
+  # came through it. The file reads sensibly on its own.
   page =
     let
       peerRows = lib.concatStrings (
@@ -136,8 +165,10 @@ let
       <footer>
         <p>
           Inside dn42:<br>
-          <a href="http://${dn42.addr4}/"><code>http://${dn42.addr4}/</code></a><br>
-          <a href="http://[${dn42.addr6}]/"><code>http://[${dn42.addr6}]/</code></a>
+          <a href="https://${dn42.domain}/"><code>https://${dn42.domain}/</code></a> with the dn42 CA root installed<br>
+          <a href="http://${dn42.domain}/"><code>http://${dn42.domain}/</code></a><br>
+          <a href="http://ipv4.${dn42.domain}/"><code>ipv4.${dn42.domain}</code></a> to pin IPv4,
+          <a href="http://ipv6.${dn42.domain}/"><code>ipv6.${dn42.domain}</code></a> to pin IPv6
         </p>
       </footer>
       </body>
@@ -146,6 +177,17 @@ let
 
   root = pkgs.runCommand "azo-page" { } ''
     install -Dm444 ${pkgs.writeText "index.html" page} $out/index.html
+  '';
+
+  # The version rewrite: the file says "via HTTP over", the response says
+  # which. Once, since the phrase appears once; the type filter defaults
+  # to text/html, which is all that is served here. sub_filter cannot see
+  # through a compressed body, and nothing here compresses (no gzip, and
+  # no gzip_static beside the files). Shared by both names the page has.
+  locations."= /".extraConfig = ''
+    try_files /index.html =404;
+    sub_filter 'via HTTP over IP' 'via $vantage';
+    sub_filter_once on;
   '';
 in
 {
@@ -174,6 +216,18 @@ in
       # Readable by whatever serves it; the nginx module adds itself to
       # reloadServices for the renewal.
       group = config.services.nginx.group;
+    };
+
+    # The dn42 name's certificate: declared by the vhost below (enableACME,
+    # which also wires the HTTP-01 webroot), issued by the dn42 CA. Until
+    # the first order succeeds nginx serves the module's placeholder, so
+    # the name is reachable over HTTPS from the first deploy either way.
+    certs.${dn42.domain} = {
+      server = dn42Acme;
+      validMinDays = 10;
+      # The page vhost's aliases join on their own; the redirect vhosts'
+      # names are added here.
+      extraDomainNames = map (prefix: "${prefix}azo.${dn42.domain}") ([ "" ] ++ familyPrefixes);
     };
   };
 
@@ -233,13 +287,19 @@ in
         HTTP/3.0 HTTP/3;
       }
 
-      # How the client reached us, cased for display: the tier above with
-      # dn42 left as it is written. Injected into the page the same way the
-      # HTTP version is, so both connection facts are reported alike.
-      map $tier $tier_label {
-        default $tier;
-        ipv4 IPv4;
-        ipv6 IPv6;
+      # The client's address family, cased for display.
+      map $remote_addr $family {
+        default IPv4;
+        "~:" IPv6;
+      }
+
+      # How the client reached us, as the page says it: the version and
+      # the family, the latter a dn42 one when the address it hit is.
+      # Injected into the page in place of a fixed phrase, so both
+      # connection facts are reported alike.
+      map $dn42 $vantage {
+        default "$proto over $family";
+        1 "$proto over dn42 $family";
       }
     '';
 
@@ -264,18 +324,34 @@ in
         add_header Alt-Svc 'h3=":443"; ma=86400';
       '';
 
-      inherit root;
-      # The version rewrite: the file says "via HTTP over", the response
-      # says which. Once, since the phrase appears once; the type filter
-      # defaults to text/html, which is all that is served here. sub_filter
-      # cannot see through a compressed body, and nothing here compresses
-      # (no gzip, and no gzip_static beside the files).
-      locations."= /".extraConfig = ''
-        try_files /index.html =404;
-        sub_filter 'via HTTP over IP' 'via $proto over $tier_label';
-        sub_filter_once on;
-      '';
+      inherit root locations;
     };
+
+    # The same page under our dn42 domain, which coredns.nix resolves to
+    # the router's dn42 addresses for dn42: the certificate is the dn42
+    # CA's, trusted by those who installed its root, and plain HTTP stays
+    # open for the rest. The single-family names serve the page too, as on
+    # the clearnet, and join the certificate as aliases. HTTP/3 as above:
+    # the QUIC listener is shared, nginx picks the server by SNI, and the
+    # zone's HTTPS records advertise h3 beside the Alt-Svc header.
+    virtualHosts.${dn42.domain} = {
+      addSSL = true;
+      enableACME = true;
+      serverAliases = map (prefix: "${prefix}${dn42.domain}") familyPrefixes;
+      quic = true;
+      extraConfig = ''
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+      '';
+      inherit root locations;
+    };
+
+    # azo, the router's reverse name and the site's, and the single-family
+    # names beneath it are pointers to the names above: each redirects to
+    # its counterpart, on the scheme it arrived by. They are on the
+    # certificate too (extraDomainNames above), so HTTPS redirects as well.
+    virtualHosts."azo.${dn42.domain}" = azoRedirect "";
+    virtualHosts."ipv4.azo.${dn42.domain}" = azoRedirect "ipv4.";
+    virtualHosts."ipv6.azo.${dn42.domain}" = azoRedirect "ipv6.";
 
     # The apex mdlayher.net has no site of its own: send anyone who trims
     # the name down to the registered domain to the peering page, rather
