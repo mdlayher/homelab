@@ -358,6 +358,14 @@ in
         chain input_wan {
           jump icmp_wan
 
+          # dn42 etiquette expects a peering endpoint to answer ping, and
+          # peers measure the clearnet name before and after a tunnel. Only
+          # the router itself: forward_wan still jumps icmp_wan, which has
+          # no echo-request, so no LAN host becomes pingable. A flood falls
+          # through the rate to the chain's drop.
+          icmp type echo-request limit rate 10/second burst 20 packets counter accept comment "router WAN ping"
+          icmpv6 type echo-request limit rate 10/second burst 20 packets counter accept comment "router WAN ping"
+
           # Default route via NDP.
           ip6 nexthdr icmpv6 icmpv6 type nd-router-advert counter accept
           ip6 nexthdr icmpv6 icmpv6 type {
