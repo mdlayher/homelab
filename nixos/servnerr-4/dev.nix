@@ -188,6 +188,28 @@ let
     '';
   };
 
+  # Moshi's companion daemon, which makes agent sessions legible to the
+  # phone client (https://getmoshi.app). Published only as a static binary
+  # on Moshi's CDN, so the tarball is installed as it ships. `moshi-hook
+  # update` cannot rewrite a store path: bump the version here instead.
+  moshiHook = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
+    pname = "moshi-hook";
+    version = "0.3.20";
+
+    src = pkgs.fetchurl {
+      url = "https://cdn.getmoshi.app/hook/v${finalAttrs.version}/moshi-hook_Linux_x86_64.tar.gz";
+      hash = "sha256-v7npl4Nj+ksZabIZuJmHn5V2u/oTCW/UbcGRB90zCWc=";
+    };
+
+    sourceRoot = ".";
+
+    # The moshi alias is upstream's, from its install script.
+    installPhase = ''
+      install -Dm755 moshi-hook $out/bin/moshi-hook
+      ln -s moshi-hook $out/bin/moshi
+    '';
+  });
+
   # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
   repos = [
     "bfd"
@@ -803,6 +825,32 @@ in
             # open to the container's tailnet address.
             services.tailscale.extraSetFlags = [ "--ssh" ];
 
+            # Tailscale SSH claims 22 on the tailnet address only, and its
+            # identity-based auth never checks a key. Moshi's phone client
+            # carries its own key, so sshd keeps a second port for it to
+            # bootstrap mosh through.
+            #
+            # That port is tailnet-only: the firewall is left to devModule's
+            # list, which opens 22 on dev0 and not 2222, and ts0 is trusted.
+            # It accepts one credential, in a file of its own, so the admin's
+            # keys do not work there and Moshi's key does not work on 22.
+            #
+            # A container socket-activates sshd (container-config.nix sets
+            # startWhenNeeded), so adding a port needs one manual
+            # `systemctl restart sshd.socket`: activation reloads the unit
+            # but leaves the running socket bound to the old ports.
+            services.openssh = {
+              ports = [
+                22
+                2222
+              ];
+              openFirewall = false;
+              extraConfig = ''
+                Match LocalPort 2222
+                  AuthorizedKeysFile %h/.ssh/moshi_authorized_keys
+              '';
+            };
+
             # The internal dn42 link; see dn42 above. Not required for
             # online: the services here wait on dev0, not on dn42.
             #
@@ -838,6 +886,10 @@ in
             };
 
             systemd.tmpfiles.rules = [
+              # Moshi's key file for port 2222 above. Created empty with the
+              # modes StrictModes demands; `moshi-hook host setup` writes to
+              # authorized_keys, so its line is moved here once.
+              "f ${home}/.ssh/moshi_authorized_keys 0600 ${user} users -"
               "d ${home}/.config/herdr 0755 ${user} users -"
               "C ${home}/.config/herdr/config.toml 0644 ${user} users - ${herdrConfig}"
               "d ${gateState} 0700 ${gateUser} ${gateUser} -"
@@ -979,6 +1031,12 @@ in
               # report agent session IDs, and exits silently without it.
               unstable.llm-agents.herdr
               python3
+
+              # Attach to those agent sessions from a phone: mosh-server for
+              # the Moshi client's transport, moshi-hook for its agent-aware
+              # half.
+              mosh
+              moshiHook
 
               # Go toolchain and tooling; go-tools provides staticcheck. Takes
               # precedence over the base system's Go.
