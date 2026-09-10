@@ -1,0 +1,11 @@
+%YAML 1.2
+---
+# Starlark is a Python dialect: the Python grammar under Starlark's file
+# names. Built into a bat syntax cache by nixos/modules/common.nix, which
+# both bat and delta read.
+name: Starlark
+file_extensions: [star, bzl, BUILD, WORKSPACE]
+scope: source.starlark
+contexts:
+  main:
+    - include: scope:source.python

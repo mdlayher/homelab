@@ -28,6 +28,13 @@ let
   # The admin user's home, on machines and in containers alike.
   home = config.users.users.${user}.home;
 
+  # bat's syntax cache: its bundled languages plus the custom syntaxes in
+  # nixos/dotfiles/bat. delta reads the same cache from ~/.cache/bat, where
+  # tmpfiles below links it; neither tool takes a syntax mapping elsewhere.
+  batCache = pkgs.runCommand "bat-cache" { nativeBuildInputs = [ pkgs.bat ]; } ''
+    bat cache --build --source ${../dotfiles/bat} --target $out
+  '';
+
   # The admin's FIDO2 keys, the only ones accepted for SSH from the
   # development container: each signature requires a physical touch on the
   # workstation or laptop the agent is forwarded from. One entry per
@@ -382,7 +389,12 @@ in
         ) users
         # Created ahead of the agent relay socket, which would otherwise make
         # a root-owned ~/.ssh on first boot.
-        ++ [ "d ${home}/.ssh 0700 ${user} users -" ];
+        ++ [
+          "d ${home}/.ssh 0700 ${user} users -"
+          # See batCache above.
+          "d ${home}/.cache 0755 ${user} users -"
+          "L+ ${home}/.cache/bat - - - - ${batCache}"
+        ];
 
       # Announce every newly activated system generation to the Discord ops
       # channel, so nightly upgrades and manual deploys are visible without
