@@ -27,15 +27,9 @@
 let
   inherit (config.homelab.inventory) hosts interfaces;
 
-  # Where node_exporter reads *.prom files from, discovered from the flag
-  # that sets it in nixos/modules/system-metrics.nix rather than repeated
-  # here; the same trick prometheus.nix uses to find listen ports.
-  textfileFlag = "--collector.textfile.directory=";
-  textfileDir = lib.removePrefix textfileFlag (
-    lib.head (
-      lib.filter (lib.hasPrefix textfileFlag) config.services.prometheus.exporters.node.extraFlags
-    )
-  );
+  # Where node_exporter reads *.prom files from; declared in
+  # nixos/modules/system-metrics.nix.
+  inherit (config.homelab) textfileDir;
 
   # The interface each host sits on, by host name: hosts carry their
   # interface name, and the interface carries the VLAN and trust level the

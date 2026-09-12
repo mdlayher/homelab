@@ -628,11 +628,17 @@ let
   # peer groups for interop testing against agent BFD implementations; peers
   # which never speak BFD still establish, since bgpd only tears down on an
   # up-to-down transition.
+  #
+  # configFile bypasses the NixOS module's generated config and the "log
+  # syslog" it writes, so bgpd logged nowhere; the neighbor changes name
+  # why a session went down, which the router's own log cannot say.
   frrConfig = ''
     hostname frrdev
+    log syslog informational
     !
     router bgp 65001
      bgp router-id ${inventory.hosts."frrdev.dev".ipv4}
+     bgp log-neighbor-changes
      no bgp ebgp-requires-policy
      no bgp network import-check
      neighbor DEV4 peer-group

@@ -23,11 +23,21 @@ let
   revision = toString config.system.configurationRevision;
   dirty = if builtins.match "[0-9a-f]+" revision != null then 0 else 1;
 
-  # Where the collector reads *.prom files from. Writers drop files in
-  # atomically so a scrape never sees a partial file.
-  textfileDir = "/var/lib/node-exporter/textfile";
+  inherit (config.homelab) textfileDir;
 in
 {
+  # Other modules write their own *.prom files here; see the router's
+  # neighbor-metrics.nix and the server's inventory-metrics.nix.
+  options.homelab.textfileDir = lib.mkOption {
+    type = lib.types.str;
+    readOnly = true;
+    default = "/var/lib/node-exporter/textfile";
+    description = ''
+      Directory node_exporter's textfile collector reads *.prom files from.
+      Writers drop files in atomically so a scrape never sees a partial file.
+    '';
+  };
+
   config = lib.mkIf isHost {
     services.prometheus.exporters.node.extraFlags = [
       "--collector.textfile.directory=${textfileDir}"

@@ -132,6 +132,19 @@ in
         replacement   = "session.scope"
         target_label  = "unit"
       }
+
+      // The router's network snapshot is huge JSON carrying neighbor
+      // states like FAILED, so it matches any broad (?i)error|fail sweep
+      // of the journal and buries what the sweep was for. Its own job
+      // label takes it out of {job="systemd-journal"} structurally. The
+      // sources' static labels merge in before these rules run, which is
+      // what lets a rule override job.
+      rule {
+        source_labels = ["__journal__systemd_unit"]
+        regex         = "network-snapshot\\.service"
+        replacement   = "network-snapshot"
+        target_label  = "job"
+      }
     }
 
     loki.source.journal "journal" {

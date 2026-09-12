@@ -80,13 +80,26 @@ log() {
 # mounts, networking, tun) still need a manual restart, which kills
 # sessions.
 deploy() {
-  local host=$1 action=$2 drv path steps script
+  local host=$1 action=$2 drv path before count steps script
   shift 2
+
+  # Global, read by the caller's finished line; reset so a failure here
+  # cannot report the previous host's count under --all.
+  closure="?"
 
   drv="$(nix eval --raw ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" "$@")"
   nix copy --to "ssh://$user@$host" "$drv"
   path="$(ssh "${sshopts[@]}" "$user@$host" \
     nix --extra-experimental-features nix-command build "$drv^*" --no-link --print-out-paths)"
+
+  # What the deploy moves, which rev= alone never says: the nightly applies
+  # main whether or not anything changed. Store paths differing between the
+  # running closure and the new one, not `nix store diff-closures`, which
+  # reports only name or version moves and so misses an edited unit file.
+  # Unprivileged and before activation, so it costs no sudo touch.
+  before="$(ssh "${sshopts[@]}" "$user@$host" readlink -f /run/current-system)"
+  count="{ nix-store -qR $before; nix-store -qR $path; } | sort | uniq -u | wc -l"
+  closure="$(ssh "${sshopts[@]}" "$user@$host" /bin/sh -c "$(printf '%q' "$count")")" || closure="?"
 
   # The transient unit carries systemd's minimal PATH, so name the system
   # profile's binaries by their absolute paths.
@@ -119,7 +132,7 @@ for host in "${hosts[@]}"; do
   deploy "$host" "$action" "$@" || status=$?
   if [[ $action != dry-activate ]]; then
     if [[ $status -eq 0 ]]; then
-      log "$host" "$action finished: rev=$rev" || echo "deploy: could not log to $host" >&2
+      log "$host" "$action finished: rev=$rev closure=$closure" || echo "deploy: could not log to $host" >&2
     else
       log "$host" "$action failed: rev=$rev status=$status" || echo "deploy: could not log to $host" >&2
     fi

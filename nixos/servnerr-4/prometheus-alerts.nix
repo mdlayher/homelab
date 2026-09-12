@@ -429,6 +429,17 @@ in
           for = "5m";
           annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has failed.";
         }
+        # The other half of SystemdUnitFailed, which sees only the current
+        # state: a unit that crashes and comes back is invisible to it.
+        # NRestarts counts automatic restarts alone, so timer-driven
+        # oneshots and deploys need no filtering out. One crash overnight
+        # is not worth a notification; a third means it is not recovering.
+        {
+          alert = "SystemdUnitRestarting";
+          expr = "increase(node_systemd_service_restart_total[24h]) > 2";
+          for = "10m";
+          annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has been restarted {{ $value | humanize }} times by systemd in the last 24 hours.";
+        }
         # Every HTTPS probe target's certificate, whoever issues it: Tailscale
         # renews its Services certificates itself, and the acme module
         # renews the ones this flake issues (the router's dn42 peering page,

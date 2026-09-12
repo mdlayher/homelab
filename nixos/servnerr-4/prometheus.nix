@@ -48,8 +48,8 @@ let
 
   # Scrape jobs discovered from a NixOS configuration: each enabled Prometheus
   # exporter, plus the metrics endpoints of services which expose their own.
-  # Hosts running sshd get an SSH banner probe, and hosts sending router
-  # advertisements are routers for alerting purposes.
+  # Hosts which set homelab.sshProbe get an SSH banner probe, and hosts
+  # sending router advertisements are routers for alerting purposes.
   discover =
     cfg:
     let
@@ -99,7 +99,7 @@ let
         // lib.optionalAttrs (cfg.homelab.dn42.peers or { } != { }) {
           dn42_peer.port = 9631;
         };
-      ssh = cfg.services.openssh.enable;
+      ssh = cfg.homelab.sshProbe or false;
       router = cfg.services.corerad.enable;
     };
 
@@ -290,7 +290,9 @@ let
     }
   );
 
-  # Hosts with SSH banner probing enabled.
+  # Hosts with SSH banner probing enabled: the machines a bad firewall rule
+  # would lock the admin out of, not every host running sshd. It costs a
+  # journal line a minute, which on a dev guest buried the real logins.
   sshTargets = map (host: "${qualify host}:22") (hostsWhere (h: h.ssh or false));
 
   # Host lists are qualified to match the instance labels the targets above

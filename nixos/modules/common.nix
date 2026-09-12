@@ -79,6 +79,15 @@ in
     description = "Whether this configuration is a physical machine rather than a container or VM guest.";
   };
 
+  # What the SSH banner probe is really about: a machine a bad firewall rule
+  # would lock the admin out of. Guests fail it; node_exporter already
+  # reports their sshd unit state for no log lines.
+  options.homelab.sshProbe = lib.mkOption {
+    type = lib.types.bool;
+    default = config.homelab.isMachine && config.services.openssh.enable;
+    description = "Whether the server probes this host's SSH banner, proving port 22 is reachable through its firewall.";
+  };
+
   config = {
     boot = lib.mkIf isHost {
       # Explicitly enable drivetemp for SATA drive temperature reporting in hwmon.
@@ -333,6 +342,15 @@ in
           enabledCollectors = [
             "ethtool"
             "systemd"
+          ];
+          # node_systemd_unit_state reports only the current state, so a
+          # unit that crashed and came back leaves no trace. NRestarts
+          # counts the automatic restarts (see SystemdUnitRestarting) and
+          # the start time says when a unit last came up. The third opt-in,
+          # enable-task-metrics, is off until something wants it.
+          extraFlags = [
+            "--collector.systemd.enable-restarts-metrics"
+            "--collector.systemd.enable-start-time-metrics"
           ];
           # Containers run a firewall; machines don't.
           openFirewall = !isHost;
