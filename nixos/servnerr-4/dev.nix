@@ -948,12 +948,12 @@ in
               # there yet, and fast-forward existing ones from GitHub when
               # they are on main with no local changes and main tracks an
               # upstream: a repo mid-migration can sit on an upstream-less
-              # main, and pulling there would fail the whole unit. Each repo
-              # directory holds one worktree per branch, with main as the
-              # primary clone; agents work in sibling worktrees, so this job
-              # never contends with them for a checkout. Uses gh's
-              # credentials; skipped until `gh auth login` has been run as
-              # the user.
+              # main. A failing remote only warns, so one flaky repo does not
+              # skip the rest of the sweep. Each repo directory holds one
+              # worktree per branch, with main as the primary clone; agents
+              # work in sibling worktrees, so this job never contends with
+              # them for a checkout. Uses gh's credentials; skipped until
+              # `gh auth login` has been run as the user.
               dev-repos = {
                 description = "Clone development repositories";
                 after = [ "network-online.target" ];
@@ -972,12 +972,14 @@ in
                   "gh auth setup-git\n"
                   + lib.concatMapStrings (repo: ''
                     if [ ! -d ${src}/${repo}/main ]; then
-                      gh repo clone mdlayher/${repo} ${src}/${repo}/main
+                      gh repo clone mdlayher/${repo} ${src}/${repo}/main \
+                        || echo "warning: ${repo}: clone failed" >&2
                     elif [ "$(git -C ${src}/${repo}/main branch --show-current)" = "main" ] \
                       && git -C ${src}/${repo}/main rev-parse --abbrev-ref 'main@{upstream}' >/dev/null 2>&1 \
                       && git -C ${src}/${repo}/main diff --quiet \
                       && git -C ${src}/${repo}/main diff --cached --quiet; then
-                      git -C ${src}/${repo}/main pull --ff-only
+                      git -C ${src}/${repo}/main pull --ff-only \
+                        || echo "warning: ${repo}: pull failed" >&2
                     fi
                   '') repos;
               };

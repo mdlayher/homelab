@@ -310,16 +310,18 @@ in
         }
         # Loki's ruler records per-host log line counts into Prometheus (see
         # nixos/servnerr-4/loki.nix); a host absent from the metric has
-        # shipped nothing for over an hour, even though its Alloy may still
-        # report up. Every host firing at once means the ruler or its remote
-        # write path is broken, not the shippers.
+        # shipped nothing at all, even though its Alloy may still report up.
+        # The lookback spans several windows because a host whose only logs
+        # are an hourly timer aliases in and out of the metric on its own.
+        # Every host firing at once means the ruler or its remote write path
+        # is broken, not the shippers.
         {
           alert = "LokiHostLogsStalled";
           expr = lib.concatMapStringsSep " or " (
-            host: ''absent(host:log_lines:count1h{host="${host}"})''
+            host: ''absent(max_over_time(host:log_lines:count1h{host="${host}"}[6h]))''
           ) logHosts;
           for = "30m";
-          annotations.summary = "{{ $labels.host }} has shipped no logs to Loki for over an hour.";
+          annotations.summary = "{{ $labels.host }} has shipped no logs to Loki for over six hours.";
         }
         # SystemdUnitFailed catches an upgrade run that fails, but a timer
         # that never runs (masked, wedged, or dropped from configuration)
