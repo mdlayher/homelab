@@ -486,10 +486,10 @@ let
   quicSrc = pkgs.fetchFromGitHub {
     owner = "lxin";
     repo = "quic";
-    rev = "bf47121683d987b0b20c79397704a6ae13911f88";
-    hash = "sha256-FduHHKZRj01iXLw6F+71SVcFiSrVPtrNhETRMKbpdL0=";
+    rev = "a03b21cc9784da68323db6099647fb589747cbde";
+    hash = "sha256-JMjfXhUgmY14FHkHpfmC3lhWs6aJMm676Vjf+gwjbtY=";
   };
-  quicVersion = "0-unstable-2026-08-19";
+  quicVersion = "0-unstable-2026-09-15";
 
   # quic.ko built out of tree against the given kernel via kbuild directly:
   # the repo's autotools install step hardcodes /usr/include and runs depmod
@@ -503,11 +503,14 @@ let
 
       nativeBuildInputs = kernel.moduleBuildDependencies;
 
-      # Upstream guards the kernel's recvmsg signature change behind a
-      # placeholder future version; the change is already in 6.18.
+      # Upstream guards two kernel API changes behind versions later than
+      # the kernel here: the recvmsg signature change behind a placeholder,
+      # and ipv6_fl_list's move into inet_sock behind 6.19. Both are already
+      # in 6.18.
       postPatch = ''
         substituteInPlace modules/net/quic/socket.c \
-          --replace-fail "KERNEL_VERSION(7, 1, 0)" "KERNEL_VERSION(6, 18, 0)"
+          --replace-fail "KERNEL_VERSION(7, 1, 0)" "KERNEL_VERSION(6, 18, 0)" \
+          --replace-fail "KERNEL_VERSION(6, 19, 0)" "KERNEL_VERSION(6, 18, 0)"
       '';
 
       # kernel.makeFlags is for building the kernel itself and breaks
