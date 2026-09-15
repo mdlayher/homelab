@@ -371,6 +371,11 @@ in
           mail.enable = false;
           wall.enable = false;
         };
+        # Short test Saturdays at 03:00, extended test on the 15th at 04:00.
+        # An extended test on an 18 TB disk runs over a day, so monthly is as
+        # often as it fits, and the 15th keeps it clear of the scrub which
+        # starts on the 1st.
+        defaults.monitored = "-a -s (S/../../6/03|L/../15/./04)";
       };
     };
 

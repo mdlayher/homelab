@@ -112,6 +112,19 @@ let
             };
           }
           {
+            # smartd's own notifications are off, and the smartctl exporter
+            # reports attributes but not self-test results, so a test that
+            # fails without moving a counter is visible only here. The device
+            # is extracted without its /dev/ prefix to match the exporter's
+            # own device label.
+            alert = "SMARTSelfTestFailed";
+            expr = ''sum by (host, device) (count_over_time({job="systemd-journal", unit="smartd.service"} |~ `Self-Test Log error count increased|new Self-Test Log error` | regexp `^Device: /dev/(?P<device>[^ ,]+)` [15m])) > 0'';
+            annotations = {
+              summary = "{{ $labels.device }} on {{ $labels.host }} failed a SMART self-test; check its self-test log.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="smartd.service"}'';
+            };
+          }
+          {
             alert = "SSHInvalidUsers";
             # No legitimate client names an account that does not exist, so
             # a couple of these means a scanner has found the SSH port: the
