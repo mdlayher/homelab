@@ -16,7 +16,6 @@ let
   alertmanagerUrl = self config.services.prometheus.alertmanager.port;
   grafanaUrl = self config.services.grafana.settings.server.http_port;
   lokiUrl = self config.services.loki.configuration.server.http_listen_port;
-  plexUrl = self 32400;
 
   # Extracts the port from a "host:port" or ":port" listen address.
   portOf = addr: lib.toInt (lib.last (lib.splitString ":" addr));
@@ -208,7 +207,6 @@ let
     "${alertmanagerUrl}/-/healthy"
     "${grafanaUrl}/api/health"
     "${lokiUrl}/ready"
-    "${plexUrl}/identity"
     "${prometheusUrl}/-/healthy"
 
     "https://alertmanager.${tailnetDomain}/-/healthy"
