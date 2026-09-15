@@ -41,36 +41,7 @@ let
   countFailures = line: "sum by (host) (count_over_time(${failures line ""} [15m]))";
   failureLogs = line: exploreURL (failures line ''host="__host__", '');
 
-  # A Grafana Explore link running a LogQL query against Loki over the last
-  # few hours, for alert annotations that should lead straight to the lines
-  # behind the count. The query holds a "__host__" placeholder, swapped for
-  # the ruler's label template after URL encoding so the braces survive.
-  exploreURL =
-    expr:
-    let
-      panes = builtins.toJSON {
-        a = {
-          datasource = "loki";
-          queries = [
-            {
-              refId = "A";
-              inherit expr;
-              datasource = {
-                type = "loki";
-                uid = "loki";
-              };
-            }
-          ];
-          range = {
-            from = "now-3h";
-            to = "now";
-          };
-        };
-      };
-    in
-    lib.replaceStrings [ "__host__" ] [ "{{ $labels.host }}" ] (
-      "https://grafana.${tailnetDomain}/explore?schemaVersion=1&orgId=1&panes=" + lib.escapeURL panes
-    );
+  exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
 
   # Log-derived rules, evaluated continuously by the ruler: alerts cover what
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
@@ -112,19 +83,6 @@ let
             };
           }
           {
-            # smartd's own notifications are off, and the smartctl exporter
-            # reports attributes but not self-test results, so a test that
-            # fails without moving a counter is visible only here. The device
-            # is extracted without its /dev/ prefix to match the exporter's
-            # own device label.
-            alert = "SMARTSelfTestFailed";
-            expr = ''sum by (host, device) (count_over_time({job="systemd-journal", unit="smartd.service"} |~ `Self-Test Log error count increased|new Self-Test Log error` | regexp `^Device: /dev/(?P<device>[^ ,]+)` [15m])) > 0'';
-            annotations = {
-              summary = "{{ $labels.device }} on {{ $labels.host }} failed a SMART self-test; check its self-test log.";
-              logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="smartd.service"}'';
-            };
-          }
-          {
             alert = "SSHInvalidUsers";
             # No legitimate client names an account that does not exist, so
             # a couple of these means a scanner has found the SSH port: the
@@ -150,6 +108,17 @@ let
           {
             record = "host:log_lines:count1h";
             expr = ''sum by (host) (count_over_time({job="systemd-journal"}[1h]))'';
+          }
+          # smartd's own notifications are off and the smartctl exporter has
+          # no self-test metric, so a test that fails without moving an
+          # attribute counter is visible only in this log line. It is
+          # recorded rather than alerted on here so that the alert can join
+          # the drive's serial from the exporter; see SMARTSelfTestFailed in
+          # prometheus-alerts.nix. The device keeps its kernel name, without
+          # the /dev/ prefix, which is what that join matches on.
+          {
+            record = "host_device:smartd_selftest_errors:count15m";
+            expr = ''sum by (host, device) (count_over_time({job="systemd-journal", unit="smartd.service"} |~ `Self-Test Log error count increased|new Self-Test Log error` | regexp `^Device: /dev/(?P<device>[^ ,]+)` [15m]))'';
           }
         ];
       }

@@ -300,6 +300,7 @@ let
   # match the bare names series carried before targets were qualified.
   alerts = import ./prometheus-alerts.nix {
     inherit lib;
+    exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
     excludedJobs = [ snmpCyberpowerJob ];
     routers = map qualify (hostsWhere (h: h.router or false));

@@ -3,6 +3,9 @@
 # prometheus.nix rather than being hardcoded here.
 {
   lib,
+  # Builds a Grafana Explore link for a LogQL query, for alerts which fire on
+  # what Loki's ruler records; see nixos/servnerr-4/explore-url.nix.
+  exploreURL,
   # Hosts which don't run 24/7 and should never raise down alerts.
   excludedHosts,
   # Jobs whose targets are too unreliable to raise down alerts, or whose
@@ -34,6 +37,22 @@ let
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
   excludedJobsRegex = raw (anyOf excludedJobs);
+
+  # The smartctl exporter keys every metric by kernel device name, which is
+  # not stable across reboots, and carries the model and serial only on its
+  # smartctl_device info metric. Joining those in names the physical drive in
+  # a notification and gives a silence a matcher that survives a renumber.
+  # Both come from one scrape, so the info series is never missing alone.
+  withDrive =
+    expr: "(${expr}) * on (instance, device) group_left(model_name, serial_number) smartctl_device";
+
+  # The same join for a metric recorded by Loki's ruler, which labels by host
+  # rather than instance. The host is derived from the instance label so that
+  # no domain or exporter port is repeated here.
+  withDriveByHost =
+    expr:
+    "(${expr}) * on (host, device) group_left(model_name, serial_number) "
+    + ''label_replace(smartctl_device, "host", "$1", "instance", ${raw "([^.:]+).*"})'';
 in
 {
   groups = [
@@ -374,7 +393,7 @@ in
         # write rates.
         {
           alert = "NVMeWearHigh";
-          expr = "smartctl_device_percentage_used >= 80";
+          expr = withDrive "smartctl_device_percentage_used >= 80";
           for = "1h";
           annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} has used {{ $value }}% of its rated write endurance.";
         }
@@ -401,7 +420,7 @@ in
         }
         {
           alert = "SMARTCriticalWarning";
-          expr = "smartctl_device_critical_warning > 0";
+          expr = withDrive "smartctl_device_critical_warning > 0";
           for = "5m";
           annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} reports a critical warning.";
         }
@@ -414,12 +433,24 @@ in
         # drives.
         {
           alert = "SMARTErrorLogGrowing";
-          expr = "increase(smartctl_device_error_log_count[1d]) > 0 or increase(smartctl_device_media_errors[1d]) > 0";
+          expr = withDrive "increase(smartctl_device_error_log_count[1d]) > 0 or increase(smartctl_device_media_errors[1d]) > 0";
           annotations.summary = "Disk {{ $labels.device }} on {{ $labels.instance }} logged new SMART errors in the last day.";
+        }
+        # Fires from a log line rather than a metric, recorded into Prometheus
+        # by Loki's ruler (see nixos/servnerr-4/loki.nix) so that the drive's
+        # serial can be joined in here. A broken ruler or remote write path
+        # silences this rule, which is what LokiHostLogsStalled reports on.
+        {
+          alert = "SMARTSelfTestFailed";
+          expr = withDriveByHost "host_device:smartd_selftest_errors:count15m > 0";
+          annotations = {
+            summary = "Disk {{ $labels.device }} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.host }} failed a SMART self-test.";
+            logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="smartd.service"}'';
+          };
         }
         {
           alert = "SMARTStatusFailed";
-          expr = "smartctl_device_smart_status == 0";
+          expr = withDrive "smartctl_device_smart_status == 0";
           for = "5m";
           annotations.summary = "Disk {{ $labels.device }} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} reports SMART failure.";
         }
