@@ -178,6 +178,48 @@ in
           for = "5m";
           annotations.summary = "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.";
         }
+        # As with BIRDExporterFailing: a failed command socket query drops the
+        # chrony metrics rather than zeroing them, so every rule below goes
+        # quiet exactly when this one fires.
+        {
+          alert = "ChronyExporterFailing";
+          expr = ''up{job="chrony"} == 0 or chrony_up == 0'';
+          for = "5m";
+          annotations.summary = "The chrony exporter on {{ $labels.instance }} is failing, so the clock every machine here follows is unmonitored.";
+        }
+        # An unsynchronised chronyd reports stratum 0 and a null reference
+        # id: it is free running on the local oscillator, and the drift it
+        # accumulates reaches every machine which takes its time from here.
+        # Long enough to sit out a boot, where it starts this way.
+        {
+          alert = "ChronyNoSelectedSource";
+          expr = "chrony_tracking_stratum == 0";
+          for = "15m";
+          annotations.summary = "chrony on {{ $labels.instance }} has no selected time source and is free running.";
+        }
+        # Steady state is under a millisecond, so 50ms is a long way out while
+        # still far short of what breaks a TLS validity window or a WireGuard
+        # handshake timestamp. Slewing back from a real excursion is gradual
+        # by design, hence the window.
+        {
+          alert = "ChronyOffsetHigh";
+          expr = "abs(chrony_tracking_last_offset_seconds) > 0.05";
+          for = "15m";
+          annotations.summary = "chrony on {{ $labels.instance }} is {{ $value | humanizeDuration }} away from its selected time source.";
+        }
+        # The NTS sources and the unauthenticated fallback pool look alike in
+        # these metrics, and authselectmode prefer marks an excluded pool
+        # source exactly as it marks a dead one, so source state cannot tell a
+        # silent fall back to pool time from normal operation. Reachability
+        # can: NTS failing, on an expired certificate or a blocked NTS-KE,
+        # stops those sources yielding samples at all. A ratio rather than a
+        # count, so the rule survives editing the server list.
+        {
+          alert = "ChronySourcesUnreachable";
+          expr = "count by (instance) (chrony_sources_reachability_success == 1) / count by (instance) (chrony_sources_reachability_success) < 0.7";
+          for = "30m";
+          annotations.summary = "Only {{ $value | humanizePercentage }} of chrony's time sources on {{ $labels.instance }} are answering.";
+        }
         # The dns_lan probe resolves a name CoreDNS answers from local data,
         # so a broken upstream forwarder passes that probe while every real
         # internet lookup on the LAN fails. The router serves roughly 1 qps,
