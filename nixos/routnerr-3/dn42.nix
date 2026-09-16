@@ -120,8 +120,10 @@ let
   # secret and the whole protocol block can live in the Nix store.
   dev0Ifname = "dn42i-dev0";
 
-  # The length of our IPv4 allocation, which the VLAN carries on-link.
-  net4Length = lib.last (lib.splitString "/" cfg.net4);
+  # This site's half of our IPv4 allocation, routed to the VLAN. dn42
+  # carries nothing longer than a /29 (see is_valid_network below), so the
+  # /28 divides into exactly two, and the first is ours.
+  sitePool4 = "${lib.head (lib.splitString "/" cfg.net4)}/29";
 
   # A nested indented string dedents to column 0, so every line after the
   # first needs the enclosing block's indentation added back; the
@@ -147,6 +149,9 @@ let
       ipv4 {
         # As with the dn42 peers: IPv4 NLRI over the one IPv6 session.
         extended next hop on;
+        # The VLAN carries no IPv4 address, so if the speaker declines
+        # extended next hop bird has none to fall back on; name our own.
+        next hop address ${cfg.addr4};
         import filter dn42i_import;
         export filter dn42_export;
         import limit 100 action block;
@@ -358,23 +363,6 @@ in
         default = "fde4:d0ad:ee0f:1::1";
         description = "The router's address on the VLAN, and the BGP local address.";
       };
-      addr4 = lib.mkOption {
-        type = lib.types.str;
-        default = "172.20.140.82";
-        description = ''
-          The router's IPv4 address on the VLAN, which carries the whole
-          of net4 on-link: the VLAN is where our IPv4 hosts live, and the
-          router is their gateway into dn42. The first address after the
-          router's own dn42 address; hosts follow, the speaker in the
-          development container at .83 (see the server's dev.nix). No
-          DHCP serves the VLAN, so a host's address is assigned here by
-          hand.
-
-          It also gives the IPv4 channel a valid next hop to fall back on
-          when a peer declines extended next hop: bird takes one from the
-          session's interface, and an IPv6-only link would leave it none.
-        '';
-      };
       neighbor = lib.mkOption {
         type = lib.types.str;
         default = "fde4:d0ad:ee0f:1::10";
@@ -424,13 +412,12 @@ in
             Carry IPv4 unicast on the session, with the RFC 8950 extended
             next hop, the way the dn42 peers do.
 
-            A peer which does not advertise extended next hop still
-            establishes and still receives the IPv4 routes: bird falls back
-            to an IPv4 next hop, its own address on the link, rather than
-            refusing the family. So this is safe to leave on while a
+            A speaker which does not advertise extended next hop still
+            establishes and still receives the IPv4 routes: the channel
+            names our own dn42 address as the next hop, since the VLAN
+            carries none of its own. So this is safe to leave on while a
             speaker's extended next hop support is being written; what
-            changes when it lands is the next hop the speaker sees. See
-            addr4 for why the link needs an IPv4 address at all.
+            changes when it lands is the next hop the speaker sees.
           '';
         };
       };
@@ -581,14 +568,23 @@ in
         # IPv6 comes from router advertisements: CoreRAD serves net6 for
         # SLAAC on this interface and route information for dn42 (see
         # corerad.nix), with a zero router lifetime so hosts do not take
-        # the router as a default route. IPv4 has no DHCP: hosts are
-        # assigned within the on-link net4 by hand, with the router as
-        # their static route to dn42.
+        # the router as a default route. IPv4 has neither DHCP nor a subnet:
+        # hosts are assigned /32s from our allocation by hand and take the
+        # router's own address as an on-link gateway, so the link route
+        # below is how the router reaches them.
         "50-${dev0Ifname}" = {
           matchConfig.Name = dev0Ifname;
-          address = [
-            "${cfg.dev0.addr6}/64"
-            "${cfg.dev0.addr4}/${net4Length}"
+          address = [ "${cfg.dev0.addr6}/64" ];
+          routes = [
+            {
+              Destination = sitePool4;
+              Scope = "link";
+              # The link has no IPv4 address of its own, so without this
+              # the kernel sources router-originated traffic to a dn42
+              # host from the WAN. bird's routes get the same from
+              # krt_prefsrc; this one is networkd's.
+              PreferredSource = cfg.addr4;
+            }
           ];
           networkConfig.IPv6AcceptRA = false;
         };
@@ -772,20 +768,18 @@ in
         # of VRF-aware services and route leaking for LAN clients. prefsrc
         # makes router-originated dn42 traffic use our dn42 addresses.
         #
-        # The IPv4 aggregate stays out of the kernel while the internal VLAN
-        # carries it on-link: the connected route already terminates
-        # traffic for unassigned addresses, through a failed ARP rather
-        # than a loop back out a tunnel, and a second route for the same
-        # prefix would only compete with it. bird still originates the
-        # aggregate to peers from its own table. The IPv6 aggregate is a
-        # /48 of which the VLAN carries one /64, so it keeps its
-        # unreachable route.
+        # Both aggregates take their unreachable route into the kernel, so
+        # traffic for the unassigned parts of an allocation terminates here
+        # instead of following the default route out the WAN. The VLAN no
+        # longer carries net4 on-link, so nothing else would catch it: its
+        # link route covers only this site's /29, and within that an
+        # unassigned address still fails by ARP.
         protocol kernel {
           scan time 20;
           ipv4 {
             import none;
             export filter {
-              if source = RTS_STATIC then ${if cfg.dev0.enable then "reject" else "accept"};
+              if source = RTS_STATIC then accept;
               krt_prefsrc = OWNIP;
               accept;
             };
@@ -846,7 +840,10 @@ in
 
           ipv4 {
             # IPv4 routes with IPv6 next hops: one session per peer, no
-            # IPv4 tunnel addressing needed.
+            # IPv4 tunnel addressing needed. Every peer negotiates this;
+            # one which declined would need `next hop address OWNIP` on
+            # its own session, since a tunnel carries no IPv4 address for
+            # bird to fall back on.
             extended next hop on;
             import filter dn42_import;
             export filter dn42_export;

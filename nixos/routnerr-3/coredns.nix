@@ -174,7 +174,6 @@ let
   dn42Rev4Zone = pkgs.writeText "coredns-dn42-rev4.zone" ''
     ${dn42Soa}
     ${ptr4 dn42.addr4} IN PTR azo.${dn42.domain}.
-    ${ptr4 dn42.dev0.addr4} IN PTR azo.${dn42.domain}.
   '';
   dn42Rev6Zone = pkgs.writeText "coredns-dn42-rev6.zone" ''
     ${dn42Soa}

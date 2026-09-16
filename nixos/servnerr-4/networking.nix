@@ -11,10 +11,12 @@ let
   # and dn42 space only, never a default. Our own /48 is routed explicitly:
   # mgmt0 learns it from the router's advertisements at metric 1024, and
   # dn42 traffic must take the VLAN.
+  # IPv4 is a /32: the VLAN carries no dn42 subnet, so the router's loopback
+  # is the on-link gateway (see its dn42.nix).
   dn42 = {
-    addr4 = "172.20.140.84/28";
+    addr4 = "172.20.140.84/32";
     addr6 = "fde4:d0ad:ee0f:1::84/64";
-    router4 = "172.20.140.82";
+    router4 = "172.20.140.81";
     router6 = "fde4:d0ad:ee0f:1::1";
     routes4 = [ "172.20.0.0/14" ];
     routes6 = [
@@ -181,6 +183,7 @@ in
         map (net: {
           Destination = net;
           Gateway = dn42.router4;
+          GatewayOnLink = true;
           Metric = dn42.metric;
         }) dn42.routes4
         ++ map (net: {

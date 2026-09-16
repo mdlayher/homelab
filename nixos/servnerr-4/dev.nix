@@ -683,15 +683,16 @@ let
   # which forms the neighbor address the router's session expects, and a
   # route to dn42 from route information, since the router is not a
   # default router there. IPv4 has no DHCP on the VLAN: the address is the
-  # next of our allocation after the router's own, in the on-link /28, and
+  # next of our allocation after the router's own, a /32 with the router's
+  # loopback as an on-link gateway (the VLAN carries no dn42 subnet), and
   # the route to dn42's IPv4 space points at the router by hand. dn42
   # proper only: the router's import filter also accepts the networks dn42
   # interconnects with (see its dn42.nix), which a host opts into here
   # rather than being handed by default.
   dn42 = {
     ifname = "dn42";
-    addr4 = "172.20.140.83/28";
-    router4 = "172.20.140.82";
+    addr4 = "172.20.140.83/32";
+    router4 = "172.20.140.81";
     routes4 = [ "172.20.0.0/14" ];
   };
 in
@@ -873,6 +874,7 @@ in
               routes = map (net: {
                 Destination = net;
                 Gateway = dn42.router4;
+                GatewayOnLink = true;
               }) dn42.routes4;
               networkConfig.IPv6AcceptRA = true;
               ipv6AcceptRAConfig.Token = "static:::10";
