@@ -12,18 +12,25 @@
 { ... }:
 
 {
-  # The default is four pool directives, and chrony draws four sources from
-  # each. One pool is the four it wants; Cloudflare's anycast adds a second
-  # operator, since this clock is now the whole homelab's. Never a smeared
-  # source here - Google's and Meta's disagree with these around a leap
-  # second - and NTS would have to replace the pool, not join it.
+  # Four operators on two continents, each serving NTS: enough authenticated
+  # sources to outvote a falseticker without trusting any one of them. Never
+  # a smeared source here - Google's and Meta's disagree with these around a
+  # leap second.
   networking.timeServers = [
     "time.cloudflare.com"
-    "0.nixos.pool.ntp.org"
+    "virginia.time.system76.com"
+    "nts.netnod.se"
+    "ptbtime1.ptb.de"
   ];
 
   services.chrony = {
     enable = true;
+
+    # Suffixes nts to every server above and keeps the cookies under the
+    # state directory, so a restart resumes rather than repeating key
+    # establishment. Client side only: the LANs are served plain NTP, which
+    # is all timesyncd speaks.
+    enableNTS = true;
 
     extraConfig = ''
       # The module writes no allow line, leaving chronyd a client alone.
@@ -33,6 +40,13 @@
       # request, so there is no amplification, but one peer's broken client
       # should not cost more than this.
       ratelimit interval 3 burst 8
+
+      # NTS-KE is TLS, so a clock wrong enough cannot validate a certificate
+      # and a pure NTS client whose RTC died never syncs at all. The pool is
+      # the way out of that, and prefer keeps it out of selection whenever an
+      # authenticated source is usable.
+      pool 0.nixos.pool.ntp.org iburst
+      authselectmode prefer
     '';
   };
 
