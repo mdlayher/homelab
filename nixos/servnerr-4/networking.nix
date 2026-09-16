@@ -15,9 +15,9 @@ let
   # is the on-link gateway (see its dn42.nix).
   dn42 = {
     addr4 = "172.20.140.84/32";
-    addr6 = "fde4:d0ad:ee0f:1::84/64";
+    addr6 = "fde4:d0ad:ee0f:142::84/64";
     router4 = "172.20.140.81";
-    router6 = "fde4:d0ad:ee0f:1::1";
+    router6 = "fde4:d0ad:ee0f:142::1";
     routes4 = [ "172.20.0.0/14" ];
     routes6 = [
       "fde4:d0ad:ee0f::/48"

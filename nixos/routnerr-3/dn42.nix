@@ -24,6 +24,16 @@
 # nftables and bird both match on those prefixes, so a new interface picks
 # up its class's policy from its name. Keeping one `dn42-*` wildcard for
 # both would silently merge the classes, since it matches either prefix.
+#
+# Addressing. IPv4 is 16 addresses which can never grow, so it is a pool of
+# routed /32s rather than a subnet: only a host serving dn42 takes one, and
+# since dn42 carries nothing longer than a /29 the /28 is two sites at most.
+#
+# IPv6 has room for structure: the fourth hextet reads as decimal SSVV,
+# site then VLAN, the way the site ULA writes its VLAN id. Site 00 is the
+# network itself rather than a place -- :0000::/64 loopbacks, :0001::/64
+# anycast, which every site can answer for because only the /48 above it
+# is ever announced. Sites begin at :0100::/56, 256 /64s each.
 
 let
   cfg = config.homelab.dn42;
@@ -350,22 +360,22 @@ in
       };
       net6 = lib.mkOption {
         type = lib.types.str;
-        default = "fde4:d0ad:ee0f:1::/64";
+        default = "fde4:d0ad:ee0f:142::/64";
         description = ''
-          The /64 carried on the VLAN, from our registered allocation. The
-          second one, not the first: the router's own dn42 address sits at
-          the very start of the first /64 on the dummy interface, and a
-          /128 there plus an on-link /64 covering it is needlessly muddy.
+          The /64 carried on the VLAN, from our registered allocation:
+          site 01, VLAN 42, under the addressing scheme at the top of this
+          file. None of site 00's, which hold the loopbacks and the
+          anycast block and are reachable from every site.
         '';
       };
       addr6 = lib.mkOption {
         type = lib.types.str;
-        default = "fde4:d0ad:ee0f:1::1";
+        default = "fde4:d0ad:ee0f:142::1";
         description = "The router's address on the VLAN, and the BGP local address.";
       };
       neighbor = lib.mkOption {
         type = lib.types.str;
-        default = "fde4:d0ad:ee0f:1::10";
+        default = "fde4:d0ad:ee0f:142::10";
         description = ''
           The speaker's address on the VLAN, and the only BGP neighbor the
           router accepts there. Chosen rather than learned: the container
