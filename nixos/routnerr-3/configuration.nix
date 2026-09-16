@@ -13,6 +13,7 @@ in
 
     # Networking daemons.
     ./azo-page.nix
+    ./chrony.nix
     ./cloudflare-ddns.nix
     ./coredns.nix
     ./corerad.nix

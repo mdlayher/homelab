@@ -194,6 +194,7 @@ in
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
       define dns = 53
+      define ntp = 123
       define http = 80
       define https = 443
       define bgp = 179
@@ -392,6 +393,7 @@ in
           ${dn42Dns "external"}
           tcp dport { $http, $https } counter accept comment "router dn42 external peering page"
           udp dport $https counter accept comment "router dn42 external peering page HTTP/3"
+          udp dport $ntp counter accept comment "router dn42 external NTP"
 
           # UDP traceroute to the router: probes climb from port 33434 and
           # the trace completes on a port unreachable from the destination
@@ -423,6 +425,7 @@ in
           ${dn42Dns "internal"}
           tcp dport { $http, $https } counter accept comment "router dn42 internal peering page"
           udp dport $https counter accept comment "router dn42 internal peering page HTTP/3"
+          udp dport $ntp counter accept comment "router dn42 internal NTP"
 
           # tailscaled on both ends discovers its dn42 address as one more
           # candidate endpoint, so the hosts here probe the router's dn42
@@ -454,6 +457,7 @@ in
           # Allow only necessary router-provided services.
           tcp dport $dns counter accept comment "router restricted TCP"
           udp dport $dns counter accept comment "router restricted UDP"
+          udp dport $ntp counter accept comment "router restricted NTP"
           udp dport $tailscale_relay counter accept comment "router restricted peer relay"
 
           limit rate 10/minute burst 20 packets log prefix "nft input restricted drop: "

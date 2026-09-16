@@ -49,6 +49,12 @@ let
       PoolOffset = 50;
       EmitDNS = true;
       DNS = "_server_address";
+
+      # NTP too (see chrony.nix). _server_address is per interface, so each
+      # LAN is told its own gateway: the only router address a restricted
+      # LAN may talk to.
+      EmitNTP = true;
+      NTP = "_server_address";
     };
   };
 
@@ -150,10 +156,17 @@ in
     networks."10-wan0" = {
       matchConfig.Name = "wan0";
       networkConfig.DHCP = "yes";
-      # Never accept ISP DNS or search domains for any DHCP/RA family.
+      # Never accept a service the ISP offers, in a lease or an
+      # advertisement, for any family: the resolver and clock are our own
+      # (see coredns.nix and chrony.nix). Addressing, routing and MTU are not.
       dhcpV4Config = {
         UseDNS = false;
+        UseDNR = false;
         UseDomains = false;
+        UseNTP = false;
+        UseSIP = false;
+        UseTimezone = false;
+        UseCaptivePortal = false;
 
         # Don't release IPv4 address on restart/reboots to avoid churn.
         SendRelease = false;
@@ -166,10 +179,16 @@ in
         PrefixDelegationHint = "::/56";
 
         UseDNS = false;
+        UseDNR = false;
+        UseNTP = false;
+        UseSIP = false;
+        UseCaptivePortal = false;
       };
       ipv6AcceptRAConfig = {
         UseDNS = false;
+        UseDNR = false;
         UseDomains = false;
+        UseCaptivePortal = false;
       };
     };
 

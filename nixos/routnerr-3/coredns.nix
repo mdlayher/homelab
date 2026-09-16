@@ -145,7 +145,8 @@ let
   # the router's addresses, on the dummy and on the
   # internal VLAN, reverse to azo, the site's name as in
   # azo.dn42.mdlayher.net, whose names redirect to the apex's (see
-  # azo-page.nix). Owner names are relative to each file's zone, so the
+  # azo-page.nix). ntp is the NTP service for dn42 peers (see chrony.nix).
+  # Owner names are relative to each file's zone, so the
   # shared SOA and NS are written out in full.
   dn42Soa = ''
     $TTL 3600
@@ -163,6 +164,8 @@ let
     ipv6 IN HTTPS 1 . alpn="h3,h2"
     ns1 IN A ${dn42.addr4}
     ns1 IN AAAA ${dn42.addr6}
+    ntp IN A ${dn42.addr4}
+    ntp IN AAAA ${dn42.addr6}
     azo IN A ${dn42.addr4}
     azo IN AAAA ${dn42.addr6}
     ipv4.azo IN A ${dn42.addr4}

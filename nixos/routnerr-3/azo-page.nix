@@ -164,6 +164,7 @@ let
         <tr><th>Addresses</th><td><code>${dn42.addr4}</code>, <code>${dn42.addr6}</code></td></tr>
         <tr><th>Prefixes</th><td><code>${dn42.net4}</code>, <code>${dn42.net6}</code></td></tr>
         <tr><th>Routing</th><td>BIRD 2 with ROA validation</td></tr>
+        <tr><th>Services</th><td>NTP at <code>ntp.${dn42.domain}</code></td></tr>
       </table>
 
       <h2>Peers</h2>
@@ -236,6 +237,7 @@ let
       ${row "Addresses" "${dn42.addr4}, ${dn42.addr6}"}
       ${row "Prefixes" "${dn42.net4}, ${dn42.net6}"}
       ${row "Routing" "BIRD 2 with ROA validation"}
+      ${row "Services" "NTP at ntp.${dn42.domain}"}
 
       Peers
 
