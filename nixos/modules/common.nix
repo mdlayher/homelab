@@ -453,6 +453,11 @@ in
         # stdin once up front, so a retry resends it. Without this the unit
         # fails, the switch reports a failed unit, and the announcement
         # waits for the restart a minute later.
+        #
+        # The window has to outlast the resolver, not just the restart:
+        # names stay unresolvable for about ten seconds after CoreDNS logs
+        # its startup banner. A window that expires first costs one restart
+        # per deploy, and enough deploys in a day trip SystemdUnitRestarting.
         script = ''
           current="$(readlink /nix/var/nix/profiles/system)"
           state=/var/lib/update-notify/last
@@ -475,7 +480,8 @@ in
 
           ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
             '{embeds: [{title: $title, description: $desc}]}' \
-            | ${pkgs.curl}/bin/curl -sfS -m 10 --retry 5 --retry-delay 2 --retry-all-errors \
+            | ${pkgs.curl}/bin/curl -sfS -m 10 --retry 10 --retry-delay 6 \
+                --retry-max-time 120 --retry-all-errors \
                 -H 'Content-Type: application/json' -d @- \
                 "$(cat ${config.sops.secrets."discord/ops_webhook_url".path})"
           echo "$current" > "$state"
