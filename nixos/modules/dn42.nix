@@ -126,6 +126,42 @@ let
     }
   ) cfg.peers;
 
+  # iBGP with our other sites, over the interconnect circuits named by the
+  # ibgp option. next hop self is what makes those routes usable here: the
+  # next hops the far site learned are on its own tunnels, which we have no
+  # route to. Once an IGP carries the infrastructure this becomes a next
+  # hop resolved through it instead.
+  ibgpProtocols = lib.concatMapStrings (
+    name:
+    let
+      link = config.homelab.interconnect.links.${name};
+    in
+    ''
+      protocol bgp ${birdName link.interface} {
+        local ${link.localLla} as OWNAS;
+        neighbor ${link.lla} % '${link.interface}' as OWNAS;
+        direct;
+
+        ipv4 {
+          extended next hop on;
+          next hop self;
+          import filter dn42_ibgp_import;
+          export filter dn42_ibgp_export;
+          import limit 9000 action block;
+          import keep filtered on;
+        };
+
+        ipv6 {
+          next hop self;
+          import filter dn42_ibgp_import_v6;
+          export filter dn42_ibgp_export_v6;
+          import limit 9000 action block;
+          import keep filtered on;
+        };
+      }
+    ''
+  ) cfg.ibgp;
+
   # One MP-BGP session per peer over IPv6 link-local, IPv4 carried with
   # extended next hop. BFD is opt-in per peer.
   peerProtocols = lib.concatStrings (
@@ -214,7 +250,11 @@ let
 in
 {
   # The dn42 CA is trusted here, as on every machine with a dn42 interface.
-  imports = [ ./dn42-ca.nix ];
+  imports = [
+    ./dn42-ca.nix
+    # iBGP rides a site interconnect; the circuit itself is not ours.
+    ./interconnect.nix
+  ];
 
   options.homelab.dn42 = {
     # Registered dn42 resources, maintained by MDLAYHER-MNT in the dn42
@@ -363,6 +403,17 @@ in
           }
         )
       );
+    };
+
+    ibgp = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Interconnect links (see homelab.interconnect.links) to run iBGP
+        over: the same AS at both ends, carrying the dn42 table so each
+        site reaches the other's peers. Our own topology travels by the
+        IGP on the same circuit, and the site ULA never enters bird at all.
+      '';
     };
 
     # Internal dn42 VLANs: our own links carrying dn42-addressed hosts,
@@ -719,6 +770,38 @@ in
           reject;
         }
 
+        ${lib.optionalString (cfg.ibgp != [ ]) ''
+          # The interconnect carries our own more specifics, which dn42_import
+          # rejects by design (is_self_net) -- reusing it here would discard
+          # everything the far site sends. What crosses was ROA checked where
+          # it entered our AS, so this is a sanity check, not a revalidation.
+          # The site ULA stays rejected: it travels by the IGP, never by bird.
+          filter dn42_ibgp_import {
+            if is_self_net() then accept;
+            if is_valid_network() then accept;
+            reject;
+          }
+
+          filter dn42_ibgp_import_v6 {
+            if is_site_net_v6() then reject;
+            if is_self_net_v6() then accept;
+            if is_valid_network_v6() then accept;
+            reject;
+          }
+
+          filter dn42_ibgp_export {
+            if is_self_net() then accept;
+            if is_valid_network() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
+            reject;
+          }
+
+          filter dn42_ibgp_export_v6 {
+            if is_site_net_v6() then reject;
+            if is_self_net_v6() then accept;
+            if is_valid_network_v6() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
+            reject;
+          }
+        ''}
         ${lib.optionalString (cfg.vlans != { }) ''
           # The internal session exports the two filters above unchanged,
           # so the speaker under development sees exactly what a dn42 peer
@@ -872,7 +955,7 @@ in
         }
 
         ${peerProtocols}
-        ${vlanProtocols}
+        ${vlanProtocols}${ibgpProtocols}
       '';
     };
 

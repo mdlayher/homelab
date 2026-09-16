@@ -106,6 +106,14 @@ let
   dn42 = config.homelab.dn42;
   dn42Ports = lib.mapAttrsToList (_: peer: toString peer.port) dn42.peers;
 
+  # Site interconnects (see modules/interconnect.nix). Unlike every other
+  # interface here these carry two trust classes on one wire -- our own ULA
+  # and dn42 registry space -- so the rules below classify them by address
+  # rather than by name, which is what the dn42e-/dn42i- split relies on.
+  interconnect = config.homelab.interconnect;
+  iclPorts = lib.mapAttrsToList (_: link: toString link.port) interconnect.links;
+  icl = interconnect.links != { };
+
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
   # opens no resolver to dn42. Repeated per chain, as both sides may ask.
@@ -193,6 +201,12 @@ in
       define all_lans = ${ifnames (trusted ++ restricted)}
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
+      # Our own space, for classifying interconnect traffic: both come from
+      # the inventory, which explains why the v4 side is a whole /16 and
+      # what it must stay disjoint from.
+      define site4 = ${inventory.privatePrefix}
+      define site6 = ${inventory.ulaPrefix}
+
       define dns = 53
       define ntp = 123
       define http = 80
@@ -222,6 +236,7 @@ in
         counter wan_forward_drop {}
         counter dn42_input_drop {}
         counter dn42_forward_drop {}
+        ${lib.optionalString icl "counter icl_input_drop {}"}
         counter dn42_inbound_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
@@ -311,6 +326,7 @@ in
           iifname $wans jump input_wan
           iifname "dn42e-*" jump input_dn42e
           iifname "dn42i-*" jump input_dn42i
+          ${lib.optionalString icl ''iifname "icl-*" jump input_icl''}
 
           jump icmp_lan
 
@@ -333,6 +349,9 @@ in
           udp dport $tailscale_relay counter accept comment "router WAN peer relay"
           ${lib.optionalString (dn42Ports != [ ])
             ''udp dport { ${lib.concatStringsSep ", " dn42Ports} } counter accept comment "dn42 WireGuard peers"''
+          }
+          ${lib.optionalString (iclPorts != [ ])
+            ''udp dport { ${lib.concatStringsSep ", " iclPorts} } counter accept comment "site interconnect carriers"''
           }
 
           # The dn42 peering page (see azo-page.nix). New connections beyond
@@ -380,6 +399,24 @@ in
 
           counter name wan_input_drop drop
         }
+
+        ${lib.optionalString icl ''
+          # From our other sites to the router itself. Both ends are ours,
+          # but the wire carries dn42 too, so this stays narrow: the iBGP
+          # session, its BFD, and resolver access on our own address. An
+          # IGP which runs on the data link (IS-IS) never reaches this
+          # family at all; one which runs over IP would need a rule here.
+          chain input_icl {
+            jump icmp_lan
+
+            tcp dport $bgp counter accept comment "router interconnect BGP"
+            udp dport $bfd_control counter accept comment "router interconnect BFD"
+            ip daddr $site4 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
+            ip6 daddr $site6 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
+
+            counter name icl_input_drop drop
+          }
+        ''}
 
         # From external dn42 peers to the router itself: BGP and BFD
         # sessions, pings and traceroutes (dn42 etiquette), the peering
@@ -476,8 +513,8 @@ in
 
           # Clamp TCP MSS to the dn42 tunnel MTU in both directions, before
           # the established shortcut so inbound SYN/ACKs are also clamped.
-          oifname { "dn42e-*", "dn42i-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
-          iifname { "dn42e-*", "dn42i-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
+          oifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
+          iifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
 
           ct state {established, related} counter accept
 
@@ -498,6 +535,24 @@ in
           # to our hosts, so conntrack sees both directions of every flow.
           iifname "dn42i-*" oifname "dn42e-*" counter accept comment "dn42 internal to external"
           iifname "dn42e-*" oifname "dn42i-*" jump forward_dn42i
+
+          ${lib.optionalString icl ''
+            # The interconnect is classified by address, not by interface:
+            # our own ULA crosses it as LAN traffic, dn42 space crosses it
+            # under dn42's own rules, and anything else matches nothing and
+            # meets this chain's drop. Placed above the dn42 drop below so
+            # that transit to another site is not caught by it.
+            #
+            iifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site in"
+            oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site out"
+            iifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site in"
+            oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site out"
+
+            iifname "icl-*" oifname "dn42e-*" counter accept comment "dn42 transit via interconnect"
+            iifname "dn42e-*" oifname "icl-*" counter accept comment "dn42 transit to interconnect"
+            iifname "dn42i-*" oifname "icl-*" counter accept comment "dn42 internal to interconnect"
+            iifname "icl-*" oifname "dn42i-*" jump forward_dn42i
+          ''}
 
           # dn42, ours or anyone's, may never initiate toward LANs or WANs.
           iifname { "dn42e-*", "dn42i-*" } counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"

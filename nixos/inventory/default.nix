@@ -18,6 +18,14 @@
   # The site ULA /48. Public by choice: https://ula.ungleich.ch/.
   ulaPrefix = "fd9e:1a04:f01d::/48";
 
+  # The RFC 1918 space every site LAN is drawn from. Deliberately the whole
+  # /16 rather than the subnets themselves, which are secrets: this is used
+  # to tell our own traffic from dn42's on a link carrying both (see the
+  # router's nftables.nix), and being broader costs nothing there. What it
+  # must stay is disjoint from dn42's 172.20.0.0/14, so a future site keeps
+  # to 192.168/16 or 10/8.
+  privatePrefix = "192.168.0.0/16";
+
   # Tailnet MagicDNS suffix, under which machines and Tailscale Services
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";
