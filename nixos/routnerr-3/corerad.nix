@@ -90,8 +90,8 @@ in
         # import filter accepts; a host's site ULA and tailnet prefixes are
         # more specific and stay on their own interfaces. No RDNSS until
         # the router serves DNS on the internal side (see nftables.nix).
-        ++ lib.optional config.homelab.dn42.dev0.enable {
-          name = "dn42i-dev0";
+        ++ map (vlan: {
+          name = vlan.interface;
           advertise = true;
           default_lifetime = "0s";
           prefix = [
@@ -106,7 +106,7 @@ in
               lifetime = "45m";
             }
           ];
-        };
+        }) (lib.attrValues config.homelab.dn42.vlans);
     };
   };
 }

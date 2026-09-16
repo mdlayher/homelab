@@ -178,7 +178,9 @@ let
   dn42Rev6Zone = pkgs.writeText "coredns-dn42-rev6.zone" ''
     ${dn42Soa}
     ${ptr6 dn42.addr6} IN PTR azo.${dn42.domain}.
-    ${ptr6 dn42.dev0.addr6} IN PTR azo.${dn42.domain}.
+    ${lib.concatMapStringsSep "\n" (vlan: "${ptr6 vlan.addr6} IN PTR azo.${dn42.domain}.") (
+      lib.attrValues dn42.vlans
+    )}
   '';
 in
 {

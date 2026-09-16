@@ -83,7 +83,18 @@
     # container. The server bridges the VLAN into the container as its
     # dn42 interface (see the server's networking.nix and dev.nix); the
     # session stays idle until a speaker listens there.
-    homelab.dn42.dev0.enable = true;
-    homelab.dn42.dev0.debug = true;
+    #
+    # The only L2 dn42 segment we have: the tunnels are point to point
+    # with no data link of their own, so this is where a protocol that
+    # runs on the link itself can be developed against real routes.
+    homelab.dn42.vlans.dev0 = {
+      vlan = 42;
+      net6 = "fde4:d0ad:ee0f:142::/64";
+      addr6 = "fde4:d0ad:ee0f:142::1";
+      onLink4 = "172.20.140.80/29";
+      session = true;
+      neighbor = "fde4:d0ad:ee0f:142::10";
+      debug = true;
+    };
   };
 }

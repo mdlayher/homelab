@@ -222,7 +222,7 @@ in
         "guest0"
         "dev0"
       ]
-      ++ lib.optional config.homelab.dn42.dev0.enable "dn42i-dev0";
+      ++ map (vlan: vlan.interface) (lib.attrValues config.homelab.dn42.vlans);
     };
 
     # Unused Ethernet and SFP+ links.

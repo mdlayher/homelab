@@ -144,14 +144,6 @@ let
   # All of its addressing is dn42 registry space, which is public data (see
   # the options above), so unlike the site LANs nothing here is an inventory
   # secret and the whole protocol block can live in the Nix store.
-  dev0Ifname = "dn42i-dev0";
-
-  # The part of our IPv4 allocation that is on-link on the VLAN, so the
-  # router can ARP for the hosts there without being told which exist. No
-  # site owns a share of the /28: it is one flat pool of /32s, and this
-  # range is only sized to cover what is assigned on this link.
-  dev0OnLink4 = "${lib.head (lib.splitString "/" cfg.net4)}/29";
-
   # A nested indented string dedents to column 0, so every line after the
   # first needs the enclosing block's indentation added back; the
   # interpolation site supplies the first line's.
@@ -163,8 +155,9 @@ let
       )
     );
 
-  dev0Channels =
-    lib.optionalString cfg.dev0.families.ipv6 ''
+  vlanChannels =
+    vlan:
+    lib.optionalString vlan.families.ipv6 ''
       ipv6 {
         import filter dn42i_import_v6;
         export filter dn42_export_v6;
@@ -172,7 +165,7 @@ let
         import keep filtered on;
       };
     ''
-    + lib.optionalString cfg.dev0.families.ipv4 ''
+    + lib.optionalString vlan.families.ipv4 ''
       ipv4 {
         # As with the dn42 peers: IPv4 NLRI over the one IPv6 session.
         extended next hop on;
@@ -186,31 +179,38 @@ let
       };
     '';
 
-  dev0Protocol = ''
-    protocol bgp dn42i_dev0 {
-      local ${cfg.dev0.addr6} as OWNAS;
-      neighbor ${cfg.dev0.neighbor} as ${toString cfg.dev0.asn};
+  # One BGP protocol per VLAN which asked for a session.
+  vlanProtocols = lib.concatStrings (
+    lib.mapAttrsToList (
+      _: vlan:
+      lib.optionalString vlan.session ''
+        protocol bgp ${birdName vlan.interface} {
+          local ${vlan.addr6} as OWNAS;
+          neighbor ${vlan.neighbor} as ${toString vlan.asn};
 
-      # eBGP with a private ASN, not iBGP: the speaker is its own AS with
-      # no IGP, and an AS_PATH bearing OWNAS is a second, protocol level
-      # reason a route we exported cannot come back in. An internal peer
-      # would instead be able to originate into dn42 with nothing in the
-      # path saying where the route came from.
-      #
-      # Passive: the speaker comes and goes with an experiment, so the
-      # router waits to be connected to rather than retrying into a closed
-      # port and logging every attempt.
-      passive on;
-      ${lib.optionalString cfg.dev0.bfd "bfd on;"}
-      # Lab session only; the dn42e_ peers stay quiet. states and events
-      # are a handful of lines per session change, cheap to leave on.
-      # packets is deliberately left out: it logs every UPDATE, roughly
-      # 6000 lines an hour of dn42 churn.
-      ${lib.optionalString cfg.dev0.debug "debug { states, events };"}
+          # eBGP with a private ASN, not iBGP: the speaker is its own AS with
+          # no IGP, and an AS_PATH bearing OWNAS is a second, protocol level
+          # reason a route we exported cannot come back in. An internal peer
+          # would instead be able to originate into dn42 with nothing in the
+          # path saying where the route came from.
+          #
+          # Passive: the speaker comes and goes with an experiment, so the
+          # router waits to be connected to rather than retrying into a closed
+          # port and logging every attempt.
+          passive on;
+          ${lib.optionalString vlan.bfd "bfd on;"}
+          # Lab session only; the dn42e_ peers stay quiet. states and events
+          # are a handful of lines per session change, cheap to leave on.
+          # packets is deliberately left out: it logs every UPDATE, roughly
+          # 6000 lines an hour of dn42 churn.
+          ${lib.optionalString vlan.debug "debug { states, events };"}
 
-      ${indentTail "  " dev0Channels}
-    }
-  '';
+          ${indentTail "  " (vlanChannels vlan)}
+        }
+      ''
+    ) cfg.vlans
+  );
+
 in
 {
   # The dn42 CA is trusted here, as on every machine with a dn42 interface.
@@ -365,99 +365,133 @@ in
       );
     };
 
-    # dn42i-dev0: the internal dn42 VLAN and the BGP session it carries,
-    # for the implementation under development in the dev0 container. Named
-    # for its link the way a peer's session is, so it inherits the internal
-    # class's firewall and bird policy from its name.
-    dev0 = {
-      enable = lib.mkEnableOption ''
-        the internal dn42 VLAN dn42i-dev0 and its BGP session. The router
-        exports the dn42 tables over it, so the speaker sees the real
-        routing table rather than synthetic prefixes, and imports nothing
-        from it
+    # Internal dn42 VLANs: our own links carrying dn42-addressed hosts,
+    # keyed by name as peers are, and named dn42i-<name> so each inherits
+    # the internal class's firewall and bird policy from its interface.
+    # A second site declares its own; nothing here is specific to one.
+    vlans = lib.mkOption {
+      default = { };
+      description = ''
+        The internal dn42 VLANs this router carries. Each may also run a
+        BGP session with a speaker on the link: the router exports the
+        dn42 tables over it, so an implementation under development sees
+        the real routing table rather than synthetic prefixes, and imports
+        nothing back.
       '';
-      vlan = lib.mkOption {
-        type = lib.types.int;
-        default = 42;
-        description = ''
-          VLAN id, tagged on the same trunk as the site LANs; the parent
-          interface lists it in networking.nix. 42 is a mnemonic, well
-          clear of the site VLAN ids.
-        '';
-      };
-      net6 = lib.mkOption {
-        type = lib.types.str;
-        default = "fde4:d0ad:ee0f:142::/64";
-        description = ''
-          The /64 carried on the VLAN, from our registered allocation:
-          site 01, VLAN 42, under the addressing scheme at the top of this
-          file. None of site 00's, which hold the loopbacks and the
-          anycast block and are reachable from every site.
-        '';
-      };
-      addr6 = lib.mkOption {
-        type = lib.types.str;
-        default = "fde4:d0ad:ee0f:142::1";
-        description = "The router's address on the VLAN, and the BGP local address.";
-      };
-      neighbor = lib.mkOption {
-        type = lib.types.str;
-        default = "fde4:d0ad:ee0f:142::10";
-        description = ''
-          The speaker's address on the VLAN, and the only BGP neighbor the
-          router accepts there. Chosen rather than learned: the container
-          forms it from the advertised prefix with a fixed interface
-          identifier (networkd Token=static:::10, the same one it uses on
-          dev0), so it holds however the VLAN comes to hand out addresses.
-        '';
-      };
-      asn = lib.mkOption {
-        type = lib.types.int;
-        default = 65002;
-        description = ''
-          The speaker's autonomous system number, from the 16-bit private
-          range. frrdev on the dev0 VLAN uses 65001 (see the server's
-          dev.nix), so the two can run side by side.
-        '';
-      };
-      bfd = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Run BFD with the speaker, as the peers option does per peer.
-        '';
-      };
-      debug = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Turn on BIRD `debug { states, events }` for the lab session, so
-          its state changes and events reach the journal, and thus Loki
-          under {host="routnerr-3", unit="bird.service"}.
-        '';
-      };
-      families = {
-        ipv6 = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Carry IPv6 unicast on the session.";
-        };
-        ipv4 = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = ''
-            Carry IPv4 unicast on the session, with the RFC 8950 extended
-            next hop, the way the dn42 peers do.
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, ... }:
+          {
+            options = {
+              interface = lib.mkOption {
+                type = lib.types.str;
+                default = "dn42i-${name}";
+                defaultText = lib.literalExpression ''"dn42i-''${name}"'';
+                description = ''
+                  The VLAN's interface name, and after dash-to-underscore
+                  the bird protocol name. The dn42i- prefix is what
+                  nftables and bird match on.
+                '';
+              };
+              onLink4 = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = ''
+                  The part of our IPv4 allocation on-link here, routed to
+                  this VLAN so the router can ARP for its hosts without
+                  being told which exist. Null on a VLAN carrying no dn42
+                  IPv4 hosts. No site owns a share of the allocation: it
+                  is one flat pool of /32s (see the header above), and
+                  this range is only sized to cover what is assigned here.
+                '';
+              };
+              session = lib.mkEnableOption ''
+                a BGP session with a speaker on this VLAN. Its neighbor,
+                asn and families below describe that session; without it
+                the VLAN carries hosts and nothing else
+              '';
+              vlan = lib.mkOption {
+                type = lib.types.int;
+                description = ''
+                  VLAN id, tagged on the same trunk as the site LANs; the parent
+                  interface lists it in networking.nix. 42 is a mnemonic, well
+                  clear of the site VLAN ids.
+                '';
+              };
+              net6 = lib.mkOption {
+                type = lib.types.str;
+                description = ''
+                  The /64 carried on the VLAN, from our registered allocation:
+                  site 01, VLAN 42, under the addressing scheme at the top of this
+                  file. None of site 00's, which hold the loopbacks and the
+                  anycast block and are reachable from every site.
+                '';
+              };
+              addr6 = lib.mkOption {
+                type = lib.types.str;
+                description = "The router's address on the VLAN, and the BGP local address.";
+              };
+              neighbor = lib.mkOption {
+                type = lib.types.str;
+                description = ''
+                  The speaker's address on the VLAN, and the only BGP neighbor the
+                  router accepts there. Chosen rather than learned: the container
+                  forms it from the advertised prefix with a fixed interface
+                  identifier (networkd Token=static:::10, the same one it uses on
+                  dev0), so it holds however the VLAN comes to hand out addresses.
+                '';
+              };
+              asn = lib.mkOption {
+                type = lib.types.int;
+                default = 65002;
+                description = ''
+                  The speaker's autonomous system number, from the 16-bit private
+                  range. frrdev on the dev0 VLAN uses 65001 (see the server's
+                  dev.nix), so the two can run side by side.
+                '';
+              };
+              bfd = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = ''
+                  Run BFD with the speaker, as the peers option does per peer.
+                '';
+              };
+              debug = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = ''
+                  Turn on BIRD `debug { states, events }` for the lab session, so
+                  its state changes and events reach the journal, and thus Loki
+                  under {host="routnerr-3", unit="bird.service"}.
+                '';
+              };
+              families = {
+                ipv6 = lib.mkOption {
+                  type = lib.types.bool;
+                  default = true;
+                  description = "Carry IPv6 unicast on the session.";
+                };
+                ipv4 = lib.mkOption {
+                  type = lib.types.bool;
+                  default = true;
+                  description = ''
+                    Carry IPv4 unicast on the session, with the RFC 8950 extended
+                    next hop, the way the dn42 peers do.
 
-            A speaker which does not advertise extended next hop still
-            establishes and still receives the IPv4 routes: the channel
-            names our own dn42 address as the next hop, since the VLAN
-            carries none of its own. So this is safe to leave on while a
-            speaker's extended next hop support is being written; what
-            changes when it lands is the next hop the speaker sees.
-          '';
-        };
-      };
+                    A speaker which does not advertise extended next hop still
+                    establishes and still receives the IPv4 routes: the channel
+                    names our own dn42 address as the next hop, since the VLAN
+                    carries none of its own. So this is safe to leave on while a
+                    speaker's extended next hop support is being written; what
+                    changes when it lands is the next hop the speaker sees.
+                  '';
+                };
+              };
+            };
+          }
+        )
+      );
     };
   };
 
@@ -482,10 +516,12 @@ in
           assertion = lib.unique ports == ports;
           message = "dn42 peers must use unique WireGuard listen ports";
         }
-        {
-          assertion = !cfg.dev0.enable || cfg.dev0.families.ipv6 || cfg.dev0.families.ipv4;
-          message = "the dn42i-dev0 session needs at least one address family";
-        }
+      ]
+      ++ lib.mapAttrsToList (name: vlan: {
+        assertion = !vlan.session || vlan.families.ipv6 || vlan.families.ipv4;
+        message = "the dn42i-${name} session needs at least one address family";
+      }) cfg.vlans
+      ++ [
       ];
 
     # The tunnels share one WireGuard private key, whose public half is the
@@ -509,15 +545,16 @@ in
           };
         };
       }
-      // lib.optionalAttrs cfg.dev0.enable {
-        "50-${dev0Ifname}" = {
+      // lib.mapAttrs' (
+        _: vlan:
+        lib.nameValuePair "50-${vlan.interface}" {
           netdevConfig = {
-            Name = dev0Ifname;
+            Name = vlan.interface;
             Kind = "vlan";
           };
-          vlanConfig.Id = cfg.dev0.vlan;
-        };
-      }
+          vlanConfig.Id = vlan.vlan;
+        }
+      ) cfg.vlans
       // peerNetdevs;
 
       networks = {
@@ -529,7 +566,8 @@ in
           ];
         };
       }
-      // lib.optionalAttrs cfg.dev0.enable {
+      // lib.mapAttrs' (
+        _: vlan:
         # IPv6 comes from router advertisements: CoreRAD serves net6 for
         # SLAAC on this interface and route information for dn42 (see
         # corerad.nix), with a zero router lifetime so hosts do not take
@@ -537,23 +575,21 @@ in
         # hosts are assigned /32s from our allocation by hand and take the
         # router's own address as an on-link gateway, so the link route
         # below is how the router reaches them.
-        "50-${dev0Ifname}" = {
-          matchConfig.Name = dev0Ifname;
-          address = [ "${cfg.dev0.addr6}/64" ];
-          routes = [
-            {
-              Destination = dev0OnLink4;
-              Scope = "link";
-              # The link has no IPv4 address of its own, so without this
-              # the kernel sources router-originated traffic to a dn42
-              # host from the WAN. bird's routes get the same from
-              # krt_prefsrc; this one is networkd's.
-              PreferredSource = cfg.addr4;
-            }
-          ];
+        lib.nameValuePair "50-${vlan.interface}" {
+          matchConfig.Name = vlan.interface;
+          address = [ "${vlan.addr6}/64" ];
+          routes = lib.optional (vlan.onLink4 != null) {
+            Destination = vlan.onLink4;
+            Scope = "link";
+            # The link has no IPv4 address of its own, so without this the
+            # kernel sources router-originated traffic to a dn42 host from
+            # the WAN. bird's routes get the same from krt_prefsrc; this
+            # one is networkd's.
+            PreferredSource = cfg.addr4;
+          };
           networkConfig.IPv6AcceptRA = false;
-        };
-      }
+        }
+      ) cfg.vlans
       // peerNetworks;
     };
 
@@ -683,7 +719,7 @@ in
           reject;
         }
 
-        ${lib.optionalString cfg.dev0.enable ''
+        ${lib.optionalString (cfg.vlans != { }) ''
           # The internal session exports the two filters above unchanged,
           # so the speaker under development sees exactly what a dn42 peer
           # sees, and imports through these: nothing. Its channels keep
@@ -836,7 +872,7 @@ in
         }
 
         ${peerProtocols}
-        ${lib.optionalString cfg.dev0.enable dev0Protocol}
+        ${vlanProtocols}
       '';
     };
 
