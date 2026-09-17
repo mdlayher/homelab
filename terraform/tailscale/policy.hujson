@@ -4,6 +4,11 @@
 	"tagOwners": {
 		// Development containers with unattended agents.
 		"tag:dev":   ["autogroup:admin"],
+		// Network termination points for somewhere that is not the homelab.
+		// Not tag:infra: that tag auto-approves a machine as the host of any
+		// service, and an edge hosts none while being the most exposed
+		// machine in the fleet.
+		"tag:edge":  ["autogroup:admin"],
 		// Home Assistant appliance.
 		"tag:hass":  ["autogroup:admin"],
 		// Infrastructure machines with services.
@@ -18,7 +23,7 @@
 		{
 			"action": "accept",
 			"src":    ["autogroup:member"],
-			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:hass:*", "tag:infra:*"],
+			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:edge:*", "tag:hass:*", "tag:infra:*"],
 		},
 
 		// Only personal devices route through the exit node offered by the
@@ -45,7 +50,7 @@
 		{
 			"action": "accept",
 			"src":    ["tag:dev"],
-			"dst":    ["tag:infra:22"],
+			"dst":    ["tag:infra:22", "tag:edge:22"],
 		},
 	],
 
@@ -140,6 +145,17 @@
 			"action":      "check",
 			"src":         ["autogroup:member"],
 			"dst":         ["tag:dev"],
+			"users":       ["mdlayher"],
+		},
+
+		// Personal devices into an edge, on the same terms and for the same
+		// reason: it is the machine with no public port to fall back on, so
+		// the admin console's SSH Console is the path that depends on nothing
+		// but the coordination server. Requires --ssh on the machine.
+		{
+			"action":      "check",
+			"src":         ["autogroup:member"],
+			"dst":         ["tag:edge"],
 			"users":       ["mdlayher"],
 		},
 	],
