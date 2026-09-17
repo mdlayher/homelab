@@ -1,7 +1,10 @@
 locals {
-  # "pdx" names the site throughout: the NixOS host is nixos/pdx, and
-  # homelab.interconnect.links.pdx derives the circuit's interface names
-  # from it (icl-pdx, iclw-pdx).
+  # "pdx" is the site, not the machine. Everything here is the site: the VPC
+  # and its tags, the security group's name, and
+  # homelab.interconnect.links.pdx, which derives the circuit's interface
+  # names from it (icl-pdx, iclw-pdx). The machine at it is edge-pdx, whose
+  # NixOS configuration is nixos/edge-pdx; nothing in this module names it,
+  # which is why a machine rename costs no terraform state.
   region = "us-west-2"
   site   = "pdx"
 

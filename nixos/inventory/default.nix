@@ -45,6 +45,22 @@
   # subnet, for the same reason labPrefix is where it is.
   interconnectPrefix = "fd9e:1a04:f01d:fe00::/56";
 
+  # A /56 of the ULA for router loopbacks, one /128 each. A loopback is a
+  # router's identity rather than a place, so it takes no site's prefix; it
+  # is what the IGP carries and what a router is named and reached at when
+  # the site has no LAN to be on. Below interconnectPrefix, above every real
+  # subnet, for the same reason that one is where it is.
+  #
+  # The dn42 addressing has the same idea in its site 00, and this belongs
+  # there too. It cannot go there yet: azo's own subnets occupy site 00 here,
+  # because the untagged management LAN is VLAN 0. So the loopbacks sit at
+  # the top of the range for now, and :0100::/56 is held for azo rather than
+  # handed to another site -- not spent, just not allocated, and released the
+  # moment azo renumbers from site 00 to site 01. That renumber is the next
+  # change; when it lands these move to site 00 and read the same as their
+  # dn42 counterparts, ::1 and ::2.
+  loopbackPrefix = "fd9e:1a04:f01d:fd00::/56";
+
   # IS-IS identity. Assigned here because nothing derives it: a system ID
   # is not an address and must not be built from one, so it survives any
   # renumbering, and a file has to be the registry or it drifts.
@@ -61,8 +77,7 @@
     area = "49.0001";
     systemIds = {
       routnerr-3 = "0000.0000.0101";
-      frrdev = "0000.0000.01ff";
-      pdx = "0000.0000.0201";
+      edge-pdx = "0000.0000.0201";
     };
   };
 
@@ -90,6 +105,11 @@
   # consumers which fan out over every holder (such as Prometheus) cover
   # both machines until the old one is removed.
   roles = {
+    # A network termination point for somewhere that is not the homelab:
+    # tailscale, routing daemons, dn42 peering. Named <role>-<site> rather
+    # than <role>nerr-<generation>, because there is one per site and the
+    # site is what tells them apart.
+    edge = [ "edge-pdx" ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
     monitor = [ "monitnerr-1" ];
@@ -115,6 +135,12 @@
     # file cannot see them: ssh configuration, known_hosts, and the home
     # automation box. Empty the list once those have moved.
     aliasDomains = [ "lan.servnerr.com" ];
+
+    # This site's router loopback. No dnsName: the router already answers to
+    # one name per interface, and a sixth would round-robin against them.
+    # It exists to be a stable address that is not on any segment, which is
+    # what another site names when it needs this one's resolver.
+    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d:fd00::101";
 
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {
@@ -192,6 +218,14 @@
   };
 
   # A single EC2 host terminating one interconnect circuit. No LAN, so no
-  # subnets, and nothing answers beneath its domain yet.
-  sites.pdx = { };
+  # subnets and nothing on a segment: the machine is named and reached at its
+  # loopback, which the IGP carries. Nothing here is a secret, which is what
+  # lets the router answer for this site and the server name a host in it.
+  sites.pdx.loopbacks.edge-pdx = {
+    addr = "fd9e:1a04:f01d:fd00::201";
+    # Beneath the site domain, so the name is edge.mgmt.pdx.mdlayher.net.
+    # The machine's own name carries the site because there will be one edge
+    # per site; the DNS label drops it, since the domain already says pdx.
+    dnsName = "edge.mgmt";
+  };
 }

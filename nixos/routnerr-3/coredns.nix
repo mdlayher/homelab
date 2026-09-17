@@ -107,8 +107,34 @@ let
     + lib.concatMapStrings (ifi: ''
       ${ifi.ipv4} ${hostName}.${ifi.role}.${inventory.domain}
       ${ifi.ula} ${hostName}.${ifi.role}.${inventory.domain}
-    '') (lib.attrValues inventory.interfaces);
+    '') (lib.attrValues inventory.interfaces)
+    + remotePtrFile;
   ptrCredential = "ptr";
+
+  # Sites other than this one, with a machine published at a loopback. A
+  # site with no LAN has no resolver of its own, so this one answers for it:
+  # the records are the far site's, the zone is keyed beneath the same
+  # internal zone as everything else, and nothing about a loopback is a
+  # secret. Hence a store path rather than a rendered credential, which is
+  # also what makes that visible in the Corefile.
+  remoteSites = lib.filterAttrs (
+    name: site: name != config.homelab.site && publishedLoopbacks site != [ ]
+  ) inventory.sites;
+
+  publishedLoopbacks = site: lib.filter (lo: lo.fqdn != null) (lib.attrValues site.loopbacks);
+
+  # One file and one block for all of them, as the internal zone already
+  # does with the domains it is retiring: the hosts plugin keeps only the
+  # names inside a block's zones, so the split is by zone, not by file.
+  remoteHostsFile = pkgs.writeText "coredns-remote-hosts" remotePtrFile;
+
+  # The reverse zones are the whole site ULA, so a remote loopback falls
+  # inside them and reverses here too.
+  remoteDomains = lib.concatStringsSep " " (lib.mapAttrsToList (_: site: site.domain) remoteSites);
+
+  remotePtrFile = lib.concatMapStrings (
+    site: lib.concatMapStrings (lo: "${lo.addr} ${lo.fqdn}\n") (publishedLoopbacks site)
+  ) (lib.attrValues remoteSites);
 
   # Private zones: answered NXDOMAIN here, never forwarded or logged. The
   # names are an inventory secret, so the block is rendered rather than
@@ -312,6 +338,13 @@ in
         hosts /run/credentials/coredns.service/${credential}
       }
 
+      # Other sites. Plain data from the inventory, so a store path rather
+      # than a rendered credential: a reader of this file can see that
+      # nothing about the far site is secret here.
+      ${remoteDomains} {
+        hosts ${remoteHostsFile}
+      }
+
       # The tailnet: its names exist only in each node's tailscaled, which
       # answers at the virtual resolver address for the peers and services
       # in its netmap. Forwarded to the router's own, so every machine
@@ -360,7 +393,7 @@ in
       # the domain beside the reverse zones; forward queries never arrive
       # here, the block is keyed on the reverse zones alone.
       ${siteRev} {
-        hosts /run/credentials/coredns.service/${ptrCredential} ${inventory.domain} ${siteRev} {
+        hosts /run/credentials/coredns.service/${ptrCredential} ${inventory.domain} ${remoteDomains} ${siteRev} {
           fallthrough
         }
         file ${emptyZone}

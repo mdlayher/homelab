@@ -12,6 +12,7 @@
   imports = [
     (modulesPath + "/virtualisation/amazon-image.nix")
 
+    ../modules/loopback.nix
     ./dn42.nix
     ./interconnect.nix
   ];

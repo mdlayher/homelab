@@ -44,7 +44,7 @@ in
 
       isis = {
         enable = true;
-        net = "${isis.area}.${isis.systemIds.pdx}.00";
+        net = "${isis.area}.${isis.systemIds.edge-pdx}.00";
 
         # The loopback, as at azo: this router's identity, which nothing
         # else advertises. There are no site LANs here to add.

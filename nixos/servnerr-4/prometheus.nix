@@ -129,8 +129,16 @@ let
   ) inputs.self.nixosConfigurations;
 
   # An inventory host is published under its segment's namespace, not its
-  # bare name; see nixos/inventory/.
-  dnsNames = lib.mapAttrs (_: h: h.dnsName) config.homelab.inventory.hosts;
+  # bare name; see nixos/inventory/. A machine at a site with no LAN is not a
+  # host on a segment at all, and is published at its loopback instead, so
+  # both registries are consulted. Loopbacks are plain data for exactly this:
+  # a host entry elsewhere would be a placeholder this machine cannot read.
+  dnsNames =
+    lib.mapAttrs (_: h: h.dnsName) config.homelab.inventory.hosts
+    // lib.concatMapAttrs (
+      _: site:
+      lib.mapAttrs (_: lo: lo.dnsName) (lib.filterAttrs (_: lo: lo.dnsName != null) site.loopbacks)
+    ) sites;
 
   # Fully qualify a scrape target's host, so resolution never depends on the
   # resolver's search list being present — which on most segments is not

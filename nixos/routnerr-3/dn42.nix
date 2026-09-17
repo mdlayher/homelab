@@ -15,12 +15,12 @@
     homelab.dn42.secretsFile = ./secrets.yaml;
 
     # This site's WireGuard public key; the private half is the secret named
-    # above. pdx names this literally as its carrier peer.
+    # above. The edge names this literally as its carrier peer.
     homelab.dn42.publicKey = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
 
     # The dn42 table to pdx, over the interconnect circuit of the same name.
     # ibgpInternal stays at its default until the IGP carries both sites'
-    # prefixes, which needs pdx's LANs -- it has none -- and this site's
+    # prefixes, which needs the edge's LANs -- it has none -- and this site's
     # added to interconnect.nix's passiveInterfaces.
     homelab.dn42.ibgp = [ "pdx" ];
 

@@ -559,6 +559,13 @@ in
             iifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site in"
             oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site out"
 
+            # Transit is dn42 reaching dn42. Our own space is never its
+            # destination -- that is the class above, which requires both
+            # ends to be ours -- and a site with a loopback on the circuit
+            # would otherwise be reachable from dn42 through this rule.
+            iifname "dn42e-*" oifname "icl-*" ip daddr $site4 counter name dn42_forward_drop drop comment "dn42 to another site"
+            iifname "dn42e-*" oifname "icl-*" ip6 daddr $site6 counter name dn42_forward_drop drop comment "dn42 to another site"
+
             iifname "icl-*" oifname "dn42e-*" counter accept comment "dn42 transit via interconnect"
             iifname "dn42e-*" oifname "icl-*" counter accept comment "dn42 transit to interconnect"
             iifname "dn42i-*" oifname "icl-*" counter accept comment "dn42 internal to interconnect"

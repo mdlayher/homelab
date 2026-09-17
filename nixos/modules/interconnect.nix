@@ -239,14 +239,13 @@ in
     assertions = [
       {
         assertion =
-          cfg.privateKeyFile != null
-          || lib.all (link: link.carrier == null) (lib.attrValues cfg.links);
+          cfg.privateKeyFile != null || lib.all (link: link.carrier == null) (lib.attrValues cfg.links);
         message = "homelab.interconnect.privateKeyFile is needed by any link with a carrier";
       }
       {
-        assertion = lib.all (
-          link: link.carrier == null || (link.publicKey != null && link.port != null)
-        ) (lib.attrValues cfg.links);
+        assertion = lib.all (link: link.carrier == null || (link.publicKey != null && link.port != null)) (
+          lib.attrValues cfg.links
+        );
         message = "an interconnect link with a carrier needs publicKey and port";
       }
       {
@@ -259,8 +258,7 @@ in
       }
       {
         assertion =
-          !cfg.isis.enable
-          || lib.all (link: cfg.isis.lspMtu < link.mtu) (lib.attrValues cfg.links);
+          !cfg.isis.enable || lib.all (link: cfg.isis.lspMtu < link.mtu) (lib.attrValues cfg.links);
         message = "interconnect isis.lspMtu must be smaller than every link's mtu";
       }
     ];
@@ -403,18 +401,18 @@ in
           };
         }
         // {
-        "45-${link.interface}" = {
-          netdevConfig = {
-            Name = link.interface;
-            Kind = "ip6gretap";
-            MTUBytes = link.mtu;
+          "45-${link.interface}" = {
+            netdevConfig = {
+              Name = link.interface;
+              Kind = "ip6gretap";
+              MTUBytes = link.mtu;
+            };
+            tunnelConfig = {
+              Local = lib.head (lib.splitString "/" link.localAddress);
+              Remote = link.remoteAddress;
+              Independent = true;
+            };
           };
-          tunnelConfig = {
-            Local = lib.head (lib.splitString "/" link.localAddress);
-            Remote = link.remoteAddress;
-            Independent = true;
-          };
-        };
         }
       ) cfg.links;
 
@@ -431,17 +429,17 @@ in
           };
         }
         // {
-        "45-${link.interface}" = {
-          matchConfig.Name = link.interface;
-          # A static link-local, as a dn42 tunnel has: both ends are ours,
-          # so neither can be left to an address derived from a MAC the far
-          # side would have to be told about.
-          address = [ "${link.localLla}/64" ];
-          networkConfig = {
-            LinkLocalAddressing = "no";
-            IPv6AcceptRA = false;
+          "45-${link.interface}" = {
+            matchConfig.Name = link.interface;
+            # A static link-local, as a dn42 tunnel has: both ends are ours,
+            # so neither can be left to an address derived from a MAC the far
+            # side would have to be told about.
+            address = [ "${link.localLla}/64" ];
+            networkConfig = {
+              LinkLocalAddressing = "no";
+              IPv6AcceptRA = false;
+            };
           };
-        };
         }
       ) cfg.links;
     };

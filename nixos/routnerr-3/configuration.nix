@@ -8,6 +8,7 @@ in
     # Hardware and base router networking. The shared base system lives in
     # nixos/modules/ and is imported by flake.nix.
     ./hardware-configuration.nix
+    ../modules/loopback.nix
     ./networking.nix
     ./nftables.nix
 

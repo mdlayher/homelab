@@ -13,7 +13,7 @@ keys:
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
   - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
   - &monitnerr-1 age15k9ztajdwg8w98t297pml8zq0x37mm5wd85vhxvyqul6zmfpygvsl7akg6
-  - &pdx age1323pt5w9df0ealmd0xy954ajy5gtrhvdlh4nf3d4pjqvnvvqfq3qjf5lpa
+  - &edge-pdx age1323pt5w9df0ealmd0xy954ajy5gtrhvdlh4nf3d4pjqvnvvqfq3qjf5lpa
 creation_rules:
   - path_regex: nixos/servnerr-4/secrets\.yaml$
     key_groups:
@@ -35,13 +35,13 @@ creation_rules:
           - *monitnerr-1
           - *routnerr-3
           - *servnerr-4
-          - *pdx
-  - path_regex: nixos/pdx/secrets\.yaml$
+          - *edge-pdx
+  - path_regex: nixos/edge-pdx/secrets\.yaml$
     key_groups:
       - age:
           - *mdlayher
           - *linuxdev-gate
-          - *pdx
+          - *edge-pdx
   # Credentials the admin uses from the development container through the
   # secrets gate (API tokens for tofu and gh); no machine decrypts these.
   - path_regex: ^secrets/[^/]+\.yaml$

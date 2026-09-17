@@ -7,7 +7,7 @@
 # What this builds is the far end of a site interconnect: one dual-stack host
 # which terminates a WireGuard carrier from azo and routes for our AS. It
 # provisions the machine and the path to it, nothing on it. The NixOS
-# configuration lives in nixos/pdx/ and arrives by nixos/deploy.
+# configuration lives in nixos/edge-pdx/ and arrives by nixos/deploy.
 terraform {
   required_version = ">= 1.8.0"
 
