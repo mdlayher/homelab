@@ -34,6 +34,10 @@ let
   internalProtocols = raw "dn42i_.*";
   internalInterfaces = raw "dn42i-.*";
 
+  # The IS-IS sample, matched on its name so the textfile directory's path
+  # is not repeated here; node_exporter labels each file by its full path.
+  isisTextfile = raw ".*/isis\\.prom";
+
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
   excludedJobsRegex = raw (anyOf excludedJobs);
@@ -187,23 +191,36 @@ in
         # the way that happens -- still serves a 200, so the scrape stays
         # up and every metric it should have produced is simply missing.
         #
-        # There is deliberately no IS-IS adjacency alert yet. No exporter
-        # reports adjacency state, and the closest proxy --
-        # frr_route_rib_count{route_type="isis"} -- has no series at all
-        # when the count is zero, so it needs the absence form rather than
-        # `== 0`:
-        #
-        #   frr_status_up == 1 unless on (instance) frr_route_rib_count{route_type="isis"}
-        #
-        # That is ready to use, and stays out until a circuit exists which
-        # is not the lab link to the dev container. The lab link is expected
-        # to flap for as long as someone is developing against it, the same
-        # reason BIRDBGPSessionDown skips the dn42i_* sessions.
         {
           alert = "FRRDown";
           expr = ''up{job="frr"} == 0 or frr_status_up == 0 or frr_collector_up == 0'';
           for = "10m";
           annotations.summary = "FRR on {{ $labels.instance }} is down or a collector is failing, so the IGP is unmonitored.";
+        }
+        # The adjacency itself, from the textfile exporter in
+        # nixos/modules/isis-metrics.nix. Its series are rendered from the
+        # circuits each router is configured with, so an adjacency which
+        # drops reads 0 instead of disappearing and `== 0` is enough.
+        #
+        # The sample is written once a minute and a circuit crosses the
+        # internet, so this waits several of them: a hello exchange missed
+        # once is not worth a page, and an adjacency which does not come
+        # back is what this is for.
+        {
+          alert = "ISISAdjacencyDown";
+          expr = "homelab_isis_adjacency_up == 0";
+          for = "5m";
+          annotations.summary = "IS-IS adjacency on {{ $labels.interface }} to site {{ $labels.site }} is down, so {{ $labels.instance }} has no IGP path there.";
+        }
+        # The adjacency gauge above is only as true as the file it comes
+        # from. node_exporter keeps serving the last sample written, so a
+        # collector which stops running leaves the adjacency reading what it
+        # read when it died, and a circuit which drops after that is never
+        # reported. The sample is written every minute.
+        {
+          alert = "ISISMetricsStale";
+          expr = "time() - node_textfile_mtime_seconds{file=~${isisTextfile}} > 300";
+          annotations.summary = "The IS-IS sample on {{ $labels.instance }} is {{ $value | humanizeDuration }} old, so its adjacency state is not to be trusted.";
         }
         # BlackboxServiceDown only sees a probe hard down for 5 straight
         # minutes; sustained partial packet loss never trips it. Probes run

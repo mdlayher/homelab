@@ -120,7 +120,10 @@ in
   # The loopback is a router's identity in the IGP and nothing else
   # advertises it, so the module which runs the IGP is the one which brings
   # it in. It is inert on a machine the registry does not name.
-  imports = [ ./loopback.nix ];
+  imports = [
+    ./isis-metrics.nix
+    ./loopback.nix
+  ];
 
   options.homelab.interconnect = {
     privateKeyFile = lib.mkOption {
@@ -467,6 +470,7 @@ in
            is-type level-2-only
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
+           log-adjacency-changes
           ${lib.optionalString (
             cfg.isis.aggregate != null
           ) " redistribute ipv6 kernel level-2 route-map isis-aggregate"}
