@@ -331,7 +331,14 @@ let
         MulticastDNS = true;
       };
       dhcpV4Config.ClientIdentifier = "mac";
-      ipv6AcceptRAConfig = lib.mkIf (token != null) { Token = "static:::${token}"; };
+      ipv6AcceptRAConfig = {
+        # Take the segment's DNS search domain from the router's RAs, so a
+        # guest here reaches its neighbours by bare name; networkd ignores
+        # the option unless asked. The RAs carry dev0's namespace alone,
+        # since nothing else on this VLAN is reachable from it.
+        UseDomains = true;
+      }
+      // lib.optionalAttrs (token != null) { Token = "static:::${token}"; };
     };
 
     services = {
