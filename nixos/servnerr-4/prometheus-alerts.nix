@@ -182,6 +182,11 @@ in
         # nothing more: the status collector asks zebra for `show version`,
         # so isisd can be dead with frr_status_up still 1.
         #
+        # frr_collector_up is in here because a collector which cannot read
+        # FRR's sockets -- the exporter dropping out of the frrvty group is
+        # the way that happens -- still serves a 200, so the scrape stays
+        # up and every metric it should have produced is simply missing.
+        #
         # There is deliberately no IS-IS adjacency alert yet. No exporter
         # reports adjacency state, and the closest proxy --
         # frr_route_rib_count{route_type="isis"} -- has no series at all
@@ -196,9 +201,9 @@ in
         # reason BIRDBGPSessionDown skips the dn42i_* sessions.
         {
           alert = "FRRDown";
-          expr = ''up{job="frr"} == 0 or frr_status_up == 0'';
+          expr = ''up{job="frr"} == 0 or frr_status_up == 0 or frr_collector_up == 0'';
           for = "10m";
-          annotations.summary = "FRR on {{ $labels.instance }} is not responding, so the IGP is unmonitored.";
+          annotations.summary = "FRR on {{ $labels.instance }} is down or a collector is failing, so the IGP is unmonitored.";
         }
         # BlackboxServiceDown only sees a probe hard down for 5 straight
         # minutes; sustained partial packet loss never trips it. Probes run
