@@ -1059,6 +1059,11 @@ in
     # repeat what the interface name says.
     services.prometheus.exporters.wireguard = {
       enable = true;
+      # Both families. The default is 0.0.0.0, and this exporter takes that
+      # literally where the others end up dual-stack from the same string,
+      # so at a site whose only name is an AAAA it is the one target that
+      # cannot be scraped.
+      listenAddress = "::";
       # Export the age of each peer's last handshake alongside its UNIX
       # timestamp, so the alert compares one number to a threshold rather
       # than subtracting the router's clock from the server's.

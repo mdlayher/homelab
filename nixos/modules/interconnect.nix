@@ -106,6 +106,27 @@ in
         '';
       };
 
+      aggregate = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          A prefix this router originates into the IGP on behalf of its
+          whole site, in CIDR notation, or null to originate none.
+
+          A passive interface advertises every prefix on it and nothing
+          finer: isisd has no per-prefix filter and no summary-address, so
+          naming a LAN here would also hand the far site a dynamic delegated
+          GUA. One aggregate says the same thing without that -- it never
+          changes, and the more specifics on this side sort the traffic out
+          when it arrives.
+
+          Originated by redistributing the matching route out of zebra
+          under a route-map. The route it matches is expected to be an
+          unreachable aggregate covering the site, so a packet for an
+          address nobody holds is rejected here rather than looping.
+        '';
+      };
+
       passiveInterfaces = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
@@ -306,12 +327,46 @@ in
              isis passive
             !
           '';
+          # Redistribution is the only way to originate a prefix which is
+          # not an address on an interface, and the route-map is what makes
+          # it safe: "kernel" is every route zebra did not write itself,
+          # which on a router also running bird is the whole dn42 table.
+          # The match is the aggregate alone and the implicit deny carries
+          # the rest.
+          #
+          # kernel rather than static because that is how zebra classifies
+          # it: networkd installs the aggregate with proto static, and
+          # zebra calls anything it did not install itself a kernel route.
+          #
+          # The level is not optional, and isisd rejects the whole line
+          # without it -- logged as an unknown command, after which the
+          # daemon carries on with no redistribution at all. level-2 to
+          # match is-type above.
+          aggregate = lib.optionalString (cfg.isis.aggregate != null) ''
+            ipv6 prefix-list isis-aggregate seq 5 permit ${cfg.isis.aggregate}
+            !
+            route-map isis-aggregate permit 10
+             match ipv6 address prefix-list isis-aggregate
+            !
+          '';
+
+          # isisd logs every route zebra offers it for redistribution, at
+          # debug and gated by nothing, so with an aggregate configured the
+          # whole dn42 table's churn lands in the journal -- some 90 lines a
+          # minute, swamping anything worth reading there. FRR logs at debug
+          # when nothing tells it otherwise, so tell it.
+          logging = "log syslog informational";
         in
         ''
-          router isis ${tag}
+          ${logging}
+          !
+          ${aggregate}router isis ${tag}
            is-type level-2-only
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
+          ${lib.optionalString (
+            cfg.isis.aggregate != null
+          ) " redistribute ipv6 kernel level-2 route-map isis-aggregate"}
           !
           ${lib.concatMapStrings circuit (lib.mapAttrsToList (_: link: link.interface) cfg.links)}
           ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
@@ -421,7 +476,20 @@ in
         lib.optionalAttrs (link.carrier != null) {
           "45-${link.carrier}" = {
             matchConfig.Name = link.carrier;
-            address = [ link.localAddress ];
+            # Deprecated, not merely unrouted: this address exists so the
+            # GRETAP has an endpoint, and nothing should ever pick it as a
+            # source. It is inside the site ULA, so without this a host at
+            # a site whose loopback is also in that /48 chooses between the
+            # two by longest common prefix, which is a tie. RFC 6724 avoids
+            # a deprecated address long before it reaches that rule, and
+            # the GRETAP's own packets are unaffected: their addresses are
+            # configured on the netdev, not chosen.
+            addresses = [
+              {
+                Address = link.localAddress;
+                PreferredLifetime = "0";
+              }
+            ];
             networkConfig = {
               LinkLocalAddressing = "no";
               IPv6AcceptRA = false;
