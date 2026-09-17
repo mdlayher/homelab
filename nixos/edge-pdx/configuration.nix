@@ -71,6 +71,10 @@ in
     DNS = [ inventory.sites.azo.loopbacks.${lib.head inventory.roles.router}.addr ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
+      # dn42 as a whole, not just our zone within it: bird resolves the RTR
+      # feeds by name (rpki.*.dn42), and the router is the only resolver
+      # which forwards that TLD to dn42's own anycast servers.
+      "~dn42"
     ];
   };
 
