@@ -294,8 +294,7 @@ in
       '';
     };
     publicKey = lib.mkOption {
-      type = lib.types.str;
-      default = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
+      type = lib.types.nullOr lib.types.str;
       description = ''
         Our WireGuard public key, shared by every tunnel. The private half
         is the secret dn42/wireguard_key in this host's secrets.yaml,
@@ -303,6 +302,11 @@ in
         peers, so it is recorded here rather than recovered by decrypting
         the private key. The peering page (azo-page.nix) publishes it from
         here.
+
+        No default, because a default is one site's key and any other site
+        would inherit it silently: "our key" would name a machine that does
+        not hold the private half. Null is for a site with no dn42 tunnels,
+        which the assertion below permits only while peers is empty.
       '';
     };
     lla = lib.mkOption {
@@ -579,6 +583,10 @@ in
         {
           assertion = lib.unique ports == ports;
           message = "dn42 peers must use unique WireGuard listen ports";
+        }
+        {
+          assertion = cfg.peers == { } || cfg.publicKey != null;
+          message = "homelab.dn42.publicKey is needed by any site with dn42 peers";
         }
       ]
       ++ lib.mapAttrsToList (name: vlan: {

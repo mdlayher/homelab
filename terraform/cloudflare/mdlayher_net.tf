@@ -68,6 +68,28 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_azo_ipv6" {
   proxied = false
 }
 
+# The pdx site, built by terraform/aws. The addresses come from `tofu output`
+# on that module, which keeps its own state with no link to this one: a
+# replaced instance keeps its EIP but takes a new ENI address, so the AAAA
+# has to be updated by hand when that happens.
+resource "cloudflare_dns_record" "mdlayher_net_dn42_pdx_ipv4" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "pdx.dn42.mdlayher.net"
+  type    = "A"
+  content = "52.38.132.195"
+  ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "mdlayher_net_dn42_pdx_ipv6" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "pdx.dn42.mdlayher.net"
+  type    = "AAAA"
+  content = "2600:1f13:ce:ca00:bcc3:f69b:5bd8:251b"
+  ttl     = 1
+  proxied = false
+}
+
 # HTTPS records (RFC 9460) for the names the peering page answers on, so a
 # resolver that asks for them learns HTTP/3 is available before the first
 # connection, instead of after it via the Alt-Svc header the page also

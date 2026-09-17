@@ -73,3 +73,9 @@ Guidance for agents working in this repository.
   thing grows, and it is the one nobody remembers; it goes stale silently
   because nothing validates it. Say "multiple" or "several", or name the
   invariant that actually matters ("at least one clearnet feed stays").
+- Comments state what the code does and why, not what it is unlike. No
+  comparative asides ("unlike the lab link", "as opposed to X"), no em-dash
+  parentheticals softening a claim, no editorial flourishes. And never invent
+  a rationale: if the reason for a choice is not known, describe the choice
+  and stop. A made-up justification reads as authoritative and outlives
+  everyone who could have corrected it.

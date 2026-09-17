@@ -60,6 +60,7 @@ let
     name = "sops-gate-run";
     runtimeInputs = with pkgs; [
       age
+      awscli2
       coreutils
       nano
       opentofu
@@ -1093,6 +1094,10 @@ in
               go-tools
 
               gh
+
+              awscli2
+              ssh-to-age
+              wireguard-tools
 
               # logcli, for querying Loki logs over the tailnet; see
               # nixos/servnerr-4/loki.nix.

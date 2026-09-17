@@ -1,0 +1,12 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State stays local to the gate. It is machine state, not configuration, and
+# the files beside this one are the source of truth.
+terraform.tfstate
+terraform.tfstate.backup
+
+# Bootstrap variables, not configuration: the SSH window is opened by
+# writing this file and closed by deleting it.
+terraform.tfvars
+*.auto.tfvars

@@ -33,6 +33,13 @@
   # ulaPrefix is: it names a range, not an address.
   labPrefix = "fd9e:1a04:f01d:ff00::/56";
 
+  # A /56 of the ULA for interconnect carriers, one /127 per link. These
+  # address the outside of each GRETAP and live inside its WireGuard tunnel,
+  # so nothing routes to them; they exist because a GRETAP needs a local and
+  # a remote address to be built on. Below labPrefix, above every real
+  # subnet, for the same reason labPrefix is where it is.
+  interconnectPrefix = "fd9e:1a04:f01d:fe00::/56";
+
   # IS-IS identity. Assigned here because nothing derives it: a system ID
   # is not an address and must not be built from one, so it survives any
   # renumbering, and a file has to be the registry or it drifts.
@@ -50,6 +57,7 @@
     systemIds = {
       routnerr-3 = "0000.0000.0101";
       frrdev = "0000.0000.01ff";
+      pdx = "0000.0000.0201";
     };
   };
 
