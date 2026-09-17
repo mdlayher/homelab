@@ -97,10 +97,20 @@ in
         type = lib.types.listOf lib.types.str;
         default = [ ];
         description = ''
-          Interfaces whose prefixes are advertised into the IGP without
-          forming an adjacency -- the site LANs, so the ULA and the v4
-          prefixes reach the other site. Naming interfaces rather than
+          Interfaces this router advertises into the IGP without running
+          the protocol on them: IS-IS puts their prefixes into our LSP but
+          sends no hellos and forms no adjacency.
+
+          This is what makes anything other than the circuits reachable
+          from another site. A circuit advertises only the /127 it runs on,
+          so the loopback and every site LAN stay invisible to the rest of
+          the area until they are named here. Naming interfaces rather than
           prefixes keeps the inventory's secrets out of this config.
+
+          Passive rather than a circuit because a LAN has no IS-IS
+          neighbour to find: running the protocol there would send hellos
+          to every host on the segment and accept an adjacency from
+          anything that answered.
         '';
       };
     };

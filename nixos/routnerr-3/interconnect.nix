@@ -52,7 +52,24 @@ in
         # scheme and is the registry for both; the NSAP selector is always
         # 00 for a router's own NET.
         net = "${isis.area}.${isis.systemIds.routnerr-3}.00";
-        passiveInterfaces = [ "lab0" ];
+        # What this router puts into the IGP beyond the circuits themselves.
+        #
+        # "dn42" is the dummy holding this router's loopback addresses, not
+        # a dn42 VLAN -- that is dn42i-dev0. The loopback is the router's
+        # identity and nothing else would advertise it.
+        #
+        # The site LANs are deliberately absent. The only circuit today is
+        # the lab link to the dev container, which is inside this site, so
+        # advertising a site prefix over it would pull local traffic
+        # through a gretap at MTU 1382 to reach somewhere one hop away.
+        # They go in with the first circuit that leaves the building, which
+        # is also the precondition for turning dn42's ibgpInternal off:
+        # that switch means "the IGP carries our topology now", and the IGP
+        # carries only what this list names.
+        passiveInterfaces = [
+          "dn42"
+          "lab0"
+        ];
       };
     };
 
