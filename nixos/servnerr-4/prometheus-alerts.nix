@@ -131,9 +131,17 @@ in
         # implementation on the other end runs only while someone is
         # experimenting with it, and a session which is down most of the
         # time is not news.
+        #
+        # Aggregated rather than matched raw: the exporter puts the protocol
+        # state in a label, reason text and all, so a peer bouncing between
+        # `Idle BGP Error: Hold timer expired` and `Connect` is a new series
+        # each hop and the `for` timer restarts. Collapsing to one series per
+        # peer and family is safe here because a BGP protocol reports up=1
+        # only while Established -- which is not true of RPKI below, hence
+        # the different shape there.
         {
           alert = "BIRDBGPSessionDown";
-          expr = ''bird_protocol_up{proto="BGP",name!~${internalProtocols}} == 0'';
+          expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name!~${internalProtocols}}) == 0'';
           for = "10m";
           annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is not Established.";
         }
@@ -148,15 +156,24 @@ in
           for = "5m";
           annotations.summary = "The BIRD exporter on {{ $labels.instance }} is failing, so dn42 protocol state is unmonitored.";
         }
-        # Two RTR servers feed the same ROA tables, so one down is
+        # Multiple RTR servers feed the same ROA tables, so one down is
         # redundancy doing its job rather than an outage, and the tables
         # hold their data for the two hour expire window. That leaves
         # plenty of room to wait out a refresh or retry cycle before
-        # alerting; what this catches ahead of an empty table is the second
-        # feed going the same way.
+        # alerting; what this catches ahead of an empty table is the rest
+        # of the feeds going the same way. rpki_sess_flap is in here too
+        # and matters less: its tables fail open, so losing it suppresses
+        # nothing rather than rejecting everything.
+        #
+        # Not `bird_protocol_up == 0`: the exporter puts the protocol state
+        # in a label, so a session cycling Transport-Error -> Connecting ->
+        # Sync-Start is a different series each hop and the `for` timer
+        # restarts every retry, never reaching 30m. Sync-Start reports up=1
+        # besides. Ask instead for a session with no Established series,
+        # which is one series per session and holds across the flapping.
         {
           alert = "BIRDRPKISessionDown";
-          expr = ''bird_protocol_up{proto="RPKI"} == 0'';
+          expr = ''count by (instance, name) (bird_protocol_up{proto="RPKI"}) unless on (instance, name) bird_protocol_up{proto="RPKI", state="Established"}'';
           for = "30m";
           annotations.summary = "RPKI validator session {{ $labels.name }} on {{ $labels.instance }} is not Established.";
         }

@@ -713,12 +713,17 @@ in
           return net ~ [ fd00::/8{44,64} ];
         }
 
-        # ROA data from clearnet-reachable dn42 RTR servers; two sources
-        # feed the same tables for redundancy. Servers and the
-        # refresh/retry/expire values are from the service list at
+        # ROA data from dn42 RTR servers; multiple sources feed the same
+        # tables for redundancy. Servers and the refresh/retry/expire
+        # values are from the service list at
         # https://dn42.dev/services/RPKI. Routes are rejected unless
         # ROA_VALID, so a total RTR outage past the expire window fails
         # closed: sessions stay up but carry no routes.
+        #
+        # A mix of clearnet names and .dn42 names, the latter reached over
+        # the network they validate. Different failure domains on purpose;
+        # a .dn42 feed cannot resolve until dn42 is up, so a clearnet feed
+        # always stays.
         roa4 table dn42_roa;
         roa6 table dn42_roa_v6;
 
@@ -740,6 +745,39 @@ in
           expire 7200;
         }
 
+        protocol rpki rpki_routedbits {
+          roa4 { table dn42_roa; };
+          roa6 { table dn42_roa_v6; };
+          remote "rpki.routedbits.dn42" port 8082;
+          refresh 600;
+          retry 300;
+          expire 7200;
+        }
+
+        # A FlapAlerted feed, in tables of its own: it publishes an AS0 ROA
+        # for a prefix that is currently flapping, to keep the flap from
+        # spreading. It cannot share the tables above, where roa_check
+        # answers ROA_VALID as soon as any covering ROA matches the origin
+        # -- the legitimate ROA would outvote the AS0 one and the feed
+        # would do nothing at all. A second feed would simply join these
+        # tables: either operator flagging a prefix is enough to drop it.
+        #
+        # Fails open, unlike the tables above: lose the session and this
+        # empties, every prefix reads ROA_UNKNOWN and nothing is
+        # suppressed. The cost is that another operator gets a say in what
+        # we accept, which is the bargain on offer.
+        roa4 table dn42_flap_roa;
+        roa6 table dn42_flap_roa_v6;
+
+        protocol rpki rpki_sess_flap {
+          roa4 { table dn42_flap_roa; };
+          roa6 { table dn42_flap_roa_v6; };
+          remote "rpki.sess.dn42" port 8282;
+          refresh 600;
+          retry 300;
+          expire 7200;
+        }
+
         # Unknown and invalid ROA both reject: a peer may only send us
         # prefixes it has registered. These rejections used to print, but
         # bird 2.19's filter language has no leveled print (only print and
@@ -752,6 +790,9 @@ in
         filter dn42_import {
           if is_valid_network() && !is_self_net() then {
             if (roa_check(dn42_roa, net, bgp_path.last) != ROA_VALID) then reject;
+            # AS0 when flapping, so INVALID rather than !VALID: a
+            # prefix nobody has flagged is absent and reads UNKNOWN.
+            if (roa_check(dn42_flap_roa, net, bgp_path.last) = ROA_INVALID) then reject;
             accept;
           }
           reject;
@@ -760,6 +801,9 @@ in
         filter dn42_import_v6 {
           if is_valid_network_v6() && !is_self_net_v6() && !is_site_net_v6() then {
             if (roa_check(dn42_roa_v6, net, bgp_path.last) != ROA_VALID) then reject;
+            # AS0 when flapping, so INVALID rather than !VALID: a
+            # prefix nobody has flagged is absent and reads UNKNOWN.
+            if (roa_check(dn42_flap_roa_v6, net, bgp_path.last) = ROA_INVALID) then reject;
             accept;
           }
           reject;

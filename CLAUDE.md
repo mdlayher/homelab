@@ -68,3 +68,8 @@ Guidance for agents working in this repository.
 - Prose and comments refer to machines by role — the server, the router, the
   monitor, the workstation — not by hostname. Hostnames appear only in
   functional configuration (inventory, flake attrs, probe targets).
+- Don't write counts into prose or comments — "three RTR servers", "both
+  peers", "the clearnet pair". A count is a second place to update when the
+  thing grows, and it is the one nobody remembers; it goes stale silently
+  because nothing validates it. Say "multiple" or "several", or name the
+  invariant that actually matters ("at least one clearnet feed stays").
