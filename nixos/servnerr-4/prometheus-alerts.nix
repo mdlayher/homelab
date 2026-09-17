@@ -177,6 +177,29 @@ in
           for = "30m";
           annotations.summary = "RPKI validator session {{ $labels.name }} on {{ $labels.instance }} is not Established.";
         }
+        # FRR runs the IGP on the site interconnects, beside bird rather
+        # than instead of it. This is a liveness check on the daemon and
+        # nothing more: the status collector asks zebra for `show version`,
+        # so isisd can be dead with frr_status_up still 1.
+        #
+        # There is deliberately no IS-IS adjacency alert yet. No exporter
+        # reports adjacency state, and the closest proxy --
+        # frr_route_rib_count{route_type="isis"} -- has no series at all
+        # when the count is zero, so it needs the absence form rather than
+        # `== 0`:
+        #
+        #   frr_status_up == 1 unless on (instance) frr_route_rib_count{route_type="isis"}
+        #
+        # That is ready to use, and stays out until a circuit exists which
+        # is not the lab link to the dev container. The lab link is expected
+        # to flap for as long as someone is developing against it, the same
+        # reason BIRDBGPSessionDown skips the dn42i_* sessions.
+        {
+          alert = "FRRDown";
+          expr = ''up{job="frr"} == 0 or frr_status_up == 0'';
+          for = "10m";
+          annotations.summary = "FRR on {{ $labels.instance }} is not responding, so the IGP is unmonitored.";
+        }
         # BlackboxServiceDown only sees a probe hard down for 5 straight
         # minutes; sustained partial packet loss never trips it. Probes run
         # every 15s, so the 15m window holds ~60 samples and 0.9 means over

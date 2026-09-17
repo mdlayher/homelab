@@ -97,6 +97,13 @@ let
         # declared separately and are not tunnels.
         // lib.optionalAttrs (cfg.homelab.dn42.peers or { } != { }) {
           dn42_peer.port = 9631;
+        }
+        # frr_exporter, for the IGP on the site interconnects. Hand-added for
+        # the same reason as dn42_peer: there is no
+        # services.prometheus.exporters.frr module for discover to find, so
+        # the option which turns the IGP on is what names the job.
+        // lib.optionalAttrs (cfg.homelab.interconnect.isis.enable or false) {
+          frr.port = 9342;
         };
       ssh = cfg.homelab.sshProbe or false;
       router = cfg.services.corerad.enable;

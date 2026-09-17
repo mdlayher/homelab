@@ -1,6 +1,8 @@
 {
   config,
   lib,
+  pkgs,
+  utils,
   ...
 }:
 
@@ -39,6 +41,9 @@
 
 let
   cfg = config.homelab.interconnect;
+
+  # frr_exporter's own default, and what the server's discovery hook uses.
+  exporterPort = 9342;
 in
 {
   options.homelab.interconnect = {
@@ -278,6 +283,61 @@ in
           ${lib.concatMapStrings circuit (lib.mapAttrsToList (_: link: link.interface) cfg.links)}
           ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
         '';
+    };
+
+    # There is no IS-IS exporter. tynany's frr_exporter is the only one
+    # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary
+    # does not contain the string "isis". Adjacency state is therefore not
+    # available as a metric at all, and what stands in for it comes from
+    # zebra rather than from isisd:
+    #
+    #   route, with --collector.route.detailed-routes, breaks the RIB down
+    #   by protocol. That flag is off by default and is the whole reason to
+    #   run this collector: without it there is only a total, and
+    #   frr_route_rib_count{route_type="isis"} is the proxy for the
+    #   adjacency, since losing the circuit takes its routes with it.
+    #
+    #   status reports only whether zebra answers `show version` -- not the
+    #   state of each daemon. isisd can be dead with frr_status_up still 1,
+    #   so it is a liveness check for FRR itself and nothing more.
+    #
+    # bfd, bgp and ospf are on by default and would each query a daemon this
+    # router does not run; disabling them is what keeps the scrape from
+    # erroring rather than merely reporting nothing.
+    #
+    # Scraped by the server's exporter discovery, which has a hook for this
+    # option -- there is no services.prometheus.exporters.frr to be found.
+    systemd.services.frr-exporter = lib.mkIf cfg.isis.enable {
+      description = "Prometheus FRR exporter";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "frr.service" ];
+      wants = [ "frr.service" ];
+      serviceConfig = {
+        ExecStart = utils.escapeSystemdExecArgs [
+          "${pkgs.prometheus-frr-exporter}/bin/frr_exporter"
+          "--web.listen-address=:${toString exporterPort}"
+          # Each daemon's own socket rather than vtysh, which the exporter
+          # itself recommends and which needs no sudo.
+          "--frr.socket.dir-path=/run/frr"
+          "--collector.route.detailed-routes"
+          "--no-collector.bfd"
+          "--no-collector.bgp"
+          "--no-collector.ospf"
+        ];
+        Restart = "always";
+
+        # frrvty is the group FRR creates for reading those sockets; a
+        # DynamicUser outside it gets permission denied on every scrape.
+        DynamicUser = true;
+        SupplementaryGroups = [ "frrvty" ];
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = true;
+        RestrictNamespaces = true;
+      };
     };
 
     systemd.network = {
