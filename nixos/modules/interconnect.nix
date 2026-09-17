@@ -373,6 +373,18 @@ in
         '';
     };
 
+    # Restart rather than reload when the configuration changes. nixpkgs
+    # sets reloadIfChanged for this unit, so a changed frr.conf becomes
+    # `systemctl reload`, which runs frr-reload.py to diff the running
+    # configuration against the new one through vtysh. On a router with
+    # anything beyond a trivial configuration that hangs against mgmtd's
+    # datastore lock until systemd times the job out at TimeoutSec, kills
+    # all five daemons with SIGKILL, and restarts them anyway: two minutes
+    # per deploy and an unclean shutdown, with no LSP purge. Starting from
+    # cold takes a second or two, so the reload buys nothing it does not
+    # then lose.
+    systemd.services.frr.reloadIfChanged = lib.mkIf cfg.isis.enable (lib.mkForce false);
+
     # There is no IS-IS exporter. tynany's frr_exporter is the only one
     # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary
     # does not contain the string "isis". Adjacency state is therefore not
