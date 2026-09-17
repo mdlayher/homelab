@@ -669,8 +669,42 @@ let
      exit-address-family
     exit
     !
+    router isis core
+     is-type level-2-only
+     net ${inventory.isis.area}.${inventory.isis.systemIds.frrdev}.00
+     lsp-mtu 1300
+    !
+    interface ${icl.ifname}
+     ip router isis core
+     ipv6 router isis core
+     isis circuit-type level-2-only
+     isis network point-to-point
+     isis hello padding
+    !
+    interface lab0
+     ip router isis core
+     ipv6 router isis core
+     isis passive
+    !
   '';
   frrConfigFile = "/run/host-secrets/frr.conf";
+
+  # The container's end of the lab interconnect (see the router's
+  # interconnect.nix). A bare GRETAP over dev0 with no WireGuard carrier,
+  # since both ends are in this site, but at the MTU a real inter-site link
+  # would have so the IGP is exercised at the size it will really run.
+  #
+  # Addressing is the inventory's labPrefix, a /56 of the ULA no subnet
+  # uses: ff00 the link, ff01 the router's advertised /64, ff02 ours.
+  lab = lib.removeSuffix "00::/56" inventory.labPrefix;
+  icl = {
+    ifname = "icl-azo";
+    local = "${lab}00::";
+    remote = "${lab}00::1";
+    lla = "fe80::11";
+    ours = "${lab}02::1/64";
+    mtu = 1382;
+  };
 
   # The development container's end of the internal dn42 link, for the BGP
   # implementation under development there: the router's dn42i-dev0 VLAN,
@@ -1170,7 +1204,56 @@ in
             services.frr = {
               bgpd.enable = true;
               bfdd.enable = true;
+              isisd.enable = true;
               configFile = frrConfigFile;
+            };
+
+            # The lab interconnect (see icl above). The GRETAP rides dev0,
+            # so its outer packets are raw GRE and the container's firewall
+            # must admit them: a port rule cannot, GRE having no ports.
+            networking.firewall.extraCommands = ''
+              ip6tables -I nixos-fw 1 -p gre -s ${icl.remote} -j ACCEPT
+            '';
+
+            systemd.network = {
+              netdevs = {
+                "45-${icl.ifname}" = {
+                  netdevConfig = {
+                    Name = icl.ifname;
+                    Kind = "ip6gretap";
+                    MTUBytes = icl.mtu;
+                  };
+                  tunnelConfig = {
+                    Local = icl.local;
+                    Remote = icl.remote;
+                    Independent = true;
+                  };
+                };
+                "45-lab0".netdevConfig = {
+                  Name = "lab0";
+                  Kind = "dummy";
+                };
+              };
+
+              networks = {
+                # The underlay address the GRETAP is built on, alongside
+                # whatever eth0 already learns.
+                "10-eth0".address = [ "${icl.local}/127" ];
+
+                "45-${icl.ifname}" = {
+                  matchConfig.Name = icl.ifname;
+                  address = [ "${icl.lla}/64" ];
+                  networkConfig = {
+                    LinkLocalAddressing = "no";
+                    IPv6AcceptRA = false;
+                  };
+                };
+
+                "45-lab0" = {
+                  matchConfig.Name = "lab0";
+                  address = [ icl.ours ];
+                };
+              };
             };
 
             # vtysh access for the user, plus the frr group so agents can

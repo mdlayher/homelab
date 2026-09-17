@@ -118,7 +118,8 @@ in
       Network inventory with addresses as sops placeholders, except
       ulaPrefix, privatePrefix and labPrefix: the site's ULA /48, the
       RFC 1918 space its LANs are drawn from, and a /56 of the ULA set
-      aside for lab use, all in CIDR notation as plain data.
+      aside for lab use, all in CIDR notation as plain data, and isis,
+      the area and per-router system IDs.
       Interfaces carry the router's addresses and prefixes plus their
       hosts; hosts carry mac, ipv4, and ula/gua (null when the host has no
       known IPv6 address). privateZones is the space-separated private DNS
@@ -136,7 +137,7 @@ in
         ;
       inherit interfaces;
       # Plain data, not placeholders; see the notes in the inventory.
-      inherit (inventory) ulaPrefix privatePrefix labPrefix;
+      inherit (inventory) ulaPrefix privatePrefix labPrefix isis;
       privateZones = placeholder "private_zones";
       hosts = lib.listToAttrs (
         lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)

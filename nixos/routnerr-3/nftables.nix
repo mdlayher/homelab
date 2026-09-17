@@ -116,6 +116,11 @@ let
   );
   icl = interconnect.links != { };
 
+  # A link with no WireGuard carrier is a bare GRETAP, so its outer packets
+  # are raw GRE on whichever interface reaches the far end rather than UDP
+  # to a port on the WAN. Only a same-site link is built that way.
+  iclBare = lib.any (link: link.carrier == null) (lib.attrValues interconnect.links);
+
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
   # opens no resolver to dn42. Repeated per chain, as both sides may ask.
@@ -206,6 +211,7 @@ in
       # Our own space, for classifying interconnect traffic: both come from
       # the inventory, which explains why the v4 side is a whole /16 and
       # what it must stay disjoint from.
+      define lab6 = ${inventory.labPrefix}
       define site4 = ${inventory.privatePrefix}
       define site6 = ${inventory.ulaPrefix}
 
@@ -329,6 +335,12 @@ in
           iifname "dn42e-*" jump input_dn42e
           iifname "dn42i-*" jump input_dn42i
           ${lib.optionalString icl ''iifname "icl-*" jump input_icl''}
+          ${lib.optionalString iclBare ''
+            # The GRETAP of a carrier-less interconnect, arriving on the LAN
+            # which carries it. Confined to the lab prefix at both ends, so
+            # it admits the tunnel and nothing else.
+            ip6 saddr $lab6 ip6 daddr $lab6 meta l4proto gre counter accept comment "bare interconnect GRE"
+          ''}
 
           jump icmp_lan
 

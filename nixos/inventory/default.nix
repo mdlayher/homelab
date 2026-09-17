@@ -33,6 +33,26 @@
   # ulaPrefix is: it names a range, not an address.
   labPrefix = "fd9e:1a04:f01d:ff00::/56";
 
+  # IS-IS identity. Assigned here because nothing derives it: a system ID
+  # is not an address and must not be built from one, so it survives any
+  # renumbering, and a file has to be the registry or it drifts.
+  #
+  # 49 is the AFI for private NSAP addressing, the CLNS equivalent of
+  # RFC 1918. The area is 49.00SS and the system ID 0000.0000.SSRR, where
+  # SS is the site byte of the addressing scheme (see the router's
+  # dn42.nix) and RR the router within that site.
+  #
+  # One flat level-2 backbone today, so every router shares an area and
+  # the value is mostly latent; per-site level-1 areas would each use
+  # their own site's.
+  isis = {
+    area = "49.0001";
+    systemIds = {
+      routnerr-3 = "0000.0000.0101";
+      frrdev = "0000.0000.01ff";
+    };
+  };
+
   # Tailnet MagicDNS suffix, under which machines and Tailscale Services
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";
