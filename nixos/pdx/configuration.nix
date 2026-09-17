@@ -32,6 +32,10 @@
     trustedInterfaces = [ "ts0" ];
   };
 
+  # Its own site, with no subnets: nothing here is named in internal DNS and
+  # no inventory secret is decrypted. See nixos/inventory/.
+  homelab.site = "pdx";
+
   # No hardware-configuration.nix here: amazon-image.nix is the hardware,
   # and it does not set a platform.
   nixpkgs.hostPlatform = "x86_64-linux";

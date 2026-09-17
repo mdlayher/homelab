@@ -55,6 +55,15 @@ let
       # LAN may talk to.
       EmitNTP = true;
       NTP = "_server_address";
+    }
+    # DNS search, as DHCP option 15: one domain, where the search list of
+    # option 119 would need hand-encoding. So a client here learns its own
+    # segment's namespace and no other. The RAs carry the full list (see
+    # corerad.nix); this is what reaches clients that ignore them, and it
+    # follows the same rule: a segment naming no host is told nothing.
+    // lib.optionalAttrs (ifi.hosts != [ ]) {
+      EmitDomain = true;
+      Domain = ifi.searchDomain;
     };
   };
 
@@ -106,7 +115,13 @@ in
   services.resolved = {
     enable = true;
     settings.Resolve = {
-      Domains = [ inventory.domain ];
+      # Every namespace the router serves: it is on all of them, and it
+      # resolves for itself rather than being handed a search list.
+      Domains = [
+        inventory.domain
+      ]
+      ++ map (ifi: ifi.searchDomain) (lib.attrValues inventory.interfaces)
+      ++ inventory.aliasDomains;
       DNS = [
         "::1"
         "127.0.0.1"

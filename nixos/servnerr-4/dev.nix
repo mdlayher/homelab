@@ -280,7 +280,7 @@ let
   # IPv6 identifier and therefore no inventory entry or router deploy: the
   # container takes a pool DHCP lease and is reached as <hostName>.local over
   # mDNS. A non-null token pairs with an inventory host for a static lease and
-  # a <name>.dev.lan.servnerr.com record.
+  # a <name>.dev.azo.mdlayher.net record.
   devModule = hostName: token: {
     # The container's own package set needs the unstable overlay for
     # common.nix, and common.nix's sops options must exist even though it
@@ -331,7 +331,14 @@ let
         MulticastDNS = true;
       };
       dhcpV4Config.ClientIdentifier = "mac";
-      ipv6AcceptRAConfig = lib.mkIf (token != null) { Token = "static:::${token}"; };
+      ipv6AcceptRAConfig = {
+        # Take the segment's DNS search domain from the router's RAs, so a
+        # guest here reaches its neighbours by bare name; networkd ignores
+        # the option unless asked. The RAs carry dev0's namespace alone,
+        # since nothing else on this VLAN is reachable from it.
+        UseDomains = true;
+      }
+      // lib.optionalAttrs (token != null) { Token = "static:::${token}"; };
     };
 
     services = {
@@ -653,7 +660,7 @@ let
     log syslog informational
     !
     router bgp 65001
-     bgp router-id ${inventory.hosts."frrdev.dev".ipv4}
+     bgp router-id ${inventory.hosts.frrdev.ipv4}
      bgp log-neighbor-changes
      no bgp ebgp-requires-policy
      no bgp network import-check
@@ -1102,7 +1109,7 @@ in
                 machines = lib.flatten (lib.attrValues inventory.roles);
                 # dev0 neighbors from the inventory, reached over the dev
                 # VLAN by their LAN names, minus this container itself.
-                neighbors = lib.filter (n: n != "linuxdev.dev") (map (h: h.name) dev0.hosts);
+                neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
                 shortName = n: lib.head (lib.splitString "." n);
               in
               ''

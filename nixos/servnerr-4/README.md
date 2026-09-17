@@ -8,7 +8,7 @@ duties. It's a custom built machine with an AMD Ryzen 9 3900x processor.
 `dev.nix` defines NixOS containers on the restricted `dev0` VLAN (see
 `nixos/inventory/`), bridged through `br-dev0` on the 10GbE NIC. They reach the
 internet and each other, but not the rest of the LAN. Each gets a static lease
-and a `<name>.dev.lan.servnerr.com` record from its inventory entry, and
+and a `<name>.dev.azo.mdlayher.net` record from its inventory entry, and
 `mdlayher` can SSH in with the host admin user's key and password.
 
 ```sh
@@ -31,7 +31,7 @@ claude auth login
 # keep running after detaching (ctrl+b q). Attach inside the container, or
 # from a desktop with herdr installed.
 herdr
-herdr --remote mdlayher@linuxdev.dev.lan.servnerr.com
+herdr --remote mdlayher@linuxdev.dev.azo.mdlayher.net
 ```
 
 To add a container: define it with `devContainer` in `dev.nix`, add a `dev0`

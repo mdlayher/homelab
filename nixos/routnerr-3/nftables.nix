@@ -14,16 +14,13 @@ let
     "wan0"
     "wan1"
   ];
-  trusted = with inventory.interfaces; [
-    mgmt0
-    lan0
-    { name = "ts0"; }
-  ];
-  restricted = with inventory.interfaces; [
-    guest0
-    iot0
-    dev0
-  ];
+  # Drawn from the inventory's own classification rather than listed again
+  # here: two registries of which LAN is trusted can disagree, and this is
+  # the one that enforces it. The tailnet is trusted alongside them and has
+  # no inventory entry, being no LAN.
+  lansWhere = pred: lib.filter pred (lib.attrValues inventory.interfaces);
+  trusted = lansWhere (ifi: ifi.trusted) ++ [ { name = "ts0"; } ];
+  restricted = lansWhere (ifi: !ifi.trusted);
 
   # Produces an nftables set of interface names.
   ifnames = ifis: "{ ${lib.concatMapStringsSep ", " (ifi: ifi.name or ifi) ifis} }";

@@ -15,6 +15,9 @@
     ./prometheus.nix
   ];
 
+  # This machine is at the home site; see nixos/inventory/.
+  homelab.site = "azo";
+
   system.stateVersion = "22.11";
 
   # Secrets for this machine, encrypted with sops. Edit with:
