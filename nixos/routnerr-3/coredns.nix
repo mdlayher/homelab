@@ -8,43 +8,89 @@
 let
   inventory = config.homelab.inventory;
 
-  # Internal DNS records for each host and the router itself, as a hosts file
-  # rendered from the inventory secrets. Hosts without a known IPv6 address get
-  # an A record only.
+  hostName = config.networking.hostName;
+
+  # Names a host answers to for one address family. The site domain carries
+  # the role-labelled scheme, with the family pin leading as it does in the
+  # dn42 and clearnet zones. Each retired domain carries both the labelled
+  # and the unlabelled name, which together cover every shape in use before
+  # the move, so nothing hardcoded off-repo breaks until it is dropped.
+  names =
+    host: family:
+    [
+      "${host.dnsName}.${inventory.domain}"
+      "${family}.${host.dnsName}.${inventory.domain}"
+    ]
+    ++ lib.concatMap (d: [
+      "${host.dnsName}.${d}"
+      "${host.name}.${d}"
+    ]) inventory.aliasDomains;
+
+  # Internal DNS records for each host, as a hosts file rendered from the
+  # inventory secrets. Hosts without a known IPv6 address get an A record
+  # only.
   hostsFile = lib.concatMapStrings (
     host:
-    ''
-      ${host.ipv4} ${host.name}.${inventory.domain}
-      ${host.ipv4} ${host.name}.ipv4.${inventory.domain}
-    ''
-    + lib.optionalString (host.ula != null) ''
-      ${host.ula} ${host.name}.${inventory.domain}
-      ${host.ula} ${host.name}.ipv6.${inventory.domain}
-    ''
-  ) (lib.attrValues inventory.hosts ++ [ router ]);
+    lib.concatMapStrings (n: "${host.ipv4} ${n}\n") (names host "ipv4")
+    + lib.optionalString (host.ula != null) (
+      lib.concatMapStrings (n: "${host.ula} ${n}\n") (names host "ipv6")
+    )
+  ) (lib.attrValues inventory.hosts);
 
-  router = {
-    name = config.networking.hostName;
-    inherit (inventory.interfaces.lan0) ipv4 ula;
-  };
+  # The router answers on every LAN it serves, one name per interface, so a
+  # reverse lookup resolves back to the address it was asked about. Under a
+  # retired domain it keeps the single home-VLAN name it has now rather than
+  # gaining an address per segment behind one name.
+  routerFile =
+    lib.concatMapStrings (
+      ifi:
+      let
+        n = "${hostName}.${ifi.role}";
+      in
+      ''
+        ${ifi.ipv4} ${n}.${inventory.domain}
+        ${ifi.ipv4} ipv4.${n}.${inventory.domain}
+        ${ifi.ula} ${n}.${inventory.domain}
+        ${ifi.ula} ipv6.${n}.${inventory.domain}
+      ''
+      + lib.concatMapStrings (d: ''
+        ${ifi.ipv4} ${n}.${d}
+        ${ifi.ula} ${n}.${d}
+      '') inventory.aliasDomains
+    ) (lib.attrValues inventory.interfaces)
+    # Being on every segment, the router needs a defined answer for its bare
+    # name; the management LAN is it. Forward only, as the family pins are:
+    # each address still reverses to its own interface's name.
+    + ''
+      ${inventory.interfaces.mgmt0.ipv4} ${hostName}.${inventory.domain}
+      ${inventory.interfaces.mgmt0.ula} ${hostName}.${inventory.domain}
+    ''
+    + lib.concatMapStrings (d: ''
+      ${inventory.interfaces.lan0.ipv4} ${hostName}.${d}
+      ${inventory.interfaces.lan0.ula} ${hostName}.${d}
+    '') inventory.aliasDomains;
 
-  # Stable service names: <service>.svc.<domain> resolves to the primary
-  # holder of the service's role, so devices which cannot join the tailnet
-  # may hardcode a name that follows the service across hardware generation
+  # Stable service names: <service>.svc.<zone> resolves to the primary holder
+  # of the service's role, so devices which cannot join the tailnet may
+  # hardcode a name that follows the service across hardware generation
   # swaps; see nixos/inventory/default.nix. A name resolves to the primary
   # alone: clients cut over when the role's holder list is reordered, never
   # round-robin across generations.
+  #
+  # Beneath the zone rather than a site, because roles are network-wide: a
+  # service moving between sites must not change the name its clients hold,
+  # and those clients are the ones hardest to reconfigure.
   servicesFile = lib.concatMapStrings (
     service:
     let
       host = inventory.hosts.${lib.head inventory.roles.${service.value}};
+      svcNames = [
+        "${service.name}.svc.${inventory.zone}"
+      ]
+      ++ map (d: "${service.name}.svc.${d}") inventory.aliasDomains;
     in
-    ''
-      ${host.ipv4} ${service.name}.svc.${inventory.domain}
-    ''
-    + lib.optionalString (host.ula != null) ''
-      ${host.ula} ${service.name}.svc.${inventory.domain}
-    ''
+    lib.concatMapStrings (n: "${host.ipv4} ${n}\n") svcNames
+    + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
   ) (lib.attrsToList inventory.services);
 
   credential = "hosts";
@@ -55,12 +101,12 @@ let
   ptrFile =
     lib.concatMapStrings (
       host:
-      "${host.ipv4} ${host.name}.${inventory.domain}\n"
-      + lib.optionalString (host.ula != null) "${host.ula} ${host.name}.${inventory.domain}\n"
+      "${host.ipv4} ${host.dnsName}.${inventory.domain}\n"
+      + lib.optionalString (host.ula != null) "${host.ula} ${host.dnsName}.${inventory.domain}\n"
     ) (lib.attrValues inventory.hosts)
     + lib.concatMapStrings (ifi: ''
-      ${ifi.ipv4} ${config.networking.hostName}.${inventory.domain}
-      ${ifi.ula} ${config.networking.hostName}.${inventory.domain}
+      ${ifi.ipv4} ${hostName}.${ifi.role}.${inventory.domain}
+      ${ifi.ula} ${hostName}.${ifi.role}.${inventory.domain}
     '') (lib.attrValues inventory.interfaces);
   ptrCredential = "ptr";
 
@@ -186,7 +232,7 @@ in
 {
   sops.templates = {
     "coredns-hosts" = {
-      content = hostsFile + servicesFile;
+      content = hostsFile + routerFile + servicesFile;
       restartUnits = [ "coredns.service" ];
     };
     "coredns-private-zones" = {
@@ -250,8 +296,19 @@ in
         }
       }
 
-      # Internal zone.
-      ${inventory.domain} {
+      # Internal zone, this site's and the domains it is retiring. Never
+      # the bare zone above them: the root block forwards that to the
+      # clearnet, where the public records live.
+      ${lib.concatStringsSep " " ([ inventory.domain ] ++ inventory.aliasDomains)} {
+        hosts /run/credentials/coredns.service/${credential}
+      }
+
+      # Service names, network-wide rather than this site's, so a service
+      # moving sites keeps the name its clients hold. The same file serves
+      # it: the hosts plugin keeps only the names inside a block's zones.
+      # A block of its own because ownership differs from a site zone's,
+      # which a second resolver would have to respect.
+      svc.${inventory.zone} {
         hosts /run/credentials/coredns.service/${credential}
       }
 

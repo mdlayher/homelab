@@ -12,8 +12,13 @@
 #                   recorded per prefix in secrets.yaml.
 # - null/omitted:   no IPv6 address is known; DNS gets an A record only.
 {
-  # Internal DNS domain for trusted LANs.
-  domain = "lan.servnerr.com";
+  # The zone internal names live under. Each site answers <site>.<zone> and
+  # each segment a <role>.<site>.<zone> beneath it, so a name says where a
+  # host is. None of it is published: the public zone is Cloudflare's (see
+  # terraform/cloudflare/mdlayher_net.tf), which answers NXDOMAIN for these,
+  # and no certificate carries one. Nothing may serve the zone itself, only
+  # labels beneath it, or public names stop resolving on the LAN.
+  zone = "mdlayher.net";
 
   # The site ULA /48. Public by choice: https://ula.ungleich.ch/.
   ulaPrefix = "fd9e:1a04:f01d::/48";
@@ -101,67 +106,92 @@
     prometheus = "server";
   };
 
-  # Subnets by router interface name. VLAN 0 is the untagged management LAN.
-  subnets = {
-    # Physical management LAN: servers and network infrastructure.
-    mgmt0 = {
-      vlan = 0;
-      trusted = true;
-      hosts = {
-        ap-basement = { };
-        ap-livingroom = { };
-        hass.ipv6 = "prefixstable";
-        monitnerr-1.ipv6 = "eui64";
-        nerr-4.ipv6 = "prefixstable";
-        pdu01 = { };
-        servnerr-4.ipv6 = "token";
-        switch-core.ipv6 = "eui64";
-        switch-livingroom.ipv6 = "eui64";
-        ups01 = { };
+  # The sites this network spans, each answering <name>.<zone>. A machine
+  # names its own in homelab.site; devices are placed by the segment they
+  # sit on.
+  sites.azo = {
+    # Retired, still answered. Names beneath these keep the shapes they have
+    # today, unlabelled by segment, because they are hardcoded where this
+    # file cannot see them: ssh configuration, known_hosts, and the home
+    # automation box. Empty the list once those have moved.
+    aliasDomains = [ "lan.servnerr.com" ];
+
+    # Subnets by router interface name. VLAN 0 is the untagged management LAN.
+    subnets = {
+      # Physical management LAN: servers and network infrastructure.
+      mgmt0 = {
+        vlan = 0;
+        trusted = true;
+        # DNS namespace for hosts here, and the search domain this segment is
+        # handed. A role rather than the interface name: two segments serving
+        # the same role share a namespace, which is what mutual reachability
+        # means, and renumbering the topology then renames nothing.
+        role = "mgmt";
+        hosts = {
+          ap-basement = { };
+          ap-livingroom = { };
+          hass.ipv6 = "prefixstable";
+          monitnerr-1.ipv6 = "eui64";
+          nerr-4.ipv6 = "prefixstable";
+          pdu01 = { };
+          servnerr-4.ipv6 = "token";
+          switch-core.ipv6 = "eui64";
+          switch-livingroom.ipv6 = "eui64";
+          ups01 = { };
+        };
       };
-    };
 
-    # Home VLAN.
-    lan0 = {
-      vlan = 10;
-      trusted = true;
-      hosts = {
-        matt-4.ipv6 = "eui64";
-        psframework.ipv6 = "eui64";
-        theatnerr-2.ipv6 = "eui64";
+      # Home VLAN.
+      lan0 = {
+        vlan = 10;
+        trusted = true;
+        role = "lan";
+        hosts = {
+          matt-4.ipv6 = "eui64";
+          psframework.ipv6 = "eui64";
+          theatnerr-2.ipv6 = "eui64";
+        };
       };
-    };
 
-    # Guest VLAN: internet only.
-    guest0 = {
-      vlan = 9;
-      trusted = false;
-    };
-
-    # Development VLAN: internet only, for containers and microvms on the
-    # server running agents and networking experiments.
-    dev0 = {
-      vlan = 20;
-      trusted = false;
-      hosts = {
-        "frrdev.dev".ipv6 = "token";
-        "homadev.dev".ipv6 = "token";
-        "linuxdev.dev".ipv6 = "token";
-        "quicdev.dev".ipv6 = "token";
+      # Guest VLAN: internet only. No search domain is advertised here and no
+      # host is named, so the role exists to classify the segment alone.
+      guest0 = {
+        vlan = 9;
+        trusted = false;
+        role = "guest";
       };
-    };
 
-    # IoT VLAN: internet only, mDNS reflected from trusted LANs.
-    iot0 = {
-      vlan = 66;
-      trusted = false;
-      hosts = {
-        keylight.ipv6 = "eui64";
-        "living-room-hue-hub.iot".ipv6 = "eui64";
-        "living-room-myq-hub.iot".ipv6 = "eui64";
-        "office-printer.iot".ipv6 = "eui64";
-        "prusa-core-one.iot".ipv6 = "eui64";
+      # Development VLAN: internet only, for containers and microvms on the
+      # server running agents and networking experiments.
+      dev0 = {
+        vlan = 20;
+        trusted = false;
+        role = "dev";
+        hosts = {
+          frrdev.ipv6 = "token";
+          homadev.ipv6 = "token";
+          linuxdev.ipv6 = "token";
+          quicdev.ipv6 = "token";
+        };
+      };
+
+      # IoT VLAN: internet only, mDNS reflected from trusted LANs.
+      iot0 = {
+        vlan = 66;
+        trusted = false;
+        role = "iot";
+        hosts = {
+          keylight.ipv6 = "eui64";
+          living-room-hue-hub.ipv6 = "eui64";
+          living-room-myq-hub.ipv6 = "eui64";
+          office-printer.ipv6 = "eui64";
+          prusa-core-one.ipv6 = "eui64";
+        };
       };
     };
   };
+
+  # A single EC2 host terminating one interconnect circuit. No LAN, so no
+  # subnets, and nothing answers beneath its domain yet.
+  sites.pdx = { };
 }

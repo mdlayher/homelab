@@ -75,9 +75,26 @@ in
               )
             ];
           }
-          # Configure DNS search on trusted LANs, or omit otherwise.
-          // lib.optionalAttrs ifi.trusted {
-            dnssl = [ { domain_names = [ inventory.domain ]; } ];
+          # DNS search: this segment's own namespace, and on a trusted LAN
+          # the other trusted namespaces and the site domain after it, so a
+          # bare name resolves across the LANs a host may actually reach. A
+          # restricted LAN gets its own alone, since it cannot reach the
+          # others. A segment the inventory names no host on has nothing to
+          # search for and is told nothing.
+          // lib.optionalAttrs (ifi.hosts != [ ]) {
+            dnssl = [
+              {
+                domain_names = [
+                  ifi.searchDomain
+                ]
+                ++ lib.optionals ifi.trusted (
+                  (map (i: i.searchDomain) (
+                    lib.filter (i: i.trusted && i.name != ifi.name) (lib.attrValues inventory.interfaces)
+                  ))
+                  ++ [ inventory.domain ]
+                );
+              }
+            ];
           }
         )
 

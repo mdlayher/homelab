@@ -24,6 +24,9 @@ in
     ./peerfinder.nix
   ];
 
+  # This machine is at the home site; see nixos/inventory/.
+  homelab.site = "azo";
+
   system.stateVersion = "23.05";
 
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673

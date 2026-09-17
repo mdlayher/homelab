@@ -115,13 +115,34 @@ let
   # Containers and microvm guests on those machines which have a dev0
   # inventory entry, by their DNS name. Other containers share their host's
   # network and need nothing.
-  inherit (config.homelab.inventory) domain roles tailnetDomain;
+  inherit (config.homelab.inventory)
+    domain
+    roles
+    sites
+    tailnetDomain
+    ;
+
+  # Each machine's site domain, from its own configuration, so a target at
+  # another site is named there rather than here.
+  machineDomains = lib.mapAttrs (
+    _: system: sites.${system.config.homelab.site}.domain
+  ) inputs.self.nixosConfigurations;
+
+  # An inventory host is published under its segment's namespace, not its
+  # bare name; see nixos/inventory/.
+  dnsNames = lib.mapAttrs (_: h: h.dnsName) config.homelab.inventory.hosts;
 
   # Fully qualify a scrape target's host, so resolution never depends on the
-  # resolver's search list being present. Only a name already ending in the
-  # domain (the dev containers, keyed by DNS name) is left alone: a dot
-  # elsewhere, as in "<host>.ipv4", does not make a name absolute.
-  qualify = name: if lib.hasSuffix ".${domain}" name then name else "${name}.${domain}";
+  # resolver's search list being present — which on most segments is not
+  # there at all. Only a name already ending in its domain (the dev
+  # containers, keyed by DNS name) is left alone: a dot elsewhere, as in
+  # "ipv4.<host>", does not make a name absolute.
+  qualify =
+    name:
+    let
+      d = machineDomains.${name} or domain;
+    in
+    if lib.hasSuffix ".${d}" name then name else "${dnsNames.${name} or name}.${d}";
   containerHosts = lib.listToAttrs (
     lib.concatMap (
       system:
@@ -132,8 +153,8 @@ let
       in
       lib.concatMap (
         name:
-        lib.optional (config.homelab.inventory.hosts ? "${name}.dev") (
-          lib.nameValuePair "${name}.dev.${domain}" (discover guests.${name})
+        lib.optional (config.homelab.inventory.hosts ? ${name}) (
+          lib.nameValuePair (qualify name) (discover guests.${name})
         )
       ) (lib.attrNames guests)
     ) (lib.attrValues inputs.self.nixosConfigurations)
@@ -242,13 +263,13 @@ let
   # signal that they are alive.
   #
   # Fully qualified, as are the SNMP targets below: a relative name with a
-  # dot in it is tried as absolute first, so "<host>.ipv4" cost an NXDOMAIN
+  # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
   # on every probe before the search domain rescued it, and made every probe
   # depend on the resolver's search list. Hosts the inventory gives no IPv6
   # address have only an A record, so their bare name is enough; the rest
   # are pinned to IPv4 by name, which also keeps the family label below
   # truthful for them.
-  ++ map (h: qualify (if h.ula == null then h.name else "${h.name}.ipv4")) (
+  ++ map (h: qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}")) (
     lib.filter (
       h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
     ) config.homelab.inventory.interfaces.mgmt0.hosts

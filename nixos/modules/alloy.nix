@@ -8,7 +8,17 @@
 }:
 
 let
-  inherit (config.homelab.inventory) domain roles;
+  inherit (config.homelab.inventory) roles;
+
+  # The server's own name, taken from its configuration rather than this
+  # machine's inventory: a machine at another site pushes to where the server
+  # is, and sees nothing of that site's hosts.
+  serverName =
+    server:
+    let
+      inv = inputs.self.nixosConfigurations.${server}.config.homelab.inventory;
+    in
+    "${inv.hosts.${server}.dnsName}.${inv.domain}";
 
   # Loki's port on a server role holder, from that machine's own
   # configuration.
@@ -20,7 +30,7 @@ let
   # a hardware swap; see nixos/inventory/default.nix.
   endpoints = lib.concatMapStrings (server: ''
     endpoint {
-        url = "http://${server}.${domain}:${toString (lokiPort server)}/loki/api/v1/push"
+        url = "http://${serverName server}:${toString (lokiPort server)}/loki/api/v1/push"
       }
   '') roles.server;
 

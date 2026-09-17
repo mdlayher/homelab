@@ -11,6 +11,9 @@
     ./consrv.nix
   ];
 
+  # This machine is at the home site; see nixos/inventory/.
+  homelab.site = "azo";
+
   system.stateVersion = "26.05";
 
   # The Pi's hardware watchdog (bcm2835_wdt) tops out around 15 seconds, so
