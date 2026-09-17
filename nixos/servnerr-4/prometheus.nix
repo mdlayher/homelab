@@ -537,7 +537,10 @@ in
               dns_lan = {
                 prober = "dns";
                 dns = {
-                  query_name = "servnerr-4.${domain}";
+                  # Through qualify, so the probe asks for the name the
+                  # router actually publishes rather than assembling one,
+                  # and by role so a hardware swap moves it.
+                  query_name = qualify (lib.head roles.server);
                   query_type = "A";
                 };
               };
