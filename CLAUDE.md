@@ -37,7 +37,11 @@ Guidance for agents working in this repository.
 
 - Renaming or removing a secret key must land in the SAME commit as every Nix
   reference to it, or nightly activation fails (sops-nix aborts on a missing
-  declared key). Recipients are unchanged by edits, so no `updatekeys`.
+  declared key). Recipients are unchanged by edits, so no `updatekeys` —
+  except when onboarding a machine, which adds one. Then add its age key to
+  the group in `.sops.yaml` and run `sops-gate updatekeys <file>` for every
+  shared file it must decrypt; `nixos/secrets/common.yaml` at minimum, since
+  the user password hashes there are `neededForUsers`.
 - The admin age key lives at `~/.config/sops/age/keys.txt` on the
   workstation. In the linuxdev container the only decryption key belongs
   to the `sops-gate` user, reachable solely via `sops-gate <verb>`, which

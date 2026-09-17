@@ -42,6 +42,19 @@
 let
   cfg = config.homelab.interconnect;
 
+  # What an ip6gretap costs over its carrier: outer IPv6 40, the tunnel
+  # encapsulation limit's destination-options header 8, GRE 4, inner
+  # ethernet 14. Linux adds that destination-options header to IPv6 tunnels
+  # by default -- `ip -d link` shows it as encaplimit -- and it is the part
+  # nobody counts.
+  #
+  # Counted and then measured: on a 1420 carrier the largest frame the
+  # kernel will send is 1354. It accepts a larger MTU than that and then
+  # refuses to transmit at it, so an over-large value does not degrade, it
+  # silently stops `isis hello padding` from ever forming an adjacency
+  # while smaller traffic keeps working.
+  gretapOverhead = 66;
+
   # frr_exporter's own default, and what the server's discovery hook uses.
   exporterPort = 9342;
 in
@@ -87,7 +100,7 @@ in
         default = 1300;
         description = ''
           Largest LSP this router originates. It must fit the smallest link
-          in the area: FRR defaults to 1497, which an interconnect at 1382
+          in the area: FRR defaults to 1497, which an interconnect at 1354
           cannot carry, and the LSPs are then generated too large to flood.
           The assertion below checks it against every link here.
         '';
@@ -120,7 +133,7 @@ in
       description = "Interconnect links to our other sites, keyed by the far site's name.";
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }:
+          { name, config, ... }:
           {
             options = {
               interface = lib.mkOption {
@@ -196,14 +209,18 @@ in
               };
               mtu = lib.mkOption {
                 type = lib.types.int;
-                default = 1382;
+                default = config.carrierMtu - gretapOverhead;
+                defaultText = lib.literalExpression "carrierMtu - 66";
                 description = ''
-                  Link MTU: the carrier's 1420 less GRETAP's 38 (outer
-                  IPv4 20, GRE 4, inner ethernet 14). Flat rather than
-                  derived, so a carrier-less link runs the same number it
-                  would across sites -- a lab link at 1462 would exercise
-                  an MTU that never exists in production, and this is the
-                  value the IGP has to be sized against.
+                  Link MTU, derived from the carrier's so the arithmetic is
+                  in one place and visible: see gretapOverhead above for
+                  what the 66 is made of and why counting it wrong is not a
+                  performance problem but a dead adjacency.
+
+                  This is the value the IGP has to be sized against, and
+                  both ends must agree on it: isis hello padding makes every
+                  hello full size, so a mismatch refuses the adjacency
+                  rather than degrading it.
 
                   An IGP must be told rather than left on defaults sized
                   for 1500: FRR's isisd, for one, defaults lsp-mtu to
@@ -247,6 +264,14 @@ in
         message = "interconnect isis.lspMtu must be smaller than every link's mtu";
       }
     ];
+
+    # The carriers' listen ports, for a site whose firewall is the NixOS
+    # one. Derived from the links so the two cannot drift: a link without a
+    # carrier has no port and opens nothing. Inert on a site running its own
+    # nftables ruleset, which reads the same option to build its rules.
+    networking.firewall.allowedUDPPorts = lib.filter (p: p != null) (
+      lib.mapAttrsToList (_: link: link.port) cfg.links
+    );
 
     # isisd alongside bird, not instead of it. The two carry disjoint
     # prefixes -- our own topology here, the dn42 table there -- so neither

@@ -16,6 +16,14 @@
     ./interconnect.nix
   ];
 
+  # The dn42 and interconnect modules declare their interfaces as
+  # systemd.network units, which are rendered but never applied unless
+  # networkd owns the network. amazon-image.nix leaves eth0 to dhcpcd, so
+  # without this the loopback, the carrier and the GRETAP simply do not
+  # appear. useDHCP stays on: networkd's catch-all takes eth0 over, and
+  # accepts the VPC's router advertisements for IPv6.
+  networking.useNetworkd = true;
+
   # No LAN here, so nothing this host answers is reachable except over the
   # tailnet or the circuit. The carrier's port is the one exception, and the
   # security group in terraform/aws is what opens it from outside.

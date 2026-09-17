@@ -35,6 +35,7 @@ creation_rules:
           - *monitnerr-1
           - *routnerr-3
           - *servnerr-4
+          - *pdx
   - path_regex: nixos/pdx/secrets\.yaml$
     key_groups:
       - age:
