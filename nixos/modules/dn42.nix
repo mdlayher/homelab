@@ -569,6 +569,12 @@ in
     # carries birdc) arrives with services.bird.
     environment.systemPackages = [ pkgs.wireguard-tools ];
 
+    # birdc talks to bird over a socket in its runtime directory, owned by
+    # the bird user and group, so the admin joins that group and runs it as
+    # themselves. common.nix caches no sudo credentials, so the alternative
+    # is a YubiKey touch for every `show protocols`.
+    users.users.${config.homelab.user}.extraGroups = [ "bird" ];
+
     assertions =
       let
         ports = lib.mapAttrsToList (_: peer: peer.port) cfg.peers;

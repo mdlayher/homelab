@@ -352,6 +352,11 @@ in
   };
 
   config = lib.mkIf (cfg.links != { }) {
+    # wg show reads a carrier's handshake and transfer counters at the
+    # shell, which is the fastest way to tell a carrier that is configured
+    # from one that merely has carrier.
+    environment.systemPackages = [ pkgs.wireguard-tools ];
+
     assertions = [
       {
         assertion =
@@ -482,6 +487,12 @@ in
     # cold takes a second or two, so the reload buys nothing it does not
     # then lose.
     systemd.services.frr.reloadIfChanged = lib.mkIf cfg.isis.enable (lib.mkForce false);
+
+    # vtysh reaches the daemons over sockets owned by frr:frrvty, so the
+    # admin joins that group and runs it as themselves. common.nix caches no
+    # sudo credentials, and reading an adjacency is several commands, so the
+    # alternative is a YubiKey touch each.
+    users.users.${config.homelab.user}.extraGroups = lib.mkIf cfg.isis.enable [ "frrvty" ];
 
     # There is no IS-IS exporter. tynany's frr_exporter is the only one
     # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary
