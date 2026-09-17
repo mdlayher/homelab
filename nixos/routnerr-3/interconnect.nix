@@ -10,8 +10,6 @@
 
 let
   inventory = config.homelab.inventory;
-  isis = inventory.isis;
-
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -35,10 +33,6 @@ in
 
       isis = {
         enable = true;
-        # Area and system ID come from the inventory, which explains the
-        # scheme and is the registry for both; the NSAP selector is always
-        # 00 for a router's own NET.
-        net = "${isis.area}.${isis.systemIds.routnerr-3}.00";
 
         # The whole site in one prefix, so the far end has a route home
         # without this router advertising a LAN. The unreachable aggregate
@@ -46,21 +40,6 @@ in
         # more specific LANs sort traffic out once it arrives, and anything
         # nobody holds meets the aggregate and is rejected here.
         aggregate = inventory.ulaPrefix;
-
-        # What this router puts into the IGP beyond the circuit itself.
-        #
-        # "dn42" is the dummy holding this router's loopback addresses, not
-        # a dn42 VLAN -- that is dn42i-dev0. The loopback is the router's
-        # identity and nothing else would advertise it. "site" is the same
-        # in our own space, and modules/loopback.nix adds it here.
-        #
-        # The site LANs are not named, and will not be: the aggregate above
-        # says what they would, without also handing the far site a GUA
-        # this router does not control. dn42's ibgpInternal is a separate
-        # question from this one -- bird rejects the site ULA in every
-        # filter it has, so the LANs have never travelled that way and the
-        # prefixes that switch still carries are dn42's own.
-        passiveInterfaces = [ "dn42" ];
       };
     };
   };

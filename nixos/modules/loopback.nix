@@ -8,9 +8,10 @@
 # not at and by the server naming a scrape target elsewhere, and a
 # placeholder only means anything on the machine which declared the secret.
 #
-# Names the address to the IGP as well as creating it, so it belongs on a
-# machine which imports modules/interconnect.nix. A loopback nothing
-# advertises would be an address only its own host could reach.
+# Names the address to the IGP as well as creating it, which is why
+# modules/interconnect.nix imports it rather than each machine doing so. A
+# loopback nothing advertises would be an address only its own host could
+# reach.
 {
   config,
   lib,

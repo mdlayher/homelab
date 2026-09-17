@@ -1,12 +1,7 @@
-{ config, lib, ... }:
+{ config, ... }:
 
 # This site's end of the circuit to azo. The module owns the shape; this
 # file supplies the addresses and the identity.
-let
-  inventory = config.homelab.inventory;
-  isis = inventory.isis;
-
-in
 {
   imports = [ ../modules/interconnect.nix ];
 
@@ -34,11 +29,7 @@ in
         endpoint = null;
       };
 
-      isis = {
-        enable = true;
-        net = "${isis.area}.${isis.systemIds.edge-pdx}.00";
-
-      };
+      isis.enable = true;
     };
   };
 }

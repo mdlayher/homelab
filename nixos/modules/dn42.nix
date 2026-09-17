@@ -128,9 +128,13 @@ let
 
   # iBGP with our other sites, over the interconnect circuits named by the
   # ibgp option. next hop self is what makes those routes usable here: the
-  # next hops the far site learned are on its own tunnels, which we have no
-  # route to. Once an IGP carries the infrastructure this becomes a next
-  # hop resolved through it instead.
+  # next hops the far site learned are link-locals on its own peering
+  # tunnels, which no other site can resolve.
+  #
+  # The session runs on the circuit's link-locals, direct, so the next hop
+  # it sets is on-link and needs no recursion. The kernel protocols below
+  # import nothing, so bird's table holds no route zebra installed to
+  # resolve one against.
   ibgpProtocols = lib.concatMapStrings (
     name:
     let

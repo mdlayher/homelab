@@ -49,6 +49,15 @@ let
   cfg = config.homelab.interconnect;
   inventory = config.homelab.inventory;
 
+  # This router's IS-IS system ID, from the inventory registry keyed by
+  # machine name. Null for a machine the registry does not name.
+  systemId = inventory.isis.systemIds.${config.networking.hostName} or null;
+
+  # The isisd process tag, which names the area in isisd's own
+  # configuration. The area address routers agree on is the NET's first
+  # half, from the inventory.
+  tag = "core";
+
   # A link's identifier is the two sites' indices in ascending order. It is
   # unique to the pair and both ends derive the same value, so a second link
   # cannot land on a first link's addresses and no registry has to be kept
@@ -108,6 +117,11 @@ let
   exporterPort = 9342;
 in
 {
+  # The loopback is a router's identity in the IGP and nothing else
+  # advertises it, so the module which runs the IGP is the one which brings
+  # it in. It is inert on a machine the registry does not name.
+  imports = [ ./loopback.nix ];
+
   options.homelab.interconnect = {
     privateKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
@@ -129,19 +143,21 @@ in
       enable = lib.mkEnableOption "IS-IS over the interconnect links, via FRR's isisd";
 
       net = lib.mkOption {
-        type = lib.types.str;
+        type = lib.types.nullOr lib.types.str;
+        default = if systemId == null then null else "${inventory.isis.area}.${systemId}.00";
+        defaultText = lib.literalExpression "the inventory's area and this machine's system ID";
         example = "49.0001.0000.0000.0001.00";
         description = ''
           This router's NET: area address, system ID and selector. The
           system ID is six octets unique to this router within the routing
-          domain, and is chosen rather than derived from any address.
-        '';
-      };
+          domain, and is chosen rather than derived from any address; the
+          inventory is its registry, keyed by machine name. The selector is
+          always 00 for a router's own NET.
 
-      area = lib.mkOption {
-        type = lib.types.str;
-        default = "core";
-        description = "The isisd process tag, which names the area in its config.";
+          Null when the inventory names no system ID for this machine,
+          which the assertion below reports. Set it here for a machine
+          which is not in that registry.
+        '';
       };
 
       lspMtu = lib.mkOption {
@@ -357,6 +373,10 @@ in
         message = "interconnect links must use unique WireGuard listen ports";
       }
       {
+        assertion = !cfg.isis.enable || cfg.isis.net != null;
+        message = "interconnect isis needs a system ID in the inventory, or isis.net set here";
+      }
+      {
         assertion =
           !cfg.isis.enable || lib.all (link: cfg.isis.lspMtu < link.mtu) (lib.attrValues cfg.links);
         message = "interconnect isis.lspMtu must be smaller than every link's mtu";
@@ -381,7 +401,6 @@ in
       isisd.enable = true;
       config =
         let
-          tag = cfg.isis.area;
           # Only commands are emitted: a comment inside an interface block
           # would be at the mercy of how the parser treats it, and this
           # config cannot be checked before it reaches the router.
@@ -463,6 +482,28 @@ in
     # cold takes a second or two, so the reload buys nothing it does not
     # then lose.
     systemd.services.frr.reloadIfChanged = lib.mkIf cfg.isis.enable (lib.mkForce false);
+
+    # Remove this module's interfaces before networkd starts, so that a
+    # start which follows a changed .netdev rebuilds them. networkd creates
+    # a netdev once and never revises an existing one's parameters, and a
+    # GRETAP's endpoints are parameters: move a link's addressing and the
+    # tunnel keeps the addresses it was built with, which no longer exist,
+    # so it carries nothing while every file on disk looks correct.
+    #
+    # The .netdev files are already in networkd's restartTriggers, so a
+    # change restarts it; this is what makes that restart mean something.
+    # At boot the interfaces do not exist yet and each delete is a no-op,
+    # and a changed .network reloads rather than restarts, so neither costs
+    # an adjacency.
+    systemd.services.systemd-networkd.preStart = lib.concatMapStrings (
+      link:
+      ''
+        ${pkgs.iproute2}/bin/ip link delete ${link.interface} 2>/dev/null || true
+      ''
+      + lib.optionalString (link.carrier != null) ''
+        ${pkgs.iproute2}/bin/ip link delete ${link.carrier} 2>/dev/null || true
+      ''
+    ) (lib.attrValues cfg.links);
 
     # There is no IS-IS exporter. tynany's frr_exporter is the only one
     # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary

@@ -20,7 +20,6 @@ in
   imports = [
     (modulesPath + "/virtualisation/amazon-image.nix")
 
-    ../modules/loopback.nix
     ./interconnect.nix
   ];
 
