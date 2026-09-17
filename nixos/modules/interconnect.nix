@@ -483,28 +483,6 @@ in
     # then lose.
     systemd.services.frr.reloadIfChanged = lib.mkIf cfg.isis.enable (lib.mkForce false);
 
-    # Remove this module's interfaces before networkd starts, so that a
-    # start which follows a changed .netdev rebuilds them. networkd creates
-    # a netdev once and never revises an existing one's parameters, and a
-    # GRETAP's endpoints are parameters: move a link's addressing and the
-    # tunnel keeps the addresses it was built with, which no longer exist,
-    # so it carries nothing while every file on disk looks correct.
-    #
-    # The .netdev files are already in networkd's restartTriggers, so a
-    # change restarts it; this is what makes that restart mean something.
-    # At boot the interfaces do not exist yet and each delete is a no-op,
-    # and a changed .network reloads rather than restarts, so neither costs
-    # an adjacency.
-    systemd.services.systemd-networkd.preStart = lib.concatMapStrings (
-      link:
-      ''
-        ${pkgs.iproute2}/bin/ip link delete ${link.interface} 2>/dev/null || true
-      ''
-      + lib.optionalString (link.carrier != null) ''
-        ${pkgs.iproute2}/bin/ip link delete ${link.carrier} 2>/dev/null || true
-      ''
-    ) (lib.attrValues cfg.links);
-
     # There is no IS-IS exporter. tynany's frr_exporter is the only one
     # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary
     # does not contain the string "isis". Adjacency state is therefore not
