@@ -26,6 +26,13 @@
   # to 192.168/16 or 10/8.
   privatePrefix = "192.168.0.0/16";
 
+  # A /56 of the ULA set aside for lab use, never assigned to a real subnet.
+  # Every site prefix in use sits in the 0th /56 -- the subnets below put
+  # their VLAN id in the fourth hextet and all of those are under 100 -- so
+  # the top /56 cannot collide with one. Plain data for the same reason
+  # ulaPrefix is: it names a range, not an address.
+  labPrefix = "fd9e:1a04:f01d:ff00::/56";
+
   # Tailnet MagicDNS suffix, under which machines and Tailscale Services
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";

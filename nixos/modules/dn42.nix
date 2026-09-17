@@ -416,6 +416,19 @@ in
       '';
     };
 
+    ibgpInternal = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether the iBGP sessions carry our own prefixes as well as the
+        dn42 table. True until the IGP carries our topology: before that
+        nothing else would, and the far site's hosts are unreachable.
+        False after, or both would install the same routes from two
+        daemons and the kernel would pick by metric rather than by design.
+        This is the cutover switch, and flipping it is the cutover.
+      '';
+    };
+
     # Internal dn42 VLANs: our own links carrying dn42-addressed hosts,
     # keyed by name as peers are, and named dn42i-<name> so each inherits
     # the internal class's firewall and bird policy from its interface.
@@ -777,27 +790,27 @@ in
           # it entered our AS, so this is a sanity check, not a revalidation.
           # The site ULA stays rejected: it travels by the IGP, never by bird.
           filter dn42_ibgp_import {
-            if is_self_net() then accept;
+            ${lib.optionalString cfg.ibgpInternal "if is_self_net() then accept;"}
             if is_valid_network() then accept;
             reject;
           }
 
           filter dn42_ibgp_import_v6 {
             if is_site_net_v6() then reject;
-            if is_self_net_v6() then accept;
+            ${lib.optionalString cfg.ibgpInternal "if is_self_net_v6() then accept;"}
             if is_valid_network_v6() then accept;
             reject;
           }
 
           filter dn42_ibgp_export {
-            if is_self_net() then accept;
+            ${lib.optionalString cfg.ibgpInternal "if is_self_net() then accept;"}
             if is_valid_network() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
             reject;
           }
 
           filter dn42_ibgp_export_v6 {
             if is_site_net_v6() then reject;
-            if is_self_net_v6() then accept;
+            ${lib.optionalString cfg.ibgpInternal "if is_self_net_v6() then accept;"}
             if is_valid_network_v6() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
             reject;
           }

@@ -111,7 +111,9 @@ let
   # and dn42 registry space -- so the rules below classify them by address
   # rather than by name, which is what the dn42e-/dn42i- split relies on.
   interconnect = config.homelab.interconnect;
-  iclPorts = lib.mapAttrsToList (_: link: toString link.port) interconnect.links;
+  iclPorts = map toString (
+    lib.filter (p: p != null) (lib.mapAttrsToList (_: link: link.port) interconnect.links)
+  );
   icl = interconnect.links != { };
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
