@@ -47,6 +47,49 @@
 
 let
   cfg = config.homelab.interconnect;
+  inventory = config.homelab.inventory;
+
+  # A link's identifier is the two sites' indices in ascending order. It is
+  # unique to the pair and both ends derive the same value, so a second link
+  # cannot land on a first link's addresses and no registry has to be kept
+  # in step. The site index is the inventory's, shared with every other
+  # scheme that numbers sites.
+  linkPair =
+    far:
+    let
+      a = inventory.sites.${config.homelab.site}.index;
+      b = inventory.sites.${far}.index;
+      pad = lib.fixedWidthNumber 2;
+    in
+    "${pad (lib.min a b)}${pad (lib.max a b)}";
+
+  # The first /64 of a /56, where each link's /127 is allocated.
+  pool = prefix: "${lib.removeSuffix "00::/56" prefix}00::";
+
+  # Whether the end being named is the lower-indexed of the link's two
+  # sites. This decides every per-link address, and both ends run it over
+  # the same two indices, so each derives the other's addresses as readily
+  # as its own and neither has to be told. Which end is which is arbitrary;
+  # only the agreement matters. ours selects which of the two is named.
+  isLowerEnd =
+    far: ours:
+    let
+      mine = inventory.sites.${config.homelab.site}.index;
+      theirs = inventory.sites.${far}.index;
+    in
+    (if ours then mine else theirs) == lib.min mine theirs;
+
+  # One end of a link's /127, from a /56's first /64.
+  linkAddress =
+    prefix: far: ours:
+    "${pool prefix}${linkPair far}:${if isLowerEnd far ours then "1" else "0"}";
+
+  # One end's link-local. Link-local scope is per interface, so unlike the
+  # globals these carry no pair and repeat across a router's links. They
+  # still have to agree, and an adjacency forms on them alone: a global
+  # address written backwards degrades, a link-local written backwards means
+  # no adjacency at all.
+  linkLla = far: ours: if isLowerEnd far ours then "fe80::1" else "fe80::2";
 
   # What an ip6gretap costs over its carrier: outer IPv6 40, the tunnel
   # encapsulation limit's destination-options header 8, GRE 4, inner
@@ -201,6 +244,8 @@ in
               };
               localAddress = lib.mkOption {
                 type = lib.types.str;
+                default = "${linkAddress inventory.carrierPrefix name true}/127";
+                defaultText = lib.literalExpression "the link's /127 from carrierPrefix";
                 description = ''
                   Our address with its prefix length, one end of a /127.
                   The GRETAP is built on these two addresses and nothing
@@ -215,10 +260,14 @@ in
               };
               remoteAddress = lib.mkOption {
                 type = lib.types.str;
+                default = linkAddress inventory.carrierPrefix name false;
+                defaultText = lib.literalExpression "the far end of the same /127";
                 description = "The far site's carrier address, without a prefix length.";
               };
               localLla = lib.mkOption {
                 type = lib.types.str;
+                default = linkLla name true;
+                defaultText = lib.literalExpression "fe80::1 at the lower-indexed site, fe80::2 at the other";
                 description = ''
                   Our link-local on the interconnect. Both ends are ours, so
                   unlike a dn42 tunnel the two cannot share one mnemonic
@@ -227,7 +276,31 @@ in
               };
               lla = lib.mkOption {
                 type = lib.types.str;
+                default = linkLla name false;
+                defaultText = lib.literalExpression "the other end of the same pair";
                 description = "The far site's link-local on the interconnect.";
+              };
+              localCircuitAddress = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = "${linkAddress inventory.circuitPrefix name true}/127";
+                defaultText = lib.literalExpression "the link's /127 from circuitPrefix";
+                description = ''
+                  Our global address on the interconnect itself, with its
+                  prefix length, one end of a /127 from the inventory's
+                  circuitPrefix. Null for a link which needs none.
+
+                  This is what a router originating traffic toward the far
+                  site uses as a source, because RFC 6724 prefers an address
+                  on the outgoing interface before it considers any other
+                  rule. Without one the choice falls to the longest matching
+                  prefix among every address the machine holds, and a router
+                  with no LAN can lose that to an address on an unrelated
+                  interface -- a tailnet address, which no site rule matches
+                  and which the far side cannot route a reply to.
+
+                  Distinct from localAddress, which is the carrier's: routes
+                  point at the interconnect, not at the tunnel carrying it.
+                '';
               };
               carrierMtu = lib.mkOption {
                 type = lib.types.int;
@@ -520,7 +593,10 @@ in
             # A static link-local, as a dn42 tunnel has: both ends are ours,
             # so neither can be left to an address derived from a MAC the far
             # side would have to be told about.
-            address = [ "${link.localLla}/64" ];
+            address = [
+              "${link.localLla}/64"
+            ]
+            ++ lib.optional (link.localCircuitAddress != null) link.localCircuitAddress;
             networkConfig = {
               LinkLocalAddressing = "no";
               IPv6AcceptRA = false;

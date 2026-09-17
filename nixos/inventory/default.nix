@@ -24,42 +24,36 @@
   ulaPrefix = "fd9e:1a04:f01d::/48";
 
   # The RFC 1918 space every site LAN is drawn from. Deliberately the whole
-  # /16 rather than the subnets themselves, which are secrets: this is used
-  # to tell our own traffic from dn42's on a link carrying both (see the
-  # router's nftables.nix), and being broader costs nothing there. What it
-  # must stay is disjoint from dn42's 172.20.0.0/14, so a future site keeps
-  # to 192.168/16 or 10/8.
+  # /16 rather than the subnets themselves, which are secrets: it tells our
+  # own traffic from dn42's on a link carrying both (see the router's
+  # nftables.nix), and being broader costs nothing there. It must stay
+  # disjoint from dn42's 172.20.0.0/14, so a future site keeps to 192.168/16
+  # or 10/8.
   privatePrefix = "192.168.0.0/16";
 
-  # A /56 of the ULA set aside for lab use, never assigned to a real subnet.
-  # Every site prefix in use sits in the 0th /56 -- the subnets below put
-  # their VLAN id in the fourth hextet and all of those are under 100 -- so
-  # the top /56 cannot collide with one. Plain data for the same reason
-  # ulaPrefix is: it names a range, not an address.
+  # Infrastructure carve-outs from the ULA, a /56 each, allocated downwards
+  # from the top of the /48 while site subnets number upwards from the
+  # bottom, so the two can never meet. Plain data like the prefixes above:
+  # each names a range rather than an address.
+
+  # Lab use, never assigned to a real subnet.
   labPrefix = "fd9e:1a04:f01d:ff00::/56";
 
-  # A /56 of the ULA for interconnect carriers, one /127 per link. These
-  # address the outside of each GRETAP and live inside its WireGuard tunnel,
-  # so nothing routes to them; they exist because a GRETAP needs a local and
-  # a remote address to be built on. Below labPrefix, above every real
-  # subnet, for the same reason labPrefix is where it is.
-  interconnectPrefix = "fd9e:1a04:f01d:fe00::/56";
+  # One /127 per link, addressing the WireGuard carrier. A GRETAP needs a
+  # local and a remote address to be built on; these are those, and nothing
+  # routes to them.
+  carrierPrefix = "fd9e:1a04:f01d:fe00::/56";
 
-  # A /56 of the ULA for router loopbacks, one /128 each. A loopback is a
-  # router's identity rather than a place, so it takes no site's prefix; it
-  # is what the IGP carries and what a router is named and reached at when
-  # the site has no LAN to be on. Below interconnectPrefix, above every real
-  # subnet, for the same reason that one is where it is.
-  #
-  # The dn42 addressing has the same idea in its site 00, and this belongs
-  # there too. It cannot go there yet: azo's own subnets occupy site 00 here,
-  # because the untagged management LAN is VLAN 0. So the loopbacks sit at
-  # the top of the range for now, and :0100::/56 is held for azo rather than
-  # handed to another site -- not spent, just not allocated, and released the
-  # moment azo renumbers from site 00 to site 01. That renumber is the next
-  # change; when it lands these move to site 00 and read the same as their
-  # dn42 counterparts, ::1 and ::2.
+  # One /128 per router: its identity rather than a place, so it takes no
+  # site's prefix. This is what the IGP carries and what a router at a site
+  # with no LAN is named and reached at.
   loopbackPrefix = "fd9e:1a04:f01d:fd00::/56";
+
+  # One /127 per link, addressing the GRETAP that runs inside the carrier.
+  # Routes point at the interconnect rather than the tunnel beneath it, so
+  # this is the address a router sources from toward another site; without
+  # one the choice falls to whatever else the machine happens to hold.
+  circuitPrefix = "fd9e:1a04:f01d:fc00::/56";
 
   # IS-IS identity. Assigned here because nothing derives it: a system ID
   # is not an address and must not be built from one, so it survives any
@@ -129,6 +123,13 @@
   # The sites this network spans, each answering <name>.<zone>. A machine
   # names its own in homelab.site; devices are placed by the segment they
   # sit on.
+  # Each site's number, the registry every scheme keys on: the dn42 SSVV
+  # prefixes, the IS-IS system IDs, the loopbacks, and the identifier of a
+  # link between two sites. Assigned here and nowhere else, so two schemes
+  # cannot disagree about which site is which.
+  sites.azo.index = 1;
+  sites.pdx.index = 2;
+
   sites.azo = {
     # Retired, still answered. Names beneath these keep the shapes they have
     # today, unlabelled by segment, because they are hardcoded where this

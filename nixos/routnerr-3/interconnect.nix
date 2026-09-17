@@ -12,9 +12,6 @@ let
   inventory = config.homelab.inventory;
   isis = inventory.isis;
 
-  # The first /127 of the interconnect carrier /56; pdx takes ::0.
-  carrier = lib.removeSuffix "00::/56" inventory.interconnectPrefix;
-  pdxLink = "${carrier}00::";
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -34,11 +31,6 @@ in
         # The name is where pdx's addresses are written down, in
         # terraform/cloudflare; networkd resolves it.
         endpoint = "pdx.dn42.mdlayher.net:51821";
-
-        localAddress = "${pdxLink}1/127";
-        remoteAddress = "${pdxLink}";
-        localLla = "fe80::1";
-        lla = "fe80::2";
       };
 
       isis = {

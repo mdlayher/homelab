@@ -171,15 +171,17 @@ in
     type = lib.types.raw;
     readOnly = true;
     description = ''
-      Network inventory with addresses as sops placeholders, except
-      ulaPrefix, privatePrefix, labPrefix, interconnectPrefix and
-      loopbackPrefix: the site's ULA /48, the RFC 1918 space its LANs are
-      drawn from, a /56 of the ULA set aside for lab use, a /56 for
-      interconnect carriers, and a /56 for router loopbacks, all in CIDR
-      notation as plain data, and isis, the area and per-router system IDs.
+      Network inventory with addresses as sops placeholders. The prefixes
+      are the exception and are plain data, since each names a range rather
+      than an address: ulaPrefix and privatePrefix, the spaces every site is
+      drawn from, and the carve-outs from the ULA -- labPrefix,
+      carrierPrefix, loopbackPrefix and circuitPrefix. So is isis, the area
+      and per-router system IDs. See nixos/inventory/ for what each covers.
       Scoped to this machine's homelab.site: domain, aliasDomains,
       interfaces, hosts and loopbacks are that site's alone, while sites
-      carries every site's domain and loopbacks.
+      carries every site's index, domain and loopbacks. A site's index is
+      the number every addressing scheme keys on, and the identifier of a
+      link between two sites is their pair of them.
       Interfaces carry the router's addresses and prefixes, their role and
       searchDomain, plus their hosts; hosts carry mac, ipv4, ula/gua (null
       when the host has no known IPv6 address) and dnsName, the name DNS
@@ -216,6 +218,7 @@ in
       # another one: the router answering for a site it is not at, and the
       # server qualifying a scrape target.
       sites = lib.mapAttrs (name: s: {
+        inherit (s) index;
         domain = "${name}.${inventory.zone}";
         loopbacks = siteLoopbacks name s;
       }) inventory.sites;
@@ -225,7 +228,8 @@ in
         ulaPrefix
         privatePrefix
         labPrefix
-        interconnectPrefix
+        carrierPrefix
+        circuitPrefix
         loopbackPrefix
         isis
         ;

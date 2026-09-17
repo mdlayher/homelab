@@ -6,10 +6,6 @@ let
   inventory = config.homelab.inventory;
   isis = inventory.isis;
 
-  # The first /127 of the interconnect carrier /56. azo takes ::1, this end
-  # takes ::0.
-  carrier = lib.removeSuffix "00::/56" inventory.interconnectPrefix;
-  link = "${carrier}00::";
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -36,11 +32,6 @@ in
         # No endpoint: azo's WAN address is dynamic, so it initiates and
         # this end learns where it is from the handshake.
         endpoint = null;
-
-        localAddress = "${link}/127";
-        remoteAddress = "${link}1";
-        localLla = "fe80::2";
-        lla = "fe80::1";
       };
 
       isis = {
