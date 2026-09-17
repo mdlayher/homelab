@@ -18,11 +18,10 @@
     # above. The edge names this literally as its carrier peer.
     homelab.dn42.publicKey = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
 
-    # The dn42 table to pdx, over the interconnect circuit of the same name.
-    # ibgpInternal stays at its default until the IGP carries both sites'
-    # prefixes, which needs the edge's LANs -- it has none -- and this site's
-    # added to interconnect.nix's passiveInterfaces.
-    homelab.dn42.ibgp = [ "pdx" ];
+    # No other site runs dn42, so there is no internal session to carry the
+    # table across a circuit. A session named here with no speaker at the
+    # far end sits retrying and reports itself down.
+    homelab.dn42.ibgp = [ ];
 
     # Kioubit: https://dn42.g-load.eu.
     homelab.dn42.peers.kioubit = {

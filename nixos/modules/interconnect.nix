@@ -8,6 +8,12 @@
 
 # Links between our own sites: the link itself, not what runs on it.
 #
+# Imported by the machine which terminates a link, and by nothing else. It
+# depends on no other module: a site may have a circuit and carry only its
+# own ULA topology across it. dn42 is one of the things that may ride a
+# circuit, and asserts this module is present when it does; the dependency
+# does not run the other way.
+#
 # "Link" and "circuit" are not interchangeable here. A link is the medium;
 # a circuit is one IGP instance's attachment to it, owning that link's
 # hellos and adjacencies (see ~/src/isis CONTEXT.md, which this follows so

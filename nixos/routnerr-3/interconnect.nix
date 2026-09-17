@@ -17,6 +17,8 @@ let
   pdxLink = "${carrier}00::";
 in
 {
+  imports = [ ../modules/interconnect.nix ];
+
   config = {
     homelab.interconnect = {
       # One key for the dn42 tunnels and the carrier both. A separate one

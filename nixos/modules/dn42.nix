@@ -250,11 +250,7 @@ let
 in
 {
   # The dn42 CA is trusted here, as on every machine with a dn42 interface.
-  imports = [
-    ./dn42-ca.nix
-    # iBGP rides a site interconnect; the circuit itself is not ours.
-    ./interconnect.nix
-  ];
+  imports = [ ./dn42-ca.nix ];
 
   options.homelab.dn42 = {
     # Registered dn42 resources, maintained by MDLAYHER-MNT in the dn42
@@ -574,6 +570,14 @@ in
         ports = lib.mapAttrsToList (_: peer: peer.port) cfg.peers;
       in
       [
+        {
+          # The dependency runs this way and only this way: a circuit is a
+          # site interconnect carrying our own topology, and dn42 is one of
+          # the things that may ride it. A site can have an interconnect and
+          # no dn42 at all.
+          assertion = cfg.ibgp == [ ] || config.homelab ? interconnect;
+          message = "homelab.dn42.ibgp needs nixos/modules/interconnect.nix imported";
+        }
         {
           assertion = lib.all (
             peer: lib.hasPrefix "dn42e-" peer.interface && lib.stringLength peer.interface <= 15

@@ -1,8 +1,7 @@
 { config, lib, ... }:
 
-# This site's end of the circuit to azo. The module (nixos/modules/
-# interconnect.nix, imported by dn42.nix) owns the shape; this file supplies
-# the addresses and the identity.
+# This site's end of the circuit to azo. The module owns the shape; this
+# file supplies the addresses and the identity.
 let
   inventory = config.homelab.inventory;
   isis = inventory.isis;
@@ -13,6 +12,8 @@ let
   link = "${carrier}00::";
 in
 {
+  imports = [ ../modules/interconnect.nix ];
+
   config = {
     # This site's own WireGuard key. Separate from azo's, so neither site's
     # compromise is the other's.
@@ -46,9 +47,6 @@ in
         enable = true;
         net = "${isis.area}.${isis.systemIds.edge-pdx}.00";
 
-        # The loopback, as at azo: this router's identity, which nothing
-        # else advertises. There are no site LANs here to add.
-        passiveInterfaces = [ "dn42" ];
       };
     };
   };
