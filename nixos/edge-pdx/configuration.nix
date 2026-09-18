@@ -90,6 +90,19 @@ in
     ];
   };
 
+  # This site owns a /56 of the ULA: a blanket unreachable route, which the
+  # IGP originates on the site's behalf (see interconnect.nix) and which any
+  # more specific prefix added here would supersede.
+  systemd.network.networks."5-lo" = {
+    matchConfig.Name = "lo";
+    routes = [
+      {
+        Destination = inventory.sites.${config.homelab.site}.prefix;
+        Type = "unreachable";
+      }
+    ];
+  };
+
   # Never take a name from the VPC. UseHostname is the one that matters:
   # NixOS sets the static hostname and DHCP sets a transient one, the
   # transient wins for gethostname, and everything that reads it -- the

@@ -53,7 +53,15 @@ in
       # group in terraform/aws opens the ports it needs.
       page.enable = true;
 
-      isis.enable = true;
+      isis = {
+        enable = true;
+
+        # This site's own /56, so azo routes it here rather than meeting it
+        # on the /48 it originates and rejecting it there. The route this
+        # matches is the unreachable aggregate in configuration.nix, which
+        # is also what answers for an address inside it that nothing holds.
+        aggregate = config.homelab.inventory.sites.${config.homelab.site}.prefix;
+      };
     };
   };
 }

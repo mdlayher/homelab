@@ -152,6 +152,12 @@ let
 
   siteLoopbacks = name: s: lib.mapAttrs (mkLoopback "${name}.${inventory.zone}") (s.loopbacks or { });
 
+  # A site's own /56 out of the ULA, from its index: the fourth hextet reads
+  # as decimal SSVV, so a site's space runs from its index with VLAN 00. This
+  # is what a site originates into the IGP on its own behalf.
+  sitePrefix =
+    index: "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${lib.fixedWidthNumber 2 index}00::/56";
+
   loopbacks = siteLoopbacks site siteCfg;
 
   allLoopbacks = lib.concatMap lib.attrValues (
@@ -187,9 +193,10 @@ in
       and per-router system IDs. See nixos/inventory/ for what each covers.
       Scoped to this machine's homelab.site: domain, aliasDomains,
       interfaces, hosts and loopbacks are that site's alone, while sites
-      carries every site's index, domain and loopbacks. A site's index is
-      the number every addressing scheme keys on, and the identifier of a
-      link between two sites is their pair of them.
+      carries every site's index, domain, prefix and loopbacks. A site's
+      index is the number every addressing scheme keys on, its prefix is the
+      /56 built from that index, and the identifier of a link between two
+      sites is their pair of indices.
       Interfaces carry the router's addresses and prefixes, their role and
       searchDomain, plus their hosts; hosts carry mac, ipv4, ula/gua (null
       when the host has no known IPv6 address) and dnsName, the name DNS
@@ -212,6 +219,12 @@ in
         assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr) allLoopbacks;
         message = "inventory loopback addresses must come from loopbackPrefix";
       }
+      {
+        # Every site prefix is cut from this string, so a ULA written any
+        # other way would silently produce prefixes that are not inside it.
+        assertion = lib.hasSuffix "::/48" inventory.ulaPrefix;
+        message = "inventory ulaPrefix must be written as a compressed /48, since site prefixes are built from it";
+      }
     ];
 
     homelab.inventory = {
@@ -229,6 +242,7 @@ in
       sites = lib.mapAttrs (name: s: {
         inherit (s) index;
         domain = "${name}.${inventory.zone}";
+        prefix = sitePrefix s.index;
         loopbacks = siteLoopbacks name s;
       }) inventory.sites;
       inherit interfaces loopbacks;
