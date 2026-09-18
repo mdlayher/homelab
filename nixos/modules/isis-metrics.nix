@@ -29,10 +29,12 @@ let
   jq = "${pkgs.jq}/bin/jq";
 
   # The circuits this router is configured to run the protocol on, which is
-  # what the adjacency rows are generated from. The site is the link's key.
-  links = lib.mapAttrsToList (name: link: {
-    inherit (link) interface;
-    site = name;
+  # what the adjacency rows are generated from. The site is the link's far
+  # site rather than its attribute name, which is a label and carries the
+  # plane: two circuits to one site must agree on the site they reach, or
+  # nothing can pair up the two ends of a link.
+  links = lib.mapAttrsToList (_: link: {
+    inherit (link) interface site;
   }) cfg.links;
 
   # A configured circuit with no matching adjacency reads 0; one isisd

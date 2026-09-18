@@ -10,6 +10,10 @@
 
 let
   inventory = config.homelab.inventory;
+
+  # pdx's carrier key, shared by both links to it: one key identifies that
+  # router, and the two carriers differ by port rather than by identity.
+  pdxPublicKey = "7gO2i3ZxZFosAOuRZgC5yFIM/8fBX+KqVEo/HoWajD8=";
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -21,14 +25,44 @@ in
       # half is already published and pdx can name it rather than repeat it.
       privateKeyFile = config.sops.secrets."dn42/wireguard_key".path;
 
-      links.pdx = {
-        publicKey = "7gO2i3ZxZFosAOuRZgC5yFIM/8fBX+KqVEo/HoWajD8=";
-        port = 51821;
+      # One carrier per WAN, so a single ISP outage costs one circuit rather
+      # than the site. The IGP treats them as any other pair of links and,
+      # at equal metrics, uses both.
+      #
+      # The mark is what makes them independent: without it both carriers
+      # follow the main table out whichever WAN it prefers, and the two
+      # adjacencies report a redundancy that does not exist. The rules and
+      # the per-WAN tables the marks select are in networking.nix, which is
+      # where this site's WANs are described.
+      #
+      # The endpoint names pin the address family, which the mark cannot and
+      # which is not cosmetic here: Metronet carries no IPv6, so a carrier
+      # marked for it with an IPv6 endpoint would be steered correctly and
+      # then find no route in that table.
+      #
+      # The ports are the module's, derived from the two sites' indices and
+      # the plane; the endpoints name the same numbers because both ends of
+      # a link derive one value.
+      #
+      # We initiate on both, because this site's WAN addresses are dynamic
+      # and pdx's are not. The names are pdx's interconnect endpoints in
+      # terraform/cloudflare, under their own label rather than dn42's:
+      # they identify the medium a circuit is built on, which will carry
+      # dn42's iBGP as well as the IGP. They sit outside pdx.mdlayher.net
+      # because this router answers for that zone itself.
+      links.pdx0 = {
+        site = "pdx";
+        publicKey = pdxPublicKey;
+        endpoint = "ipv6.pdx.icl.mdlayher.net:51120";
+        firewallMark = 1;
+      };
 
-        # We initiate, because this WAN address is dynamic and pdx's is not.
-        # The name is where pdx's addresses are written down, in
-        # terraform/cloudflare; networkd resolves it.
-        endpoint = "pdx.dn42.mdlayher.net:51821";
+      links.pdx1 = {
+        site = "pdx";
+        plane = 1;
+        publicKey = pdxPublicKey;
+        endpoint = "ipv4.pdx.icl.mdlayher.net:51121";
+        firewallMark = 2;
       };
 
       isis = {

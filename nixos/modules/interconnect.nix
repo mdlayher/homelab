@@ -58,6 +58,10 @@ let
   # half, from the inventory.
   tag = "core";
 
+  # Two decimal digits, the way every other scheme here writes a site or a
+  # VLAN into a hextet.
+  pad = lib.fixedWidthNumber 2;
+
   # A link's identifier is the two sites' indices in ascending order. It is
   # unique to the pair and both ends derive the same value, so a second link
   # cannot land on a first link's addresses and no registry has to be kept
@@ -68,12 +72,14 @@ let
     let
       a = inventory.sites.${config.homelab.site}.index;
       b = inventory.sites.${far}.index;
-      pad = lib.fixedWidthNumber 2;
     in
     "${pad (lib.min a b)}${pad (lib.max a b)}";
 
-  # The first /64 of a /56, where each link's /127 is allocated.
-  pool = prefix: "${lib.removeSuffix "00::/56" prefix}00::";
+  # The /64 a plane's addresses come from, within a /56. A plane is one of
+  # several parallel links to the same site, each over a different WAN, so
+  # the pair alone no longer identifies a link. Plane 0 takes the first /64,
+  # which is what keeps a site's only link at the addresses it already has.
+  pool = prefix: plane: "${lib.removeSuffix "00::/56" prefix}${pad plane}::";
 
   # Whether the end being named is the lower-indexed of the link's two
   # sites. This decides every per-link address, and both ends run it over
@@ -88,10 +94,27 @@ let
     in
     (if ours then mine else theirs) == lib.min mine theirs;
 
-  # One end of a link's /127, from a /56's first /64.
+  # A link's WireGuard listen port: 51<a><b><plane>, where a and b are the
+  # two sites' indices in ascending order. Derived from the same pair the
+  # addresses are, so both ends reach the same number without being told and
+  # two links can never want one port -- which is the whole failure the
+  # uniqueness assertion below used to exist to catch.
+  #
+  # Keying on the pair rather than the far site is what makes a ring work:
+  # azo-iad and pdx-iad both have iad at one end, so a scheme reading only
+  # the higher index would collide on iad's two links.
+  linkPort =
+    far: plane:
+    let
+      a = inventory.sites.${config.homelab.site}.index;
+      b = inventory.sites.${far}.index;
+    in
+    51000 + (lib.min a b) * 100 + (lib.max a b) * 10 + plane;
+
+  # One end of a link's /127, from its plane's /64.
   linkAddress =
-    prefix: far: ours:
-    "${pool prefix}${linkPair far}:${if isLowerEnd far ours then "1" else "0"}";
+    prefix: far: plane: ours:
+    "${pool prefix plane}${linkPair far}:${if isLowerEnd far ours then "1" else "0"}";
 
   # One end's link-local. Link-local scope is per interface, so unlike the
   # globals these carry no pair and repeat across a router's links. They
@@ -219,22 +242,57 @@ in
 
     links = lib.mkOption {
       default = { };
-      description = "Interconnect links to our other sites, keyed by the far site's name.";
+      description = ''
+        Interconnect links to our other sites. The attribute name is a
+        label and nothing derives from it: a site reached over two WANs has
+        two links, so the far site alone no longer identifies one. site and
+        plane do, and the interface names are built from them.
+      '';
       type = lib.types.attrsOf (
         lib.types.submodule (
           { name, config, ... }:
           {
             options = {
+              site = lib.mkOption {
+                type = lib.types.str;
+                default = name;
+                defaultText = lib.literalExpression "the attribute name";
+                description = ''
+                  The site at the far end, naming its entry in the
+                  inventory. Every per-link address derives from this
+                  site's index and ours, so both ends compute the same
+                  values without being told.
+                '';
+              };
+              plane = lib.mkOption {
+                type = lib.types.ints.between 0 9;
+                default = 0;
+                description = ''
+                  Which of several parallel links to the same site this is.
+                  Two links to one site are only redundant if they leave
+                  over different WANs, which is what firewallMark arranges;
+                  the plane is what keeps their addresses and interface
+                  names apart.
+
+                  It selects the /64 each link address comes from, so plane
+                  0 is where a site's first link already lives and adding a
+                  second renumbers nothing.
+                '';
+              };
               interface = lib.mkOption {
                 type = lib.types.str;
-                default = "icl-${name}";
-                defaultText = lib.literalExpression ''"icl-''${name}"'';
-                description = "The GRETAP link; nftables matches the icl- prefix.";
+                default = "icl-${config.site}${toString config.plane}";
+                defaultText = lib.literalExpression ''"icl-''${site}''${plane}"'';
+                description = ''
+                  The GRETAP link; nftables matches the icl- prefix. The
+                  trailing digit is the plane, as wan0 and wan1 carry
+                  theirs.
+                '';
               };
               carrier = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
-                default = "iclw-${name}";
-                defaultText = lib.literalExpression ''"iclw-''${name}"'';
+                default = "iclw-${config.site}${toString config.plane}";
+                defaultText = lib.literalExpression ''"iclw-''${site}''${plane}"'';
                 description = ''
                   The WireGuard carrier, which only ever carries the
                   GRETAP. Null for a link which needs none: two routers on
@@ -255,15 +313,45 @@ in
               };
               port = lib.mkOption {
                 type = lib.types.nullOr lib.types.port;
-                default = null;
+                default = if config.carrier == null then null else linkPort config.site config.plane;
+                defaultText = lib.literalExpression "51<a><b><plane> from the two site indices";
                 description = ''
                   Our WireGuard listen port for this link, opened on the
                   WANs by nftables. Null when there is no carrier.
+
+                  Derived like every other per-link value, from the two
+                  sites' indices and the plane, so both ends reach the same
+                  number and no two links can want one port. Site 01 to
+                  site 02 is 51120 on plane 0 and 51121 on plane 1; site 02
+                  to site 03 is 51230 and 51231.
+
+                  Set it here only to hold a port a far end cannot change.
+                '';
+              };
+              firewallMark = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
+                default = null;
+                description = ''
+                  A mark WireGuard sets on this carrier's outgoing packets,
+                  for a routing policy rule that sends them out one WAN.
+                  Null to leave the choice to the main routing table.
+
+                  This is what makes two links to one site redundant rather
+                  than merely duplicated: without it both carriers follow
+                  the same default route, the IGP forms two adjacencies over
+                  one path, and a WAN failure takes both at once. The rule
+                  and the table it points at belong to the site, since only
+                  it knows what its WANs are; this option is the half the
+                  link owns.
+
+                  The mark is on the outer packets, which is the only place
+                  it could be -- what the GRETAP carries is already inside
+                  WireGuard by then.
                 '';
               };
               localAddress = lib.mkOption {
                 type = lib.types.str;
-                default = "${linkAddress inventory.carrierPrefix name true}/127";
+                default = "${linkAddress inventory.carrierPrefix config.site config.plane true}/127";
                 defaultText = lib.literalExpression "the link's /127 from carrierPrefix";
                 description = ''
                   Our address with its prefix length, one end of a /127.
@@ -279,13 +367,13 @@ in
               };
               remoteAddress = lib.mkOption {
                 type = lib.types.str;
-                default = linkAddress inventory.carrierPrefix name false;
+                default = linkAddress inventory.carrierPrefix config.site config.plane false;
                 defaultText = lib.literalExpression "the far end of the same /127";
                 description = "The far site's carrier address, without a prefix length.";
               };
               localLla = lib.mkOption {
                 type = lib.types.str;
-                default = linkLla name true;
+                default = linkLla config.site true;
                 defaultText = lib.literalExpression "fe80::1 at the lower-indexed site, fe80::2 at the other";
                 description = ''
                   Our link-local on the interconnect. Both ends are ours, so
@@ -295,13 +383,13 @@ in
               };
               lla = lib.mkOption {
                 type = lib.types.str;
-                default = linkLla name false;
+                default = linkLla config.site false;
                 defaultText = lib.literalExpression "the other end of the same pair";
                 description = "The far site's link-local on the interconnect.";
               };
               localCircuitAddress = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
-                default = "${linkAddress inventory.circuitPrefix name true}/127";
+                default = "${linkAddress inventory.circuitPrefix config.site config.plane true}/127";
                 defaultText = lib.literalExpression "the link's /127 from circuitPrefix";
                 description = ''
                   Our global address on the interconnect itself, with its
@@ -379,6 +467,21 @@ in
           in
           lib.unique ports == ports;
         message = "interconnect links must use unique WireGuard listen ports";
+      }
+      {
+        # Two links to one site on one plane derive identical addresses and
+        # identical interface names, which is a collision the far end never
+        # sees: it would come out as one circuit that will not settle.
+        assertion =
+          let
+            planes = lib.mapAttrsToList (_: link: "${link.site}/${toString link.plane}") cfg.links;
+          in
+          lib.unique planes == planes;
+        message = "interconnect links to one site must each use a different plane";
+      }
+      {
+        assertion = lib.all (link: inventory.sites ? ${link.site}) (lib.attrValues cfg.links);
+        message = "every interconnect link's site must be named in the inventory";
       }
       {
         assertion = !cfg.isis.enable || cfg.isis.net != null;
@@ -566,6 +669,9 @@ in
             wireguardConfig = {
               PrivateKeyFile = cfg.privateKeyFile;
               ListenPort = link.port;
+            }
+            // lib.optionalAttrs (link.firewallMark != null) {
+              FirewallMark = link.firewallMark;
             };
             wireguardPeers = [
               (

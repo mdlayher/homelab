@@ -90,6 +90,39 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_pdx_ipv6" {
   proxied = false
 }
 
+# Interconnect carrier endpoints, under a label of their own: these name a
+# site's public addresses for the WireGuard carriers another site dials, and
+# have nothing to do with dn42 beyond sharing a host. They sit directly
+# under the apex rather than under pdx.mdlayher.net because the router
+# answers authoritatively for that zone and would return NXDOMAIN -- and the
+# router is the machine that has to resolve these to bring a circuit up.
+#
+# Split by family because the carrier cannot choose one: each carrier is
+# pinned to one of azo's WANs by a firewall mark, and Metronet has no IPv6,
+# so the carrier marked for it has to name an address it can actually reach.
+# See nixos/routnerr-3/interconnect.nix.
+#
+# Maintained by hand from `tofu output` in terraform/aws, as the dn42
+# records above are: a replaced instance keeps its EIP but takes a new ENI
+# address.
+resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv4" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv4.pdx.icl.mdlayher.net"
+  type    = "A"
+  content = "52.38.132.195"
+  ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv6" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv6.pdx.icl.mdlayher.net"
+  type    = "AAAA"
+  content = "2600:1f13:ce:ca00:bcc3:f69b:5bd8:251b"
+  ttl     = 1
+  proxied = false
+}
+
 # HTTPS records (RFC 9460) for the names the peering page answers on, so a
 # resolver that asks for them learns HTTP/3 is available before the first
 # connection, instead of after it via the Alt-Svc header the page also

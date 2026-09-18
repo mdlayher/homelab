@@ -47,13 +47,17 @@ in
     trustedInterfaces = [ "ts0" ];
     filterForward = true;
 
-    # Our own space is trusted across the circuit the way a LAN is; that is
-    # what the circuit is for. The interface alone does not say that much --
-    # dn42 transit arrives on it too -- so the rule is by source address,
-    # and dn42's own space matches nothing here and meets the policy drop.
-    extraInputRules = ''
-      iifname "${config.homelab.interconnect.links.azo.interface}" ip6 saddr ${inventory.ulaPrefix} accept comment "site traffic across the circuit"
-    '';
+    # Our own space is trusted across a circuit the way a LAN is; that is
+    # what the circuits are for. The interface alone does not say that much
+    # -- dn42 transit arrives on them too -- so the rule is by source
+    # address, and dn42's own space matches nothing here and meets the
+    # policy drop.
+    #
+    # One rule per circuit, from the links themselves, so a carrier added
+    # for a second WAN is reachable without a second place to remember.
+    extraInputRules = lib.concatMapStrings (link: ''
+      iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} accept comment "site traffic across the circuit"
+    '') (lib.attrValues config.homelab.interconnect.links);
   };
 
   # Internal names resolve at the router across the circuit, which is the

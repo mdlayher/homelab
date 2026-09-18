@@ -14,10 +14,16 @@ locals {
   vpc_cidr    = "10.80.0.0/16"
   subnet_cidr = "10.80.0.0/24"
 
-  # The WireGuard carrier's listen port here, matched by
-  # homelab.interconnect.links.pdx.port at azo. Not a secret: it is in the
-  # NixOS configuration, which is public.
-  wireguard_port = 51821
+  # The WireGuard carriers' listen ports, one per plane: azo runs a carrier
+  # over each of its WANs, so an outage of either ISP there costs one
+  # circuit rather than this site's only path home.
+  #
+  # nixos/modules/interconnect.nix derives these as 51<a><b><plane> from the
+  # two sites' indices, so both ends reach the same number without either
+  # being told. azo is site 01 and this one is 02. Not secrets: they are in
+  # the NixOS configuration, which is public.
+  wireguard_port_plane0 = 51120
+  wireguard_port_plane1 = 51121
 
   # Bootstrap access only: the NixOS AMI takes its root key from instance
   # metadata, and the first nixos/deploy replaces it with the real user from

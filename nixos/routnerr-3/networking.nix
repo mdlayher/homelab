@@ -3,6 +3,36 @@
 let
   inventory = config.homelab.inventory;
 
+  # An interconnect carrier is marked on its netdev (see interconnect.nix)
+  # and caught here by a rule pointing at a table holding one WAN's default
+  # route. That is what makes two carriers to one site independent: without
+  # it both follow the main table out whichever WAN it prefers, and the IGP
+  # forms two adjacencies over one path -- redundancy that reports healthy
+  # and protects nothing.
+  #
+  # The tables hold a copy of each WAN's gateway rather than taking it away
+  # from main, which still carries the defaults everything else on this
+  # router uses.
+  wan0 = {
+    mark = 1;
+    table = 100;
+  };
+  wan1 = {
+    mark = 2;
+    table = 200;
+  };
+
+  # Rules sit with the WAN they steer to, so a WAN going away takes its rule
+  # with it and the marked carrier fails rather than quietly falling back.
+  markRule = wan: family: [
+    {
+      FirewallMark = wan.mark;
+      Table = wan.table;
+      Family = family;
+      Priority = 100;
+    }
+  ];
+
   ethLink = name: mac: {
     matchConfig = {
       Type = "ether";
@@ -110,6 +140,27 @@ in
     firewall.enable = false;
   };
 
+  # A carrier whose mark nothing steers falls back to the main table, which
+  # is the exact failure this arrangement exists to prevent and is invisible
+  # once it happens: the adjacency comes up either way, over the wrong WAN.
+  # Catch it at eval instead.
+  assertions = [
+    {
+      assertion =
+        let
+          known = map (wan: wan.mark) [
+            wan0
+            wan1
+          ];
+          used = lib.filter (mark: mark != null) (
+            lib.mapAttrsToList (_: link: link.firewallMark) config.homelab.interconnect.links
+          );
+        in
+        lib.all (mark: lib.elem mark known) used;
+      message = "every marked interconnect carrier needs a routing policy rule in networking.nix";
+    }
+  ];
+
   # Use resolved for local DNS lookups, querying through CoreDNS, which also
   # serves the tailnet domain (see coredns.nix).
   services.resolved = {
@@ -205,6 +256,20 @@ in
         UseDomains = false;
         UseCaptivePortal = false;
       };
+
+      # Both families: this is the only WAN with IPv6, so the carrier pinned
+      # here is the one that can use it.
+      routingPolicyRules = markRule wan0 "both";
+      routes = [
+        {
+          Gateway = "_dhcp4";
+          Table = wan0.table;
+        }
+        {
+          Gateway = "_ipv6ra";
+          Table = wan0.table;
+        }
+      ];
     };
 
     # Wired WAN: Metronet 10GbE.
@@ -220,7 +285,16 @@ in
           # Prioritize Metronet IPv4.
           Metric = 100;
         }
+        {
+          Gateway = "216.82.20.65";
+          Table = wan1.table;
+        }
       ];
+
+      # IPv4 alone, because this WAN has no IPv6 at all. That is also why
+      # the carrier marked for it names an IPv4-only endpoint: a rule can
+      # steer a packet to this table, but nothing here could route it.
+      routingPolicyRules = markRule wan1 "ipv4";
     };
 
     # Physical management LAN. For physical LANs, we have to make sure to match

@@ -94,8 +94,8 @@ resource "aws_vpc_security_group_ingress_rule" "wireguard_v4" {
   security_group_id = aws_security_group.pdx.id
 
   cidr_ipv4   = "0.0.0.0/0"
-  from_port   = local.wireguard_port
-  to_port     = local.wireguard_port
+  from_port   = local.wireguard_port_plane0
+  to_port     = local.wireguard_port_plane0
   ip_protocol = "udp"
   description = "WireGuard carrier"
 }
@@ -104,10 +104,33 @@ resource "aws_vpc_security_group_ingress_rule" "wireguard_v6" {
   security_group_id = aws_security_group.pdx.id
 
   cidr_ipv6   = "::/0"
-  from_port   = local.wireguard_port
-  to_port     = local.wireguard_port
+  from_port   = local.wireguard_port_plane0
+  to_port     = local.wireguard_port_plane0
   ip_protocol = "udp"
   description = "WireGuard carrier"
+}
+
+# The second carrier; see nixos/edge-pdx/interconnect.nix for why there are
+# two. Separate resources rather than for_each over both ports, so the rule
+# admitting one circuit is never destroyed to add the other.
+resource "aws_vpc_security_group_ingress_rule" "wireguard_plane1_v4" {
+  security_group_id = aws_security_group.pdx.id
+
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = local.wireguard_port_plane1
+  to_port     = local.wireguard_port_plane1
+  ip_protocol = "udp"
+  description = "WireGuard carrier, plane 1"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "wireguard_plane1_v6" {
+  security_group_id = aws_security_group.pdx.id
+
+  cidr_ipv6   = "::/0"
+  from_port   = local.wireguard_port_plane1
+  to_port     = local.wireguard_port_plane1
+  ip_protocol = "udp"
+  description = "WireGuard carrier, plane 1"
 }
 
 # Path MTU discovery. Security groups are stateful for a flow, but a
