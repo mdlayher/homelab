@@ -93,11 +93,22 @@ let
     + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
   ) (lib.attrsToList inventory.services);
 
-  # This site's own published loopbacks, answered by the internal zone block
-  # as the other sites' are answered beneath theirs. The address is on no
-  # segment, so nothing else in the hosts file carries it.
-  localLoopbackFile = lib.concatMapStrings (lo: "${lo.addr} ${lo.fqdn}\n") (
-    publishedLoopbacks inventory.sites.${config.homelab.site}
+  # A loopback answers the fixed site name every one of them carries, and
+  # its own name where the machine is published at it.
+  loopbackForward =
+    lo: "${lo.addr} ${lo.siteFqdn}\n" + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
+
+  # One name per address in reverse, as the LANs are below: the machine's
+  # own where it has one, since that is what a trace should show.
+  loopbackReverse = lo: "${lo.addr} ${if lo.fqdn != null then lo.fqdn else lo.siteFqdn}\n";
+
+  siteLoopbacks = site: lib.attrValues site.loopbacks;
+
+  # This site's own loopbacks, answered by the internal zone block as the
+  # other sites' are answered beneath theirs. The address is on no segment,
+  # so nothing else in the hosts file carries it.
+  localLoopbackFile = lib.concatMapStrings loopbackForward (
+    siteLoopbacks inventory.sites.${config.homelab.site}
   );
 
   credential = "hosts";
@@ -115,33 +126,35 @@ let
       ${ifi.ipv4} ${hostName}.${ifi.role}.${inventory.domain}
       ${ifi.ula} ${hostName}.${ifi.role}.${inventory.domain}
     '') (lib.attrValues inventory.interfaces)
-    + localLoopbackFile
+    + lib.concatMapStrings loopbackReverse (siteLoopbacks inventory.sites.${config.homelab.site})
     + remotePtrFile;
   ptrCredential = "ptr";
 
-  # Sites other than this one, with a machine published at a loopback. A
-  # site with no LAN has no resolver of its own, so this one answers for it:
-  # the records are the far site's, the zone is keyed beneath the same
-  # internal zone as everything else, and nothing about a loopback is a
-  # secret. Hence a store path rather than a rendered credential, which is
-  # also what makes that visible in the Corefile.
+  # Sites other than this one which have a loopback. A site with no LAN has
+  # no resolver of its own, so this one answers for it: the records are the
+  # far site's, the zone is keyed beneath the same internal zone as
+  # everything else, and nothing about a loopback is a secret. Hence a store
+  # path rather than a rendered credential, which is also what makes that
+  # visible in the Corefile.
   remoteSites = lib.filterAttrs (
-    name: site: name != config.homelab.site && publishedLoopbacks site != [ ]
+    name: site: name != config.homelab.site && site.loopbacks != { }
   ) inventory.sites;
-
-  publishedLoopbacks = site: lib.filter (lo: lo.fqdn != null) (lib.attrValues site.loopbacks);
 
   # One file and one block for all of them, as the internal zone already
   # does with the domains it is retiring: the hosts plugin keeps only the
   # names inside a block's zones, so the split is by zone, not by file.
-  remoteHostsFile = pkgs.writeText "coredns-remote-hosts" remotePtrFile;
+  remoteHostsFile = pkgs.writeText "coredns-remote-hosts" (
+    lib.concatMapStrings (site: lib.concatMapStrings loopbackForward (siteLoopbacks site)) (
+      lib.attrValues remoteSites
+    )
+  );
 
   # The reverse zones are the whole site ULA, so a remote loopback falls
   # inside them and reverses here too.
   remoteDomains = lib.concatStringsSep " " (lib.mapAttrsToList (_: site: site.domain) remoteSites);
 
   remotePtrFile = lib.concatMapStrings (
-    site: lib.concatMapStrings (lo: "${lo.addr} ${lo.fqdn}\n") (publishedLoopbacks site)
+    site: lib.concatMapStrings loopbackReverse (siteLoopbacks site)
   ) (lib.attrValues remoteSites);
 
   # Private zones: answered NXDOMAIN here, never forwarded or logged. The

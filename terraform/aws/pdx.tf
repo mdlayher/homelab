@@ -133,6 +133,39 @@ resource "aws_vpc_security_group_ingress_rule" "wireguard_plane1_v6" {
   description = "WireGuard carrier, plane 1"
 }
 
+# The interconnect landing page (see nixos/modules/icl-page.nix). Port 80
+# also carries the HTTP-01 challenge that certifies it, which is why the
+# certificate needs no Cloudflare credential on a machine reachable from
+# the internet. Open in both families because the names it answers for are
+# public and resolve to this host in both.
+#
+# The first TCP ports open here: everything else this machine answers is
+# reached over the tailnet or a circuit. What is served is a static page
+# and nothing else; see the host firewall in nixos/edge-pdx.
+resource "aws_vpc_security_group_ingress_rule" "page_v4" {
+  for_each = toset(["80", "443"])
+
+  security_group_id = aws_security_group.pdx.id
+
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = tonumber(each.key)
+  to_port     = tonumber(each.key)
+  ip_protocol = "tcp"
+  description = "Interconnect page"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "page_v6" {
+  for_each = toset(["80", "443"])
+
+  security_group_id = aws_security_group.pdx.id
+
+  cidr_ipv6   = "::/0"
+  from_port   = tonumber(each.key)
+  to_port     = tonumber(each.key)
+  ip_protocol = "tcp"
+  description = "Interconnect page"
+}
+
 # Path MTU discovery. Security groups are stateful for a flow, but a
 # "packet too big" arrives from an intermediate router outside that flow, so
 # without these rules it is dropped: large packets are then lost while small

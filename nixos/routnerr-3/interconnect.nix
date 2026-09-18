@@ -65,6 +65,22 @@ in
         firewallMark = 2;
       };
 
+      # The landing page at this site's icl names. The per-uplink names are
+      # published by cloudflare-ddns.nix and the dial names alias them in
+      # terraform/cloudflare; all of them answer here. DNS-01 because each
+      # of those is pinned to one uplink, so HTTP-01 could not renew while
+      # that uplink was down; the credential is the one dn42-page.nix
+      # renders for the same provider.
+      page = {
+        enable = true;
+        extraNames = map (prefix: "${prefix}.${config.homelab.site}.icl.mdlayher.net") [
+          "ipv4.spectrum"
+          "ipv6.spectrum"
+          "ipv4.metronet"
+        ];
+        acmeEnvironmentFile = config.sops.templates."acme-cloudflare.env".path;
+      };
+
       isis = {
         enable = true;
 

@@ -144,6 +144,7 @@ in
   # advertises it, so the module which runs the IGP is the one which brings
   # it in. It is inert on a machine the registry does not name.
   imports = [
+    ./icl-page.nix
     ./isis-metrics.nix
     ./loopback.nix
   ];

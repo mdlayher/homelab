@@ -47,6 +47,12 @@ in
         endpoint = null;
       };
 
+      # The landing page at this site's icl names. One uplink here, so
+      # HTTP-01 validates over the names themselves and no DNS credential
+      # is needed on a machine reachable from the internet. The security
+      # group in terraform/aws opens the ports it needs.
+      page.enable = true;
+
       isis.enable = true;
     };
   };

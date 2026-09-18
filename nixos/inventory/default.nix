@@ -141,14 +141,8 @@
   sites.azo = {
     # This site's router loopback: a stable address on no segment, which is
     # what another site names when it needs this one's resolver, and what
-    # the interconnect page is served on. The label matches the interface
-    # the address lives on, and is its own rather than another name for the
-    # router, which answers to one per interface already; a name shared with
-    # those would hand a client an address on a segment it is not on.
-    loopbacks.routnerr-3 = {
-      addr = "fd9e:1a04:f01d::101";
-      dnsName = "site";
-    };
+    # the interconnect page is served on.
+    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d::101";
 
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {

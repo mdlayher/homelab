@@ -47,6 +47,16 @@ in
     trustedInterfaces = [ "ts0" ];
     filterForward = true;
 
+    # The interconnect landing page (see modules/icl-page.nix), and the
+    # HTTP-01 challenge that certifies it, are the only things here an
+    # arbitrary client may reach. The security group in terraform/aws is
+    # what admits them from outside; this admits them from anywhere else
+    # the machine is reachable.
+    allowedTCPPorts = [
+      80
+      443
+    ];
+
     # Our own space is trusted across a circuit the way a LAN is; that is
     # what the circuits are for. The interface alone does not say that much
     # -- dn42 transit arrives on them too -- so the rule is by source

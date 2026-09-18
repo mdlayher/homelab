@@ -18,7 +18,6 @@ in
     ./coredns.nix
     ./corerad.nix
     ./dn42.nix
-    ./icl-page.nix
     ./interconnect.nix
     ./neighbor-metrics.nix
     ./network-snapshot.nix

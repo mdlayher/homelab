@@ -132,7 +132,12 @@ let
   # A router loopback, keyed by the machine's name. Plain data throughout,
   # unlike everything above: a loopback is named and read across sites, and a
   # sops placeholder only means anything on the machine which declared the
-  # secret. dnsName is null where the loopback is not published.
+  # secret. dnsName is null where the machine is not published at it.
+  #
+  # siteFqdn is a fixed shape every loopback answers to, so the address a
+  # site's fabric is reached at is found the same way at every site. It names
+  # the site, so a second loopback there would have to be chosen between
+  # rather than derived.
   mkLoopback =
     siteDomain: name: lo:
     let
@@ -142,6 +147,7 @@ let
       inherit name dnsName;
       inherit (lo) addr;
       fqdn = if dnsName == null then null else "${dnsName}.${siteDomain}";
+      siteFqdn = "site.${siteDomain}";
     };
 
   siteLoopbacks = name: s: lib.mapAttrs (mkLoopback "${name}.${inventory.zone}") (s.loopbacks or { });
@@ -190,8 +196,9 @@ in
       publishes. privateZones is the space-separated private DNS zone list,
       null at a site with no subnets.
       Loopbacks are keyed by machine name and are plain data, since they are
-      read across sites: each carries addr, and dnsName with the fqdn built
-      from it, both null where the loopback is not published.
+      read across sites: each carries addr, siteFqdn, and dnsName with the
+      fqdn built from it, both null where the machine is not published at
+      its loopback.
     '';
   };
 
