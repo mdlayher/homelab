@@ -5,8 +5,10 @@
 # The credential is in secrets/cloudflare.yaml under CLOUDFLARE_API_TOKEN,
 # scoped to DNS:Edit on these zones and nothing else.
 #
-# Internal servnerr.com and .dev names are the router's CoreDNS
-# (nixos/routnerr-3/coredns.nix) and share nothing with the zones here.
+# Internal names live under mdlayher.net as well, served by the router's
+# CoreDNS (nixos/routnerr-3/coredns.nix) from labels beneath the apex. They
+# share the zone name with the records here and nothing else: the router
+# forwards the bare zone to the clearnet, which is where these are answered.
 #
 # Throughout: records are DNS-only, since Cloudflare is authoritative DNS here
 # and nothing else, and ttl = 1 is its "automatic", served as 300s unproxied.

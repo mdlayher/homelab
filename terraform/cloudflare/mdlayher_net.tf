@@ -1,10 +1,12 @@
-# mdlayher.net — pointed at the house, same as servnerr.com.
+# mdlayher.net — the public zone for this network: the house, the edge, and
+# the names one site dials to reach another.
 #
 # The zone previously held only a parking page and an unused mail-forwarding
 # setup; none of it is carried over.
 #
-# As for servnerr.com, the apex A record is owned by the router
-# (nixos/routnerr-3/cloudflare-ddns.nix) rather than declared here.
+# Every name whose value is an address the router observes is owned by the
+# router (nixos/routnerr-3/cloudflare-ddns.nix) rather than declared here,
+# the apex included. What is declared here is what someone chose.
 
 resource "cloudflare_dns_record" "mdlayher_net_caa" {
   zone_id = local.zones["mdlayher.net"]
@@ -68,15 +70,12 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_azo_ipv6" {
   proxied = false
 }
 
-# The pdx site, built by terraform/aws. The addresses come from `tofu output`
-# on that module, which keeps its own state with no link to this one: a
-# replaced instance keeps its EIP but takes a new ENI address, so the AAAA
-# has to be updated by hand when that happens.
+# The pdx site, built by terraform/aws; its addresses are in locals.tf.
 resource "cloudflare_dns_record" "mdlayher_net_dn42_pdx_ipv4" {
   zone_id = local.zones["mdlayher.net"]
   name    = "pdx.dn42.mdlayher.net"
   type    = "A"
-  content = "52.38.132.195"
+  content = local.pdx_endpoint_v4
   ttl     = 1
   proxied = false
 }
@@ -85,31 +84,56 @@ resource "cloudflare_dns_record" "mdlayher_net_dn42_pdx_ipv6" {
   zone_id = local.zones["mdlayher.net"]
   name    = "pdx.dn42.mdlayher.net"
   type    = "AAAA"
-  content = "2600:1f13:ce:ca00:bcc3:f69b:5bd8:251b"
+  content = local.pdx_endpoint_v6
   ttl     = 1
   proxied = false
 }
 
-# Interconnect carrier endpoints, under a label of their own: these name a
-# site's public addresses for the WireGuard carriers another site dials, and
-# have nothing to do with dn42 beyond sharing a host. They sit directly
-# under the apex rather than under pdx.mdlayher.net because the router
-# answers authoritatively for that zone and would return NXDOMAIN -- and the
-# router is the machine that has to resolve these to bring a circuit up.
+# Interconnect carrier endpoints, under a label of their own. A name of the
+# form <family>.<site>.icl is how one site dials another's WireGuard carrier,
+# the same shape at every end. They have nothing to do with dn42 beyond
+# sharing a host, and they sit here rather than under <site>.mdlayher.net
+# because the router answers authoritatively for that zone and would return
+# NXDOMAIN -- and the router is the machine that has to resolve these to
+# bring a circuit up.
 #
 # Split by family because the carrier cannot choose one: each carrier is
 # pinned to one of azo's WANs by a firewall mark, and Metronet has no IPv6,
 # so the carrier marked for it has to name an address it can actually reach.
 # See nixos/routnerr-3/interconnect.nix.
 #
-# Maintained by hand from `tofu output` in terraform/aws, as the dn42
-# records above are: a replaced instance keeps its EIP but takes a new ENI
-# address.
+# A site whose addresses are static names them directly; a site whose
+# addresses move names an alias of what the router publishes for one uplink
+# (nixos/routnerr-3/cloudflare-ddns.nix). One uplink, never a current-egress
+# name: circuits to azo have to land on different uplinks to be independent,
+# and a current-egress name follows a failover onto whichever uplink survives.
+# So the family label is what selects an uplink at azo, which holds while
+# Metronet carries no IPv6; when that changes, point one of these at the
+# uplink name that already exists.
+resource "cloudflare_dns_record" "mdlayher_net_icl_azo_ipv4" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv4.azo.icl.mdlayher.net"
+  type    = "CNAME"
+  content = "ipv4.metronet.azo.icl.mdlayher.net"
+  ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "mdlayher_net_icl_azo_ipv6" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv6.azo.icl.mdlayher.net"
+  type    = "CNAME"
+  content = "ipv6.spectrum.azo.icl.mdlayher.net"
+  ttl     = 1
+  proxied = false
+}
+
+# The edge has one uplink, so its addresses are the records. From locals.tf.
 resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv4" {
   zone_id = local.zones["mdlayher.net"]
   name    = "ipv4.pdx.icl.mdlayher.net"
   type    = "A"
-  content = "52.38.132.195"
+  content = local.pdx_endpoint_v4
   ttl     = 1
   proxied = false
 }
@@ -118,7 +142,7 @@ resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv6" {
   zone_id = local.zones["mdlayher.net"]
   name    = "ipv6.pdx.icl.mdlayher.net"
   type    = "AAAA"
-  content = "2600:1f13:ce:ca00:bcc3:f69b:5bd8:251b"
+  content = local.pdx_endpoint_v6
   ttl     = 1
   proxied = false
 }

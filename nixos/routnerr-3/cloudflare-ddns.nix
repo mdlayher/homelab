@@ -8,25 +8,30 @@
 # This belongs on the router because the names describe WAN addresses the
 # router holds, not addresses of any host behind it.
 #
-# Both zones carry the same structure, so a name means the same thing under
-# either, for <zone> in servnerr.com and mdlayher.net:
+# The names published, with <zone> mdlayher.net and <site> this router's site:
 #
-#   <zone>                  A and AAAA, the WAN currently egressing
-#   ipv4.<zone>             the WAN currently egressing, v4
-#   ipv6.<zone>             the WAN currently egressing, v6
-#   metronet.ipv4.<zone>    wan1, whichever WAN is primary
-#   spectrum.ipv4.<zone>    wan0, whichever WAN is primary
-#   spectrum.ipv6.<zone>    wan0, whichever WAN is primary
+#   <zone>                              A and AAAA, the WAN currently egressing
+#   ipv4.<zone>                         the WAN currently egressing, v4
+#   ipv6.<zone>                         the WAN currently egressing, v6
+#   ipv4.spectrum.<site>.icl.<zone>     wan0, whichever WAN is primary
+#   ipv6.spectrum.<site>.icl.<zone>     wan0, whichever WAN is primary
+#   ipv4.metronet.<site>.icl.<zone>     wan1, whichever WAN is primary
 #
 # The per-WAN names keep a specific WAN addressable by name during a failover,
-# which is when reaching the other one matters. metronet.ipv4 is its own A
-# record rather than an alias of ipv4.servnerr.com: an alias would follow a
-# failover onto the Spectrum address and stop being true.
+# which is when reaching the other one matters, and they are what the
+# interconnect endpoints in terraform/cloudflare alias, since a circuit has to
+# land on a named WAN rather than on whichever one survives. Each is its own
+# record rather than an alias of ipv4.<zone>: an alias would follow a failover
+# onto the other WAN's address and stop being true.
+#
+# They carry the site beneath an icl label because a public name cannot live
+# under <site>.<zone> — this router serves that zone from the inventory and
+# would answer NXDOMAIN for it on the LAN.
 #
 # The two families egress differently, and that is deliberate rather than a
 # mistake to fix: v4 prefers wan1 on route metric, while wan0 holds the only
-# IPv6 default route. So an apex answers A from Metronet and AAAA from
-# Spectrum. There is no metronet.ipv6 name because Metronet provides no IPv6 —
+# IPv6 default route. So the apex answers A from Metronet and AAAA from
+# Spectrum. There is no metronet name for v6 because Metronet provides none —
 # wan1 carries a link-local address and nothing else — so the wan1 updater
 # below runs v4 only rather than publishing an empty record.
 #
@@ -42,7 +47,7 @@
 let
   cfg = config.services.cloudflare-ddns;
 
-  # Scoped to DNS:Edit on these two zones only. Distinct from the token in
+  # Scoped to DNS:Edit and nothing else. Distinct from the token in
   # secrets/cloudflare.yaml, which only the development container's secrets
   # gate holds: this one is decrypted onto the router at activation, so a
   # different exposure deserves a separately revocable credential.
@@ -50,14 +55,14 @@ let
 
   comment = what: "dynamic; ${what}, from cloudflare-ddns on the router";
 
-  # The zones sharing the structure above, and the names it produces. Deriving
-  # them keeps the two zones identical by construction rather than by two lists
-  # someone has to remember to edit together.
-  zones = [
-    "servnerr.com"
-    "mdlayher.net"
-  ];
-  names = prefix: map (zone: "${prefix}.${zone}") zones;
+  # The public zone. A literal rather than the inventory's, which names the
+  # zone this router serves internally: the two share a string and nothing
+  # else, and a public name has to resolve off this machine.
+  zone = "mdlayher.net";
+
+  # One WAN's name. The site comes from the option every other per-site name
+  # takes it from.
+  uplink = family: isp: "${family}.${isp}.${config.homelab.site}.icl.${zone}";
 
   # The upstream module defines exactly one instance, and an instance has one
   # provider per family, so a name tracking a specific interface needs a unit
@@ -126,9 +131,9 @@ in
     enable = true;
     credentialsFile = config.sops.templates."cloudflare-ddns.env".path;
 
-    domains = zones;
-    ip4Domains = names "ipv4";
-    ip6Domains = names "ipv6";
+    domains = [ zone ];
+    ip4Domains = [ "ipv4.${zone}" ];
+    ip6Domains = [ "ipv6.${zone}" ];
 
     # Cloudflare's automatic TTL, matching terraform/cloudflare. Records stay
     # DNS-only, which is this module's default for proxied.
@@ -141,11 +146,11 @@ in
 
   systemd.services = {
     cloudflare-ddns-wan0 = wanUpdater "wan0" {
-      ip4 = names "spectrum.ipv4";
-      ip6 = names "spectrum.ipv6";
+      ip4 = [ (uplink "ipv4" "spectrum") ];
+      ip6 = [ (uplink "ipv6" "spectrum") ];
     };
     cloudflare-ddns-wan1 = wanUpdater "wan1" {
-      ip4 = names "metronet.ipv4";
+      ip4 = [ (uplink "ipv4" "metronet") ];
     };
   };
 }

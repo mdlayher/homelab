@@ -1,11 +1,9 @@
-# servnerr.com — points at the house.
+# servnerr.com — the Home Assistant name and the CAA that lets it be issued.
 #
-# The public zone is unrelated to the internal servnerr.com the router's
-# CoreDNS serves; they only share a name.
-#
-# The apex A record is deliberately absent here: it follows the WAN address,
-# so the router owns it (nixos/routnerr-3/cloudflare-ddns.nix). Declaring it
-# in both places would mean terraform and the updater fighting over it.
+# The zone does not point at the house. The router publishes nothing into it,
+# nginx serves no vhost for it and holds no certificate covering it, so an
+# address record here would resolve to a machine that refuses the connection.
+# The network's public names live in mdlayher.net.
 
 resource "cloudflare_dns_record" "servnerr_com_caa" {
   zone_id = local.zones["servnerr.com"]
