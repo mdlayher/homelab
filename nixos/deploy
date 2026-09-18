@@ -6,7 +6,7 @@
 # action is one of switch (default), test, boot, or dry-activate. On the
 # router, prefer test first: it activates without a boot entry, so a reboot
 # reverts it. --all deploys every machine in blast-radius order: the monitor,
-# then the server, then the router.
+# the edge, then the server, then the router.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -15,7 +15,12 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $1 == --all ]]; then
-  hosts=(monitnerr-1 servnerr-4 routnerr-3)
+  # Ordered by hand, because blast radius is a judgement: the monitor first,
+  # then the edge, which has no clients and whose site holds nothing else,
+  # then the server, then the router, which is the network. Checked against
+  # the flake below so a machine cannot be left out of --all by omission.
+  hosts=(monitnerr-1 edge-pdx servnerr-4 routnerr-3)
+  all_requested=yes
 else
   hosts=("$1")
 fi
@@ -40,6 +45,21 @@ export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 user=${DEPLOY_USER:-mdlayher}
 
 cd "$(dirname "$0")/.."
+
+# A machine added to the flake and not to the list above would simply never
+# be deployed by --all, and nothing would say so: it would drift until the
+# nightly upgrade caught it, or until someone noticed its metrics were a
+# generation behind. Comparing the two is cheap and fails loudly instead.
+if [[ ${all_requested:-} == yes ]]; then
+  declared="$(nix eval --raw .#nixosConfigurations \
+    --apply 'cfgs: builtins.concatStringsSep "\n" (builtins.attrNames cfgs)')"
+  missing="$(comm -23 <(sort <<<"$declared") <(printf '%s\n' "${hosts[@]}" | sort))"
+  if [[ -n $missing ]]; then
+    echo "error: in the flake but not in --all: $(tr '\n' ' ' <<<"$missing")" >&2
+    echo "add it to the hosts list in $0, in blast-radius order" >&2
+    exit 1
+  fi
+fi
 
 # Share the user's SSH connection multiplexer with nix's own store
 # connections, which otherwise open (and separately authenticate) their own:
