@@ -210,7 +210,7 @@ in
           alert = "ISISAdjacencyDown";
           expr = "homelab_isis_adjacency_up == 0";
           for = "5m";
-          annotations.summary = "IS-IS adjacency on {{ $labels.interface }} to site {{ $labels.site }} is down, so {{ $labels.instance }} has no IGP path there.";
+          annotations.summary = "IS-IS adjacency on {{ $labels.interface }} to site {{ $labels.far }} is down, so {{ $labels.instance }} has no IGP path there.";
         }
         # The adjacency gauge above is only as true as the file it comes
         # from. node_exporter keeps serving the last sample written, so a

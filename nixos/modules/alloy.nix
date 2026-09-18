@@ -10,6 +10,11 @@
 let
   inherit (config.homelab.inventory) roles;
 
+  # Every stream from this machine carries the site it is at, so a query can
+  # be scoped the way a Prometheus one is. A container or guest read from this
+  # filesystem is at the same site as its host, so they share this.
+  site = config.homelab.site;
+
   # The server's own name, taken from its configuration rather than this
   # machine's inventory: a machine at another site pushes to where the server
   # is, and sees nothing of that site's hosts.
@@ -44,7 +49,7 @@ let
       path          = "/var/lib/nixos-containers/${name}/var/log/journal"
       forward_to    = [loki.process.journal.receiver]
       relabel_rules = loki.relabel.journal.rules
-      labels        = {job = "systemd-journal"}
+      labels        = {job = "systemd-journal", site = "${site}"}
     }
   '') (lib.attrNames config.containers);
 
@@ -57,7 +62,7 @@ let
       path          = "/var/lib/microvms/${name}/journal"
       forward_to    = [loki.process.journal.receiver]
       relabel_rules = loki.relabel.journal.rules
-      labels        = {job = "systemd-journal"}
+      labels        = {job = "systemd-journal", site = "${site}"}
     }
   '') (lib.attrNames (config.microvm.vms or { }));
 in
@@ -160,7 +165,7 @@ in
     loki.source.journal "journal" {
       forward_to    = [loki.process.journal.receiver]
       relabel_rules = loki.relabel.journal.rules
-      labels        = {job = "systemd-journal"}
+      labels        = {job = "systemd-journal", site = "${site}"}
     }
     ${containerSources}${microvmSources}
     // Everything shipped from a journal passes through here on its way to

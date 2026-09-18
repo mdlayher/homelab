@@ -146,7 +146,7 @@ in
           // dialect and no two firmwares agree, so ship each datagram
           // verbatim rather than parsing it.
           syslog_format = "raw"
-          labels        = {job = "syslog"}
+          labels        = {job = "syslog", site = "${config.homelab.site}"}
         }
         relabel_rules = loki.relabel.syslog.rules
         forward_to    = [loki.write.server.receiver]

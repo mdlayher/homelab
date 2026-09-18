@@ -313,9 +313,12 @@ let
       running = lib.filterAttrs (_: h: h.jobs ? ${job}) hosts;
       settings = lib.head (lib.attrValues running);
     in
-    (staticScrape job (
-      lib.mapAttrsToList (host: h: "${qualify host}:${toString h.jobs.${job}.port}") running
-    ))
+    {
+      job_name = job;
+      static_configs = bySite (
+        lib.mapAttrs (host: h: "${qualify host}:${toString h.jobs.${job}.port}") running
+      );
+    }
     // lib.optionalAttrs (settings.jobs.${job} ? metrics_path) {
       inherit (settings.jobs.${job}) metrics_path;
     }
@@ -372,6 +375,22 @@ let
     {{ end -}}
     {{ end }}
   '';
+
+  # Which site a machine is at, from its own configuration, so a target
+  # carries the site rather than the site being read back out of its name.
+  # Anything that is not a NixOS machine of ours -- the switches, the UPS
+  # cards, Home Assistant -- is at this one.
+  machineSites = lib.mapAttrs (_: system: system.config.homelab.site) inputs.self.nixosConfigurations;
+  siteOf = name: machineSites.${name} or config.homelab.site;
+
+  # One static_configs entry per site, each labelled with it. Takes targets
+  # keyed by host, since the host is what knows where it is.
+  bySite =
+    targets:
+    lib.mapAttrsToList (site: names: {
+      targets = map (n: targets.${n}) names;
+      labels = { inherit site; };
+    }) (lib.groupBy siteOf (lib.attrNames targets));
 
   # Scrape a list of static targets for a job.
   staticScrape = job_name: targets: {

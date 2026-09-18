@@ -29,12 +29,13 @@ let
   jq = "${pkgs.jq}/bin/jq";
 
   # The circuits this router is configured to run the protocol on, which is
-  # what the adjacency rows are generated from. The site is the link's far
-  # site rather than its attribute name, which is a label and carries the
-  # plane: two circuits to one site must agree on the site they reach, or
+  # what the adjacency rows are generated from. far is the link's far site
+  # rather than its attribute name, which is a label and carries the plane:
+  # two circuits to one site must agree on the site they reach, or
   # nothing can pair up the two ends of a link.
   links = lib.mapAttrsToList (_: link: {
-    inherit (link) interface site;
+    inherit (link) interface;
+    far = link.site;
   }) cfg.links;
 
   # A configured circuit with no matching adjacency reads 0; one isisd
@@ -52,9 +53,9 @@ let
     | $links[]
     | . as $l
     | ($adj | map(select(.iface == $l.interface)) | first) as $a
-    | "homelab_isis_adjacency_up{interface=\"\($l.interface)\",site=\"\($l.site)\"} \($a.up // 0)",
+    | "homelab_isis_adjacency_up{interface=\"\($l.interface)\",far=\"\($l.far)\"} \($a.up // 0)",
       (if $a == null then empty else
-        "homelab_isis_adjacency_flaps_total{interface=\"\($l.interface)\",site=\"\($l.site)\"} \($a.flaps)"
+        "homelab_isis_adjacency_flaps_total{interface=\"\($l.interface)\",far=\"\($l.far)\"} \($a.flaps)"
       end)
   '';
 
