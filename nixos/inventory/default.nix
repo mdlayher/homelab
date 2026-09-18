@@ -139,11 +139,16 @@
   sites.pdx.index = 2;
 
   sites.azo = {
-    # This site's router loopback. No dnsName: the router already answers to
-    # one name per interface, and a sixth would round-robin against them.
-    # It exists to be a stable address that is not on any segment, which is
-    # what another site names when it needs this one's resolver.
-    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d::101";
+    # This site's router loopback: a stable address on no segment, which is
+    # what another site names when it needs this one's resolver, and what
+    # the interconnect page is served on. The label matches the interface
+    # the address lives on, and is its own rather than another name for the
+    # router, which answers to one per interface already; a name shared with
+    # those would hand a client an address on a segment it is not on.
+    loopbacks.routnerr-3 = {
+      addr = "fd9e:1a04:f01d::101";
+      dnsName = "site";
+    };
 
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {

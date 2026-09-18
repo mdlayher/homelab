@@ -211,6 +211,7 @@ in
       define lab6 = ${inventory.labPrefix}
       define site4 = ${inventory.privatePrefix}
       define site6 = ${inventory.ulaPrefix}
+      define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr}
 
       define dns = 53
       define ntp = 123
@@ -365,7 +366,7 @@ in
             ''udp dport { ${lib.concatStringsSep ", " iclPorts} } counter accept comment "site interconnect carriers"''
           }
 
-          # The dn42 peering page (see azo-page.nix). New connections beyond
+          # The dn42 peering page (see dn42-page.nix). New connections beyond
           # the rate fall through to the caller's drop; the page is a few
           # kilobytes, and nothing legitimate opens connections at that rate.
           tcp dport { $http, $https } limit rate 50/second burst 100 packets counter accept comment "router WAN peering page"
@@ -424,6 +425,7 @@ in
             udp dport $bfd_control counter accept comment "router interconnect BFD"
             ip daddr $site4 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
             ip6 daddr $site6 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
+            ip6 daddr $loopback6 tcp dport $http counter accept comment "router interconnect page"
 
             counter name icl_input_drop drop
           }

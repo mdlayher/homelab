@@ -260,7 +260,7 @@ in
 
         # The router's nginx serves a clearnet page, so its logs hold
         # visitor addresses from outside the homelab (see the router host's
-        # azo-page.nix); thirty days is enough to answer "did they fetch
+        # dn42-page.nix); thirty days is enough to answer "did they fetch
         # the page" and forgets them well inside the year. The counters
         # alloy derives carry no address and keep Prometheus's retention.
         retention_stream = [

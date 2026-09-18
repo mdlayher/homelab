@@ -93,6 +93,13 @@ let
     + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
   ) (lib.attrsToList inventory.services);
 
+  # This site's own published loopbacks, answered by the internal zone block
+  # as the other sites' are answered beneath theirs. The address is on no
+  # segment, so nothing else in the hosts file carries it.
+  localLoopbackFile = lib.concatMapStrings (lo: "${lo.addr} ${lo.fqdn}\n") (
+    publishedLoopbacks inventory.sites.${config.homelab.site}
+  );
+
   credential = "hosts";
 
   # PTRs for the LANs: the inventory hosts and the router's address on
@@ -108,6 +115,7 @@ let
       ${ifi.ipv4} ${hostName}.${ifi.role}.${inventory.domain}
       ${ifi.ula} ${hostName}.${ifi.role}.${inventory.domain}
     '') (lib.attrValues inventory.interfaces)
+    + localLoopbackFile
     + remotePtrFile;
   ptrCredential = "ptr";
 
@@ -217,7 +225,7 @@ let
   # the router's addresses, on the dummy and on the
   # internal VLAN, reverse to azo, the site's name as in
   # azo.dn42.mdlayher.net, whose names redirect to the apex's (see
-  # azo-page.nix). ntp is the NTP service for dn42 peers (see chrony.nix).
+  # dn42-page.nix). ntp is the NTP service for dn42 peers (see chrony.nix).
   # Owner names are relative to each file's zone, so the
   # shared SOA and NS are written out in full.
   dn42Soa = ''
@@ -258,7 +266,7 @@ in
 {
   sops.templates = {
     "coredns-hosts" = {
-      content = hostsFile + routerFile + servicesFile;
+      content = hostsFile + routerFile + servicesFile + localLoopbackFile;
       restartUnits = [ "coredns.service" ];
     };
     "coredns-private-zones" = {

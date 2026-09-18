@@ -300,7 +300,7 @@ in
         is the secret dn42/wireguard_key in this host's secrets.yaml,
         generated once with wg genkey; the public half is what we hand to
         peers, so it is recorded here rather than recovered by decrypting
-        the private key. The peering page (azo-page.nix) publishes it from
+        the private key. The peering page (dn42-page.nix) publishes it from
         here.
 
         No default, because a default is one site's key and any other site

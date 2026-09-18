@@ -150,7 +150,7 @@ resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv6" {
 # HTTPS records (RFC 9460) for the names the peering page answers on, so a
 # resolver that asks for them learns HTTP/3 is available before the first
 # connection, instead of after it via the Alt-Svc header the page also
-# sends (see nixos/routnerr-3/azo-page.nix). The azo names are CNAMEs to
+# sends (see nixos/routnerr-3/dn42-page.nix). The azo names are CNAMEs to
 # these three, and a CNAME cannot carry records of its own, so the records
 # live at the targets and reach azo through the alias: the apex for
 # azo.dn42, and the per-family names for its ipv4 and ipv6 variants. A "."

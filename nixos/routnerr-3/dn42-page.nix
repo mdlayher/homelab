@@ -251,7 +251,7 @@ let
       http://ipv6.${dn42.domain}/ to pin IPv6
     '';
 
-  root = pkgs.runCommand "azo-page" { } ''
+  root = pkgs.runCommand "dn42-page" { } ''
     install -Dm444 ${pkgs.writeText "index.html" page} $out/index.html
     install -Dm444 ${pkgs.writeText "index.txt" text} $out/index.txt
   '';
@@ -264,7 +264,7 @@ let
   '';
 
   # The page location, shared by both names the page has. Which rendering
-  # is the Accept map's choice ($azo_index, in appendHttpConfig); nginx
+  # is the Accept map's choice ($dn42_index, in appendHttpConfig); nginx
   # types the response by the file's extension, and charset names the
   # encoding on both, since text/plain carries no meta tag. The version
   # rewrite: the file says "via HTTP over", the response says which.
@@ -275,7 +275,7 @@ let
   # depends on Accept, so it never hands the text to a browser or the
   # HTML to curl.
   locations."= /".extraConfig = ''
-    try_files /$azo_index =404;
+    try_files /$dn42_index =404;
     charset utf-8;
     sub_filter 'via HTTP over IP' 'via $vantage';
     sub_filter_once on;
@@ -401,7 +401,7 @@ in
       # which covers curl's default of */*, an agent that sends no Accept,
       # and one that asks for text/plain. The whole token: the XHTML type
       # a browser lists beside it also contains "html".
-      map $http_accept $azo_index {
+      map $http_accept $dn42_index {
         default index.txt;
         "~*text/html" index.html;
       }

@@ -110,7 +110,7 @@ in
       }
 
       // The router's nginx access log arrives by syslog under its own
-      // identifier (see the router host's azo-page.nix); a stream apart
+      // identifier (see the router host's dn42-page.nix); a stream apart
       // from the error log's, which the metrics stage below and Loki's
       // retention select on.
       // The replacement is not optional: without a capture group the

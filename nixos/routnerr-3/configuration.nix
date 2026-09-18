@@ -12,12 +12,13 @@ in
     ./nftables.nix
 
     # Networking daemons.
-    ./azo-page.nix
+    ./dn42-page.nix
     ./chrony.nix
     ./cloudflare-ddns.nix
     ./coredns.nix
     ./corerad.nix
     ./dn42.nix
+    ./icl-page.nix
     ./interconnect.nix
     ./neighbor-metrics.nix
     ./network-snapshot.nix
