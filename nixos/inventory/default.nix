@@ -225,9 +225,11 @@
   # lets the router answer for this site and the server name a host in it.
   sites.pdx.loopbacks.edge-pdx = {
     addr = "fd9e:1a04:f01d::201";
-    # Beneath the site domain, so the name is edge.mgmt.pdx.mdlayher.net.
-    # The machine's own name carries the site because there will be one edge
-    # per site; the DNS label drops it, since the domain already says pdx.
-    dnsName = "edge.mgmt";
+    # Beneath the site domain, so the name is edge.pdx.mdlayher.net. The
+    # machine's own name carries the site because there will be one edge per
+    # site; the DNS label drops it, since the domain already says pdx. No
+    # segment role in the label: a role names a segment, and the address is
+    # a loopback at a site that has none.
+    dnsName = "edge";
   };
 }

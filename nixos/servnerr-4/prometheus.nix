@@ -239,20 +239,26 @@ let
   # Certificates a machine in this flake issues through the acme module are
   # discovered from its configuration instead, so the probe arrives with the
   # certificate and never before it.
-  probes = [
-    "${alertmanagerUrl}/-/healthy"
-    "${grafanaUrl}/api/health"
-    "${lokiUrl}/ready"
-    "${prometheusUrl}/-/healthy"
+  probes =
+    map (at hostName) [
+      "${alertmanagerUrl}/-/healthy"
+      "${grafanaUrl}/api/health"
+      "${lokiUrl}/ready"
+      "${prometheusUrl}/-/healthy"
 
-    "https://alertmanager.${tailnetDomain}/-/healthy"
-    "https://grafana.${tailnetDomain}/api/health"
-    "https://loki.${tailnetDomain}/ready"
-    "https://prometheus.${tailnetDomain}/-/healthy"
-  ]
-  ++ lib.concatMap (
-    system: map (cert: "https://${cert.domain}/") (lib.attrValues system.config.security.acme.certs)
-  ) (lib.attrValues inputs.self.nixosConfigurations);
+      "https://alertmanager.${tailnetDomain}/-/healthy"
+      "https://grafana.${tailnetDomain}/api/health"
+      "https://loki.${tailnetDomain}/ready"
+      "https://prometheus.${tailnetDomain}/-/healthy"
+    ]
+    # A certificate belongs to the machine that issues it, so its probe
+    # carries that machine's site rather than this one's.
+    ++ lib.concatMap (
+      name:
+      map (cert: at name "https://${cert.domain}/") (
+        lib.attrValues inputs.self.nixosConfigurations.${name}.config.security.acme.certs
+      )
+    ) (lib.attrNames inputs.self.nixosConfigurations);
 
   # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
   # internet reachability, latency, and loss are tracked per address family.
@@ -260,38 +266,39 @@ let
   # WAN itself. Probes follow the router's default routing policy, so they
   # observe the active WAN path only; a failed standby WAN is not visible
   # here.
-  pings = [
-    "1.1.1.1"
-    "2606:4700:4700::1111"
-    "8.8.8.8"
-    "2001:4860:4860::8888"
-  ]
-  # Liveness for the cloud-managed switches and APs in the management LAN
-  # inventory, which expose no SNMP or local API; ping is the only local
-  # signal that they are alive.
-  #
-  # Fully qualified, as are the SNMP targets below: a relative name with a
-  # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
-  # on every probe before the search domain rescued it, and made every probe
-  # depend on the resolver's search list. Hosts the inventory gives no IPv6
-  # address have only an A record, so their bare name is enough; the rest
-  # are pinned to IPv4 by name, which also keeps the family label below
-  # truthful for them.
-  ++ map (h: qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}")) (
-    lib.filter (
-      h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
-    ) config.homelab.inventory.interfaces.mgmt0.hosts
-  );
+  pings =
+    map nowhere [
+      "1.1.1.1"
+      "2606:4700:4700::1111"
+      "8.8.8.8"
+      "2001:4860:4860::8888"
+    ]
+    # Liveness for the cloud-managed switches and APs in the management LAN
+    # inventory, which expose no SNMP or local API; ping is the only local
+    # signal that they are alive.
+    #
+    # Fully qualified, as are the SNMP targets below: a relative name with a
+    # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
+    # on every probe before the search domain rescued it, and made every probe
+    # depend on the resolver's search list. Hosts the inventory gives no IPv6
+    # address have only an A record, so their bare name is enough; the rest
+    # are pinned to IPv4 by name, which also keeps the family label below
+    # truthful for them.
+    ++ map (h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))) (
+      lib.filter (
+        h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
+      ) config.homelab.inventory.interfaces.mgmt0.hosts
+    );
 
   # Blackbox DNS probe targets: CoreDNS on every router role holder,
   # exercising resolution of a known internal name end to end rather than
   # just process liveness.
-  dnsServers = map (name: "${qualify name}:53") roles.router;
+  dnsServers = map (name: at name "${qualify name}:53") roles.router;
 
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
-  snmpCyberpower = map qualify [
+  snmpCyberpower = map (h: at h (qualify h)) [
     "pdu01"
     "ups01"
   ];
@@ -315,8 +322,8 @@ let
     in
     {
       job_name = job;
-      static_configs = bySite (
-        lib.mapAttrs (host: h: "${qualify host}:${toString h.jobs.${job}.port}") running
+      static_configs = siteConfigs (
+        lib.mapAttrsToList (host: h: at host "${qualify host}:${toString h.jobs.${job}.port}") running
       );
     }
     // lib.optionalAttrs (settings.jobs.${job} ? metrics_path) {
@@ -330,7 +337,7 @@ let
   # Hosts with SSH banner probing enabled: the machines a bad firewall rule
   # would lock the admin out of, not every host running sshd. It costs a
   # journal line a minute, which on a dev guest buried the real logins.
-  sshTargets = map (host: "${qualify host}:22") (hostsWhere (h: h.ssh or false));
+  sshTargets = map (host: at host "${qualify host}:22") (hostsWhere (h: h.ssh or false));
 
   # Host lists are qualified to match the instance labels the targets above
   # produce; the rules only ever evaluate current data, so nothing needs to
@@ -383,29 +390,48 @@ let
   machineSites = lib.mapAttrs (_: system: system.config.homelab.site) inputs.self.nixosConfigurations;
   siteOf = name: machineSites.${name} or config.homelab.site;
 
-  # One static_configs entry per site, each labelled with it. Takes targets
-  # keyed by host, since the host is what knows where it is.
-  bySite =
-    targets:
-    lib.mapAttrsToList (site: names: {
-      targets = map (n: targets.${n}) names;
-      labels = { inherit site; };
-    }) (lib.groupBy siteOf (lib.attrNames targets));
+  # One static_configs entry per site, each labelled with it. Takes
+  # { site, target } pairs rather than bare targets: a probe target is often
+  # a URL, from which the machine it belongs to cannot be recovered
+  # afterwards, so the site travels with it from where it is built. A null
+  # site groups into one unlabelled entry, which is what the public ICMP
+  # anchors are -- they belong to no site of ours.
+  siteConfigs =
+    entries:
+    lib.mapAttrsToList (
+      site: es:
+      {
+        targets = map (e: e.target) es;
+      }
+      // lib.optionalAttrs (site != "") { labels = { inherit site; }; }
+    ) (lib.groupBy (e: if e.site == null then "" else e.site) entries);
 
-  # Scrape a list of static targets for a job.
-  staticScrape = job_name: targets: {
+  # A target belonging to a machine, which knows where it is.
+  at = host: target: {
+    site = siteOf host;
+    inherit target;
+  };
+
+  # A target belonging to nowhere in particular.
+  nowhere = target: {
+    site = null;
+    inherit target;
+  };
+
+  # Scrape a list of static targets for a job; entries carry their site.
+  staticScrape = job_name: entries: {
     inherit job_name;
-    static_configs = [ { inherit targets; } ];
+    static_configs = siteConfigs entries;
   };
 
   # Scrape targets through a blackbox exporter module at an interval.
-  blackboxScrape = module: interval: targets: {
+  blackboxScrape = module: interval: entries: {
     job_name = "blackbox_${module}";
     scrape_interval = interval;
     metrics_path = "/probe";
     params.module = [ module ];
     relabel_configs = relabelTarget (local "blackbox");
-    static_configs = [ { inherit targets; } ];
+    static_configs = siteConfigs entries;
   };
 
   # Produces a relabeling configuration that replaces the instance label with
@@ -597,7 +623,7 @@ in
         job_name = "homeassistant";
         metrics_path = "/api/prometheus";
         authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
-        static_configs = [ { targets = [ "${qualify "hass"}:8123" ]; } ];
+        static_configs = siteConfigs [ (at "hass" "${qualify "hass"}:8123") ];
       }
 
       # Blackbox probes for HTTP endpoints, internet reachability per address
