@@ -21,6 +21,11 @@
   zone = "mdlayher.net";
 
   # The site ULA /48. Public by choice: https://ula.ungleich.ch/.
+  #
+  # Its fourth hextet reads as decimal SSVV, site then VLAN, the way dn42's
+  # own space does (see nixos/modules/dn42.nix), and the two agree on which
+  # site is which. Site 00 is the network itself rather than a place; sites
+  # begin at :0100::/56.
   ulaPrefix = "fd9e:1a04:f01d::/48";
 
   # The RFC 1918 space every site LAN is drawn from. Deliberately the whole
@@ -30,6 +35,14 @@
   # disjoint from dn42's 172.20.0.0/14, so a future site keeps to 192.168/16
   # or 10/8.
   privatePrefix = "192.168.0.0/16";
+
+  # One /128 per router, from site 00: a loopback is a router's identity
+  # rather than a place, so it sits outside every site's prefix. This is
+  # what the IGP carries and what a router at a site with no LAN is named
+  # and reached at. Each address ends in SSRR, site then router within that
+  # site, which is the tail of the same router's IS-IS system ID below. The
+  # /64 beside this one is reserved for anycast, as dn42 reserves its own.
+  loopbackPrefix = "fd9e:1a04:f01d::/64";
 
   # Infrastructure carve-outs from the ULA, a /56 each, allocated downwards
   # from the top of the /48 while site subnets number upwards from the
@@ -43,11 +56,6 @@
   # local and a remote address to be built on; these are those, and nothing
   # routes to them.
   carrierPrefix = "fd9e:1a04:f01d:fe00::/56";
-
-  # One /128 per router: its identity rather than a place, so it takes no
-  # site's prefix. This is what the IGP carries and what a router at a site
-  # with no LAN is named and reached at.
-  loopbackPrefix = "fd9e:1a04:f01d:fd00::/56";
 
   # One /127 per link, addressing the GRETAP that runs inside the carrier.
   # Routes point at the interconnect rather than the tunnel beneath it, so
@@ -135,7 +143,7 @@
     # one name per interface, and a sixth would round-robin against them.
     # It exists to be a stable address that is not on any segment, which is
     # what another site names when it needs this one's resolver.
-    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d:fd00::101";
+    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d::101";
 
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {
@@ -217,7 +225,7 @@
   # loopback, which the IGP carries. Nothing here is a secret, which is what
   # lets the router answer for this site and the server name a host in it.
   sites.pdx.loopbacks.edge-pdx = {
-    addr = "fd9e:1a04:f01d:fd00::201";
+    addr = "fd9e:1a04:f01d::201";
     # Beneath the site domain, so the name is edge.mgmt.pdx.mdlayher.net.
     # The machine's own name carries the site because there will be one edge
     # per site; the DNS label drops it, since the domain already says pdx.

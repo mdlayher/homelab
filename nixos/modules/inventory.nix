@@ -152,10 +152,12 @@ let
     lib.attrValues (lib.mapAttrs siteLoopbacks inventory.sites)
   );
 
-  # The first 56 bits of loopbackPrefix, for the containment check below. A
-  # prefix written in another form leaves this as the whole CIDR, so the
-  # assertion trips rather than quietly stopping checking.
-  loopbackHextets = lib.removeSuffix "00::/56" inventory.loopbackPrefix;
+  # loopbackPrefix without its length, for the containment check below: a
+  # loopback is written compressed, so the prefix is a literal string prefix
+  # of every address drawn from it. A prefix written in another form keeps
+  # its length here and matches nothing, so the assertion trips rather than
+  # quietly stopping checking.
+  loopbackBase = lib.removeSuffix "/64" inventory.loopbackPrefix;
 in
 {
   options.homelab.site = lib.mkOption {
@@ -200,7 +202,7 @@ in
         message = "inventory host names must be unique across a site's subnets";
       }
       {
-        assertion = lib.all (lo: lib.hasPrefix loopbackHextets lo.addr) allLoopbacks;
+        assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr) allLoopbacks;
         message = "inventory loopback addresses must come from loopbackPrefix";
       }
     ];
