@@ -73,11 +73,12 @@ let
       #   updatekeys <file>                 re-encrypt to the recipients .sops.yaml names
       #   exec-env <secrets> -- <cmd...>    run cmd with the file's values in its environment
       #   tofu-plan <module>                init and plan terraform/<module>
+      #   tofu-import <module> <addr> <id>  adopt an existing object into the state
       #   tofu-apply <module>               init, plan, confirm on the tty, apply
       export SOPS_AGE_KEY_FILE=${gateKey}
 
       usage() {
-        echo "usage: sops-gate {decrypt|edit|updatekeys} <file> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module>" >&2
+        echo "usage: sops-gate {decrypt|edit|updatekeys} <file> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module> | tofu-import <module> <address> <id>" >&2
         exit 2
       }
 
@@ -95,20 +96,42 @@ let
       # directory, since tofu keeps that record at
       # $TF_DATA_DIR/terraform.tfstate, the same name as the state itself.
       # Credentials come from secrets/<module>.yaml.
-      tofu_plan() {
-        local module=$1 dir secrets state
-        dir=terraform/$module
-        secrets=secrets/$module.yaml
-        state=${gateState}/tofu/$module
-        if [[ ! -d $dir || ! -f $secrets ]]; then
-          echo "sops-gate: $dir/ and $secrets must exist under the current directory" >&2
+      #
+      # Set by tofu_init for the verb which follows it, so the three verbs
+      # cannot disagree about where a module's state lives.
+      tofu_dir=""
+      tofu_state=""
+
+      tofu_init() {
+        local module=$1
+        tofu_dir=terraform/$module
+        tofu_state=${gateState}/tofu/$module
+        if [[ ! -d $tofu_dir || ! -f secrets/$module.yaml ]]; then
+          echo "sops-gate: $tofu_dir/ and secrets/$module.yaml must exist under the current directory" >&2
           exit 1
         fi
-        export TF_DATA_DIR=$state/.terraform
+        export TF_DATA_DIR=$tofu_state/.terraform
         mkdir -p "$TF_DATA_DIR"
-        tofu -chdir="$dir" init -input=false \
-          -backend-config="path=$state/terraform.tfstate" >/dev/null
-        with_env "$secrets" tofu -chdir="$dir" plan -input=false -out="$state/plan.tfplan"
+        tofu -chdir="$tofu_dir" init -input=false \
+          -backend-config="path=$tofu_state/terraform.tfstate" >/dev/null
+      }
+
+      tofu_plan() {
+        local module=$1
+        tofu_init "$module"
+        with_env "secrets/$module.yaml" tofu -chdir="$tofu_dir" plan -input=false \
+          -out="$tofu_state/plan.tfplan"
+      }
+
+      # Adopt an object that already exists, so the next plan diffs against
+      # it rather than proposing to create it over the top. The only write
+      # is to the state; nothing about the object itself changes, which is
+      # why this needs no confirmation of its own.
+      tofu_import() {
+        local module=$1 address=$2 id=$3
+        tofu_init "$module"
+        with_env "secrets/$module.yaml" tofu -chdir="$tofu_dir" import -input=false \
+          "$address" "$id"
       }
 
       tofu_apply() {
@@ -119,8 +142,8 @@ let
           echo "sops-gate: not applied" >&2
           exit 1
         fi
-        with_env "secrets/$module.yaml" tofu -chdir="terraform/$module" apply -input=false \
-          "${gateState}/tofu/$module/plan.tfplan"
+        with_env "secrets/$module.yaml" tofu -chdir="$tofu_dir" apply -input=false \
+          "$tofu_state/plan.tfplan"
       }
 
       verb=''${1:-}
@@ -151,6 +174,10 @@ let
         tofu-plan)
           [[ $# -eq 1 ]] || usage
           tofu_plan "$1"
+          ;;
+        tofu-import)
+          [[ $# -eq 3 ]] || usage
+          tofu_import "$1" "$2" "$3"
           ;;
         tofu-apply)
           [[ $# -eq 1 ]] || usage

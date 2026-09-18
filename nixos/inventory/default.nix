@@ -131,12 +131,6 @@
   sites.pdx.index = 2;
 
   sites.azo = {
-    # Retired, still answered. Names beneath these keep the shapes they have
-    # today, unlabelled by segment, because they are hardcoded where this
-    # file cannot see them: ssh configuration, known_hosts, and the home
-    # automation box. Empty the list once those have moved.
-    aliasDomains = [ "lan.servnerr.com" ];
-
     # This site's router loopback. No dnsName: the router already answers to
     # one name per interface, and a sixth would round-robin against them.
     # It exists to be a stable address that is not on any segment, which is

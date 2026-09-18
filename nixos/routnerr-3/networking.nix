@@ -261,6 +261,10 @@ in
     networks."40-dev0" = lanNetwork inventory.interfaces.dev0;
   };
 
-  # Advertise routes to the Tailscale network.
+  # This machine is the tailnet's exit node, which the policy's
+  # autoApprovers accepts without a console step. The flag is what
+  # advertises it; useRoutingFeatures only turns on the forwarding sysctls
+  # it needs, and a node advertising nothing still sets those happily.
   services.tailscale.useRoutingFeatures = "server";
+  services.tailscale.extraSetFlags = [ "--advertise-exit-node" ];
 }
