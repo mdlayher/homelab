@@ -359,8 +359,18 @@ let
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 
+  # Routers running the IGP, which is how many LSPs each level-2 database
+  # should hold. Counted from the machines that enable it rather than from
+  # the inventory's system IDs, because an ID is assigned while a site is
+  # being scaffolded and before any machine carries it. It is the level-2
+  # router count while modules/interconnect.nix renders level-2-only
+  # circuits; a machine speaking only level 1 would need excluding.
+  isisRouterCount = lib.count (system: system.config.homelab.interconnect.isis.enable or false) (
+    lib.attrValues inputs.self.nixosConfigurations
+  );
+
   alerts = import ./prometheus-alerts.nix {
-    inherit lib anycastServices;
+    inherit lib anycastServices isisRouterCount;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
     excludedJobs = [ snmpCyberpowerJob ];

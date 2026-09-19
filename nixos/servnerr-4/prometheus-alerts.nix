@@ -6,6 +6,9 @@
   # Every anycast service address and the site expected to answer it, as
   # { service, address, site }; see nixos/modules/anycast.nix.
   anycastServices,
+  # How many routers run the IGP, and so how many LSPs each link-state
+  # database should hold.
+  isisRouterCount,
   # Builds a Grafana Explore link for a LogQL query, for alerts which fire on
   # what Loki's ruler records; see nixos/servnerr-4/explore-url.nix.
   exploreURL,
@@ -61,19 +64,10 @@ let
     "(${expr}) * on (host, device) group_left(model_name, serial_number) "
     + ''label_replace(smartctl_device, "host", "$1", "instance", ${raw "([^.:]+).*"})'';
 
-  # One rule per site and service address. A node withdraws its own address
-  # when the daemon behind it stops, which is the design working, so what is
-  # worth waking someone is a site where nothing holds the address at all --
-  # every request from clients nearest that site then crosses the fabric.
-  #
-  # absent() rather than a count, since a count has no series at zero, and it
-  # carries the selector's labels into the notification. It also fires when
-  # the address cannot be seen rather than is gone, so it is guarded on the
-  # site having a node exporter answering: a dead exporter is reported by the
-  # target rules, not as a withdrawn address.
-  #
-  # The window rides out a deploy, which stops the address with its daemon
-  # and restarts both a few seconds later.
+  # One rule per site and service address. A single node withdrawing its
+  # address is the design working; a site where nothing holds it is not.
+  # absent() because a count has no series at zero, guarded on the site
+  # answering at all so a dead exporter is not read as a withdrawal.
   anycastRules = map (s: {
     alert = "AnycastAddressMissing";
     expr = ''
@@ -246,6 +240,18 @@ in
         # collector which stops running leaves the adjacency reading what it
         # read when it died, and a circuit which drops after that is never
         # reported. The sample is written every minute.
+        # One LSP per router, while every level-2 circuit is point to
+        # point and no router overflows lspMtu: a broadcast circuit adds a
+        # pseudonode LSP per level, an overflow adds fragments. Short of
+        # the count a router is gone, which ISISAdjacencyDown misses when a
+        # site is reachable by neither plane and the rest agree among
+        # themselves.
+        {
+          alert = "ISISLSDBUnexpected";
+          expr = ''homelab_isis_lsps{level="2"} != ${toString isisRouterCount}'';
+          for = "10m";
+          annotations.summary = "{{ $labels.instance }} holds {{ $value }} level-2 LSPs where the area has ${toString isisRouterCount} routers, so its database is missing one or carrying one nobody expects.";
+        }
         {
           alert = "ISISMetricsStale";
           expr = "time() - node_textfile_mtime_seconds{file=~${isisTextfile}} > 300";
