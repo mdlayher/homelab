@@ -46,14 +46,25 @@ let
     "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAII3E30S3ZzFWjq12oPTG/+8fDe2NIk9IWyjZtY9Lo/00AAAABHNzaDo= mdlayher laptop yubikey"
   ];
 
-  # Relay one connection to the newest live forwarded SSH agent socket. sshd
-  # drops a socket per session under ~/.ssh/agent; ssh-add exits 2 only when
-  # nothing answers on the other end. Having no live socket at all is normal
-  # (no SSH session around) and exits 0 so the unit doesn't report failure;
-  # socat reserves nonzero exits for real relay errors.
+  # Relay one connection to the newest live forwarded SSH agent socket.
+  #
+  # Where a login leaves that socket depends on which server accepted it:
+  # sshd drops one per session under ~/.ssh/agent, and Tailscale SSH makes a
+  # directory of its own under /tmp. Every candidate is searched newest
+  # first, so the freshest login wins however it arrived.
+  #
+  # /tmp is world-writable, so a socket is taken only when it belongs to this
+  # user; anything else would be handed this agent's requests.
+  #
+  # ssh-add exits 2 only when nothing answers on the other end. Having no
+  # live socket at all is normal (no SSH session around) and exits 0 so the
+  # unit doesn't report failure; socat reserves nonzero exits for real relay
+  # errors.
   agentRelay = pkgs.writeShellScript "ssh-agent-relay" ''
-    for sock in $(${pkgs.coreutils}/bin/ls -t ${home}/.ssh/agent/ 2>/dev/null); do
-      sock=${home}/.ssh/agent/$sock
+    uid=$(${pkgs.coreutils}/bin/id -u)
+    for sock in $(${pkgs.coreutils}/bin/ls -t \
+      ${home}/.ssh/agent/* /tmp/auth-agent*/listener.sock 2>/dev/null); do
+      [ "$(${pkgs.coreutils}/bin/stat -c %u "$sock")" = "$uid" ] || continue
       SSH_AUTH_SOCK=$sock ${pkgs.openssh}/bin/ssh-add -l >/dev/null 2>&1
       if [ $? -ne 2 ]; then
         exec ${pkgs.socat}/bin/socat STDIO "UNIX-CONNECT:$sock"
