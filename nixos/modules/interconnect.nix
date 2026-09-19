@@ -140,10 +140,12 @@ let
   exporterPort = 9342;
 in
 {
-  # The loopback is a router's identity in the IGP and nothing else
-  # advertises it, so the module which runs the IGP is the one which brings
-  # it in. It is inert on a machine the registry does not name.
+  # A loopback is a router's identity in the IGP and an anycast address is a
+  # service's, and nothing else advertises either, so the module which runs
+  # the IGP is the one which brings them in. Each is inert on a machine
+  # which has none.
   imports = [
+    ./anycast.nix
     ./icl-page.nix
     ./isis-metrics.nix
     ./loopback.nix

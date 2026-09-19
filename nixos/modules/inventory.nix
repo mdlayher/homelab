@@ -170,6 +170,9 @@ let
   # its length here and matches nothing, so the assertion trips rather than
   # quietly stopping checking.
   loopbackBase = lib.removeSuffix "/64" inventory.loopbackPrefix;
+
+  # The same, for the anycast addresses.
+  anycastBase = lib.removeSuffix "/64" inventory.anycastPrefix;
 in
 {
   options.homelab.site = lib.mkOption {
@@ -189,7 +192,9 @@ in
       are the exception and are plain data, since each names a range rather
       than an address: ulaPrefix and privatePrefix, the spaces every site is
       drawn from, and the carve-outs from the ULA -- labPrefix,
-      carrierPrefix, loopbackPrefix and circuitPrefix. So is isis, the area
+      carrierPrefix, loopbackPrefix, circuitPrefix and anycastPrefix, plus
+      anycast, the service address drawn from that last one for each
+      service answered at every site. So is isis, the area
       and per-router system IDs. See nixos/inventory/ for what each covers.
       Scoped to this machine's homelab.site: domain, aliasDomains,
       interfaces, hosts and loopbacks are that site's alone, while sites
@@ -218,6 +223,10 @@ in
       {
         assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr) allLoopbacks;
         message = "inventory loopback addresses must come from loopbackPrefix";
+      }
+      {
+        assertion = lib.all (addr: lib.hasPrefix anycastBase addr) (lib.attrValues inventory.anycast);
+        message = "inventory anycast addresses must come from anycastPrefix";
       }
       {
         # Every site prefix is cut from this string, so a ULA written any
@@ -254,6 +263,8 @@ in
         carrierPrefix
         circuitPrefix
         loopbackPrefix
+        anycastPrefix
+        anycast
         isis
         ;
       privateZones = if subnets == { } then null else placeholder "private_zones";

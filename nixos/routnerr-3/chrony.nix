@@ -12,6 +12,12 @@
 { ... }:
 
 {
+  # Answered at every site, alongside the resolver (see coredns.nix). The
+  # LANs keep the unicast server DHCP hands them: a client whose server can
+  # change identity when the topology does is a property of anycast NTP,
+  # worth having as a second source and not as the only one.
+  homelab.anycast.services.ntp.unit = "chronyd.service";
+
   # Four operators on two continents, each serving NTS: enough authenticated
   # sources to outvote a falseticker without trusting any one of them. Never
   # a smeared source here - Google's and Meta's disagree with these around a

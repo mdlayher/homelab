@@ -20,6 +20,8 @@ in
   imports = [
     (modulesPath + "/virtualisation/amazon-image.nix")
 
+    ./chrony.nix
+    ./coredns.nix
     ./interconnect.nix
   ];
 
@@ -70,17 +72,18 @@ in
     '') (lib.attrValues config.homelab.interconnect.links);
   };
 
-  # Internal names resolve at the router across the circuit, which is the
-  # only resolver that answers for them. Routing domains rather than a
-  # search list: an edge writes every name out in full, and nothing here
-  # should complete a bare one. Routing domains rather than a plain DNS=
-  # for a second reason -- eth0's DHCP servers also claim ".", and two
-  # unqualified claims on the root make scope selection a coin toss.
+  # Internal names resolve at the anycast resolver address, which is this
+  # machine's own CoreDNS while it is serving and another site's while it is
+  # not (see coredns.nix). Routing domains rather than a search list: an
+  # edge writes every name out in full, and nothing here should complete a
+  # bare one. Routing domains rather than a plain DNS= for a second reason
+  # -- eth0's DHCP servers also claim ".", and two unqualified claims on the
+  # root make scope selection a coin toss.
   #
   # Everything else stays with the VPC resolver, so the nightly upgrade's
-  # names do not depend on a tunnel to a residential line.
+  # names do not depend on a resolver of ours being up.
   services.resolved.settings.Resolve = {
-    DNS = [ inventory.sites.azo.loopbacks.${lib.head inventory.roles.router}.addr ];
+    DNS = [ inventory.anycast.dns ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
       # dn42 as a whole, not just our zone within it: bird resolves the RTR

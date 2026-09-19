@@ -277,6 +277,12 @@ let
   '';
 in
 {
+  # Answered at every site, so a client reaches the nearest resolver rather
+  # than this machine wherever it is (see modules/anycast.nix). Every block
+  # below binds the wildcard, the dn42 zones excepted, so the address
+  # appearing on the interface is all this needs.
+  homelab.anycast.services.dns.unit = "coredns.service";
+
   sops.templates = {
     "coredns-hosts" = {
       content = hostsFile + routerFile + servicesFile + localLoopbackFile;

@@ -40,9 +40,24 @@
   # rather than a place, so it sits outside every site's prefix. This is
   # what the IGP carries and what a router at a site with no LAN is named
   # and reached at. Each address ends in SSRR, site then router within that
-  # site, which is the tail of the same router's IS-IS system ID below. The
-  # /64 beside this one is reserved for anycast, as dn42 reserves its own.
+  # site, which is the tail of the same router's IS-IS system ID below.
   loopbackPrefix = "fd9e:1a04:f01d::/64";
+
+  # The /64 beside it, as dn42 reserves its own: an address drawn from here
+  # is held at more than one site at once, answered by whichever node the
+  # IGP says is nearest, and withdrawn by that node alone when the service
+  # behind it stops. See nixos/modules/anycast.nix.
+  anycastPrefix = "fd9e:1a04:f01d:1::/64";
+
+  # One address per service out of that /64. The last hextet is written as
+  # the service's port, a mnemonic rather than an encoding: the address says
+  # what answers there. Plain data like the prefixes above, and read at
+  # every site -- a client is pointed at it, a firewall admits it, and the
+  # node which answers adds it to its own interface.
+  anycast = {
+    dns = "fd9e:1a04:f01d:1::53";
+    ntp = "fd9e:1a04:f01d:1::123";
+  };
 
   # Infrastructure carve-outs from the ULA, a /56 each, allocated downwards
   # from the top of the /48 while site subnets number upwards from the

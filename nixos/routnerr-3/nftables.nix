@@ -213,6 +213,13 @@ in
       define site6 = ${inventory.ulaPrefix}
       define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr}
 
+      # The service addresses this router answers at along with every other
+      # node holding them (see modules/anycast.nix). Plain inventory data,
+      # so they are written here rather than into a set rendered from the
+      # secrets.
+      define anycast_dns = ${inventory.anycast.dns}
+      define anycast_ntp = ${inventory.anycast.ntp}
+
       define dns = 53
       define ntp = 123
       define http = 80
@@ -499,6 +506,13 @@ in
           # are not inventory data, so the test is the address being local
           # rather than a set.
           fib daddr type local jump services_wan
+
+          # The anycast addresses are this router's too, but they sit on no
+          # segment, so the cross-VLAN test below -- keyed on the interface
+          # and the router's address on it -- can never hold them, and a
+          # query to one would be dropped as an attempt to leave the VLAN.
+          ip6 daddr $anycast_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "router restricted anycast DNS"
+          ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "router restricted anycast NTP"
 
           # Drop traffic trying to cross VLANs or broadcast.
           iifname . ip daddr != @router_v4 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv4 VLAN"
