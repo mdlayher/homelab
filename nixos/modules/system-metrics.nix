@@ -41,6 +41,7 @@ in
   config = lib.mkIf isHost {
     services.prometheus.exporters.node.extraFlags = [
       "--collector.textfile.directory=${textfileDir}"
+      "--collector.netdev.address-info"
     ];
 
     systemd = {

@@ -342,8 +342,25 @@ let
   # Host lists are qualified to match the instance labels the targets above
   # produce; the rules only ever evaluate current data, so nothing needs to
   # match the bare names series carried before targets were qualified.
+  # Anycast service addresses and the site expected to answer each, from
+  # every machine's own declaration (see nixos/modules/anycast.nix). A site
+  # answers while any one of its nodes holds the address, so the pair is what
+  # an alert watches rather than the machine; a second node at a site adds no
+  # entry. The address comes from the same option the node configures, so an
+  # alert can never name one the fabric does not.
+  anycastServices = lib.unique (
+    lib.concatMap (
+      system:
+      lib.mapAttrsToList (service: cfg: {
+        inherit service;
+        inherit (cfg) address;
+        site = system.config.homelab.site;
+      }) (system.config.homelab.anycast.services or { })
+    ) (lib.attrValues inputs.self.nixosConfigurations)
+  );
+
   alerts = import ./prometheus-alerts.nix {
-    inherit lib;
+    inherit lib anycastServices;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
     excludedJobs = [ snmpCyberpowerJob ];

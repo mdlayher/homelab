@@ -3,6 +3,9 @@
 # prometheus.nix rather than being hardcoded here.
 {
   lib,
+  # Every anycast service address and the site expected to answer it, as
+  # { service, address, site }; see nixos/modules/anycast.nix.
+  anycastServices,
   # Builds a Grafana Explore link for a LogQL query, for alerts which fire on
   # what Loki's ruler records; see nixos/servnerr-4/explore-url.nix.
   exploreURL,
@@ -57,6 +60,29 @@ let
     expr:
     "(${expr}) * on (host, device) group_left(model_name, serial_number) "
     + ''label_replace(smartctl_device, "host", "$1", "instance", ${raw "([^.:]+).*"})'';
+
+  # One rule per site and service address. A node withdraws its own address
+  # when the daemon behind it stops, which is the design working, so what is
+  # worth waking someone is a site where nothing holds the address at all --
+  # every request from clients nearest that site then crosses the fabric.
+  #
+  # absent() rather than a count, since a count has no series at zero, and it
+  # carries the selector's labels into the notification. It also fires when
+  # the address cannot be seen rather than is gone, so it is guarded on the
+  # site having a node exporter answering: a dead exporter is reported by the
+  # target rules, not as a withdrawn address.
+  #
+  # The window rides out a deploy, which stops the address with its daemon
+  # and restarts both a few seconds later.
+  anycastRules = map (s: {
+    alert = "AnycastAddressMissing";
+    expr = ''
+      absent(node_network_address_info{device="anycast", address="${s.address}", site="${s.site}"})
+      and on () count(up{job="node", site="${s.site}"} == 1) > 0
+    '';
+    for = "10m";
+    annotations.summary = "No node at site ${s.site} holds ${s.address}, so nothing there answers ${s.service} and every request from its clients crosses the fabric.";
+  }) anycastServices;
 in
 {
   groups = [
@@ -72,6 +98,9 @@ in
           expr = "sum by (instance) (increase(loki_write_dropped_entries_total[1h])) > 0";
           annotations.summary = "Alloy on {{ $labels.instance }} dropped {{ $value | humanize }} log entries bound for Loki in the last hour.";
         }
+      ]
+      ++ anycastRules
+      ++ [
         {
           alert = "APCUPSBatteryTimeLeft";
           expr = "apcupsd_battery_time_on_seconds > 0 and apcupsd_battery_time_left_seconds < 30*60";
