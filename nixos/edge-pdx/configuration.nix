@@ -70,6 +70,16 @@ in
     extraInputRules = lib.concatMapStrings (link: ''
       iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} accept comment "site traffic across the circuit"
     '') (lib.attrValues config.homelab.interconnect.links);
+
+    # Transit between circuits, which is what this machine becomes once a
+    # site reaches another through it rather than directly. Both ends of a
+    # transiting flow are ours, so the test is our own space on each side;
+    # dn42 arrives on the same interfaces and what it may forward is decided
+    # with dn42. The wildcard admits a circuit to a new site without a
+    # second place to remember.
+    extraForwardRules = ''
+      iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site traffic in transit"
+    '';
   };
 
   # Internal names resolve at the anycast resolver address, which is this
