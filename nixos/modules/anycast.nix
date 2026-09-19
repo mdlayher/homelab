@@ -108,7 +108,15 @@ in
           "anycast.service"
           service.unit
         ];
-        wantedBy = [ service.unit ];
+        # Wanted by the service so a restart of it brings the address back,
+        # and by the target so activation starts this unit even when the
+        # service itself is unchanged and therefore never restarted. Without
+        # the second, a deploy which touches nothing the daemon reads leaves
+        # the address off until the next reboot.
+        wantedBy = [
+          service.unit
+          "multi-user.target"
+        ];
 
         serviceConfig = {
           Type = "oneshot";
