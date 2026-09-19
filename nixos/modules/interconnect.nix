@@ -530,6 +530,7 @@ in
              isis circuit-type level-2-only
              isis network point-to-point
              isis hello padding
+             isis hello-multiplier 3
             !
           '';
           passive = name: ''
