@@ -59,17 +59,41 @@ in
       443
     ];
 
-    # Our own space is trusted across a circuit the way a LAN is; that is
-    # what the circuits are for. The interface alone does not say that much
-    # -- dn42 transit arrives on them too -- so the rule is by source
-    # address, and dn42's own space matches nothing here and meets the
-    # policy drop.
+    # What our own space may reach across a circuit, by source address as
+    # well as interface: the interface alone does not say that much, since
+    # dn42 transit arrives on them too, and dn42's own space matches nothing
+    # here and meets the policy drop.
+    #
+    # Named ports rather than the whole machine. A source in our own space
+    # is not by itself a trusted party: every segment at another site draws
+    # from this prefix, restricted ones included, so a blanket accept here
+    # puts each of them in front of every port this machine listens on. The
+    # list is what has to cross -- the exporters the server scrapes, and the
+    # services this site answers for when it is the nearest node holding an
+    # anycast address.
     #
     # One rule per circuit, from the links themselves, so a carrier added
     # for a second WAN is reachable without a second place to remember.
-    extraInputRules = lib.concatMapStrings (link: ''
-      iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} accept comment "site traffic across the circuit"
-    '') (lib.attrValues config.homelab.interconnect.links);
+    extraInputRules =
+      let
+        tcp = [
+          9100 # node_exporter
+          9123 # chrony exporter
+          9153 # coredns
+          9342 # frr_exporter
+          12345 # alloy
+          53 # resolver, when this site is the nearest node holding it
+        ];
+        udp = [
+          53
+          123 # NTP, on the same terms as the resolver
+        ];
+        ports = p: lib.concatMapStringsSep ", " toString p;
+      in
+      lib.concatMapStrings (link: ''
+        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
+        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} udp dport { ${ports udp} } accept comment "site services across the circuit"
+      '') (lib.attrValues config.homelab.interconnect.links);
 
     # Transit between circuits, which is what this machine becomes once a
     # site reaches another through it rather than directly. Both ends of a

@@ -564,6 +564,17 @@ in
           iifname "dn42e-*" oifname "dn42i-*" jump forward_dn42i
 
           ${lib.optionalString icl ''
+            # A restricted LAN's own address is inside the site prefix the
+            # rules below admit, and a circuit is not a LAN, so without this
+            # those segments reach another site's machines on every port
+            # while being denied every LAN here. The anycast services are
+            # the exception they are given on this router, and answering
+            # them elsewhere is a forward rather than an input once another
+            # node holds the address.
+            iifname $restricted_lans oifname "icl-*" ip6 daddr $anycast_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "restricted LAN anycast DNS across a circuit"
+            iifname $restricted_lans oifname "icl-*" ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "restricted LAN anycast NTP across a circuit"
+            iifname $restricted_lans oifname "icl-*" counter name restricted_forward_drop drop comment "restricted LANs to another site"
+
             # The interconnect is classified by address, not by interface:
             # our own ULA crosses it as LAN traffic, dn42 space crosses it
             # under dn42's own rules, and anything else matches nothing and
