@@ -89,15 +89,24 @@
   # does. The far end here is a machine rather than a site, so it is named by
   # its role: that is what the rest of this file keys on, and it outlives the
   # hardware the way a system ID index would not.
+  #
+  # The metric is the link's, set on both ends: this is a hop between two
+  # machines on one segment, and leaving it at the protocol's default would
+  # make it as expensive as a tunnel to another region. An address held at
+  # more than one site is reached at the circuit's metric plus the dummy's,
+  # so equal circuit metrics would put a node here and a node at another
+  # site at the same distance and split traffic between them.
   siteLinks.azo = {
     routnerr-3 = {
       interface = "icl-server0";
+      metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:1";
       circuit = "fd9e:1a04:f01d:fcff::1:1";
       lla = "fe80::1";
     };
     servnerr-4 = {
       interface = "icl-router0";
+      metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:0";
       circuit = "fd9e:1a04:f01d:fcff::1:0";
       lla = "fe80::2";

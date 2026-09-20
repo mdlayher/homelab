@@ -442,6 +442,23 @@ in
                 default = 1420;
                 description = "Carrier MTU: path MTU less WireGuard's 80.";
               };
+
+              metric = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
+                default = null;
+                description = ''
+                  This circuit's IS-IS metric, or null for isisd's default
+                  of 10.
+
+                  Set it where two circuits are not comparable paths. A link
+                  between two machines on one segment and a tunnel to
+                  another region both default to 10, which makes every
+                  address reachable over either equally good -- and an
+                  address held at both sites is then load balanced between
+                  them by a router that has no way to know one of the two
+                  cannot answer.
+                '';
+              };
               mtu = lib.mkOption {
                 type = lib.types.int;
                 default = config.carrierMtu - gretapOverhead;
@@ -561,15 +578,15 @@ in
           # elect; padded hellos because a disagreement about MTU is the
           # failure this link is most likely to have, and padding turns it
           # into a refused adjacency rather than silent partial flooding.
-          circuit = name: ''
-            interface ${name}
+          circuit = link: ''
+            interface ${link.interface}
              ip router isis ${tag}
              ipv6 router isis ${tag}
              isis circuit-type level-2-only
              isis network point-to-point
              isis hello padding
              isis hello-multiplier 3
-            !
+            ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
           '';
           passive = name: ''
             interface ${name}
@@ -620,7 +637,7 @@ in
             cfg.isis.aggregate != null
           ) " redistribute ipv6 kernel level-2 route-map isis-aggregate"}
           !
-          ${lib.concatMapStrings circuit (lib.mapAttrsToList (_: link: link.interface) cfg.links)}
+          ${lib.concatMapStrings circuit (lib.attrValues cfg.links)}
           ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
         '';
     };

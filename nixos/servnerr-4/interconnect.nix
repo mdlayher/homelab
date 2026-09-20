@@ -36,6 +36,7 @@ in
         localCircuitAddress = "${ours.circuit}/127";
         localLla = ours.lla;
         lla = far.lla;
+        metric = ours.metric;
         # The segment's 1500 less the GRETAP's 66. The module's default is
         # sized for a WireGuard carrier, which this link has none of.
         mtu = 1434;
