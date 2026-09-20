@@ -4,9 +4,10 @@
   ...
 }:
 
-# This site's end of the circuit to pdx. The module (nixos/modules/
-# interconnect.nix) owns the shape; this file supplies the addresses, the
-# identity, and what this router puts into the IGP.
+# This router's end of each circuit it terminates, to another site and to
+# this site's other router. The module (nixos/modules/interconnect.nix) owns
+# the shape; this file supplies the addresses, the identity, and what this
+# router puts into the IGP.
 
 let
   inventory = config.homelab.inventory;
@@ -14,6 +15,12 @@ let
   # pdx's carrier key, shared by both links to it: one key identifies that
   # router, and the two carriers differ by port rather than by identity.
   pdxPublicKey = "7gO2i3ZxZFosAOuRZgC5yFIM/8fBX+KqVEo/HoWajD8=";
+
+  # This site's link between its own routers, from the inventory: each end
+  # reads its own addresses and the far end's out of the one registry.
+  siteLink = inventory.siteLinks.${config.homelab.site};
+  ours = siteLink.${config.networking.hostName};
+  far = lib.head (lib.attrValues (lib.filterAttrs (n: _: n != config.networking.hostName) siteLink));
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -63,6 +70,25 @@ in
         publicKey = pdxPublicKey;
         endpoint = "ipv4.pdx.icl.mdlayher.net:51121";
         firewallMark = 2;
+      };
+
+      # The second resolver at this site, joined by a link of its own rather
+      # than by the management LAN: a circuit advertises the prefixes on its
+      # interface, and a LAN's are a secret subnet and a delegated GUA that
+      # renumbers. A bare GRETAP carries only its own /127, and both ends
+      # already share a segment, so it needs no carrier to cross.
+      links.server0 = {
+        site = config.homelab.site;
+        carrier = null;
+        interface = ours.interface;
+        localAddress = "${ours.carrier}/127";
+        remoteAddress = far.carrier;
+        localCircuitAddress = "${ours.circuit}/127";
+        localLla = ours.lla;
+        lla = far.lla;
+        # The segment's 1500 less the GRETAP's 66. The module's default is
+        # sized for a WireGuard carrier, which this link has none of.
+        mtu = 1434;
       };
 
       # The landing page at this site's icl names. The per-uplink names are

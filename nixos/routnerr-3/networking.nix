@@ -311,6 +311,17 @@ in
         "dev0"
       ]
       ++ map (vlan: vlan.interface) (lib.attrValues config.homelab.dn42.vlans);
+
+      # The endpoint of the link to this site's other router
+      # (interconnect.nix). Deprecated so nothing sources from it: it exists
+      # for the GRETAP built on it, whose own packets carry addresses
+      # configured on the netdev rather than chosen.
+      addresses = [
+        {
+          Address = "${inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.carrier}/127";
+          PreferredLifetime = "0";
+        }
+      ];
     };
 
     # Unused Ethernet and SFP+ links.

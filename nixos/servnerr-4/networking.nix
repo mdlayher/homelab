@@ -1,4 +1,8 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 
 let
   inventory = config.homelab.inventory;
@@ -58,7 +62,24 @@ in
       # bridge holds the address, not its VLAN port.
       extraCommands = ''
         ip46tables -I nixos-fw 1 -i br-dn42i-dev0 -m conntrack --ctstate NEW,INVALID -j DROP
+        ip6tables -I nixos-fw 1 -i mgmt0 -p gre -s ${
+          inventory.siteLinks.${config.homelab.site}.${lib.head inventory.roles.router}.carrier
+        } -j ACCEPT
+
+        # The ports above are opened on every interface, and they are meant
+        # for the management LAN. A circuit reaches every segment at every
+        # site, so nothing new arrives over one; ICMPv6 still does, which is
+        # what path MTU discovery and traces need. Only new flows are
+        # dropped, so what this machine starts across the circuit still
+        # returns. The link is addressed v6 only.
+        ip6tables -I nixos-fw 1 -i ${
+          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
+        } -p ipv6-icmp -j ACCEPT
+        ip6tables -I nixos-fw 2 -i ${
+          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
+        } -m conntrack --ctstate NEW -j DROP
       '';
+
       allowedTCPPorts = [
         # Loki push, for the other machines' alloy and for LAN devices which
         # cannot join the tailnet, via loki.svc; see the router's coredns.nix.
@@ -90,6 +111,17 @@ in
         # that the router's DNS records (see nixos/inventory/) are predictable.
         Token = "static:::10";
       };
+
+      # The endpoint of the link to this site's router (interconnect.nix).
+      # Deprecated so nothing sources from it: it exists for the GRETAP
+      # built on it, whose own packets carry addresses configured on the
+      # netdev rather than chosen.
+      addresses = [
+        {
+          Address = "${inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.carrier}/127";
+          PreferredLifetime = "0";
+        }
+      ];
     };
 
     # 10GbE bridge carrying the tagged container VLANs below. The host

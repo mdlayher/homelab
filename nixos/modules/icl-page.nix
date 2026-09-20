@@ -69,32 +69,40 @@ let
     v = interconnect.isis.aggregate;
   };
 
-  circuitFacts = link: [
-    {
-      k = "far site";
-      v = "${link.site}, plane ${toString link.plane}";
-    }
-    {
+  circuitFacts =
+    link:
+    [
+      {
+        k = "far end";
+        v = if link.site == site then "this site" else "${link.site}, plane ${toString link.plane}";
+      }
+    ]
+    # A link whose ends share a segment is built straight on their addresses
+    # and has no carrier to describe.
+    ++ lib.optional (link.carrier != null) {
       k = "carrier";
       v = "${link.carrier}, udp ${toString link.port}, mtu ${toString link.carrierMtu}";
     }
-    {
-      k = "circuit";
-      v = "mtu ${toString link.mtu}";
-    }
-    {
-      k = "carrier addresses";
-      v = "${link.localAddress} to ${link.remoteAddress}";
-    }
-    {
-      k = "circuit address";
-      v = link.localCircuitAddress;
-    }
-    {
+    ++ [
+      {
+        k = "circuit";
+        v = "mtu ${toString link.mtu}";
+      }
+      {
+        k = if link.carrier == null then "link addresses" else "carrier addresses";
+        v = "${link.localAddress} to ${link.remoteAddress}";
+      }
+      {
+        k = "circuit address";
+        v = link.localCircuitAddress;
+      }
+    ]
+    # An endpoint is a carrier's; a link built straight on two addresses
+    # already on one segment dials nothing.
+    ++ lib.optional (link.carrier != null) {
       k = "endpoint";
       v = if link.endpoint == null then "none, the far site initiates" else link.endpoint;
-    }
-  ];
+    };
 
   # Section title, then facts, once per circuit and keyed by the interface
   # the IGP names.

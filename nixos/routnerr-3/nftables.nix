@@ -209,6 +209,7 @@ in
       # the inventory, which explains why the v4 side is a whole /16 and
       # what it must stay disjoint from.
       define lab6 = ${inventory.labPrefix}
+      define carrier6 = ${inventory.carrierPrefix}
       define site4 = ${inventory.privatePrefix}
       define site6 = ${inventory.ulaPrefix}
       define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr}
@@ -342,9 +343,11 @@ in
           ${lib.optionalString icl ''iifname "icl-*" jump input_icl''}
           ${lib.optionalString iclBare ''
             # The GRETAP of a carrier-less interconnect, arriving on the LAN
-            # which carries it. Confined to the lab prefix at both ends, so
-            # it admits the tunnel and nothing else.
+            # which carries it. Both ends must sit inside one of the
+            # prefixes an endpoint is drawn from, so each rule admits the
+            # tunnel and nothing else.
             ip6 saddr $lab6 ip6 daddr $lab6 meta l4proto gre counter accept comment "bare interconnect GRE"
+            ip6 saddr $carrier6 ip6 daddr $carrier6 meta l4proto gre counter accept comment "bare interconnect GRE"
           ''}
 
           jump icmp_lan

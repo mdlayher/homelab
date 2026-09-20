@@ -8,6 +8,8 @@
     ./networking.nix
     ./storage.nix
 
+    ./interconnect.nix
+
     # Service configuration.
     ./dev.nix
     ./inventory-metrics.nix

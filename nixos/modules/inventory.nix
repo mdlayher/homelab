@@ -261,6 +261,7 @@ in
         labPrefix
         carrierPrefix
         circuitPrefix
+        siteLinks
         loopbackPrefix
         anycastPrefix
         anycast

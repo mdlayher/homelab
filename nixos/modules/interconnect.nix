@@ -138,6 +138,31 @@ let
 
   # frr_exporter's own default, and what the server's discovery hook uses.
   exporterPort = 9342;
+
+  inherit (import ./reverse-zones.nix { inherit lib; }) nibbles6;
+
+  hexDigit = lib.listToAttrs (
+    lib.imap0 (i: c: lib.nameValuePair c i) (lib.stringToCharacters "0123456789abcdef")
+  );
+
+  # The /127 an address sits in, as its nibbles with the last bit cleared.
+  # Every address on a link here is one end of a /127, and the derivation
+  # writes them in a different form from a hand-allocated link, so they are
+  # compared expanded and lowercased rather than as text.
+  net127 =
+    addr:
+    let
+      ns = nibbles6 (lib.toLower (lib.head (lib.splitString "/" addr)));
+      last = hexDigit.${lib.last ns};
+    in
+    lib.concatStrings (lib.take 31 ns) + lib.toLower (lib.toHexString (last - lib.mod last 2));
+
+  # One entry per /127 a link occupies: the endpoints it is built on, and the
+  # circuit address if it carries one.
+  linkNets =
+    link:
+    [ (net127 link.localAddress) ]
+    ++ lib.optional (link.localCircuitAddress != null) (net127 link.localCircuitAddress);
 in
 {
   # A loopback is a router's identity in the IGP and an anycast address is a
@@ -481,6 +506,19 @@ in
           in
           lib.unique planes == planes;
         message = "interconnect links to one site must each use a different plane";
+      }
+      {
+        # The assertion above catches two derived links colliding. This one
+        # catches a link whose addresses were written by hand landing on a
+        # derived link's, which nothing else would notice: the two would
+        # answer for each other's /127 and the adjacency they broke would be
+        # the one nobody was looking at.
+        assertion =
+          let
+            nets = lib.concatMap linkNets (lib.attrValues cfg.links);
+          in
+          lib.unique nets == nets;
+        message = "interconnect links must not share a carrier or circuit /127";
       }
       {
         assertion = lib.all (link: inventory.sites ? ${link.site}) (lib.attrValues cfg.links);

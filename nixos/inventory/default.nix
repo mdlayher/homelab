@@ -78,6 +78,32 @@
   # one the choice falls to whatever else the machine happens to hold.
   circuitPrefix = "fd9e:1a04:f01d:fc00::/56";
 
+  # Links joining two routers at one site. The interconnect module derives a
+  # link's addresses from the two sites' indices, which collapses when both
+  # ends sit at the same site: each computes the same pair and each claims
+  # the same end. These are registered instead, from plane ff of the two
+  # prefixes above, which no derived link reaches. Keyed by machine, since
+  # both ends read this to learn their own addresses and the far end's.
+  #
+  # An interface names the far end and then the plane, as an inter-site one
+  # does. The far end here is a machine rather than a site, so it is named by
+  # its role: that is what the rest of this file keys on, and it outlives the
+  # hardware the way a system ID index would not.
+  siteLinks.azo = {
+    routnerr-3 = {
+      interface = "icl-server0";
+      carrier = "fd9e:1a04:f01d:feff::1:1";
+      circuit = "fd9e:1a04:f01d:fcff::1:1";
+      lla = "fe80::1";
+    };
+    servnerr-4 = {
+      interface = "icl-router0";
+      carrier = "fd9e:1a04:f01d:feff::1:0";
+      circuit = "fd9e:1a04:f01d:fcff::1:0";
+      lla = "fe80::2";
+    };
+  };
+
   # IS-IS identity. Assigned here because nothing derives it: a system ID
   # is not an address and must not be built from one, so it survives any
   # renumbering, and a file has to be the registry or it drifts.
@@ -94,6 +120,7 @@
     area = "49.0001";
     systemIds = {
       routnerr-3 = "0000.0000.0101";
+      servnerr-4 = "0000.0000.0102";
       edge-pdx = "0000.0000.0201";
     };
   };
