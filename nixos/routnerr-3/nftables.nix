@@ -8,8 +8,10 @@
 let
   inventory = config.homelab.inventory;
 
-  # Interface groups. Restricted LANs (guest, IoT, dev) may only reach the
-  # internet and a few router services; trusted LANs may reach everything.
+  # Interface groups. Restricted LANs may only reach the internet and a few
+  # router services; trusted LANs may reach everything. A restricted LAN the
+  # inventory marks debug may also originate ICMP anywhere the rules would
+  # otherwise drop it, so that segment can probe the network it studies.
   wans = [
     "wan0"
     "wan1"
@@ -21,6 +23,7 @@ let
   lansWhere = pred: lib.filter pred (lib.attrValues inventory.interfaces);
   trusted = lansWhere (ifi: ifi.trusted) ++ [ { name = "ts0"; } ];
   restricted = lansWhere (ifi: !ifi.trusted);
+  debugLans = lansWhere (ifi: ifi.debug);
 
   # Produces an nftables set of interface names.
   ifnames = ifis: "{ ${lib.concatMapStringsSep ", " (ifi: ifi.name or ifi) ifis} }";
@@ -202,6 +205,7 @@ in
       define wans = ${ifnames wans}
       define trusted_lans = ${ifnames trusted}
       define restricted_lans = ${ifnames restricted}
+      ${lib.optionalString (debugLans != [ ]) "define debug_lans = ${ifnames debugLans}"}
       define all_lans = ${ifnames (trusted ++ restricted)}
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
@@ -565,6 +569,13 @@ in
           # to our hosts, so conntrack sees both directions of every flow.
           iifname "dn42i-*" oifname "dn42e-*" counter accept comment "dn42 internal to external"
           iifname "dn42e-*" oifname "dn42i-*" jump forward_dn42i
+
+          # A debug segment probes from here, above the drops that hold the
+          # restricted LANs to the internet: echo and the errors a trace
+          # reads, in the outbound direction only. What comes back arrives
+          # as established or related, and every other protocol still meets
+          # those drops, so no service becomes reachable.
+          ${lib.optionalString (debugLans != [ ]) "iifname $debug_lans jump icmp_lan"}
 
           ${lib.optionalString icl ''
             # A restricted LAN's own address is inside the site prefix the

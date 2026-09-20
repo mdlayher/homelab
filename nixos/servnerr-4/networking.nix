@@ -50,14 +50,6 @@ in
     firewall = {
       trustedInterfaces = [ "ts0" ];
 
-      # Traffic from another site arrives on the management LAN, since that
-      # is the address it is sent to, while the route back to that site
-      # leaves over the circuit this machine now runs the IGP on. Strict
-      # filtering drops a flow whose return route names a different
-      # interface than it arrived on; loose asks only that a route to the
-      # source exists.
-      checkReversePath = "loose";
-
       # The ports below open on every interface, the dn42 VLAN included
       # (see dn42 above). dn42 at large never reaches them: the router's
       # forward_dn42i chain (its nftables.nix) admits only ICMP and

@@ -107,6 +107,9 @@ let
       ifi = {
         inherit name;
         inherit (subnet) vlan trusted role;
+        # Untrusted, but permitted to originate ICMP diagnostics past its
+        # own segment: see routnerr-3/nftables.nix.
+        debug = subnet.debug or false;
         # The search domain this segment is handed, and the namespace its
         # hosts are named in.
         searchDomain = "${subnet.role}.${domain}";

@@ -245,6 +245,9 @@
       dev0 = {
         vlan = 20;
         trusted = false;
+        # Networking experiments need to see the fabric they run on, so
+        # this segment may ping and trace where the others may not.
+        debug = true;
         role = "dev";
         hosts = {
           frrdev.ipv6 = "token";

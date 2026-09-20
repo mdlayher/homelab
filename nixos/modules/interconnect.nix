@@ -560,6 +560,15 @@ in
       lib.mapAttrsToList (_: link: link.port) cfg.links
     );
 
+    # Paths here are asymmetric by construction: a flow arrives addressed to
+    # an interface the route back to its source does not name, and the IGP
+    # may move that route between circuits at any time. Strict reverse path
+    # filtering drops such a flow; loose asks only that a route to the
+    # source exists. A site running its own ruleset keeps the firewall off
+    # and checks spoofed sources on its LAN ports, where the expected
+    # interface is known.
+    networking.firewall.checkReversePath = lib.mkDefault "loose";
+
     # isisd alongside bird, not instead of it. The two carry disjoint
     # prefixes -- our own topology here, the dn42 table there -- so neither
     # daemon writes a route the other owns, which is what keeps them out of
