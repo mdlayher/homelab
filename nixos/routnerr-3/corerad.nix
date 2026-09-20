@@ -53,8 +53,14 @@ in
               }
             ];
 
-            # Automatically use the appropriate interface address as a DNS server.
-            rdnss = [ { } ];
+            # The anycast address alone (see modules/anycast.nix), not this
+            # interface's own. Both are answered by the same process here,
+            # so advertising the interface address as well offers no second
+            # chance: it fails at the same moment and, unlike the anycast
+            # address, the IGP cannot move it to a node which is still
+            # serving. A client which happened to try it first would wait
+            # out a timeout before reaching one that answers.
+            rdnss = [ { servers = [ inventory.anycast.dns ]; } ];
 
             # Route information, tuned per RFC 8978 (Reaction of IPv6 SLAAC
             # to Flash-Renumbering Events). Trusted LANs get every prefix
