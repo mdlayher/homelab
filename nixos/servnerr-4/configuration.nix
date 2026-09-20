@@ -11,6 +11,7 @@
     ./interconnect.nix
 
     # Service configuration.
+    ../modules/coredns.nix
     ./dev.nix
     ./inventory-metrics.nix
     ./loki.nix

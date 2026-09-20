@@ -207,6 +207,24 @@ in
     };
   };
 
+  # Every block binds the wildcard, which covers the address resolved's stub
+  # listener would hold, so the two cannot both have port 53. A machine here
+  # turns the stub off and points resolved at this instead; ordering after it
+  # keeps an activation which restarts both from starting this one first and
+  # failing to bind.
+  systemd.services.coredns.after = [ "systemd-resolved.service" ];
+
+  # nixpkgs gives resolved a reloadTrigger on its configuration, so a change
+  # to it is applied with `systemctl reload`, and a reload does not fully
+  # re-apply that configuration: a search domain dropped from the file was
+  # found still in the running state long afterwards. Whatever the stub
+  # listener does on reload, this machine cannot afford to find out during
+  # activation, since holding port 53 would keep the resolver from starting
+  # at all. Restart instead.
+  systemd.services.systemd-resolved.restartTriggers = [
+    config.environment.etc."systemd/resolved.conf".source
+  ];
+
   # coredns runs with DynamicUser, so hand it the rendered files via
   # systemd credentials.
   systemd.services.coredns.serviceConfig.LoadCredential = [

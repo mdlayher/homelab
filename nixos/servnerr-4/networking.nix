@@ -79,11 +79,18 @@ in
         # site, so nothing new arrives over one; ICMPv6 still does, which is
         # what path MTU discovery and traces need. Only new flows are
         # dropped, so what this machine starts across the circuit still
-        # returns. The link is addressed v6 only.
+        # returns, and the resolver crosses because a client whose nearest
+        # node is elsewhere is answered here. The link is addressed v6 only.
         ip6tables -I nixos-fw 1 -i ${
           inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
         } -p ipv6-icmp -j ACCEPT
         ip6tables -I nixos-fw 2 -i ${
+          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
+        } -p tcp --dport 53 -j ACCEPT
+        ip6tables -I nixos-fw 3 -i ${
+          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
+        } -p udp --dport 53 -j ACCEPT
+        ip6tables -I nixos-fw 4 -i ${
           inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
         } -m conntrack --ctstate NEW -j DROP
       '';
@@ -92,12 +99,29 @@ in
         # Loki push, for the other machines' alloy and for LAN devices which
         # cannot join the tailnet, via loki.svc; see the router's coredns.nix.
         config.services.loki.configuration.server.http_listen_port
+        # The resolver this machine answers for at its anycast address, and
+        # at its own (see coredns.nix).
+        53
       ];
       allowedUDPPorts = [
         # Syslog from devices that cannot run alloy.
         5514
+        53
       ];
     };
+  };
+
+  # This machine answers for the site's zones now (see coredns.nix), so it
+  # resolves through its own CoreDNS rather than across the LAN. The stub
+  # listener has to go: CoreDNS binds the wildcard, which covers the address
+  # the stub would hold, and that is what keeps resolv.conf answering. The
+  # search domain still comes from the router's advertisements on mgmt0.
+  services.resolved.settings.Resolve = {
+    DNS = [
+      "::1"
+      "127.0.0.1"
+    ];
+    DNSStubListener = false;
   };
 
   systemd.network = {
