@@ -196,9 +196,9 @@ in
       anycast, the service address drawn from that last one for each
       service answered at every site. So is isis, the area
       and per-router system IDs. See nixos/inventory/ for what each covers.
-      Scoped to this machine's homelab.site: domain, aliasDomains,
-      interfaces, hosts and loopbacks are that site's alone, while sites
-      carries every site's index, domain, prefix and loopbacks. A site's
+      Scoped to this machine's homelab.site: domain, interfaces, hosts and
+      loopbacks are that site's alone, while sites carries every site's
+      index, domain, prefix and loopbacks. A site's
       index is the number every addressing scheme keys on, its prefix is the
       /56 built from that index, and the identifier of a link between two
       sites is their pair of indices.
@@ -244,7 +244,6 @@ in
         zone
         ;
       inherit domain;
-      aliasDomains = siteCfg.aliasDomains or [ ];
       # Every site's domain and loopbacks, for consumers naming a machine at
       # another one: the router answering for a site it is not at, and the
       # server qualifying a scrape target.

@@ -171,8 +171,7 @@ in
       Domains = [
         inventory.domain
       ]
-      ++ map (ifi: ifi.searchDomain) (lib.attrValues inventory.interfaces)
-      ++ inventory.aliasDomains;
+      ++ map (ifi: ifi.searchDomain) (lib.attrValues inventory.interfaces);
       DNS = [
         "::1"
         "127.0.0.1"

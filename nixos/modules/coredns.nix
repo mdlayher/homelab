@@ -20,19 +20,11 @@ let
 
   # Names a host answers to for one address family. The site domain carries
   # the role-labelled scheme, with the family pin leading as it does in the
-  # dn42 and clearnet zones. Each retired domain carries both the labelled
-  # and the unlabelled name, which together cover every shape in use before
-  # the move, so nothing hardcoded off-repo breaks until it is dropped.
-  names =
-    host: family:
-    [
-      "${host.dnsName}.${inventory.domain}"
-      "${family}.${host.dnsName}.${inventory.domain}"
-    ]
-    ++ lib.concatMap (d: [
-      "${host.dnsName}.${d}"
-      "${host.name}.${d}"
-    ]) inventory.aliasDomains;
+  # dn42 and clearnet zones.
+  names = host: family: [
+    "${host.dnsName}.${inventory.domain}"
+    "${family}.${host.dnsName}.${inventory.domain}"
+  ];
 
   # Internal DNS records for each host, as a hosts file rendered from the
   # inventory secrets. Hosts without a known IPv6 address get an A record
@@ -46,9 +38,7 @@ let
   ) (lib.attrValues inventory.hosts);
 
   # The router answers on every LAN it serves, one name per interface, so a
-  # reverse lookup resolves back to the address it was asked about. Under a
-  # retired domain it keeps the single home-VLAN name it has now rather than
-  # gaining an address per segment behind one name.
+  # reverse lookup resolves back to the address it was asked about.
   routerFile =
     lib.concatMapStrings (
       ifi:
@@ -61,10 +51,6 @@ let
         ${ifi.ula} ${n}.${inventory.domain}
         ${ifi.ula} ipv6.${n}.${inventory.domain}
       ''
-      + lib.concatMapStrings (d: ''
-        ${ifi.ipv4} ${n}.${d}
-        ${ifi.ula} ${n}.${d}
-      '') inventory.aliasDomains
     ) (lib.attrValues inventory.interfaces)
     # Being on every segment, the router needs a defined answer for its bare
     # name; the management LAN is it. Forward only, as the family pins are:
@@ -72,11 +58,7 @@ let
     + ''
       ${inventory.interfaces.mgmt0.ipv4} ${routerName}.${inventory.domain}
       ${inventory.interfaces.mgmt0.ula} ${routerName}.${inventory.domain}
-    ''
-    + lib.concatMapStrings (d: ''
-      ${inventory.interfaces.lan0.ipv4} ${routerName}.${d}
-      ${inventory.interfaces.lan0.ula} ${routerName}.${d}
-    '') inventory.aliasDomains;
+    '';
 
   # Stable service names: <service>.svc.<zone> resolves to the primary holder
   # of the service's role, so devices which cannot join the tailnet may
@@ -92,10 +74,7 @@ let
     service:
     let
       host = inventory.hosts.${lib.head inventory.roles.${service.value}};
-      svcNames = [
-        "${service.name}.svc.${inventory.zone}"
-      ]
-      ++ map (d: "${service.name}.svc.${d}") inventory.aliasDomains;
+      svcNames = [ "${service.name}.svc.${inventory.zone}" ];
     in
     lib.concatMapStrings (n: "${host.ipv4} ${n}\n") svcNames
     + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
@@ -148,8 +127,7 @@ let
     name: site: name != config.homelab.site && site.loopbacks != { }
   ) inventory.sites;
 
-  # One file and one block for all of them, as the internal zone already
-  # does with the domains it is retiring: the hosts plugin keeps only the
+  # One file and one block for all of them: the hosts plugin keeps only the
   # names inside a block's zones, so the split is by zone, not by file.
   remoteHostsFile = pkgs.writeText "coredns-remote-hosts" (
     lib.concatMapStrings (site: lib.concatMapStrings loopbackForward (siteLoopbacks site)) (
@@ -270,10 +248,9 @@ in
         }
       }
 
-      # Internal zone, this site's and the domains it is retiring. Never
-      # the bare zone above them: the root block forwards that to the
-      # clearnet, where the public records live.
-      ${lib.concatStringsSep " " ([ inventory.domain ] ++ inventory.aliasDomains)} {
+      # Internal zone, this site's. Never the bare zone above it: the root
+      # block forwards that to the clearnet, where the public records live.
+      ${inventory.domain} {
         hosts /run/credentials/coredns.service/${credential}
       }
 
