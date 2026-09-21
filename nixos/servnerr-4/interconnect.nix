@@ -51,6 +51,20 @@ in
         # prefix. What this machine puts into the IGP is the anycast address
         # it answers at, which nixos/modules/anycast.nix advertises for as
         # long as the service behind it runs.
+
+        # The router's aggregates for this site arrive over the circuit,
+        # and this machine reaches the site's LANs over mgmt0. Installed,
+        # the IGP's copy would win on metric and carry LAN-bound traffic
+        # across the circuit sourced from the circuit address, which the
+        # router's forward_icl drops as a far-site flow; the scrapes of
+        # the dev0 containers did exactly that on 2026-09-21. The far
+        # sites' prefixes are still installed, since the circuit is the
+        # path to those.
+        kernelDeny6 = [ inventory.ulaPrefix ];
+        kernelDeny4 = [
+          inventory.privatePrefix
+          inventory.legacyPrefix
+        ];
       };
     };
   };

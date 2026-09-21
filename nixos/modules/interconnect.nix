@@ -285,6 +285,27 @@ in
         '';
       };
 
+      kernelDeny6 = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          IPv6 prefixes this router learns from the IGP but must not
+          install, exactly as written. A second router at a site learns
+          its own site's aggregates from the first, pointing over the
+          circuit between them, while it reaches that site over its LAN;
+          installed, they would carry its LAN traffic across the circuit
+          sourced from the circuit address, which the site's policy drops
+          as a far-site flow. zebra filters them before the kernel sees
+          them; isisd still holds them.
+        '';
+      };
+
+      kernelDeny4 = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "The same for IPv4 prefixes.";
+      };
+
       passiveInterfaces = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
@@ -855,6 +876,26 @@ in
              match ip address prefix-list isis-aggregate4
             !
           '';
+          # What zebra installs from the IGP: everything but the prefixes
+          # named in kernelDeny, matched exactly by a prefix-list and
+          # dropped by a route-map zebra applies to isisd's routes.
+          kernelDeny =
+            family: prefixes:
+            let
+              ip = if family == "ipv6" then "ipv6" else "ip";
+            in
+            lib.optionalString (prefixes != [ ]) ''
+              ${lib.concatImapStrings (
+                i: p: "${ip} prefix-list isis-kernel-deny-${family} seq ${toString (5 * i)} permit ${p}\n"
+              ) prefixes}!
+              route-map isis-kernel-${family} deny 10
+               match ${ip} address prefix-list isis-kernel-deny-${family}
+              !
+              route-map isis-kernel-${family} permit 20
+              !
+              ${ip} protocol isis route-map isis-kernel-${family}
+              !
+            '';
           redistribute =
             lib.optionalString (
               cfg.isis.aggregate6 != null
@@ -893,7 +934,7 @@ in
           ${logging}
           ${lib.optionalString (routerId != null) "ip router-id ${routerId}"}
           !
-          ${aggregate6}${aggregate4}router isis ${tag}
+          ${aggregate6}${aggregate4}${kernelDeny "ipv6" cfg.isis.kernelDeny6}${kernelDeny "ipv4" cfg.isis.kernelDeny4}router isis ${tag}
            is-type level-2-only
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
