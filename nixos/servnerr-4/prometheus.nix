@@ -313,13 +313,14 @@ let
   # just process liveness.
   dnsServers = map (name: at name "${qualify name}:53") roles.router;
 
-  # The anycast resolver addresses, probed from the monitor rather than from
-  # this machine, which holds one and would answer itself; see
+  # The anycast resolver addresses, probed from the agents' container on
+  # dev0 rather than from this machine, which holds one and would answer
+  # itself, or from its segment, which it answers directly; see
   # nixos/modules/anycast-probe.nix. An IPv6 literal takes brackets before
   # its port.
-  anycastProbe = lib.head roles.monitor;
+  anycastProbe = "linuxdev";
   anycastProbePort =
-    inputs.self.nixosConfigurations.${anycastProbe}.config.services.prometheus.exporters.blackbox.port;
+    config.containers.${anycastProbe}.config.services.prometheus.exporters.blackbox.port;
   anycastProbeJob = "blackbox_dns_anycast";
   anycastResolvers =
     map (address: at anycastProbe "${if lib.hasInfix ":" address then "[${address}]" else address}:53")

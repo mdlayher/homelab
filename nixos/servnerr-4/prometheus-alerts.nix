@@ -269,13 +269,24 @@ in
           for = "10m";
           annotations.summary = "{{ $labels.instance }} ({{ $labels.family }}) answered only {{ $value | humanizePercentage }} of ICMP probes over 15 minutes.";
         }
-        # A LAN client's query to the anycast resolver, probed from the
-        # monitor (nixos/modules/anycast-probe.nix). AnycastAddressMissing
+        # A LAN client's query to the anycast resolver, probed from a segment
+        # no holder sits on (nixos/modules/anycast-probe.nix). AnycastAddressMissing
         # watches whether a site holds the address; this watches whether an
         # answer comes back, which the 2026-09-21 withdrawal exercise showed
         # can fail while every holder is healthy. Two minutes rather than
         # BlackboxServiceDown's five: every client at the site is without
         # names while it fires.
+        # The same fault seen from where it happens: a holder's reply sourced
+        # from an anycast address arriving on a LAN the router does not route
+        # that address to, which its anti-spoof check drops (the router's
+        # nftables.nix counts these apart from other spoofed sources). One
+        # is a client without an answer, so no hold beyond the scrape.
+        {
+          alert = "AnycastReplyDropped";
+          expr = ''rate(nftables_counter_packets_total{name="anycast_reply_drop"}[2m]) > 0'';
+          for = "1m";
+          annotations.summary = "{{ $labels.instance }} is dropping replies sourced from an anycast address that arrive on a LAN it routes that address away from, so a holder's answers are not reaching clients.";
+        }
         {
           alert = "AnycastResolverUnreachable";
           expr = ''probe_success{job="blackbox_dns_anycast"} == 0'';

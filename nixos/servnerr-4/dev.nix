@@ -948,7 +948,15 @@ in
               # A machine with a dn42 interface trusts the dn42 CA; see
               # the dn42 link below.
               ../modules/dn42-ca.nix
+              # DNS probe of the anycast resolver from a LAN client's
+              # vantage: dev0 is a segment no holder has an interface on,
+              # so both the query and the reply cross the router.
+              ../modules/anycast-probe.nix
             ];
+            homelab.anycastProbe.queryName =
+              (lib.findFirst (lo: lo.siteFqdn != null) null (
+                lib.attrValues inventory.sites.${config.homelab.site}.loopbacks
+              )).siteFqdn;
 
             # Tailscale SSH takes over port 22 for tailnet peers: logins are
             # authenticated by tailnet identity under the policy's ssh rules

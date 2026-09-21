@@ -231,6 +231,7 @@ in
         # with 'nft list counters' and exported to Prometheus; see
         # nftables-counters. Multiple rules may share one counter.
         counter spoofed_drop {}
+        counter anycast_reply_drop {}
         counter input_reject {}
         counter wan_input_drop {}
         counter restricted_crossvlan_drop {}
@@ -280,6 +281,13 @@ in
           policy accept
 
           iifname $physical_lans fib saddr . iif oif missing limit rate 10/minute burst 20 packets log prefix "nft spoofed drop: "
+          # A holder's reply sourced from an anycast address, arriving on a
+          # LAN this router routes that address away from: dropped like any
+          # spoofed source, counted apart so the failure has an alert
+          # (AnycastReplyDropped). Seen on 2026-09-21 when the server
+          # answered in the router's place and replied over mgmt0.
+          iifname $physical_lans ip6 saddr { $anycast_dns, $anycast_ntp } fib saddr . iif oif missing counter name anycast_reply_drop drop comment "anycast reply on the wrong LAN"
+          iifname $physical_lans ip saddr { $anycast4_dns, $anycast4_ntp } fib saddr . iif oif missing counter name anycast_reply_drop drop comment "anycast reply on the wrong LAN"
           iifname $physical_lans fib saddr . iif oif missing counter name spoofed_drop drop comment "spoofed source"
 
           # Anything the routing table would discard, counted here because
