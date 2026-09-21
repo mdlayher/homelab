@@ -663,16 +663,24 @@ in
           # config cannot be checked before it reaches the router.
           #
           # point-to-point because two routers on a link have no DIS to
-          # elect; padded hellos because a disagreement about MTU is the
-          # failure this link is most likely to have, and padding turns it
-          # into a refused adjacency rather than silent partial flooding.
+          # elect; padded hellos while an adjacency forms because a
+          # disagreement about MTU is the failure this link is most likely
+          # to have, and padding turns it into a refused adjacency rather
+          # than silent partial flooding. Only while it forms: a hello a
+          # second at full size is most of an idle carrier's traffic, and
+          # the MTU was proved the moment the adjacency came up.
+          #
+          # A hello a second, three missed: a carrier gives no link-down
+          # signal and the router cannot run BFD (bird holds its port), so
+          # the hello timeout is the whole of failure detection here.
           circuit = link: ''
             interface ${link.interface}
              ip router isis ${tag}
              ipv6 router isis ${tag}
              isis circuit-type level-2-only
              isis network point-to-point
-             isis hello padding
+             isis hello padding during-adjacency-formation
+             isis hello-interval 1
              isis hello-multiplier 3
              isis password md5 ${password}
             ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
@@ -717,6 +725,13 @@ in
         # The first lines are what the FRR module writes around
         # services.frr.config, which configFile replaces wholesale.
         #
+        # isisd schedules SPF on every LSP update with a new sequence
+        # number, content compared or not, so the LSP refreshes of routers
+        # restarted by one deploy arrive as a burst every quarter hour. The
+        # RFC 8405 delay, at that RFC's suggested values, folds a burst into
+        # a run or two and backs off under sustained churn, while a lone
+        # change still computes within its initial delay.
+        #
         # The overload bit for a while after isisd starts, which every
         # deploy does: a router which has just formed its adjacencies
         # attracts transit before its database and routes have settled,
@@ -733,6 +748,7 @@ in
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
            log-adjacency-changes
+           spf-delay-ietf init-delay 50 short-delay 200 long-delay 5000 holddown 10000 time-to-learn 500
            set-overload-bit on-startup 60
            domain-password md5 ${password} authenticate snp validate
           ${lib.optionalString (
