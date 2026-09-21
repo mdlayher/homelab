@@ -189,13 +189,14 @@ let
   // lib.genAttrs roles.monitor (_: {
     jobs.consrv.port = 9288;
   })
-  # nftables_exporter runs on every router and edge role holder; see
-  # nixos/modules/nftables-exporter.nix. The exporter mirrors nftables
-  # faithfully, so the homelab naming conventions are split into labels
-  # here: accounting counters named <lan>_wan_<dir> gain device and
-  # direction, and per-host set elements keyed "<ifname> . <addr>" gain
-  # device and address. An edge has neither and its counters pass through.
-  // lib.genAttrs (roles.router ++ roles.edge) (_: {
+  # nftables_exporter runs on every IGP node, the router, edge and server
+  # role holders; see nixos/modules/nftables-exporter.nix. The exporter
+  # mirrors nftables faithfully, so the homelab naming conventions are
+  # split into labels here: accounting counters named <lan>_wan_<dir> gain
+  # device and direction, and per-host set elements keyed "<ifname> . <addr>"
+  # gain device and address. An edge has neither and its counters pass
+  # through.
+  // lib.genAttrs (roles.router ++ roles.edge ++ roles.server) (_: {
     jobs.nftables = {
       port = 9630;
       metric_relabel_configs =

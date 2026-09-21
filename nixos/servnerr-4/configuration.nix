@@ -9,6 +9,9 @@
     ./storage.nix
 
     ./interconnect.nix
+    # For the circuit accounting counters the interconnect module keeps;
+    # the router and edges run it for the same reason and more.
+    ../modules/nftables-exporter.nix
 
     # Service configuration.
     ../modules/coredns.nix
