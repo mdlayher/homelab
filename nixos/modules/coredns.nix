@@ -217,9 +217,9 @@ in
 
   # Every block binds the wildcard, which covers the address resolved's stub
   # listener would hold, so the two cannot both have port 53. A machine here
-  # turns the stub off and points resolved at this instead; ordering after it
-  # keeps an activation which restarts both from starting this one first and
-  # failing to bind.
+  # turns the stub off and points resolved at the anycast address instead;
+  # ordering after it keeps an activation which restarts both from starting
+  # this one first and failing to bind.
   systemd.services.coredns.after = [ "systemd-resolved.service" ];
 
   # nixpkgs gives resolved a reloadTrigger on its configuration, so a change

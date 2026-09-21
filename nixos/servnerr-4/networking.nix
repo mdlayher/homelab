@@ -117,15 +117,16 @@ in
     };
   };
 
-  # This machine answers for the site's zones now (see coredns.nix), so it
-  # resolves through its own CoreDNS rather than across the LAN. The stub
+  # This machine answers for the site's zones (see coredns.nix), so it
+  # resolves through the anycast resolver address: local while its own
+  # CoreDNS holds it, and routed to another holder once withdrawn. The stub
   # listener has to go: CoreDNS binds the wildcard, which covers the address
   # the stub would hold, and that is what keeps resolv.conf answering. The
   # search domain still comes from the router's advertisements on mgmt0.
   services.resolved.settings.Resolve = {
     DNS = [
-      "::1"
-      "127.0.0.1"
+      inventory.anycast6.dns
+      inventory.anycast4.dns
     ];
     DNSStubListener = false;
   };

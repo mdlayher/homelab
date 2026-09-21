@@ -168,8 +168,10 @@ in
     }
   ];
 
-  # Use resolved for local DNS lookups, querying through CoreDNS, which also
-  # serves the tailnet domain (see coredns.nix).
+  # Use resolved for local DNS lookups, querying the anycast resolver
+  # address. While this machine's CoreDNS holds it the query never leaves
+  # the machine; once withdrawn, the same address routes to whichever node
+  # still answers, so a stopped resolver here costs this machine no names.
   services.resolved = {
     enable = true;
     settings.Resolve = {
@@ -180,8 +182,8 @@ in
       ]
       ++ map (ifi: ifi.searchDomain) (lib.attrValues inventory.interfaces);
       DNS = [
-        "::1"
-        "127.0.0.1"
+        inventory.anycast6.dns
+        inventory.anycast4.dns
       ];
       DNSStubListener = false;
     };
