@@ -67,5 +67,39 @@ in
         ];
       };
     };
+
+    # Replies sourced from an anycast address leave over the circuit. The
+    # router routes those addresses at this machine through the circuit,
+    # and its anti-spoof check drops a packet arriving on the management
+    # LAN whose source it would route elsewhere; with the site's prefixes
+    # kept out of the kernel above, that LAN is where they would otherwise
+    # go. Found when the router's resolver stopped on 2026-09-21 and every
+    # answer this machine gave in its place was dropped.
+    systemd.network.networks."45-${ours.interface}" =
+      let
+        table = 300;
+        anycast = lib.concatMap (s: [ s.address6 ] ++ lib.optional (s.address4 != null) s.address4) (
+          lib.attrValues config.homelab.anycast.services
+        );
+      in
+      {
+        routes = [
+          {
+            Destination = "::/0";
+            Gateway = far.circuit6;
+            Table = table;
+          }
+          {
+            Destination = "0.0.0.0/0";
+            Gateway = far.circuit4;
+            Table = table;
+          }
+        ];
+        routingPolicyRules = map (address: {
+          From = address;
+          Table = table;
+          Priority = 100;
+        }) anycast;
+      };
   };
 }
