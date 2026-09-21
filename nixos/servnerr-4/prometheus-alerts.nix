@@ -603,14 +603,28 @@ in
         }
         # The other half of SystemdUnitFailed, which sees only the current
         # state: a unit that crashes and comes back is invisible to it.
-        # NRestarts counts automatic restarts alone, so timer-driven
-        # oneshots and deploys need no filtering out. One crash overnight
-        # is not worth a notification; a third means it is not recovering.
+        #
+        # NRestarts counts automatic restarts since the unit was last
+        # started, so a deploy or any manual restart sets it back to zero.
+        # That is why the count is read from the counter itself rather than
+        # from increase() over it: increase() reads each of those resets as a
+        # counter wrap and adds the pre-reset value, manufacturing restarts
+        # that never happened on a day with several deploys. It fired on a
+        # getty that had restarted once on 2026-09-21 for exactly that
+        # reason, and extrapolation carried the total past a whole number.
+        #
+        # One crash overnight is not worth a notification; a third means it
+        # is not recovering. The second term is what says "still": without it
+        # a unit that looped once and settled keeps alerting until something
+        # restarts it.
         {
           alert = "SystemdUnitRestarting";
-          expr = "increase(node_systemd_service_restart_total[24h]) > 2";
+          expr = ''
+            node_systemd_service_restart_total > 2
+            and increase(node_systemd_service_restart_total[30m]) > 0
+          '';
           for = "10m";
-          annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has been restarted {{ $value | humanize }} times by systemd in the last 24 hours.";
+          annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has been restarted {{ $value | humanize }} times by systemd since it was last started.";
         }
         # Every HTTPS probe target's certificate, whoever issues it: Tailscale
         # renews its Services certificates itself, and the acme module

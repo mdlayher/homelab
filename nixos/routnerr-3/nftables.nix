@@ -77,27 +77,16 @@ let
       } }
       add element inet filter tailscale_v4 { ${forwards (ts: "${ts.host.ipv4} . ${toString ts.port}")} }
       add element inet filter tailscale_v6 { ${forwards (ts: "${ts.host.gua} . ${toString ts.port}")} }
-      ${lib.optionalString (icl && iclServices != [ ]) "add element inet filter icl_services_v6 { ${
-        lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
-      } }"}
+      ${lib.optionalString (icl && iclServices != [ ])
+        "add element inet filter icl_services_v6 { ${
+          lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
+        } }"
+      }
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 
   nft = "${pkgs.nftables}/bin/nft";
   elementsFile = config.sops.templates."nftables-inventory.conf".path;
-
-  # Prometheus exporter for the named counters and per-host set counters in
-  # the accounting rules below, read via netlink at scrape time; built from
-  # source in this repository (not packaged in nixpkgs). The server scrapes
-  # it on port 9630, per the exporter default port allocations wiki; see
-  # nixos/servnerr-4/prometheus.nix.
-  # Go 1.27 from unstable, matching the toolchain used everywhere else.
-  nftables_exporter = (pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; }) {
-    pname = "nftables_exporter";
-    version = "0.1.0";
-    src = ../../go/internal/nftables_exporter;
-    vendorHash = "sha256-IOX2K4bBnhDq88PBU1yOmpZhBa3OXrgIohBBpmv9LZ0=";
-  };
 
   # dn42 peering (see dn42.nix): interfaces are dn42e-<peer> for the tunnels
   # to other networks and dn42i-<name> for our own dn42-addressed VLANs.
@@ -132,7 +121,8 @@ let
   # so they reach the ruleset through the rendered set below.
   iclServices = map (server: {
     host = inventory.hosts.${server};
-    port = inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port;
+    port =
+      inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port;
   }) inventory.roles.server;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
@@ -166,6 +156,9 @@ let
   ];
 in
 {
+  # The exporter for the named counters below; see the module.
+  imports = [ ../modules/nftables-exporter.nix ];
+
   sops.templates."nftables-inventory.conf" = {
     content = elements;
     restartUnits = [ "nftables-inventory.service" ];
@@ -189,29 +182,6 @@ in
 
   # Advertise this machine as a tailnet peer relay on the port opened above.
   services.tailscale.extraSetFlags = [ "--relay-server-port=${toString tailscale.relay}" ];
-
-  systemd.services.nftables-exporter = {
-    description = "Prometheus nftables exporter";
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = "${nftables_exporter}/bin/nftables_exporter";
-      Restart = "always";
-
-      # Reading nftables over netlink needs CAP_NET_ADMIN; everything else
-      # is locked down.
-      DynamicUser = true;
-      AmbientCapabilities = [ "CAP_NET_ADMIN" ];
-      CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
-      NoNewPrivileges = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      PrivateTmp = true;
-      ProtectKernelTunables = true;
-      ProtectControlGroups = true;
-      RestrictNamespaces = true;
-    };
-  };
 
   networking.nftables = {
     enable = true;
@@ -273,6 +243,7 @@ in
           counter icl_forward_drop {}
         ''}
         counter dn42_inbound_drop {}
+        counter blackhole_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
         # those LANs may talk to.
@@ -308,6 +279,13 @@ in
 
           iifname $physical_lans fib saddr . iif oif missing limit rate 10/minute burst 20 packets log prefix "nft spoofed drop: "
           iifname $physical_lans fib saddr . iif oif missing counter name spoofed_drop drop comment "spoofed source"
+
+          # Anything the routing table would discard, counted here because
+          # a blackholed packet is dropped at the routing decision and
+          # never reaches the forward hook. The discard prefix on lo is
+          # one such route (see modules/interconnect.nix); a prefix
+          # null-routed by hand or by announcement is another.
+          fib daddr type blackhole counter name blackhole_drop drop comment "blackholed destination"
         }
 
         # ICMP allowed from LANs: pings, errors, and neighbor discovery.

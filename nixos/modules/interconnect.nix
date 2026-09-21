@@ -599,6 +599,24 @@ in
       '';
     };
 
+    # What the discard route on lo (below, with the networks) discards,
+    # counted on a site whose firewall is the NixOS one: a blackholed
+    # packet is dropped at the routing decision and never reaches the
+    # forward hook, so it is counted before routing, by asking the table
+    # what it would do. A site running its own ruleset carries the same
+    # rule and counter itself.
+    networking.nftables.tables.discard = lib.mkIf config.networking.firewall.enable {
+      family = "inet";
+      content = ''
+        counter blackhole_drop {}
+
+        chain prerouting {
+          type filter hook prerouting priority raw; policy accept;
+          fib daddr type blackhole counter name blackhole_drop drop comment "blackholed destination"
+        }
+      '';
+    };
+
     # Both ends of a transiting flow are ours, so the test is our own space
     # on each side. The wildcard admits a circuit to a new site without a
     # second place to remember.
@@ -845,7 +863,24 @@ in
         }
       ) cfg.links;
 
-      networks = lib.concatMapAttrs (
+      networks = {
+        # The discard prefix (RFC 6666) as a blackhole on every IGP node. A
+        # route whose next hop is drawn from it is discarded wherever this
+        # is held, so a prefix can be null-routed everywhere by announcing
+        # it with such a next hop rather than by touching each router, and
+        # a resolver answer pointing into it dies quietly at the first hop.
+        # Counted by the discard table above.
+        "5-lo" = {
+          matchConfig.Name = "lo";
+          routes = [
+            {
+              Destination = "100::/64";
+              Type = "blackhole";
+            }
+          ];
+        };
+      }
+      // lib.concatMapAttrs (
         _: link:
         lib.optionalAttrs (link.carrier != null) {
           "45-${link.carrier}" = {

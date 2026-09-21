@@ -31,7 +31,9 @@ let
   # zones from the same inventory, so either answers alike, and naming both
   # keeps this site's names resolving while one of them is down.
   resolvers = lib.concatMapStringsSep " " (n: inventory.sites.azo.loopbacks.${n}.addr) (
-    lib.filter (n: inventory.sites.azo.loopbacks ? ${n}) (inventory.roles.router ++ inventory.roles.server)
+    lib.filter (n: inventory.sites.azo.loopbacks ? ${n}) (
+      inventory.roles.router ++ inventory.roles.server
+    )
   );
 
   # This node's listeners. The anycast address is bound before it exists,
