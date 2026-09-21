@@ -9,6 +9,9 @@
 
     # SSH to serial console server.
     ./consrv.nix
+
+    # DNS probe of the anycast resolver from a plain LAN client's vantage.
+    ../modules/anycast-probe.nix
   ];
 
   # This machine is at the home site; see nixos/inventory/.

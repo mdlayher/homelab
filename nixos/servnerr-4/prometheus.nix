@@ -313,6 +313,21 @@ let
   # just process liveness.
   dnsServers = map (name: at name "${qualify name}:53") roles.router;
 
+  # The anycast resolver addresses, probed from the monitor rather than from
+  # this machine, which holds one and would answer itself; see
+  # nixos/modules/anycast-probe.nix. An IPv6 literal takes brackets before
+  # its port.
+  anycastProbe = lib.head roles.monitor;
+  anycastProbePort =
+    inputs.self.nixosConfigurations.${anycastProbe}.config.services.prometheus.exporters.blackbox.port;
+  anycastProbeJob = "blackbox_dns_anycast";
+  anycastResolvers =
+    map (address: at anycastProbe "${if lib.hasInfix ":" address then "[${address}]" else address}:53")
+      [
+        config.homelab.inventory.anycast6.dns
+        config.homelab.inventory.anycast4.dns
+      ];
+
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
@@ -404,7 +419,11 @@ let
     inherit lib anycastServices isisRouterCount;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
-    excludedJobs = [ snmpCyberpowerJob ];
+    # The anycast probe has its own rule with a shorter hold.
+    excludedJobs = [
+      snmpCyberpowerJob
+      anycastProbeJob
+    ];
     routers = map qualify (hostsWhere (h: h.router or false));
     # Every host expected to ship logs to Loki: the machines themselves plus
     # their containers and microvms, whose journals the hosting machine
@@ -491,6 +510,24 @@ let
     relabel_configs = relabelTarget (local "blackbox");
     static_configs = siteConfigs entries;
   };
+
+  # A family label from the probe target's address, IPv6 where it matches
+  # the regex and IPv4 otherwise. Runs before relabelTarget, while
+  # __address__ still holds the probe target rather than the exporter.
+  familyRelabel = ipv6: [
+    {
+      source_labels = [ "__address__" ];
+      regex = ".*";
+      target_label = "family";
+      replacement = "ipv4";
+    }
+    {
+      source_labels = [ "__address__" ];
+      regex = ipv6;
+      target_label = "family";
+      replacement = "ipv6";
+    }
+  ];
 
   # Produces a relabeling configuration that replaces the instance label with
   # the HTTP target parameter.
@@ -689,29 +726,22 @@ in
       (blackboxScrape "http_2xx" "15s" probes)
       # ICMP targets also carry a family label so alerts distinguish the IPv4
       # and IPv6 WAN paths; IPv6 literals are the only ICMP targets with
-      # colons. The family rules run first, while __address__ still holds the
-      # probe target rather than the blackbox exporter.
+      # colons.
       (
         (blackboxScrape "icmp" "15s" pings)
         // {
-          relabel_configs = [
-            {
-              source_labels = [ "__address__" ];
-              regex = ".*:.*";
-              target_label = "family";
-              replacement = "ipv6";
-            }
-            {
-              source_labels = [ "__address__" ];
-              regex = "[^:]*";
-              target_label = "family";
-              replacement = "ipv4";
-            }
-          ]
-          ++ relabelTarget (local "blackbox");
+          relabel_configs = familyRelabel ".*:.*" ++ relabelTarget (local "blackbox");
         }
       )
       (blackboxScrape "dns_lan" "1m" dnsServers)
+      (
+        (blackboxScrape "dns_anycast" "15s" anycastResolvers)
+        // {
+          # A bracketed literal is the IPv6 target; the port gives both a colon.
+          relabel_configs =
+            familyRelabel "\\[.*" ++ relabelTarget "${qualify anycastProbe}:${toString anycastProbePort}";
+        }
+      )
       # The SSH banner check produces a fair amount of log spam, so only scrape
       # it once a minute.
       (blackboxScrape "ssh_banner" "1m" sshTargets)

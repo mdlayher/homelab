@@ -269,6 +269,19 @@ in
           for = "10m";
           annotations.summary = "{{ $labels.instance }} ({{ $labels.family }}) answered only {{ $value | humanizePercentage }} of ICMP probes over 15 minutes.";
         }
+        # A LAN client's query to the anycast resolver, probed from the
+        # monitor (nixos/modules/anycast-probe.nix). AnycastAddressMissing
+        # watches whether a site holds the address; this watches whether an
+        # answer comes back, which the 2026-09-21 withdrawal exercise showed
+        # can fail while every holder is healthy. Two minutes rather than
+        # BlackboxServiceDown's five: every client at the site is without
+        # names while it fires.
+        {
+          alert = "AnycastResolverUnreachable";
+          expr = ''probe_success{job="blackbox_dns_anycast"} == 0'';
+          for = "2m";
+          annotations.summary = "A LAN client's {{ $labels.family }} query to the anycast resolver {{ $labels.instance }} goes unanswered, so every client following that address has no names.";
+        }
         {
           alert = "BlackboxServiceDown";
           expr = "probe_success{instance!~${excludedInstances},job!~${excludedJobsRegex}} == 0";
