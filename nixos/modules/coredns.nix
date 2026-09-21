@@ -85,17 +85,17 @@ let
   # with neither is reached by address alone.
   loopbackForward =
     lo:
-    lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n"
-    + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
+    lib.optionalString (lo.siteFqdn != null) "${lo.addr6} ${lo.siteFqdn}\n"
+    + lib.optionalString (lo.fqdn != null) "${lo.addr6} ${lo.fqdn}\n";
 
   # One name per address in reverse, as the LANs are below: the machine's
   # own where it has one, since that is what a trace should show.
   loopbackReverse =
     lo:
     if lo.fqdn != null then
-      "${lo.addr} ${lo.fqdn}\n"
+      "${lo.addr6} ${lo.fqdn}\n"
     else
-      lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n";
+      lib.optionalString (lo.siteFqdn != null) "${lo.addr6} ${lo.siteFqdn}\n";
 
   siteLoopbacks = site: lib.attrValues site.loopbacks;
 

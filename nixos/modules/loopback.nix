@@ -32,7 +32,10 @@ lib.mkIf (loopback != null) {
 
     networks."50-site" = {
       matchConfig.Name = "site";
-      address = [ "${loopback.addr}/128" ];
+      address = [
+        "${loopback.addr6}/128"
+      ]
+      ++ lib.optional (loopback.addr4 != null) "${loopback.addr4}/32";
     };
   };
 

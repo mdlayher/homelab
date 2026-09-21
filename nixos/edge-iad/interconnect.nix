@@ -26,25 +26,21 @@ in
     homelab.interconnect = {
       privateKeyFile = config.sops.secrets."interconnect/wireguard_key".path;
 
-      # This site dials nothing: azo's WAN addresses are dynamic so it
-      # initiates, and on the circuit to pdx the lower site index initiates.
-      # Each end learns where the other is from the handshake. The ports are
-      # the module's, derived from the two sites' indices and the plane, so
-      # they match what the far end dials without being repeated here.
+      # This site dials nothing: it has the highest index, so under the
+      # module's rule every far end dials it and this end learns where each
+      # is from the handshake. The ports are derived at both ends alike.
       #
       # One carrier per WAN toward azo, so an outage of either ISP there
       # costs one circuit rather than this site's path home.
       links.azo0 = {
         site = "azo";
         publicKey = azoPublicKey;
-        endpoint = null;
       };
 
       links.azo1 = {
         site = "azo";
         plane = 1;
         publicKey = azoPublicKey;
-        endpoint = null;
       };
 
       # One carrier toward pdx, not two: both ends have a single uplink, so
@@ -55,7 +51,6 @@ in
       links.pdx0 = {
         site = "pdx";
         publicKey = pdxPublicKey;
-        endpoint = null;
       };
 
       # The landing page at this site's icl names. One uplink here, so
@@ -72,7 +67,8 @@ in
         # route this matches is the unreachable aggregate in
         # configuration.nix, which is also what answers for an address
         # inside it that nothing holds.
-        aggregate = config.homelab.inventory.sites.${config.homelab.site}.prefix;
+        aggregate6 = config.homelab.inventory.sites.${config.homelab.site}.prefix6;
+        aggregate4 = [ config.homelab.inventory.sites.${config.homelab.site}.prefix4 ];
       };
     };
   };

@@ -46,11 +46,21 @@ in
         { name, ... }:
         {
           options = {
-            address = lib.mkOption {
+            address6 = lib.mkOption {
               type = lib.types.str;
-              default = inventory.anycast.${name};
+              default = inventory.anycast6.${name};
               defaultText = lib.literalExpression "the inventory's anycast address of this name";
               description = "The address this node holds while the unit below is running.";
+            };
+
+            address4 = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = inventory.anycast4.${name} or null;
+              defaultText = lib.literalExpression "the inventory's anycast4 address of this name";
+              description = ''
+                The IPv4 address held alongside, on the same terms, or null
+                for a service answered over IPv6 alone.
+              '';
             };
 
             unit = lib.mkOption {
@@ -121,10 +131,20 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          ExecStart = "${ip} -6 address replace ${service.address}/128 dev ${interface}";
+          ExecStart = [
+            "${ip} -6 address replace ${service.address6}/128 dev ${interface}"
+          ]
+          ++ lib.optional (
+            service.address4 != null
+          ) "${ip} -4 address replace ${service.address4}/32 dev ${interface}";
           # Ignore a failure to remove: the address may already be gone with
           # the interface, and the unit must still reach inactive.
-          ExecStop = "-${ip} -6 address delete ${service.address}/128 dev ${interface}";
+          ExecStop = [
+            "-${ip} -6 address delete ${service.address6}/128 dev ${interface}"
+          ]
+          ++ lib.optional (
+            service.address4 != null
+          ) "-${ip} -4 address delete ${service.address4}/32 dev ${interface}";
         };
       }
     ) cfg.services;

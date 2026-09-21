@@ -196,18 +196,20 @@ in
       # Our own space, for classifying interconnect traffic: both come from
       # the inventory, which explains why the v4 side is a whole /16 and
       # what it must stay disjoint from.
-      define lab6 = ${inventory.labPrefix}
+      define lab6 = ${inventory.labPrefix6}
       define carrier6 = ${inventory.carrierPrefix}
-      define site4 = ${inventory.privatePrefix}
+      define site4 = { ${inventory.privatePrefix}, ${inventory.legacyPrefix} }
       define site6 = ${inventory.ulaPrefix}
-      define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr}
+      define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr6}
 
       # The service addresses this router answers at along with every other
       # node holding them (see modules/anycast.nix). Plain inventory data,
       # so they are written here rather than into a set rendered from the
       # secrets.
-      define anycast_dns = ${inventory.anycast.dns}
-      define anycast_ntp = ${inventory.anycast.ntp}
+      define anycast_dns = ${inventory.anycast6.dns}
+      define anycast_ntp = ${inventory.anycast6.ntp}
+      define anycast4_dns = ${inventory.anycast4.dns}
+      define anycast4_ntp = ${inventory.anycast4.ntp}
 
       define dns = 53
       define ntp = 123
@@ -447,6 +449,7 @@ in
             # nearest node holding it is this router, on the same terms
             # the edges admit it from a circuit.
             ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
+            ip daddr $anycast4_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
             ip6 daddr $loopback6 tcp dport $http counter accept comment "router interconnect page"
 
             counter name icl_input_drop drop
@@ -528,6 +531,8 @@ in
           # query to one would be dropped as an attempt to leave the VLAN.
           ip6 daddr $anycast_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "router restricted anycast DNS"
           ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "router restricted anycast NTP"
+          ip daddr $anycast4_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "router restricted anycast DNS"
+          ip daddr $anycast4_ntp udp dport $ntp counter accept comment "router restricted anycast NTP"
 
           # Drop traffic trying to cross VLANs or broadcast.
           iifname . ip daddr != @router_v4 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv4 VLAN"
@@ -604,6 +609,8 @@ in
             # node holds the address.
             iifname $restricted_lans oifname "icl-*" ip6 daddr $anycast_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "restricted LAN anycast DNS across a circuit"
             iifname $restricted_lans oifname "icl-*" ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "restricted LAN anycast NTP across a circuit"
+            iifname $restricted_lans oifname "icl-*" ip daddr $anycast4_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "restricted LAN anycast DNS across a circuit"
+            iifname $restricted_lans oifname "icl-*" ip daddr $anycast4_ntp udp dport $ntp counter accept comment "restricted LAN anycast NTP across a circuit"
             iifname $restricted_lans oifname "icl-*" counter name restricted_forward_drop drop comment "restricted LANs to another site"
 
             # The interconnect is classified by address, not by interface:

@@ -158,7 +158,8 @@ let
     in
     {
       inherit name dnsName;
-      inherit (lo) addr;
+      addr6 = lo.addr6;
+      addr4 = lo.addr4 or null;
       fqdn = if dnsName == null then null else "${dnsName}.${siteDomain}";
       siteFqdn = if name == anchor then "site.${siteDomain}" else null;
     };
@@ -169,8 +170,11 @@ let
   # A site's own /56 out of the ULA, from its index: the fourth hextet reads
   # as decimal SSVV, so a site's space runs from its index with VLAN 00. This
   # is what a site originates into the IGP on its own behalf.
-  sitePrefix =
+  sitePrefix6 =
     index: "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${lib.fixedWidthNumber 2 index}00::/56";
+
+  # The same in IPv4: a site's /16 is its index in the second octet.
+  sitePrefix4 = index: "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString index}.0.0/16";
 
   loopbacks = siteLoopbacks site siteCfg;
 
@@ -178,15 +182,15 @@ let
     lib.attrValues (lib.mapAttrs siteLoopbacks inventory.sites)
   );
 
-  # loopbackPrefix without its length, for the containment check below: a
+  # loopbackPrefix6 without its length, for the containment check below: a
   # loopback is written compressed, so the prefix is a literal string prefix
   # of every address drawn from it. A prefix written in another form keeps
   # its length here and matches nothing, so the assertion trips rather than
   # quietly stopping checking.
-  loopbackBase = lib.removeSuffix "/64" inventory.loopbackPrefix;
+  loopbackBase = lib.removeSuffix "/64" inventory.loopbackPrefix6;
 
   # The same, for the anycast addresses.
-  anycastBase = lib.removeSuffix "/64" inventory.anycastPrefix;
+  anycastBase = lib.removeSuffix "/64" inventory.anycastPrefix6;
 in
 {
   options.homelab.site = lib.mkOption {
@@ -205,9 +209,9 @@ in
       Network inventory with addresses as sops placeholders. The prefixes
       are the exception and are plain data, since each names a range rather
       than an address: ulaPrefix and privatePrefix, the spaces every site is
-      drawn from, and the carve-outs from the ULA -- labPrefix,
-      carrierPrefix, loopbackPrefix, circuitPrefix, srv6Prefix and
-      anycastPrefix, plus
+      drawn from, and the carve-outs from the ULA -- labPrefix6,
+      carrierPrefix, loopbackPrefix6, circuitPrefix6, srv6Prefix and
+      anycastPrefix6, plus
       anycast, the service address drawn from that last one for each
       service answered at every site. So is isis, the area
       and per-router system IDs. See nixos/inventory/ for what each covers.
@@ -237,12 +241,24 @@ in
         message = "inventory host names must be unique across a site's subnets";
       }
       {
-        assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr) allLoopbacks;
-        message = "inventory loopback addresses must come from loopbackPrefix";
+        assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr6) allLoopbacks;
+        message = "inventory loopback addresses must come from loopbackPrefix6";
       }
       {
-        assertion = lib.all (addr: lib.hasPrefix anycastBase addr) (lib.attrValues inventory.anycast);
-        message = "inventory anycast addresses must come from anycastPrefix";
+        assertion = lib.all (addr: lib.hasPrefix anycastBase addr) (lib.attrValues inventory.anycast6);
+        message = "inventory anycast addresses must come from anycastPrefix6";
+      }
+      {
+        assertion = lib.all (addr: lib.hasPrefix (lib.removeSuffix "0/24" inventory.anycastPrefix4) addr) (
+          lib.attrValues inventory.anycast4
+        );
+        message = "inventory anycast4 addresses must come from anycastPrefix4";
+      }
+      {
+        assertion = lib.all (
+          lo: lo.addr4 == null || lib.hasPrefix (lib.removeSuffix "0.0/16" inventory.loopbackPrefix4) lo.addr4
+        ) allLoopbacks;
+        message = "inventory loopback IPv4 addresses must come from loopbackPrefix4";
       }
       {
         # Every site prefix is cut from this string, so a ULA written any
@@ -266,7 +282,8 @@ in
       sites = lib.mapAttrs (name: s: {
         inherit (s) index;
         domain = "${name}.${inventory.zone}";
-        prefix = sitePrefix s.index;
+        prefix6 = sitePrefix6 s.index;
+        prefix4 = sitePrefix4 s.index;
         loopbacks = siteLoopbacks name s;
       }) inventory.sites;
       inherit interfaces loopbacks;
@@ -274,14 +291,21 @@ in
       inherit (inventory)
         ulaPrefix
         privatePrefix
-        labPrefix
+        legacyPrefix
+        labPrefix6
+        labPrefix4
         carrierPrefix
-        circuitPrefix
+        circuitPrefix6
+        circuitPrefix4
+        cloudPrefix4
         srv6Prefix
         siteLinks
-        loopbackPrefix
-        anycastPrefix
-        anycast
+        loopbackPrefix6
+        loopbackPrefix4
+        anycastPrefix6
+        anycastPrefix4
+        anycast6
+        anycast4
         isis
         ;
       privateZones = if subnets == { } then null else placeholder "private_zones";

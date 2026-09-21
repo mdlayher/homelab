@@ -31,31 +31,26 @@ in
       # pinning at this end: there is one interface, and azo's marks decide
       # which of its WANs each carrier leaves by.
       #
-      # No endpoint on either: azo's WAN addresses are dynamic, so it
-      # initiates and this end learns where it is from the handshake. The
-      # ports are the module's, derived from the two sites' indices and the
-      # plane, so they match what azo dials without being repeated here.
+      # azo dials these, as the lower index does under the module's rule,
+      # and this end learns where it is from the handshake; the ports are
+      # derived at both ends alike.
       links.azo0 = {
         site = "azo";
         publicKey = azoPublicKey;
-        endpoint = null;
       };
 
       links.azo1 = {
         site = "azo";
         plane = 1;
         publicKey = azoPublicKey;
-        endpoint = null;
       };
 
       # One carrier toward iad, not two: both ends have a single uplink, so
-      # a second would be two carriers over one path. This end dials,
-      # because the lower site index does; the port is the module's, from
-      # the two indices and the plane.
+      # a second would be two carriers over one path. This end dials, as the
+      # lower index does, at the endpoint the module derives.
       links.iad0 = {
         site = "iad";
         publicKey = iadPublicKey;
-        endpoint = "ipv6.iad.icl.mdlayher.net:51230";
       };
 
       # The landing page at this site's icl names. One uplink here, so
@@ -71,7 +66,8 @@ in
         # on the /48 it originates and rejecting it there. The route this
         # matches is the unreachable aggregate in configuration.nix, which
         # is also what answers for an address inside it that nothing holds.
-        aggregate = config.homelab.inventory.sites.${config.homelab.site}.prefix;
+        aggregate6 = config.homelab.inventory.sites.${config.homelab.site}.prefix6;
+        aggregate4 = [ config.homelab.inventory.sites.${config.homelab.site}.prefix4 ];
       };
     };
   };

@@ -717,20 +717,19 @@ in
           return net ~ SITENETSETv6;
         }
 
-        # The valid dn42 address space and prefix lengths, including the
-        # networks dn42 interconnects with, verbatim from the community
-        # filter template at https://dn42.dev/howto/Bird2.
+        # The valid dn42 address space and prefix lengths, from the community
+        # filter template at https://dn42.dev/howto/Bird2 less the networks
+        # dn42 interconnects with (ChaosVPN, neonetwork, Freifunk). Those
+        # live in 172.31/16 and across 10/8, and 10/8 is our own IPv4 space
+        # (see the inventory's privatePrefix): a route for it must never
+        # come from dn42, and nothing here needs those networks.
         function is_valid_network() -> bool {
           return net ~ [
             172.20.0.0/14{21,29}, # dn42
             172.20.0.0/24{28,32}, # dn42 anycast
             172.21.0.0/24{28,32}, # dn42 anycast
             172.22.0.0/24{28,32}, # dn42 anycast
-            172.23.0.0/24{28,32}, # dn42 anycast
-            172.31.0.0/16+,       # ChaosVPN
-            10.100.0.0/14+,       # ChaosVPN
-            10.127.0.0/16+,       # neonetwork
-            10.0.0.0/8{15,24}     # Freifunk
+            172.23.0.0/24{28,32}  # dn42 anycast
           ];
         }
 

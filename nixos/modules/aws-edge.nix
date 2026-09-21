@@ -17,6 +17,10 @@
 # instance metadata that the first deploy arrives over.
 let
   inventory = config.homelab.inventory;
+
+  # Our own IPv4 space as the firewall tests for it: the scheme's block and
+  # the space the LANs still number from.
+  site4 = "{ ${inventory.privatePrefix}, ${inventory.legacyPrefix} }";
 in
 {
   imports = [
@@ -35,6 +39,14 @@ in
   # stays on: networkd's catch-all takes eth0 over, and accepts the VPC's
   # router advertisements for IPv6.
   networking.useNetworkd = true;
+
+  # Forwarding for both families, declared here as the router declares it:
+  # zebra turns it on at startup, and an edge on the ring transits between
+  # its circuits, so it must not depend on which daemon happened to start.
+  boot.kernel.sysctl = {
+    "net.ipv4.conf.all.forwarding" = true;
+    "net.ipv6.conf.all.forwarding" = true;
+  };
 
   # The nftables backend, unlike the iptables one, can filter forwarding and
   # can match a source address in a rule of our own. An edge needs both: EC2
@@ -95,6 +107,8 @@ in
       lib.concatMapStrings (link: ''
         iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
         iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} udp dport { ${ports udp} } accept comment "site services across the circuit"
+        iifname "${link.interface}" ip saddr ${site4} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
+        iifname "${link.interface}" ip saddr ${site4} udp dport { ${ports udp} } accept comment "site services across the circuit"
       '') (lib.attrValues config.homelab.interconnect.links);
   };
 
@@ -109,7 +123,7 @@ in
   # Everything else stays with the VPC resolver, so the nightly upgrade's
   # names do not depend on a resolver of ours being up.
   services.resolved.settings.Resolve = {
-    DNS = [ inventory.anycast.dns ];
+    DNS = [ inventory.anycast6.dns ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
       # dn42 as a whole: the resolver answers for it through the router, and
@@ -118,14 +132,19 @@ in
     ];
   };
 
-  # This site owns a /56 of the ULA: a blanket unreachable route, which the
-  # IGP originates on the site's behalf (see the site's interconnect.nix)
-  # and which any more specific prefix added here would supersede.
+  # This site owns a /56 of the ULA and a /16 of the IPv4 space: a blanket
+  # unreachable route for each, which the IGP originates on the site's
+  # behalf (see the site's interconnect.nix) and which any more specific
+  # prefix added here would supersede.
   systemd.network.networks."5-lo" = {
     matchConfig.Name = "lo";
     routes = [
       {
-        Destination = inventory.sites.${config.homelab.site}.prefix;
+        Destination = inventory.sites.${config.homelab.site}.prefix6;
+        Type = "unreachable";
+      }
+      {
+        Destination = inventory.sites.${config.homelab.site}.prefix4;
         Type = "unreachable";
       }
     ];

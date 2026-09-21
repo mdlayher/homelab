@@ -810,9 +810,9 @@ let
   # next of our allocation after the router's own, a /32 with the router's
   # loopback as an on-link gateway (the VLAN carries no dn42 subnet), and
   # the route to dn42's IPv4 space points at the router by hand. dn42
-  # proper only: the router's import filter also accepts the networks dn42
-  # interconnects with (see its dn42.nix), which a host opts into here
-  # rather than being handed by default.
+  # proper only, which is all the router's import filter accepts (see its
+  # dn42.nix): the networks dn42 interconnects with live in 10/8, which is
+  # our own IPv4 space.
   dn42 = {
     ifname = "dn42";
     addr4 = "172.20.140.83/32";

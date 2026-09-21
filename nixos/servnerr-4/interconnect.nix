@@ -33,7 +33,8 @@ in
         interface = ours.interface;
         localAddress = "${ours.carrier}/127";
         remoteAddress = far.carrier;
-        localCircuitAddress = "${ours.circuit}/127";
+        localCircuitAddress6 = "${ours.circuit6}/127";
+        localCircuitAddress4 = "${ours.circuit4}/31";
         localLla = ours.lla;
         lla = far.lla;
         metric = ours.metric;

@@ -80,14 +80,18 @@ let
       DefaultLeaseTimeSec = 86400;
       MaxLeaseTimeSec = 86400;
       PoolOffset = 50;
+      # The anycast resolver first, held by whichever node is nearest and
+      # withdrawn with its service (see modules/anycast.nix), then this
+      # interface's own router address, answered by the same process here
+      # and kept as the address a client falls back to.
       EmitDNS = true;
-      DNS = "_server_address";
+      DNS = "${inventory.anycast4.dns} _server_address";
 
-      # NTP too (see chrony.nix). _server_address is per interface, so each
-      # LAN is told its own gateway: the only router address a restricted
-      # LAN may talk to.
+      # NTP on the same terms (see chrony.nix). _server_address is per
+      # interface, so each LAN is told its own gateway: the only router
+      # address a restricted LAN may talk to.
       EmitNTP = true;
-      NTP = "_server_address";
+      NTP = "${inventory.anycast4.ntp} _server_address";
     }
     # DNS search, as DHCP option 15: one domain, where the search list of
     # option 119 would need hand-encoding. So a client here learns its own
@@ -207,13 +211,22 @@ in
 
     config.networkConfig.SpeedMeter = "yes";
 
-    # Loopback. We own the ULA /48: a blanket unreachable route which is
-    # superseded by the more specific /64s on each LAN.
+    # Loopback. We own the ULA /48 and the IPv4 /8: a blanket unreachable
+    # route for each, superseded by the more specific prefixes on each LAN
+    # and by what the IGP learns from the other sites.
     networks."5-lo" = {
       matchConfig.Name = "lo";
       routes = [
         {
           Destination = inventory.ulaPrefix;
+          Type = "unreachable";
+        }
+        {
+          Destination = inventory.privatePrefix;
+          Type = "unreachable";
+        }
+        {
+          Destination = inventory.legacyPrefix;
           Type = "unreachable";
         }
       ];

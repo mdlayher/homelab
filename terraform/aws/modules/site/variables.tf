@@ -11,9 +11,10 @@ variable "vpc_cidr" {
   type        = string
   description = <<-EOT
     The VPC exists to hold one host, and none of it is reachable from
-    another site: the interconnect carries our own addressing on top. Must
-    not overlap homelab.inventory.privatePrefix (192.168.0.0/16) or another
-    site's.
+    another site: the interconnect carries our own addressing on top. Drawn
+    from homelab.inventory.cloudPrefix4 (10.64.0.0/10), the block the
+    addressing scheme reserves for exactly this, and disjoint from every
+    other site's.
   EOT
 }
 

@@ -43,25 +43,19 @@ in
       # the per-WAN tables the marks select are in networking.nix, which is
       # where this site's WANs are described.
       #
-      # The endpoint names pin the address family, which the mark cannot and
-      # which is not cosmetic here: Metronet carries no IPv6, so a carrier
-      # marked for it with an IPv6 endpoint would be steered correctly and
-      # then find no route in that table.
+      # This site dials every link, as the lower index does under the
+      # module's rule, which is also what its dynamic WAN addresses require.
+      # The endpoints and ports are the module's, derived from the far site
+      # and the plane, and the names they resolve are published in
+      # terraform/cloudflare.
       #
-      # The ports are the module's, derived from the two sites' indices and
-      # the plane; the endpoints name the same numbers because both ends of
-      # a link derive one value.
-      #
-      # We initiate on both, because this site's WAN addresses are dynamic
-      # and pdx's are not. The names are pdx's interconnect endpoints in
-      # terraform/cloudflare, under their own label rather than dn42's:
-      # they identify the medium a circuit is built on, which will carry
-      # dn42's iBGP as well as the IGP. They sit outside pdx.mdlayher.net
-      # because this router answers for that zone itself.
+      # Plane 1 dials the ipv4 name, which pins the address family the mark
+      # cannot: Metronet carries no IPv6, so a carrier marked for it with an
+      # IPv6 endpoint would be steered correctly and then find no route in
+      # that table.
       links.pdx0 = {
         site = "pdx";
         publicKey = pdxPublicKey;
-        endpoint = "ipv6.pdx.icl.mdlayher.net:51120";
         firewallMark = 1;
       };
 
@@ -69,7 +63,7 @@ in
         site = "pdx";
         plane = 1;
         publicKey = pdxPublicKey;
-        endpoint = "ipv4.pdx.icl.mdlayher.net:51121";
+        endpointFamily = "ipv4";
         firewallMark = 2;
       };
 
@@ -79,7 +73,6 @@ in
       links.iad0 = {
         site = "iad";
         publicKey = iadPublicKey;
-        endpoint = "ipv6.iad.icl.mdlayher.net:51130";
         firewallMark = 1;
       };
 
@@ -87,7 +80,7 @@ in
         site = "iad";
         plane = 1;
         publicKey = iadPublicKey;
-        endpoint = "ipv4.iad.icl.mdlayher.net:51131";
+        endpointFamily = "ipv4";
         firewallMark = 2;
       };
 
@@ -102,7 +95,8 @@ in
         interface = ours.interface;
         localAddress = "${ours.carrier}/127";
         remoteAddress = far.carrier;
-        localCircuitAddress = "${ours.circuit}/127";
+        localCircuitAddress6 = "${ours.circuit6}/127";
+        localCircuitAddress4 = "${ours.circuit4}/31";
         localLla = ours.lla;
         lla = far.lla;
         metric = ours.metric;
@@ -135,7 +129,15 @@ in
         # on loopback is the route it matches (see networking.nix); the
         # more specific LANs sort traffic out once it arrives, and anything
         # nobody holds meets the aggregate and is rejected here.
-        aggregate = inventory.ulaPrefix;
+        aggregate6 = inventory.ulaPrefix;
+        # Both IPv4 blocks: the scheme's, and the one the LANs still number
+        # from, which a far site must hold a route to before it can answer
+        # a LAN host at all. The unreachable routes they match are on lo
+        # (see networking.nix).
+        aggregate4 = [
+          inventory.privatePrefix
+          inventory.legacyPrefix
+        ];
       };
     };
   };

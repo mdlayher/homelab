@@ -30,7 +30,7 @@ let
   # router and the server, reached across the circuit. Both render those
   # zones from the same inventory, so either answers alike, and naming both
   # keeps this site's names resolving while one of them is down.
-  resolvers = lib.concatMapStringsSep " " (n: inventory.sites.azo.loopbacks.${n}.addr) (
+  resolvers = lib.concatMapStringsSep " " (n: inventory.sites.azo.loopbacks.${n}.addr6) (
     lib.filter (n: inventory.sites.azo.loopbacks ? ${n}) (
       inventory.roles.router ++ inventory.roles.server
     )
@@ -39,15 +39,16 @@ let
   # This node's listeners. The anycast address is bound before it exists,
   # which the sysctl below permits: it appears only once this service is up,
   # and binding it is how this service comes up.
-  listen = "${inventory.anycast.dns} ${inventory.loopbacks.${config.networking.hostName}.addr}";
+  loopback = inventory.loopbacks.${config.networking.hostName};
+  listen = "${inventory.anycast6.dns} ${loopback.addr6} ${inventory.anycast4.dns} ${loopback.addr4}";
 
   # A loopback answers the fixed site name every one of them carries, and
   # its own name where the machine is published at it, as the router renders
   # them. Plain data from the inventory, hence a store path.
   loopbackForward =
     lo:
-    lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n"
-    + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
+    lib.optionalString (lo.siteFqdn != null) "${lo.addr6} ${lo.siteFqdn}\n"
+    + lib.optionalString (lo.fqdn != null) "${lo.addr6} ${lo.fqdn}\n";
 
   loopbacksFile = pkgs.writeText "coredns-loopbacks" (
     lib.concatMapStrings (site: lib.concatMapStrings loopbackForward (lib.attrValues site.loopbacks)) (
@@ -78,7 +79,10 @@ in
   # which makes the address local cannot wait for it. resolved keeps its own
   # stub on 127.0.0.53, which is why the listeners are named rather than
   # left to the wildcard.
-  boot.kernel.sysctl."net.ipv6.ip_nonlocal_bind" = 1;
+  boot.kernel.sysctl = {
+    "net.ipv6.ip_nonlocal_bind" = 1;
+    "net.ipv4.ip_nonlocal_bind" = 1;
+  };
 
   services.coredns = {
     enable = true;

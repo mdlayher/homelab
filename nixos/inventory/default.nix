@@ -28,33 +28,67 @@
   # begin at :0100::/56.
   ulaPrefix = "fd9e:1a04:f01d::/48";
 
-  # The RFC 1918 space every site LAN is drawn from. Deliberately the whole
-  # /16 rather than the subnets themselves, which are secrets: it tells our
-  # own traffic from dn42's on a link carrying both (see the router's
-  # nftables.nix), and being broader costs nothing there. It must stay
-  # disjoint from dn42's 172.20.0.0/14, so a future site keeps to 192.168/16
-  # or 10/8.
-  privatePrefix = "192.168.0.0/16";
+  # Our IPv4 space, laid out as the ULA is. The second octet is the site
+  # and the third the VLAN, so a site holds 10.SS.0.0/16 and a segment
+  # 10.SS.VV.0/24 with the router at .1. Site 00 is the network itself: the
+  # anycast /24 and the loopbacks, below. Infrastructure blocks number
+  # downward from the top as the ULA carve-outs do, and 10.64.0.0/10 is
+  # reserved for the cloud sites' VPC internals (10.80/16 at pdx, 10.81/16
+  # at iad), which caps the site index at 63. Disjoint from dn42's
+  # 172.20.0.0/14 and from the tailnet's 100.64.0.0/10. The whole /8 rather
+  # than the subnets, which are secrets: it tells our own traffic from
+  # dn42's on a link carrying both (see the router's nftables.nix).
+  privatePrefix = "10.0.0.0/8";
+
+  # The space the site LANs are drawn from until they move under
+  # privatePrefix. Classified as ours alongside it wherever the firewalls
+  # test for our own space.
+  legacyPrefix = "192.168.0.0/16";
+
+  # Site 00 of the IPv4 scheme, holding the loopbacks as 10.0.SS.RR, site
+  # then router within it, the tail of the same router's IS-IS system ID.
+  loopbackPrefix4 = "10.0.0.0/16";
+
+  # The first /24 of site 00, one address per service with the port as the
+  # last octet, the way the ULA anycast block writes it in the last hextet.
+  anycastPrefix4 = "10.0.0.0/24";
+  anycast4 = {
+    dns = "10.0.0.53";
+    ntp = "10.0.0.123";
+  };
+
+  # One /31 per link for the GRETAP, as circuitPrefix6 is for IPv6, so the
+  # IGP has an IPv4 next hop on every circuit. Written 10.252.<ab>.<n> with
+  # ab the two site indices in ascending order as decimal digits and n the
+  # plane doubled plus the end, which is why a site index stays below 10.
+  # The carriers need no IPv4: a GRETAP's endpoints are IPv6.
+  circuitPrefix4 = "10.252.0.0/16";
+
+  # Lab use, never assigned to a real subnet.
+  labPrefix4 = "10.255.0.0/16";
+
+  # The cloud sites' VPC space, reserved so no site or carve-out lands on it.
+  cloudPrefix4 = "10.64.0.0/10";
 
   # One /128 per router, from site 00: a loopback is a router's identity
   # rather than a place, so it sits outside every site's prefix. This is
   # what the IGP carries and what a router at a site with no LAN is named
   # and reached at. Each address ends in SSRR, site then router within that
   # site, which is the tail of the same router's IS-IS system ID below.
-  loopbackPrefix = "fd9e:1a04:f01d::/64";
+  loopbackPrefix6 = "fd9e:1a04:f01d::/64";
 
   # The /64 beside it, as dn42 reserves its own: an address drawn from here
   # is held at more than one site at once, answered by whichever node the
   # IGP says is nearest, and withdrawn by that node alone when the service
   # behind it stops. See nixos/modules/anycast.nix.
-  anycastPrefix = "fd9e:1a04:f01d:1::/64";
+  anycastPrefix6 = "fd9e:1a04:f01d:1::/64";
 
   # One address per service out of that /64. The last hextet is written as
   # the service's port, a mnemonic rather than an encoding: the address says
   # what answers there. Plain data like the prefixes above, and read at
   # every site -- a client is pointed at it, a firewall admits it, and the
   # node which answers adds it to its own interface.
-  anycast = {
+  anycast6 = {
     dns = "fd9e:1a04:f01d:1::53";
     ntp = "fd9e:1a04:f01d:1::123";
   };
@@ -65,7 +99,7 @@
   # each names a range rather than an address.
 
   # Lab use, never assigned to a real subnet.
-  labPrefix = "fd9e:1a04:f01d:ff00::/56";
+  labPrefix6 = "fd9e:1a04:f01d:ff00::/56";
 
   # One /127 per link, addressing the WireGuard carrier. A GRETAP needs a
   # local and a remote address to be built on; these are those, and nothing
@@ -81,7 +115,7 @@
   # Routes point at the interconnect rather than the tunnel beneath it, so
   # this is the address a router sources from toward another site; without
   # one the choice falls to whatever else the machine happens to hold.
-  circuitPrefix = "fd9e:1a04:f01d:fc00::/56";
+  circuitPrefix6 = "fd9e:1a04:f01d:fc00::/56";
 
   # Links joining two routers at one site. The interconnect module derives a
   # link's addresses from the two sites' indices, which collapses when both
@@ -106,14 +140,16 @@
       interface = "icl-server0";
       metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:1";
-      circuit = "fd9e:1a04:f01d:fcff::1:1";
+      circuit6 = "fd9e:1a04:f01d:fcff::1:1";
+      circuit4 = "10.252.255.1";
       lla = "fe80::1";
     };
     servnerr-4 = {
       interface = "icl-router0";
       metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:0";
-      circuit = "fd9e:1a04:f01d:fcff::1:0";
+      circuit6 = "fd9e:1a04:f01d:fcff::1:0";
+      circuit4 = "10.252.255.0";
       lla = "fe80::2";
     };
   };
@@ -203,13 +239,19 @@
     # This site's router loopback: a stable address on no segment, which is
     # what another site names when it needs this one's resolver, and what
     # the interconnect page is served on.
-    loopbacks.routnerr-3.addr = "fd9e:1a04:f01d::101";
+    loopbacks.routnerr-3 = {
+      addr6 = "fd9e:1a04:f01d::101";
+      addr4 = "10.0.1.1";
+    };
 
     # The server's, the second router at this site: what an edge names as a
     # resolver beside the router's, so the site's names keep resolving
     # while either is down. No name of its own; the machine is published
     # on the management LAN.
-    loopbacks.servnerr-4.addr = "fd9e:1a04:f01d::102";
+    loopbacks.servnerr-4 = {
+      addr6 = "fd9e:1a04:f01d::102";
+      addr4 = "10.0.1.2";
+    };
 
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {
@@ -294,7 +336,8 @@
   # loopback, which the IGP carries. Nothing here is a secret, which is what
   # lets the router answer for this site and the server name a host in it.
   sites.pdx.loopbacks.edge-pdx = {
-    addr = "fd9e:1a04:f01d::201";
+    addr6 = "fd9e:1a04:f01d::201";
+    addr4 = "10.0.2.1";
     # Beneath the site domain, so the name is edge.pdx.mdlayher.net. The
     # machine's own name carries the site because there will be one edge per
     # site; the DNS label drops it, since the domain already says pdx. No
@@ -305,7 +348,8 @@
 
   # The same shape at us-east-1.
   sites.iad.loopbacks.edge-iad = {
-    addr = "fd9e:1a04:f01d::301";
+    addr6 = "fd9e:1a04:f01d::301";
+    addr4 = "10.0.3.1";
     dnsName = "edge";
   };
 }

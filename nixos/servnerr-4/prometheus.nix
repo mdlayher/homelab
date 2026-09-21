@@ -352,11 +352,24 @@ let
   anycastServices = lib.unique (
     lib.concatMap (
       system:
-      lib.mapAttrsToList (service: cfg: {
-        inherit service;
-        inherit (cfg) address;
-        site = system.config.homelab.site;
-      }) (system.config.homelab.anycast.services or { })
+      lib.concatLists (
+        lib.mapAttrsToList (
+          service: cfg:
+          let
+            site = system.config.homelab.site;
+          in
+          [
+            {
+              inherit service site;
+              address = cfg.address6;
+            }
+          ]
+          ++ lib.optional (cfg.address4 != null) {
+            inherit service site;
+            address = cfg.address4;
+          }
+        ) (system.config.homelab.anycast.services or { })
+      )
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 

@@ -28,9 +28,9 @@ let
   site = config.homelab.site;
   loopback = inventory.loopbacks.${config.networking.hostName} or null;
 
-  # The public zone. A literal rather than the inventory's, which names the
-  # zone a router serves internally: the two share a string and nothing else.
-  zone = "mdlayher.net";
+  # The dial names and their zone, shared with the interconnect module.
+  iclNames = import ./icl-names.nix;
+  inherit (iclNames) zone;
 
   # The label this site's interconnect names share. It names the server
   # block, the certificate's state directory, and the vhost in the access
@@ -40,7 +40,7 @@ let
 
   # The two names a far site dials, which every site has, and whatever else
   # this one answers for beneath the same label.
-  dial = family: "${family}.${site}.icl.${zone}";
+  dial = family: iclNames.dial family site;
   names = [
     (dial "ipv4")
     (dial "ipv6")
@@ -57,16 +57,16 @@ let
   siteFacts = [
     {
       k = "loopback";
-      v = loopback.addr;
+      v = loopback.addr6;
     }
     {
       k = "IS-IS";
       v = interconnect.isis.net;
     }
   ]
-  ++ lib.optional (interconnect.isis.aggregate != null) {
+  ++ lib.optional (interconnect.isis.aggregate6 != null) {
     k = "advertises";
-    v = interconnect.isis.aggregate;
+    v = interconnect.isis.aggregate6;
   };
 
   circuitFacts =
@@ -94,7 +94,7 @@ let
       }
       {
         k = "circuit address";
-        v = link.localCircuitAddress;
+        v = link.localCircuitAddress6;
       }
     ]
     # An endpoint is a carrier's; a link built straight on two addresses
@@ -271,7 +271,7 @@ in
       appendHttpConfig = ''
         map $server_addr $icl_view {
           default public;
-          ${loopback.addr} fabric;
+          ${loopback.addr6} fabric;
         }
 
         map $http_accept $icl_type {
@@ -303,7 +303,7 @@ in
           names
           ++ lib.optional (loopback.siteFqdn != null) loopback.siteFqdn
           ++ lib.optional (loopback.fqdn != null) loopback.fqdn
-          ++ [ "[${loopback.addr}]" ];
+          ++ [ "[${loopback.addr6}]" ];
 
         inherit root;
 

@@ -123,6 +123,29 @@ let
   # no adjacency at all.
   linkLla = far: ours: if isLowerEnd far ours then "fe80::1" else "fe80::2";
 
+  # One end of a link's IPv4 /31, from circuitPrefix4: the two site indices
+  # as decimal digits in the third octet, and the plane doubled plus the end
+  # in the fourth, the lower-indexed site taking the odd address as it takes
+  # :1 above. Decimal digits are what hold a site index below 10.
+  linkAddress4 =
+    far: plane: ours:
+    let
+      a = inventory.sites.${config.homelab.site}.index;
+      b = inventory.sites.${far}.index;
+      base = lib.removeSuffix "0.0/16" inventory.circuitPrefix4;
+      end = if isLowerEnd far ours then 1 else 0;
+    in
+    "${base}${toString (lib.min a b * 10 + lib.max a b)}.${toString (2 * plane + end)}";
+
+  # Our own IPv4 space as the firewalls test for it: the scheme's block and
+  # the space the LANs still number from.
+  site4 = "{ ${inventory.privatePrefix}, ${inventory.legacyPrefix} }";
+
+  # This router's IPv4 loopback, which zebra takes as its router ID so the
+  # LSP's TE router ID is an address of ours rather than whichever
+  # interface address zebra would otherwise pick.
+  routerId = inventory.loopbacks.${config.networking.hostName}.addr4 or null;
+
   # What an ip6gretap costs over its carrier: outer IPv6 40, the tunnel
   # encapsulation limit's destination-options header 8, GRE 4, inner
   # ethernet 14. Linux adds that destination-options header to IPv6 tunnels
@@ -138,6 +161,9 @@ let
 
   # frr_exporter's own default, and what the server's discovery hook uses.
   exporterPort = 9342;
+
+  # The dial names, shared with the page module.
+  names = import ./icl-names.nix;
 
   inherit (import ./reverse-zones.nix { inherit lib; }) nibbles6;
 
@@ -162,7 +188,7 @@ let
   linkNets =
     link:
     [ (net127 link.localAddress) ]
-    ++ lib.optional (link.localCircuitAddress != null) (net127 link.localCircuitAddress);
+    ++ lib.optional (link.localCircuitAddress6 != null) (net127 link.localCircuitAddress6);
 in
 {
   # A loopback is a router's identity in the IGP and an anycast address is a
@@ -226,7 +252,7 @@ in
         '';
       };
 
-      aggregate = lib.mkOption {
+      aggregate6 = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
         description = ''
@@ -244,6 +270,18 @@ in
           under a route-map. The route it matches is expected to be an
           unreachable aggregate covering the site, so a packet for an
           address nobody holds is rejected here rather than looping.
+        '';
+      };
+
+      aggregate4 = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          The IPv4 prefixes this router originates on behalf of its whole
+          site, on the same terms as aggregate6, or none. Several rather
+          than one because the site's LANs number from a second block until
+          they move under the first, and a far site needs a route to a
+          source in either to answer it at all.
         '';
       };
 
@@ -335,10 +373,38 @@ in
                 default = null;
                 description = "The far site's WireGuard public key; null when there is no carrier.";
               };
+              endpointFamily = lib.mkOption {
+                type = lib.types.enum [
+                  "ipv4"
+                  "ipv6"
+                ];
+                default = "ipv6";
+                description = ''
+                  Which of the far site's dial names the derived endpoint
+                  uses. The name pins the address family, which nothing else
+                  can: a carrier steered out an uplink without IPv6 must
+                  dial the ipv4 name, or it is steered correctly and then
+                  finds no route.
+                '';
+              };
               endpoint = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
-                default = null;
-                description = "The far site's host:port, or null when it always initiates to us.";
+                default =
+                  if config.carrier != null && isLowerEnd config.site true then
+                    "${names.dial config.endpointFamily config.site}:${toString config.port}"
+                  else
+                    null;
+                defaultText = lib.literalExpression "the far site's dial name and the link's port at the lower-indexed site, null at the other";
+                description = ''
+                  The far site's host:port, or null when it initiates to us.
+
+                  The lower-indexed site dials: a link derives its endpoint
+                  at that end and none at the other, so both ends agree
+                  without being told and no link has two dialling ends or
+                  none. A site whose addresses are dynamic cannot be
+                  dialled, so it must be the lower end of every link it has,
+                  which is what the house's index of 1 guarantees.
+                '';
               };
               port = lib.mkOption {
                 type = lib.types.nullOr lib.types.port;
@@ -416,14 +482,14 @@ in
                 defaultText = lib.literalExpression "the other end of the same pair";
                 description = "The far site's link-local on the interconnect.";
               };
-              localCircuitAddress = lib.mkOption {
+              localCircuitAddress6 = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
-                default = "${linkAddress inventory.circuitPrefix config.site config.plane true}/127";
-                defaultText = lib.literalExpression "the link's /127 from circuitPrefix";
+                default = "${linkAddress inventory.circuitPrefix6 config.site config.plane true}/127";
+                defaultText = lib.literalExpression "the link's /127 from circuitPrefix6";
                 description = ''
                   Our global address on the interconnect itself, with its
                   prefix length, one end of a /127 from the inventory's
-                  circuitPrefix. Null for a link which needs none.
+                  circuitPrefix6. Null for a link which needs none.
 
                   This is what a router originating traffic toward the far
                   site uses as a source, because RFC 6724 prefers an address
@@ -436,6 +502,18 @@ in
 
                   Distinct from localAddress, which is the carrier's: routes
                   point at the interconnect, not at the tunnel carrying it.
+                '';
+              };
+              localCircuitAddress4 = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = "${linkAddress4 config.site config.plane true}/31";
+                defaultText = lib.literalExpression "the link's /31 from circuitPrefix4";
+                description = ''
+                  Our IPv4 address on the interconnect, with its prefix
+                  length, one end of a /31 from the inventory's
+                  circuitPrefix4, or null for a link carrying no IPv4. The
+                  IGP needs an IPv4 next hop on a circuit to install any
+                  IPv4 route across it.
                 '';
               };
               carrierMtu = lib.mkOption {
@@ -552,6 +630,16 @@ in
         message = "interconnect isis.lspMtu must be smaller than every link's mtu";
       }
       {
+        # The IPv4 circuit address writes both site indices as decimal
+        # digits in one octet; see linkAddress4.
+        assertion = lib.all (
+          link:
+          link.localCircuitAddress4 == null
+          || (inventory.sites.${config.homelab.site}.index < 10 && inventory.sites.${link.site}.index < 10)
+        ) (lib.attrValues cfg.links);
+        message = "an interconnect link with an IPv4 circuit address needs both site indices below 10";
+      }
+      {
         # The transit rules below reach a site through the NixOS firewall,
         # and only its nftables backend renders them: on iptables they are
         # silently inert. A site running a ruleset of its own writes them
@@ -595,6 +683,7 @@ in
         chain prerouting {
           type filter hook prerouting priority raw; policy accept;
           iifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} fib daddr type != local notrack
+          iifname "icl-*" ip saddr ${site4} ip daddr ${site4} fib daddr type != local notrack
         }
       '';
     };
@@ -622,6 +711,7 @@ in
     # second place to remember.
     networking.firewall.extraForwardRules = lib.mkIf config.networking.firewall.enable ''
       iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site transit between circuits"
+      iifname "icl-*" oifname "icl-*" ip saddr ${site4} ip daddr ${site4} counter accept comment "site transit between circuits"
     '';
 
     # isisd alongside bird, not instead of it. The two carry disjoint
@@ -707,13 +797,28 @@ in
           # without it -- logged as an unknown command, after which the
           # daemon carries on with no redistribution at all. level-2 to
           # match is-type above.
-          aggregate = lib.optionalString (cfg.isis.aggregate != null) ''
-            ipv6 prefix-list isis-aggregate seq 5 permit ${cfg.isis.aggregate}
+          aggregate6 = lib.optionalString (cfg.isis.aggregate6 != null) ''
+            ipv6 prefix-list isis-aggregate6 seq 5 permit ${cfg.isis.aggregate6}
             !
-            route-map isis-aggregate permit 10
-             match ipv6 address prefix-list isis-aggregate
+            route-map isis-aggregate6 permit 10
+             match ipv6 address prefix-list isis-aggregate6
             !
           '';
+          aggregate4 = lib.optionalString (cfg.isis.aggregate4 != [ ]) ''
+            ${lib.concatImapStrings (
+              i: p: "ip prefix-list isis-aggregate4 seq ${toString (5 * i)} permit ${p}\n"
+            ) cfg.isis.aggregate4}!
+            route-map isis-aggregate4 permit 10
+             match ip address prefix-list isis-aggregate4
+            !
+          '';
+          redistribute =
+            lib.optionalString (
+              cfg.isis.aggregate6 != null
+            ) " redistribute ipv6 kernel level-2 route-map isis-aggregate6\n"
+            + lib.optionalString (
+              cfg.isis.aggregate4 != [ ]
+            ) " redistribute ipv4 kernel level-2 route-map isis-aggregate4\n";
 
           # isisd logs every route zebra offers it for redistribution, at
           # debug and gated by nothing, so with an aggregate configured the
@@ -743,8 +848,9 @@ in
           hostname ${config.networking.hostName}
           service integrated-vtysh-config
           ${logging}
+          ${lib.optionalString (routerId != null) "ip router-id ${routerId}"}
           !
-          ${aggregate}router isis ${tag}
+          ${aggregate6}${aggregate4}router isis ${tag}
            is-type level-2-only
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
@@ -752,10 +858,7 @@ in
            spf-delay-ietf init-delay 50 short-delay 200 long-delay 5000 holddown 10000 time-to-learn 500
            set-overload-bit on-startup 60
            domain-password md5 ${password} authenticate snp validate
-          ${lib.optionalString (
-            cfg.isis.aggregate != null
-          ) " redistribute ipv6 kernel level-2 route-map isis-aggregate"}
-          !
+          ${redistribute}!
           ${lib.concatMapStrings circuit (lib.attrValues cfg.links)}
           ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
         '';
@@ -931,7 +1034,8 @@ in
             address = [
               "${link.localLla}/64"
             ]
-            ++ lib.optional (link.localCircuitAddress != null) link.localCircuitAddress;
+            ++ lib.optional (link.localCircuitAddress6 != null) link.localCircuitAddress6
+            ++ lib.optional (link.localCircuitAddress4 != null) link.localCircuitAddress4;
             networkConfig = {
               LinkLocalAddressing = "no";
               IPv6AcceptRA = false;
