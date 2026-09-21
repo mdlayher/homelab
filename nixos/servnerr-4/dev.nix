@@ -65,12 +65,14 @@ let
       nano
       opentofu
       sops
+      wireguard-tools
     ];
     text = ''
       # Verbs:
       #   decrypt <file>                    print a sops file's plaintext
       #   edit <file>                       edit a sops file in place with nano
       #   updatekeys <file>                 re-encrypt to the recipients .sops.yaml names
+      #   keygen-wg <file> <key>            generate a WireGuard key into the file, print its public half
       #   exec-env <secrets> -- <cmd...>    run cmd with the file's values in its environment
       #   tofu-plan <module>                init and plan terraform/<module>
       #   tofu-import <module> <addr> <id>  adopt an existing object into the state
@@ -78,8 +80,30 @@ let
       export SOPS_AGE_KEY_FILE=${gateKey}
 
       usage() {
-        echo "usage: sops-gate {decrypt|edit|updatekeys} <file> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module> | tofu-import <module> <address> <id>" >&2
+        echo "usage: sops-gate {decrypt|edit|updatekeys|check} <file> | keygen-wg <file> <key> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module> | tofu-import <module> <address> <id>" >&2
         exit 2
+      }
+
+      # A WireGuard private key that no human handles: generated here,
+      # written straight into the encrypted file, and only its public half
+      # printed, which is the half the far end's configuration names. The
+      # key is addressed the way sops-nix names it, interconnect/wireguard_key
+      # becoming ["interconnect"]["wireguard_key"]. Refuses to overwrite: a
+      # key already in the file belongs to a tunnel that is probably up.
+      keygen_wg() {
+        local file=$1 key=$2 index="" part priv
+        while IFS= read -r part; do
+          index+="[\"$part\"]"
+        done < <(tr '/' '\n' <<<"$key")
+
+        if sops decrypt --extract "$index" "$file" >/dev/null 2>&1; then
+          echo "sops-gate: $file already holds $key" >&2
+          exit 1
+        fi
+
+        priv=$(wg genkey)
+        sops set "$file" "$index" "\"$priv\""
+        wg pubkey <<<"$priv"
       }
 
       # sops exec-env takes one string for /bin/sh -c; quote each argument.
@@ -165,6 +189,10 @@ let
           [[ $# -eq 1 ]] || usage
           sops updatekeys "$1"
           ;;
+        keygen-wg)
+          [[ $# -eq 2 ]] || usage
+          keygen_wg "$1" "$2"
+          ;;
         exec-env)
           [[ $# -ge 3 && $2 == -- ]] || usage
           secrets=$1
@@ -191,8 +219,8 @@ let
   };
 
   # The admin's half, on PATH in linuxdev: escalates to the gate user for
-  # every verb, and for edit first grants the group write bit sops needs
-  # to rewrite the file in place. git does not carry the bit across
+  # every verb, and for the verbs that rewrite a file first grants the group
+  # write bit sops needs to do it in place. git does not carry the bit across
   # checkouts, so it is granted every time and taken back afterwards.
   #
   # A secrets file that does not exist yet is created here first, as an
@@ -206,10 +234,59 @@ let
     name = "sops-gate";
     runtimeInputs = with pkgs; [
       coreutils
+      gnugrep
+      gawk
+      jq
       sops
+      yq-go
     ];
     text = ''
-      if [[ ''${1:-} == edit && -n ''${2:-} && ! -e $2 ]]; then
+      # check: which recipients each secrets file is encrypted to, against
+      # what .sops.yaml names for its path. It reads plaintext metadata
+      # only, so it needs no key and no escalation, and it is what catches a
+      # file an onboarding left behind before an activation fails on it.
+      if [[ ''${1:-} == check ]]; then
+        shift
+        [[ -f .sops.yaml ]] || { echo "sops-gate: run from the repository root" >&2; exit 2; }
+
+        shopt -s globstar nullglob
+        files=("$@")
+        if [[ ''${#files[@]} -eq 0 ]]; then
+          for f in nixos/**/*.yaml secrets/**/*.yaml; do
+            if grep -q '^sops:' "$f"; then files+=("$f"); fi
+          done
+        fi
+
+        rules=$(yq -o=json 'explode(.) | .creation_rules' .sops.yaml)
+        anchors=$(grep -oE '&[A-Za-z0-9_-]+ age1[0-9a-z]+' .sops.yaml)
+        # An age recipient by the name .sops.yaml anchors it under, which is
+        # the name a person recognises.
+        label() { awk -v r="$1" '$2 == r { print substr($1, 2) }' <<<"$anchors" | head -1; }
+
+        rc=0
+        for f in "''${files[@]}"; do
+          want=$(jq -r --arg f "$f" \
+            '[.[] | select(.path_regex as $re | $f | test($re))][0] | [.key_groups[].age[]] | sort | .[]' <<<"$rules")
+          have=$(sed -n '/^sops:/,$p' "$f" | awk '/recipient:/ { print $NF }' | sort)
+          if [[ -z $want ]]; then
+            echo "$f: no creation rule matches this path"
+            rc=1
+          elif [[ $want == "$have" ]]; then
+            echo "$f: ok"
+          else
+            rc=1
+            for r in $(comm -23 <(printf '%s\n' "$want") <(printf '%s\n' "$have")); do
+              echo "$f: cannot decrypt, needs updatekeys for $(label "$r")"
+            done
+            for r in $(comm -13 <(printf '%s\n' "$want") <(printf '%s\n' "$have")); do
+              echo "$f: still encrypted to $(label "$r"), which .sops.yaml no longer names"
+            done
+          fi
+        done
+        exit $rc
+      fi
+
+      if [[ ''${1:-} == edit || ''${1:-} == keygen-wg ]] && [[ -n ''${2:-} && ! -e $2 ]]; then
         echo '{}' > "$2"
         # Leave no plaintext stub behind if no creation rule matches.
         if ! sops encrypt -i "$2"; then
@@ -218,9 +295,9 @@ let
         fi
       fi
 
-      # Both verbs rewrite the file in place, which the gate user can only
+      # These verbs rewrite the file in place, which the gate user can only
       # do through the group.
-      if [[ ''${1:-} == edit || ''${1:-} == updatekeys ]] && [[ -n ''${2:-} ]]; then
+      if [[ ''${1:-} =~ ^(edit|updatekeys|keygen-wg)$ ]] && [[ -n ''${2:-} ]]; then
         chmod g+w "$2"
         trap 'chmod g-w "$2"' EXIT
       fi

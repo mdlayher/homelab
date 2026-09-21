@@ -1,7 +1,7 @@
 { ... }:
 
-# NTP at this site, answering the anycast address alongside the router at
-# azo (see modules/anycast.nix). chronyd rather than the timesyncd this
+# NTP at an edge site, answering the anycast address alongside the other
+# nodes holding it (see modules/anycast.nix). chronyd rather than the timesyncd this
 # machine ran, which is a client alone; NixOS turns timesyncd off when
 # chrony is enabled.
 #

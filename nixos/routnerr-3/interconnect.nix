@@ -15,6 +15,7 @@ let
   # pdx's carrier key, shared by both links to it: one key identifies that
   # router, and the two carriers differ by port rather than by identity.
   pdxPublicKey = "7gO2i3ZxZFosAOuRZgC5yFIM/8fBX+KqVEo/HoWajD8=";
+  iadPublicKey = "l//gZ3Af+Cr9QXNFjNdOy4Tl5K5Rl3X9QEnXhxMVf3U=";
 
   # This site's link between its own routers, from the inventory: each end
   # reads its own addresses and the far end's out of the one registry.
@@ -69,6 +70,24 @@ in
         plane = 1;
         publicKey = pdxPublicKey;
         endpoint = "ipv4.pdx.icl.mdlayher.net:51121";
+        firewallMark = 2;
+      };
+
+      # The same pair toward iad. The marks repeat because they name a WAN
+      # rather than a site: plane 0 leaves by the uplink with IPv6 and plane
+      # 1 by the one without, whichever site is at the far end.
+      links.iad0 = {
+        site = "iad";
+        publicKey = iadPublicKey;
+        endpoint = "ipv6.iad.icl.mdlayher.net:51130";
+        firewallMark = 1;
+      };
+
+      links.iad1 = {
+        site = "iad";
+        plane = 1;
+        publicKey = iadPublicKey;
+        endpoint = "ipv4.iad.icl.mdlayher.net:51131";
         firewallMark = 2;
       };
 

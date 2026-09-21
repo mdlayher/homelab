@@ -5,6 +5,18 @@ provider "registry.opentofu.org/tailscale/tailscale" {
   version     = "0.29.2"
   constraints = ">= 0.17.0"
   hashes = [
+    "h1:7D3VzQoUKr4NYJ7ZMMRdV9iQUK8d6yJBrnBhi0DtBfA=",
+    "h1:910l+uQ0y8nSWPo/CsGI0Ni+lM6oc/h6yckucLmivAY=",
+    "h1:IPFMdH5vsXeNRj8H/Y6Z6iq3Fko8zkmgcROSXeRJ7MM=",
+    "h1:KG/OMAOors/W0AZlHkcUD9aeGBIWDCloKa652+JlATM=",
+    "h1:SSZ93MdSAaJ1Xi/VIvZDz5z1sve3BIS+WqDKACvJut0=",
+    "h1:Vzj5bDkG9nOQbRMKHPhsol0+BrvzZ22lwkbLSIs4ycs=",
+    "h1:Xjuo1Cwe065i1qJfhKm3dti4eeEwIT9rNNqU3R6id0A=",
+    "h1:eADNOR3ZnirZXCP+3k0hy9CKQK8sgeVC0lpo08UntZY=",
+    "h1:gzBWWbJc4JOwQEIINtnYkbwErRkA2oLvhtRW4lAQ7UU=",
+    "h1:ipdqf/NJpSaP7em0/+n3hu0KVzwai3cIn2VgP4Rxdhs=",
+    "h1:lNitoP/DTekzHnRjZ3RBLthPRZ3aHy6lR7jo2rtoH+0=",
+    "h1:laqGsqlHY2/R1JQnhniKwcT0U8gb+tF0K9vr+Tovskc=",
     "h1:wUSb/6AFeFi905uIodIMA11SyyboCTtDqqNhJYdHweM=",
     "zh:32b453302a684584198a03c2e09d99ef1f6deac2fe26f8dc134d973b07fd0c23",
     "zh:3920bb891a476f30e29248533f667a507c97e93e0a2af010b242e980d6411ca6",

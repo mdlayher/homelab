@@ -5,10 +5,10 @@
   ...
 }:
 
-# The edge at the pdx site: a single EC2 host in us-west-2, provisioned by
+# The edge at the iad site: a single EC2 host in us-east-1, provisioned by
 # terraform/aws. It is not a router in the sense routnerr-3 is -- no VLANs,
-# no clients, nothing advertising itself -- it terminates one interconnect
-# circuit and speaks the two routing protocols across it.
+# no clients, nothing advertising itself -- it terminates the circuits that
+# reach this site and runs the IGP across them.
 #
 # Everything about the machine itself comes from the NixOS AMI's own module:
 # the EC2 disk layout, growing the root partition, and the SSH key from
@@ -25,25 +25,23 @@ in
     ./interconnect.nix
   ];
 
-  # The dn42 and interconnect modules declare their interfaces as
-  # systemd.network units, which are rendered but never applied unless
-  # networkd owns the network. amazon-image.nix leaves eth0 to dhcpcd, so
-  # without this the loopback, the carrier and the GRETAP simply do not
-  # appear. useDHCP stays on: networkd's catch-all takes eth0 over, and
-  # accepts the VPC's router advertisements for IPv6.
+  # The interconnect module declares its interfaces as systemd.network
+  # units, which are rendered but never applied unless networkd owns the
+  # network. amazon-image.nix leaves eth0 to dhcpcd, so without this the
+  # loopback, the carriers and the GRETAPs simply do not appear. useDHCP
+  # stays on: networkd's catch-all takes eth0 over, and accepts the VPC's
+  # router advertisements for IPv6.
   networking.useNetworkd = true;
 
   # The nftables backend, unlike the iptables one, can filter forwarding and
   # can match a source address in a rule of our own. An edge needs both: EC2
-  # is told not to check source and destination, dn42 peering arrives with
-  # the role, and the circuit carries other people's transit as well as our
-  # traffic. filterForward lands now, while this machine forwards nothing at
-  # all, rather than later when it would be a change with consequences.
+  # is told not to check source and destination, and a circuit carries
+  # traffic in transit to another site as well as traffic for this one.
   networking.nftables.enable = true;
 
   # No LAN here, so nothing this host answers is reachable except over the
-  # tailnet or the circuit. The carrier's port is the one exception, and the
-  # security group in terraform/aws is what opens it from outside.
+  # tailnet or a circuit. The carriers' ports are the one exception, and the
+  # security group in terraform/aws is what opens them from outside.
   networking.firewall = {
     enable = true;
     trustedInterfaces = [ "ts0" ];
@@ -61,8 +59,7 @@ in
 
     # What our own space may reach across a circuit, by source address as
     # well as interface: the interface alone does not say that much, since
-    # dn42 transit arrives on them too, and dn42's own space matches nothing
-    # here and meets the policy drop.
+    # a circuit also carries traffic that is only passing through.
     #
     # Named ports rather than the whole machine. A source in our own space
     # is not by itself a trusted party: every segment at another site draws
@@ -72,8 +69,8 @@ in
     # services this site answers for when it is the nearest node holding an
     # anycast address.
     #
-    # One rule per circuit, from the links themselves, so a carrier added
-    # for a second WAN is reachable without a second place to remember.
+    # One rule per circuit, from the links themselves, so a circuit to a new
+    # site is reachable without a second place to remember.
     extraInputRules =
       let
         tcp = [
@@ -95,12 +92,11 @@ in
         iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} udp dport { ${ports udp} } accept comment "site services across the circuit"
       '') (lib.attrValues config.homelab.interconnect.links);
 
-    # Transit between circuits, which is what this machine becomes once a
-    # site reaches another through it rather than directly. Both ends of a
-    # transiting flow are ours, so the test is our own space on each side;
-    # dn42 arrives on the same interfaces and what it may forward is decided
-    # with dn42. The wildcard admits a circuit to a new site without a
-    # second place to remember.
+    # Transit between circuits, which is what this machine is on the ring:
+    # a site reaching another through it rather than directly. Both ends of
+    # a transiting flow are ours, so the test is our own space on each side.
+    # The wildcard admits a circuit to a new site without a second place to
+    # remember.
     extraForwardRules = ''
       iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site traffic in transit"
     '';
@@ -108,11 +104,11 @@ in
 
   # Internal names resolve at the anycast resolver address, which is this
   # machine's own CoreDNS while it is serving and another site's while it is
-  # not (see coredns.nix). Routing domains rather than a search list: an
-  # edge writes every name out in full, and nothing here should complete a
-  # bare one. Routing domains rather than a plain DNS= for a second reason
-  # -- eth0's DHCP servers also claim ".", and two unqualified claims on the
-  # root make scope selection a coin toss.
+  # not (see modules/edge-coredns.nix). Routing domains rather than a search
+  # list: an edge writes every name out in full, and nothing here should
+  # complete a bare one. Routing domains rather than a plain DNS= for a
+  # second reason -- eth0's DHCP servers also claim ".", and two unqualified
+  # claims on the root make scope selection a coin toss.
   #
   # Everything else stays with the VPC resolver, so the nightly upgrade's
   # names do not depend on a resolver of ours being up.
@@ -120,9 +116,8 @@ in
     DNS = [ inventory.anycast.dns ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
-      # dn42 as a whole, not just our zone within it: bird resolves the RTR
-      # feeds by name (rpki.*.dn42), and the router is the only resolver
-      # which forwards that TLD to dn42's own anycast servers.
+      # dn42 as a whole: the resolver answers for it through the router, and
+      # the VPC's would not.
       "~dn42"
     ];
   };
@@ -143,8 +138,8 @@ in
   # Never take a name from the VPC. UseHostname is the one that matters:
   # NixOS sets the static hostname and DHCP sets a transient one, the
   # transient wins for gethostname, and everything that reads it -- the
-  # IS-IS dynamic hostname, the Loki host label -- has been reading EC2's
-  # instead of this machine's.
+  # IS-IS dynamic hostname, the Loki host label -- would read EC2's instead
+  # of this machine's.
   systemd.network.networks."99-ethernet-default-dhcp" = {
     dhcpV4Config = {
       UseDomains = false;
@@ -157,18 +152,12 @@ in
   # whatever the node was last told by hand. Turning it on makes tailscaled
   # answer port 22 for every tailnet connection, which takes the port away
   # from sshd: the deploys that ride tag:dev reach tailscaled instead and are
-  # refused, because the ssh policy grants only autogroup:member. Widening
-  # that to tag:dev would be worse than the problem -- it would let the
-  # development container in without the admin's key, and agents run there.
-  #
-  # The admin console's SSH Console is worth having on a machine with no LAN,
-  # but it needs sshd on a second port to coexist with key-based deploys.
-  # That is a decision to take before the public port closes, not a flag.
+  # refused, because the ssh policy grants only autogroup:member.
   services.tailscale.extraSetFlags = [ "--ssh=false" ];
 
   # Its own site, with no subnets: nothing here is named in internal DNS and
   # no inventory secret is decrypted. See nixos/inventory/.
-  homelab.site = "pdx";
+  homelab.site = "iad";
 
   # No hardware-configuration.nix here: amazon-image.nix is the hardware,
   # and it does not set a platform.

@@ -1,29 +1,7 @@
 locals {
-  # "pdx" is the site, not the machine. Everything here is the site: the VPC
-  # and its tags, the security group's name, and
-  # homelab.interconnect.links.pdx, which derives the circuit's interface
-  # names from it (icl-pdx, iclw-pdx). The machine at it is edge-pdx, whose
-  # NixOS configuration is nixos/edge-pdx; nothing in this module names it,
-  # which is why a machine rename costs no terraform state.
-  region = "us-west-2"
-  site   = "pdx"
-
-  # The VPC exists to hold one host, and none of it is reachable from the
-  # other site: the interconnect carries our own addressing on top. Chosen
-  # not to overlap homelab.inventory.privatePrefix (192.168.0.0/16).
-  vpc_cidr    = "10.80.0.0/16"
-  subnet_cidr = "10.80.0.0/24"
-
-  # The WireGuard carriers' listen ports, one per plane: azo runs a carrier
-  # over each of its WANs, so an outage of either ISP there costs one
-  # circuit rather than this site's only path home.
-  #
-  # nixos/modules/interconnect.nix derives these as 51<a><b><plane> from the
-  # two sites' indices, so both ends reach the same number without either
-  # being told. azo is site 01 and this one is 02. Not secrets: they are in
-  # the NixOS configuration, which is public.
-  wireguard_port_plane0 = 51120
-  wireguard_port_plane1 = 51121
+  # Named once: the zone lookup below has to filter on the same type the
+  # instance is created with, or it answers for a different one.
+  iad_instance_type = lookup(var.instance_types, "iad", "t3.small")
 
   # Bootstrap access only: the NixOS AMI takes its root key from instance
   # metadata, and the first nixos/deploy replaces it with the real user from

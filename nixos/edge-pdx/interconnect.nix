@@ -9,6 +9,7 @@ let
   # peer's -- homelab.dn42.publicKey names this host's own key, which here
   # is pdx's.
   azoPublicKey = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
+  iadPublicKey = "l//gZ3Af+Cr9QXNFjNdOy4Tl5K5Rl3X9QEnXhxMVf3U=";
 in
 {
   imports = [ ../modules/interconnect.nix ];
@@ -45,6 +46,16 @@ in
         plane = 1;
         publicKey = azoPublicKey;
         endpoint = null;
+      };
+
+      # One carrier toward iad, not two: both ends have a single uplink, so
+      # a second would be two carriers over one path. This end dials,
+      # because the lower site index does; the port is the module's, from
+      # the two indices and the plane.
+      links.iad0 = {
+        site = "iad";
+        publicKey = iadPublicKey;
+        endpoint = "ipv6.iad.icl.mdlayher.net:51230";
       };
 
       # The landing page at this site's icl names. One uplink here, so

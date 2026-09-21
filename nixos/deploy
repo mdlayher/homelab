@@ -41,8 +41,16 @@ export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 # machine itself: only derivations and sources are copied, and everything
 # else comes from the binary cache.
 #
-# DEPLOY_USER overrides the SSH user if necessary.
+# DEPLOY_USER overrides the SSH user if necessary, and DEPLOY_ADDRESS where
+# to reach the machine. Both are for a first deploy: a machine built from a
+# stock image answers as root, and is not on the tailnet its name resolves
+# through until this puts it there. Once deployed it needs neither.
 user=${DEPLOY_USER:-mdlayher}
+
+if [[ ${all_requested:-} == yes && -n ${DEPLOY_ADDRESS:-} ]]; then
+  echo "error: DEPLOY_ADDRESS names one machine, so it cannot be used with --all" >&2
+  exit 2
+fi
 
 cd "$(dirname "$0")/.."
 
@@ -81,9 +89,9 @@ branch="$(git rev-parse --abbrev-ref HEAD)"
 if git diff-index --quiet HEAD --; then dirty=no; else dirty=yes; fi
 by="$(id -un)@$(hostname -s)"
 log() {
-  local host=$1
+  local host=$1 addr=${DEPLOY_ADDRESS:-$1}
   shift
-  ssh "${sshopts[@]}" "$user@$host" logger -t deploy -- "$@"
+  ssh "${sshopts[@]}" "$user@$addr" logger -t deploy -- "$@"
 }
 
 # Build on the machine, then activate under a single sudo. The build is
@@ -100,7 +108,7 @@ log() {
 # mounts, networking, tun) still need a manual restart, which kills
 # sessions.
 deploy() {
-  local host=$1 action=$2 drv path before count steps script
+  local host=$1 action=$2 addr=${DEPLOY_ADDRESS:-$1} drv path before count steps script
   shift 2
 
   # Global, read by the caller's finished line; reset so a failure here
@@ -108,8 +116,8 @@ deploy() {
   closure="?"
 
   drv="$(nix eval --raw ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" "$@")"
-  nix copy --to "ssh://$user@$host" "$drv"
-  path="$(ssh "${sshopts[@]}" "$user@$host" \
+  nix copy --to "ssh://$user@$addr" "$drv"
+  path="$(ssh "${sshopts[@]}" "$user@$addr" \
     nix --extra-experimental-features nix-command build "$drv^*" --no-link --print-out-paths)"
 
   # What the deploy moves, which rev= alone never says: the nightly applies
@@ -117,9 +125,9 @@ deploy() {
   # running closure and the new one, not `nix store diff-closures`, which
   # reports only name or version moves and so misses an edited unit file.
   # Unprivileged and before activation, so it costs no sudo touch.
-  before="$(ssh "${sshopts[@]}" "$user@$host" readlink -f /run/current-system)"
+  before="$(ssh "${sshopts[@]}" "$user@$addr" readlink -f /run/current-system)"
   count="{ nix-store -qR $before; nix-store -qR $path; } | sort | uniq -u | wc -l"
-  closure="$(ssh "${sshopts[@]}" "$user@$host" /bin/sh -c "$(printf '%q' "$count")")" || closure="?"
+  closure="$(ssh "${sshopts[@]}" "$user@$addr" /bin/sh -c "$(printf '%q' "$count")")" || closure="?"
 
   # The transient unit carries systemd's minimal PATH, so name the system
   # profile's binaries by their absolute paths.
@@ -136,7 +144,7 @@ deploy() {
   script=${script% && }
 
   # -t gives sudo a terminal for the touch cue and the password fallback.
-  ssh -t "${sshopts[@]}" "$user@$host" sudo systemd-run \
+  ssh -t "${sshopts[@]}" "$user@$addr" sudo systemd-run \
     --collect --no-ask-password --pipe --quiet --same-dir --wait \
     --service-type=exec --unit=deploy-activate \
     /bin/sh -c "$(printf '%q' "$script")"

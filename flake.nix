@@ -66,6 +66,7 @@
     in
     {
       nixosConfigurations = {
+        edge-iad = mkSystem "edge-iad";
         edge-pdx = mkSystem "edge-pdx";
         monitnerr-1 = mkSystem "monitnerr-1";
         routnerr-3 = mkSystem "routnerr-3";

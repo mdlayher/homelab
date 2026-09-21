@@ -147,6 +147,24 @@ resource "cloudflare_dns_record" "mdlayher_net_icl_pdx_ipv6" {
   proxied = false
 }
 
+resource "cloudflare_dns_record" "mdlayher_net_icl_iad_ipv4" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv4.iad.icl.mdlayher.net"
+  type    = "A"
+  content = local.iad_endpoint_v4
+  ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "mdlayher_net_icl_iad_ipv6" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "ipv6.iad.icl.mdlayher.net"
+  type    = "AAAA"
+  content = local.iad_endpoint_v6
+  ttl     = 1
+  proxied = false
+}
+
 # HTTPS records (RFC 9460) for the names the peering page answers on, so a
 # resolver that asks for them learns HTTP/3 is available before the first
 # connection, instead of after it via the Alt-Svc header the page also

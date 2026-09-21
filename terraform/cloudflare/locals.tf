@@ -7,10 +7,13 @@ locals {
     "mdlayher.net" = "7d358bd5ac55e8d46dcffb6afaf86854"
   }
 
-  # The edge's public addresses, from `tofu output` in terraform/aws. That
+  # Each edge's public addresses, from `tofu output` in terraform/aws. That
   # module keeps its own state with no link to this one, so these are copied
   # by hand: a replaced instance keeps its EIP but takes a new ENI address.
-  # Every record naming the edge reads them here, so a replacement is one edit.
+  # Every record naming an edge reads them here, so a replacement is one edit.
   pdx_endpoint_v4 = "52.38.132.195"
   pdx_endpoint_v6 = "2600:1f13:ce:ca00:bcc3:f69b:5bd8:251b"
+
+  iad_endpoint_v4 = "44.193.36.229"
+  iad_endpoint_v6 = "2600:1f18:2900:e00:f29a:1a95:373b:2479"
 }

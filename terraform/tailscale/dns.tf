@@ -16,6 +16,7 @@ locals {
   # The zones the router answers for and public DNS does not.
   internal_domains = [
     "azo.mdlayher.net",
+    "iad.mdlayher.net",
     "pdx.mdlayher.net",
     "svc.mdlayher.net",
   ]

@@ -195,7 +195,8 @@ in
       are the exception and are plain data, since each names a range rather
       than an address: ulaPrefix and privatePrefix, the spaces every site is
       drawn from, and the carve-outs from the ULA -- labPrefix,
-      carrierPrefix, loopbackPrefix, circuitPrefix and anycastPrefix, plus
+      carrierPrefix, loopbackPrefix, circuitPrefix, srv6Prefix and
+      anycastPrefix, plus
       anycast, the service address drawn from that last one for each
       service answered at every site. So is isis, the area
       and per-router system IDs. See nixos/inventory/ for what each covers.
@@ -264,6 +265,7 @@ in
         labPrefix
         carrierPrefix
         circuitPrefix
+        srv6Prefix
         siteLinks
         loopbackPrefix
         anycastPrefix

@@ -78,6 +78,11 @@
   # one the choice falls to whatever else the machine happens to hold.
   circuitPrefix = "fd9e:1a04:f01d:fc00::/56";
 
+  # SRv6 locators, a /64 per node. Nothing consumes it yet; allocated here
+  # so a later carve-out cannot take it, and so the block a node's locator
+  # comes from is named in the one place every other range is.
+  srv6Prefix = "fd9e:1a04:f01d:fb00::/56";
+
   # Links joining two routers at one site. The interconnect module derives a
   # link's addresses from the two sites' indices, which collapses when both
   # ends sit at the same site: each computes the same pair and each claims
@@ -131,6 +136,7 @@
       routnerr-3 = "0000.0000.0101";
       servnerr-4 = "0000.0000.0102";
       edge-pdx = "0000.0000.0201";
+      edge-iad = "0000.0000.0301";
     };
   };
 
@@ -162,7 +168,10 @@
     # tailscale, routing daemons, dn42 peering. Named <role>-<site> rather
     # than <role>nerr-<generation>, because there is one per site and the
     # site is what tells them apart.
-    edge = [ "edge-pdx" ];
+    edge = [
+      "edge-pdx"
+      "edge-iad"
+    ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
     monitor = [ "monitnerr-1" ];
@@ -188,6 +197,7 @@
   # cannot disagree about which site is which.
   sites.azo.index = 1;
   sites.pdx.index = 2;
+  sites.iad.index = 3;
 
   sites.azo = {
     # This site's router loopback: a stable address on no segment, which is
@@ -273,7 +283,7 @@
     };
   };
 
-  # A single EC2 host terminating one interconnect circuit. No LAN, so no
+  # An EC2 host terminating interconnect circuits. No LAN, so no
   # subnets and nothing on a segment: the machine is named and reached at its
   # loopback, which the IGP carries. Nothing here is a secret, which is what
   # lets the router answer for this site and the server name a host in it.
@@ -284,6 +294,12 @@
     # site; the DNS label drops it, since the domain already says pdx. No
     # segment role in the label: a role names a segment, and the address is
     # a loopback at a site that has none.
+    dnsName = "edge";
+  };
+
+  # The same shape at us-east-1.
+  sites.iad.loopbacks.edge-iad = {
+    addr = "fd9e:1a04:f01d::301";
     dnsName = "edge";
   };
 }

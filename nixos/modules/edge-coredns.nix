@@ -5,10 +5,10 @@
   ...
 }:
 
-# The resolver at this site, answering the anycast address alongside the
-# router at azo (see modules/anycast.nix). A client reaches whichever node
-# the IGP says is nearest, so the two have to answer alike or the answer
-# depends on where the client happens to be.
+# The resolver at an edge site, answering the anycast address alongside the
+# other nodes holding it (see modules/anycast.nix). A client reaches
+# whichever node the IGP says is nearest, so every node has to answer alike
+# or the answer depends on where the client happens to be.
 #
 # What this node can answer by itself is what is plain data: the loopback
 # names every site publishes. A site's host records are built from that
