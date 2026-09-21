@@ -301,7 +301,7 @@ in
         # and one an address, so the fabric view is plain HTTP.
         serverAliases =
           names
-          ++ [ loopback.siteFqdn ]
+          ++ lib.optional (loopback.siteFqdn != null) loopback.siteFqdn
           ++ lib.optional (loopback.fqdn != null) loopback.fqdn
           ++ [ "[${loopback.addr}]" ];
 

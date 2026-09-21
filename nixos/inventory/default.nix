@@ -205,6 +205,12 @@
     # the interconnect page is served on.
     loopbacks.routnerr-3.addr = "fd9e:1a04:f01d::101";
 
+    # The server's, the second router at this site: what an edge names as a
+    # resolver beside the router's, so the site's names keep resolving
+    # while either is down. No name of its own; the machine is published
+    # on the management LAN.
+    loopbacks.servnerr-4.addr = "fd9e:1a04:f01d::102";
+
     # Subnets by router interface name. VLAN 0 is the untagged management LAN.
     subnets = {
       # Physical management LAN: servers and network infrastructure.

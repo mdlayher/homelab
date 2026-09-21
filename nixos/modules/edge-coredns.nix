@@ -13,8 +13,9 @@
 # What this node can answer by itself is what is plain data: the loopback
 # names every site publishes. A site's host records are built from that
 # site's inventory secrets, and this machine is handed none of them, so
-# everything else is forwarded by unicast to the router's own loopback --
-# never to the anycast address, which would forward this node to itself.
+# everything else is forwarded by unicast to the loopbacks of the resolvers
+# at the router's site -- never to the anycast address, which would forward
+# this node to itself.
 #
 # Recursion goes to the same clearnet resolvers azo uses rather than to the
 # VPC's, for the same reason: an answer must not depend on which node took
@@ -24,10 +25,14 @@
 let
   inventory = config.homelab.inventory;
 
-  # The resolver which holds everything this one does not. The router's
-  # loopback, as configuration.nix reaches it, and reached the same way:
-  # across the circuit.
-  router = inventory.sites.azo.loopbacks.${lib.head inventory.roles.router}.addr;
+  # The resolvers which hold everything this one does not: the loopbacks of
+  # the machines at the router's site which answer the internal zones, the
+  # router and the server, reached across the circuit. Both render those
+  # zones from the same inventory, so either answers alike, and naming both
+  # keeps this site's names resolving while one of them is down.
+  resolvers = lib.concatMapStringsSep " " (n: inventory.sites.azo.loopbacks.${n}.addr) (
+    lib.filter (n: inventory.sites.azo.loopbacks ? ${n}) (inventory.roles.router ++ inventory.roles.server)
+  );
 
   # This node's listeners. The anycast address is bound before it exists,
   # which the sysctl below permits: it appears only once this service is up,
@@ -38,7 +43,9 @@ let
   # its own name where the machine is published at it, as the router renders
   # them. Plain data from the inventory, hence a store path.
   loopbackForward =
-    lo: "${lo.addr} ${lo.siteFqdn}\n" + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
+    lo:
+    lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n"
+    + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
 
   loopbacksFile = pkgs.writeText "coredns-loopbacks" (
     lib.concatMapStrings (site: lib.concatMapStrings loopbackForward (lib.attrValues site.loopbacks)) (
@@ -89,16 +96,16 @@ in
         }
       }
 
-      # Internal names: the loopbacks from the inventory, and the router for
-      # the rest. The hosts plugin keeps only the names inside this block's
-      # zones and falls through for the others.
+      # Internal names: the loopbacks from the inventory, and the resolvers
+      # at the router's site for the rest. The hosts plugin keeps only the
+      # names inside this block's zones and falls through for the others.
       ${zones} {
         bind ${listen}
         prometheus :9153
         hosts ${loopbacksFile} {
           fallthrough
         }
-        forward . ${router}
+        forward . ${resolvers}
       }
     '';
   };

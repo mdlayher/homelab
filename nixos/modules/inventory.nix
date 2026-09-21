@@ -137,12 +137,22 @@ let
   # sops placeholder only means anything on the machine which declared the
   # secret. dnsName is null where the machine is not published at it.
   #
-  # siteFqdn is a fixed shape every loopback answers to, so the address a
-  # site's fabric is reached at is found the same way at every site. It names
-  # the site, so a second loopback there would have to be chosen between
-  # rather than derived.
+  # The loopback a site's fabric is reached at, by the roles registry: the
+  # router's where the site has one, the edge's otherwise. One per site,
+  # since the name it answers says the site and nothing more.
+  siteAnchor =
+    s:
+    let
+      names = lib.attrNames (s.loopbacks or { });
+      holder = role: lib.findFirst (n: lib.elem n names) null inventory.roles.${role};
+    in
+    if holder "router" != null then holder "router" else holder "edge";
+
+  # siteFqdn is a fixed shape the anchor loopback answers to, so the address
+  # a site's fabric is reached at is found the same way at every site. Null
+  # on any other loopback there.
   mkLoopback =
-    siteDomain: name: lo:
+    siteDomain: anchor: name: lo:
     let
       dnsName = lo.dnsName or null;
     in
@@ -150,10 +160,11 @@ let
       inherit name dnsName;
       inherit (lo) addr;
       fqdn = if dnsName == null then null else "${dnsName}.${siteDomain}";
-      siteFqdn = "site.${siteDomain}";
+      siteFqdn = if name == anchor then "site.${siteDomain}" else null;
     };
 
-  siteLoopbacks = name: s: lib.mapAttrs (mkLoopback "${name}.${inventory.zone}") (s.loopbacks or { });
+  siteLoopbacks =
+    name: s: lib.mapAttrs (mkLoopback "${name}.${inventory.zone}" (siteAnchor s)) (s.loopbacks or { });
 
   # A site's own /56 out of the ULA, from its index: the fourth hextet reads
   # as decimal SSVV, so a site's space runs from its index with VLAN 00. This
@@ -212,7 +223,8 @@ in
       publishes. privateZones is the space-separated private DNS zone list,
       null at a site with no subnets.
       Loopbacks are keyed by machine name and are plain data, since they are
-      read across sites: each carries addr, siteFqdn, and dnsName with the
+      read across sites: each carries addr, siteFqdn (null except on the
+      one loopback a site's fabric is reached at), and dnsName with the
       fqdn built from it, both null where the machine is not published at
       its loopback.
     '';

@@ -80,14 +80,22 @@ let
     + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
   ) (lib.attrsToList inventory.services);
 
-  # A loopback answers the fixed site name every one of them carries, and
-  # its own name where the machine is published at it.
+  # A loopback answers the fixed site name where it is the one the site is
+  # reached at, and its own name where the machine is published at it. One
+  # with neither is reached by address alone.
   loopbackForward =
-    lo: "${lo.addr} ${lo.siteFqdn}\n" + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
+    lo:
+    lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n"
+    + lib.optionalString (lo.fqdn != null) "${lo.addr} ${lo.fqdn}\n";
 
   # One name per address in reverse, as the LANs are below: the machine's
   # own where it has one, since that is what a trace should show.
-  loopbackReverse = lo: "${lo.addr} ${if lo.fqdn != null then lo.fqdn else lo.siteFqdn}\n";
+  loopbackReverse =
+    lo:
+    if lo.fqdn != null then
+      "${lo.addr} ${lo.fqdn}\n"
+    else
+      lib.optionalString (lo.siteFqdn != null) "${lo.addr} ${lo.siteFqdn}\n";
 
   siteLoopbacks = site: lib.attrValues site.loopbacks;
 
