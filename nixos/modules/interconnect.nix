@@ -168,12 +168,13 @@ in
   # A loopback is a router's identity in the IGP and an anycast address is a
   # service's, and nothing else advertises either, so the module which runs
   # the IGP is the one which brings them in. Each is inert on a machine
-  # which has none.
+  # which has none, as is the WireGuard exporter on one with no carrier.
   imports = [
     ./anycast.nix
     ./icl-page.nix
     ./isis-metrics.nix
     ./loopback.nix
+    ./wireguard-exporter.nix
   ];
 
   options.homelab.interconnect = {
@@ -613,8 +614,32 @@ in
     # prefixes and this runs beside it for comparison.
     services.frr = lib.mkIf cfg.isis.enable {
       isisd.enable = true;
-      config =
+      # Rendered by sops at activation rather than written to the store,
+      # since the IS-IS password is in it; see the template below.
+      configFile = config.sops.templates."frr-isis.conf".path;
+    };
+
+    # One password for the area, from the shared secrets file every router
+    # decrypts. Hellos carry it per circuit, so an adjacency forms only with
+    # a router holding it, and level-2 LSPs and SNPs carry it for the
+    # domain, so a router which does form one cannot feed the database
+    # anything unsigned. The circuits between sites are inside WireGuard
+    # already; the link between two routers on one segment is not, and this
+    # is what stands in for that there.
+    sops.secrets."isis/password" = lib.mkIf cfg.isis.enable {
+      sopsFile = ../secrets/common.yaml;
+    };
+
+    # Named for what it holds rather than frr.conf: the server also renders
+    # one of those, for the FRR lab container in its dev.nix.
+    sops.templates."frr-isis.conf" = lib.mkIf cfg.isis.enable {
+      owner = "frr";
+      group = "frr";
+      mode = "0440";
+      restartUnits = [ "frr.service" ];
+      content =
         let
+          password = config.sops.placeholder."isis/password";
           # Only commands are emitted: a comment inside an interface block
           # would be at the mercy of how the parser treats it, and this
           # config cannot be checked before it reaches the router.
@@ -631,6 +656,7 @@ in
              isis network point-to-point
              isis hello padding
              isis hello-multiplier 3
+             isis password md5 ${password}
             ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
           '';
           passive = name: ''
@@ -670,7 +696,11 @@ in
           # when nothing tells it otherwise, so tell it.
           logging = "log syslog informational";
         in
+        # The first lines are what the FRR module writes around
+        # services.frr.config, which configFile replaces wholesale.
         ''
+          hostname ${config.networking.hostName}
+          service integrated-vtysh-config
           ${logging}
           !
           ${aggregate}router isis ${tag}
@@ -678,6 +708,7 @@ in
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
            log-adjacency-changes
+           domain-password md5 ${password} authenticate snp validate
           ${lib.optionalString (
             cfg.isis.aggregate != null
           ) " redistribute ipv6 kernel level-2 route-map isis-aggregate"}

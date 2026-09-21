@@ -660,7 +660,7 @@ in
           alert = "WireGuardExporterDown";
           expr = ''up{job="wireguard"} == 0'';
           for = "5m";
-          annotations.summary = "The WireGuard exporter on {{ $labels.instance }} is down, so dn42 tunnel handshakes are unmonitored.";
+          annotations.summary = "The WireGuard exporter on {{ $labels.instance }} is down, so its tunnel handshakes are unmonitored.";
         }
         # Nothing else notices a dead dn42 tunnel this quickly: BGP holds for
         # 240 seconds before the session drops, and BIRDBGPSessionDown then
@@ -678,9 +678,14 @@ in
         # that traffic, so a tunnel whose bytes stop moving goes stale within
         # a handshake interval anyway, and a live tunnel carrying no useful
         # routes is what the BIRD rules above catch.
+        #
+        # The interconnect carriers (iclw-) qualify on the same reasoning:
+        # the IGP's hellos cross them every few seconds, so a quiet carrier
+        # is a dead one there too, and both ends of a carrier run the
+        # exporter, so a circuit between two edges is measured as well.
         {
           alert = "WireGuardPeerHandshakeStale";
-          expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "dn42e-.*"}} > 180";
+          expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "(dn42e|iclw)-.*"}} > 180";
           for = "5m";
           annotations.summary = "WireGuard tunnel {{ $labels.interface }} on {{ $labels.instance }} last handshook {{ $value | humanizeDuration }} ago.";
         }

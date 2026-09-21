@@ -81,6 +81,7 @@ in
           9123 # chrony exporter
           9153 # coredns
           9342 # frr_exporter
+          9586 # wireguard exporter
           12345 # alloy
           53 # resolver, when this site is the nearest node holding it
         ];
