@@ -706,6 +706,49 @@ in
       '';
     };
 
+    # IP traffic on each circuit by family and direction, as set element
+    # counters the nftables exporter publishes (see nftables-exporter.nix):
+    # a set per family and direction keyed by interface name, whose
+    # elements are this site's circuits, matched by a rule with no verdict.
+    # Counted on the wire, before the filter on the way in and after it on
+    # the way out, so the figure is what the carrier carried rather than
+    # what policy kept. The IGP's own PDUs are not IP and are not counted.
+    # Its own table because a site running its own ruleset has one too,
+    # and tables render beside a ruleset either way.
+    networking.nftables.tables.icl-accounting = {
+      family = "inet";
+      content =
+        let
+          circuits = lib.concatMapStringsSep ", " (link: ''"${link.interface}"'') (
+            lib.attrValues cfg.links
+          );
+          set = name: ''
+            set ${name} {
+              type ifname
+              counter
+              elements = { ${circuits} }
+            }
+          '';
+        in
+        ''
+          ${set "icl_in_v4"}
+          ${set "icl_in_v6"}
+          ${set "icl_out_v4"}
+          ${set "icl_out_v6"}
+          chain prerouting {
+            type filter hook prerouting priority filter; policy accept;
+            meta nfproto ipv4 iifname @icl_in_v4
+            meta nfproto ipv6 iifname @icl_in_v6
+          }
+
+          chain postrouting {
+            type filter hook postrouting priority filter; policy accept;
+            meta nfproto ipv4 oifname @icl_out_v4
+            meta nfproto ipv6 oifname @icl_out_v6
+          }
+        '';
+    };
+
     # Both ends of a transiting flow are ours, so the test is our own space
     # on each side. The wildcard admits a circuit to a new site without a
     # second place to remember.

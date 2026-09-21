@@ -225,6 +225,22 @@ let
             target_label = "address";
             replacement = "$2";
           })
+          # The circuit accounting sets (see modules/interconnect.nix):
+          # icl_<direction>_v<family>, keyed by the circuit's interface.
+          # afi as the FRR exporter labels an address family, since family
+          # here is already nftables' table family.
+          (split "set" "icl_(in|out)_v([46])" {
+            target_label = "direction";
+            replacement = "$1";
+          })
+          (split "set" "icl_(in|out)_v([46])" {
+            target_label = "afi";
+            replacement = "ipv$2";
+          })
+          (split "element" "(icl-.+)" {
+            target_label = "device";
+            replacement = "$1";
+          })
         ];
     };
   });
