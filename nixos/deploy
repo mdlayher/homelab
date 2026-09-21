@@ -16,10 +16,13 @@ fi
 
 if [[ $1 == --all ]]; then
   # Ordered by hand, because blast radius is a judgement: the monitor first,
-  # then the edge, which has no clients and whose site holds nothing else,
-  # then the server, then the router, which is the network. Checked against
-  # the flake below so a machine cannot be left out of --all by omission.
-  hosts=(monitnerr-1 edge-pdx servnerr-4 routnerr-3)
+  # then the edges, which have no clients and whose sites hold nothing else,
+  # then the server, then the router, which is the network. The edges are in
+  # a fixed order rather than a meaningful one: what matters is that a
+  # failure on the first stops the run before the second is touched. Checked
+  # against the flake below so a machine cannot be left out of --all by
+  # omission.
+  hosts=(monitnerr-1 edge-iad edge-pdx servnerr-4 routnerr-3)
   all_requested=yes
 else
   hosts=("$1")
