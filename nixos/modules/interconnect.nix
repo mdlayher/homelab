@@ -727,10 +727,11 @@ in
         #
         # isisd schedules SPF on every LSP update with a new sequence
         # number, content compared or not, so the LSP refreshes of routers
-        # restarted by one deploy arrive as a burst every quarter hour. The
-        # RFC 8405 delay, at that RFC's suggested values, folds a burst into
-        # a run or two and backs off under sustained churn, while a lone
-        # change still computes within its initial delay.
+        # restarted by one deploy arrive as a burst every quarter hour, a
+        # run per refresh. The RFC 8405 delay, at that RFC's suggested
+        # values, does not merge those: the refreshes land minutes apart
+        # and its windows are sub-second. It backs off under sustained
+        # churn, and a lone change still computes within its initial delay.
         #
         # The overload bit for a while after isisd starts, which every
         # deploy does: a router which has just formed its adjacencies
