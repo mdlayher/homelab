@@ -14,6 +14,11 @@ module "pdx" {
   vpc_cidr    = "10.80.0.0/16"
   subnet_cidr = "10.80.0.0/24"
 
+  # The zone this site was placed in, read from its instance metadata; the
+  # module refuses a pin that disagrees with the subnet rather than moving
+  # it.
+  availability_zone = "us-west-2a"
+
   carrier_ports = ["51120", "51121", "51230"]
 
   ssh_public_key      = local.ssh_public_key
@@ -21,23 +26,11 @@ module "pdx" {
   instance_type       = lookup(var.instance_types, "pdx", "t3.small")
 }
 
-# Which zones in this region offer the instance type, since not all of them
-# do: us-east-1e has no t3, and a subnet with no zone is placed by AWS
-# wherever it likes -- the instance then fails to launch in a zone that
-# cannot hold it. Asked rather than named, so the answer stays true when the
-# type or the region changes. pdx names no zone: it was placed before this
-# existed, and naming one now would replace its subnet and its instance.
-data "aws_ec2_instance_type_offerings" "iad" {
-  provider = aws.iad
-
-  location_type = "availability-zone"
-
-  filter {
-    name   = "instance-type"
-    values = [local.iad_instance_type]
-  }
-}
-
+# Each site names the zone it is in. Not every zone offers every instance
+# type (us-east-1e has no t3), and a subnet with no zone is placed by AWS
+# wherever it likes, so a new site names one that offers its type before
+# the first apply. After that the pin is a record: the module refuses one
+# that disagrees with the subnet rather than moving it.
 module "iad" {
   source    = "./modules/site"
   providers = { aws = aws.iad }
@@ -46,13 +39,11 @@ module "iad" {
   vpc_cidr    = "10.81.0.0/16"
   subnet_cidr = "10.81.0.0/24"
 
-  # Sorted so the choice is stable across plans rather than following
-  # whatever order the API answered in.
-  availability_zone = sort(data.aws_ec2_instance_type_offerings.iad.locations)[0]
+  availability_zone = "us-east-1a"
 
   carrier_ports = ["51130", "51131", "51230"]
 
   ssh_public_key      = local.ssh_public_key
   ssh_bootstrap_cidrs = lookup(var.ssh_bootstrap_cidrs, "iad", [])
-  instance_type       = local.iad_instance_type
+  instance_type       = lookup(var.instance_types, "iad", "t3.small")
 }

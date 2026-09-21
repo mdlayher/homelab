@@ -1,8 +1,4 @@
 locals {
-  # Named once: the zone lookup below has to filter on the same type the
-  # instance is created with, or it answers for a different one.
-  iad_instance_type = lookup(var.instance_types, "iad", "t3.small")
-
   # Bootstrap access only: the NixOS AMI takes its root key from instance
   # metadata, and the first nixos/deploy replaces it with the real user from
   # nixos/modules/common.nix. Keep this equal to the key there.

@@ -54,6 +54,20 @@ resource "aws_subnet" "this" {
   availability_zone = var.availability_zone
 
   tags = { Name = var.site }
+
+  # The zone is chosen once, at creation. A subnet cannot move, so a
+  # different value later would replace it and the instance inside it;
+  # ignoring the attribute makes that impossible, and the postcondition
+  # makes a pin that disagrees with the subnet a plan failure naming the
+  # real zone rather than a silent lie.
+  lifecycle {
+    ignore_changes = [availability_zone]
+
+    postcondition {
+      condition     = var.availability_zone == null || self.availability_zone == var.availability_zone
+      error_message = "subnet ${var.site} is in ${self.availability_zone}, not the pinned ${var.availability_zone}; pin the zone it is in"
+    }
+  }
 }
 
 resource "aws_internet_gateway" "this" {

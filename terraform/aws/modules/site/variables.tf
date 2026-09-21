@@ -26,13 +26,13 @@ variable "availability_zone" {
   type        = string
   default     = null
   description = <<-EOT
-    The zone to place the subnet in. Null leaves the choice to AWS, which is
-    what a site created before this existed already has: naming a zone for
-    such a site would replace its subnet, and the instance inside it.
-
-    Worth naming for a new site, because not every zone offers every
-    instance type: us-east-1e has no t3, and a subnet placed there takes the
-    instance down with it at launch.
+    The zone the subnet is in. Named before the first apply, because not
+    every zone offers every instance type: us-east-1e has no t3, and a
+    subnet placed there takes the instance down with it at launch. After
+    that it is a record of where the site landed: the subnet ignores a
+    changed value, since a subnet cannot move, and a pin that disagrees
+    with it fails the plan naming the real zone. Null leaves the choice to
+    AWS and records nothing.
   EOT
 }
 
