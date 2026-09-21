@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -76,6 +77,9 @@ let
       } }
       add element inet filter tailscale_v4 { ${forwards (ts: "${ts.host.ipv4} . ${toString ts.port}")} }
       add element inet filter tailscale_v6 { ${forwards (ts: "${ts.host.gua} . ${toString ts.port}")} }
+      ${lib.optionalString (icl && iclServices != [ ]) "add element inet filter icl_services_v6 { ${
+        lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
+      } }"}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 
@@ -120,6 +124,16 @@ let
   # are raw GRE on whichever interface reaches the far end rather than UDP
   # to a port on the WAN. Only a same-site link is built that way.
   iclBare = lib.any (link: link.carrier == null) (lib.attrValues interconnect.links);
+
+  # Services at this site a far site initiates toward, by the host holding
+  # the role and the port that host's own configuration listens on: every
+  # edge's Alloy pushes its journal to Loki on each server role holder, the
+  # way modules/alloy.nix names them. The addresses are inventory secrets,
+  # so they reach the ruleset through the rendered set below.
+  iclServices = map (server: {
+    host = inventory.hosts.${server};
+    port = inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port;
+  }) inventory.roles.server;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -254,7 +268,10 @@ in
         counter wan_forward_drop {}
         counter dn42_input_drop {}
         counter dn42_forward_drop {}
-        ${lib.optionalString icl "counter icl_input_drop {}"}
+        ${lib.optionalString icl ''
+          counter icl_input_drop {}
+          counter icl_forward_drop {}
+        ''}
         counter dn42_inbound_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
@@ -273,6 +290,14 @@ in
         set tailscale_v6 {
           type ipv6_addr . inet_service
         }
+
+        ${lib.optionalString icl ''
+          # Services at this site a far site initiates toward, by host
+          # address and port; see forward_icl.
+          set icl_services_v6 {
+            type ipv6_addr . inet_service
+          }
+        ''}
 
         # Drop packets from physical LANs whose source address does not belong
         # on the interface they arrived on. The kernel exempts DHCP/DAD
@@ -429,7 +454,8 @@ in
         ${lib.optionalString icl ''
           # From our other sites to the router itself. Both ends are ours,
           # but the wire carries dn42 too, so this stays narrow: the iBGP
-          # session, its BFD, and resolver access on our own address. An
+          # session, its BFD, the resolver on our own address, and the
+          # anycast clock. An
           # IGP which runs on the data link (IS-IS) never reaches this
           # family at all; one which runs over IP would need a rule here.
           chain input_icl {
@@ -439,6 +465,10 @@ in
             udp dport $bfd_control counter accept comment "router interconnect BFD"
             ip daddr $site4 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
             ip6 daddr $site6 meta l4proto { tcp, udp } th dport $dns counter accept comment "router interconnect DNS"
+            # The anycast address alone: a client at another site whose
+            # nearest node holding it is this router, on the same terms
+            # the edges admit it from a circuit.
+            ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
             ip6 daddr $loopback6 tcp dport $http counter accept comment "router interconnect page"
 
             counter name icl_input_drop drop
@@ -558,6 +588,15 @@ in
           # different peer.
           iifname "dn42e-*" oifname "dn42e-*" counter accept comment "dn42 transit"
 
+          ${lib.optionalString icl ''
+            # Site traffic passing between circuits, for the same reason:
+            # a flow whose return takes another circuit or another site is
+            # seen here in one direction only, and the invalid drop would
+            # discard it. Both ends of such a flow are ours, so the test is
+            # our own space on each side.
+            iifname "icl-*" oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "site transit between circuits"
+            iifname "icl-*" oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "site transit between circuits"
+          ''}
           ct state invalid counter drop
 
           iifname $wans jump forward_wan
@@ -590,14 +629,19 @@ in
             iifname $restricted_lans oifname "icl-*" counter name restricted_forward_drop drop comment "restricted LANs to another site"
 
             # The interconnect is classified by address, not by interface:
-            # our own ULA crosses it as LAN traffic, dn42 space crosses it
-            # under dn42's own rules, and anything else matches nothing and
-            # meets this chain's drop. Placed above the dn42 drop below so
-            # that transit to another site is not caught by it.
+            # our own space crosses it as site traffic, dn42 space crosses
+            # it under dn42's own rules, and anything else matches nothing
+            # and meets this chain's drop. Placed above the dn42 drop below
+            # so that transit to another site is not caught by it.
             #
-            iifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site in"
+            # Inbound, a source in our own space is not by itself a trusted
+            # party: every segment at another site draws from that prefix,
+            # restricted ones included. What a far site may initiate toward
+            # this one is named per service in forward_icl; what this site
+            # initiates across a circuit returns as established.
+            iifname "icl-*" ip daddr $site4 jump forward_icl
+            iifname "icl-*" ip6 daddr $site6 jump forward_icl
             oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site out"
-            iifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site in"
             oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site out"
 
             # Transit is dn42 reaching dn42. Our own space is never its
@@ -638,6 +682,22 @@ in
 
           counter name dn42_inbound_drop drop
         }
+
+        ${lib.optionalString icl ''
+          # From another site into this one's LANs: pings and ICMP errors,
+          # and the services a far site is expected to initiate toward, by
+          # host and port from the set the inventory renders. Logged, since
+          # a service missing from that set is the likeliest thing to be
+          # looked for here.
+          chain forward_icl {
+            jump icmp_lan
+
+            ip6 daddr . tcp dport @icl_services_v6 counter accept comment "site services from a circuit"
+
+            limit rate 10/minute burst 20 packets log prefix "nft forward icl drop: "
+            counter name icl_forward_drop drop
+          }
+        ''}
 
         # From the internet to LANs: only ICMP errors and Tailscale to
         # specific hosts; silently drop the rest.

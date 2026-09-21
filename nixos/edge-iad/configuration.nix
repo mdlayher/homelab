@@ -91,15 +91,6 @@ in
         iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
         iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} udp dport { ${ports udp} } accept comment "site services across the circuit"
       '') (lib.attrValues config.homelab.interconnect.links);
-
-    # Transit between circuits, which is what this machine is on the ring:
-    # a site reaching another through it rather than directly. Both ends of
-    # a transiting flow are ours, so the test is our own space on each side.
-    # The wildcard admits a circuit to a new site without a second place to
-    # remember.
-    extraForwardRules = ''
-      iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site traffic in transit"
-    '';
   };
 
   # Internal names resolve at the anycast resolver address, which is this

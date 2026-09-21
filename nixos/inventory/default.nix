@@ -72,16 +72,16 @@
   # routes to them.
   carrierPrefix = "fd9e:1a04:f01d:fe00::/56";
 
+  # SRv6 locators, a /64 per node. Nothing consumes it yet; allocated here
+  # so a later carve-out cannot take it, and so the block a node's locator
+  # comes from is named in the one place every other range is.
+  srv6Prefix = "fd9e:1a04:f01d:fd00::/56";
+
   # One /127 per link, addressing the GRETAP that runs inside the carrier.
   # Routes point at the interconnect rather than the tunnel beneath it, so
   # this is the address a router sources from toward another site; without
   # one the choice falls to whatever else the machine happens to hold.
   circuitPrefix = "fd9e:1a04:f01d:fc00::/56";
-
-  # SRv6 locators, a /64 per node. Nothing consumes it yet; allocated here
-  # so a later carve-out cannot take it, and so the block a node's locator
-  # comes from is named in the one place every other range is.
-  srv6Prefix = "fd9e:1a04:f01d:fb00::/56";
 
   # Links joining two routers at one site. The interconnect module derives a
   # link's addresses from the two sites' indices, which collapses when both

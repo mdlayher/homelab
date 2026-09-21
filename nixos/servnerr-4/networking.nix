@@ -29,6 +29,12 @@ let
     ];
     metric = 512;
   };
+
+  # The link to this site's router (see interconnect.nix): this end's
+  # interface, and the router's carrier address the GRETAP arrives from.
+  siteLink = inventory.siteLinks.${config.homelab.site};
+  icl = siteLink.${config.networking.hostName}.interface;
+  routerCarrier = siteLink.${lib.head inventory.roles.router}.carrier;
 in
 {
   # A machine with a dn42 interface trusts the dn42 CA; see dn42 above.
@@ -47,44 +53,17 @@ in
     # their own ports, and loopback is free, which covers Prometheus scraping
     # this machine's exporters and probing its services. The LAN may reach
     # only the ports below.
+    #
+    # The nftables backend, which the interconnect module asserts: its
+    # rules render only there, and so does a rule naming a source address.
+    nftables.enable = true;
     firewall = {
       trustedInterfaces = [ "ts0" ];
 
-      # The ports below open on every interface, the dn42 VLAN included
-      # (see dn42 above). dn42 at large never reaches them: the router's
-      # forward_dn42i chain (its nftables.nix) admits only ICMP and
-      # established flows. The VLAN itself it never sees: the development
-      # container is on-link there, so this drop guards against a neighbor
-      # and backs the router. Nothing new inbound, like the router's WANs;
-      # the host's own flows return as established, and neighbor discovery
-      # is untracked. iptables backend: extraInputRules is a no-op and
-      # extraCommands run after the accepts, so insert at the head. The
-      # bridge holds the address, not its VLAN port.
-      extraCommands = ''
-        ip46tables -I nixos-fw 1 -i br-dn42i-dev0 -m conntrack --ctstate NEW,INVALID -j DROP
-        ip6tables -I nixos-fw 1 -i mgmt0 -p gre -s ${
-          inventory.siteLinks.${config.homelab.site}.${lib.head inventory.roles.router}.carrier
-        } -j ACCEPT
-
-        # The ports above are opened on every interface, and they are meant
-        # for the management LAN. A circuit reaches every segment at every
-        # site, so nothing new arrives over one; ICMPv6 still does, which is
-        # what path MTU discovery and traces need. Only new flows are
-        # dropped, so what this machine starts across the circuit still
-        # returns, and the resolver crosses because a client whose nearest
-        # node is elsewhere is answered here. The link is addressed v6 only.
-        ip6tables -I nixos-fw 1 -i ${
-          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
-        } -p ipv6-icmp -j ACCEPT
-        ip6tables -I nixos-fw 2 -i ${
-          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
-        } -p tcp --dport 53 -j ACCEPT
-        ip6tables -I nixos-fw 3 -i ${
-          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
-        } -p udp --dport 53 -j ACCEPT
-        ip6tables -I nixos-fw 4 -i ${
-          inventory.siteLinks.${config.homelab.site}.${config.networking.hostName}.interface
-        } -m conntrack --ctstate NEW -j DROP
+      # The GRETAP to this site's router, arriving as raw GRE on the LAN
+      # which carries it, from the router's carrier address alone.
+      extraInputRules = ''
+        iifname "mgmt0" ip6 saddr ${routerCarrier} meta l4proto gre accept comment "bare interconnect GRE"
       '';
 
       allowedTCPPorts = [
@@ -100,6 +79,41 @@ in
         5514
         53
       ];
+    };
+
+    # What may start a flow toward this machine on two of its interfaces,
+    # decided ahead of the firewall: its chain accepts the ports above on
+    # every interface before any rule of ours, so a drop has to come
+    # earlier. A drop here is final; an accept only ends this chain, and
+    # the firewall's own then decides.
+    #
+    # The dn42 VLAN (see dn42 above): dn42 at large never reaches those
+    # ports, since the router's forward_dn42i chain (its nftables.nix)
+    # admits only ICMP and established flows, but the development
+    # container is on-link there, so this guards against a neighbor and
+    # backs the router. Nothing new inbound, like the router's WANs; the
+    # host's own flows return as established, and neighbor discovery is
+    # untracked. The bridge holds the address, not its VLAN port.
+    #
+    # The circuit to this site's router: those ports are meant for the
+    # management LAN, and a circuit reaches every segment at every site, so
+    # nothing new arrives over one. ICMPv6 still does, which is what path
+    # MTU discovery and traces need, and so does the resolver, since a
+    # client whose nearest node is elsewhere is answered here. The link is
+    # addressed v6 only.
+    nftables.tables.input-guard = {
+      family = "inet";
+      content = ''
+        chain input {
+          type filter hook input priority filter - 1; policy accept;
+
+          iifname "br-dn42i-dev0" ct state { new, invalid } drop comment "nothing new from the dn42 VLAN"
+
+          iifname "${icl}" meta l4proto ipv6-icmp accept
+          iifname "${icl}" meta l4proto { tcp, udp } th dport 53 accept comment "resolver across the circuit"
+          iifname "${icl}" ct state new drop comment "nothing else new across the circuit"
+        }
+      '';
     };
   };
 

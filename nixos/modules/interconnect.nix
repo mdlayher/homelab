@@ -550,6 +550,16 @@ in
           !cfg.isis.enable || lib.all (link: cfg.isis.lspMtu < link.mtu) (lib.attrValues cfg.links);
         message = "interconnect isis.lspMtu must be smaller than every link's mtu";
       }
+      {
+        # The transit rules below reach a site through the NixOS firewall,
+        # and only its nftables backend renders them: on iptables they are
+        # silently inert. A site running a ruleset of its own writes them
+        # itself.
+        assertion =
+          config.networking.nftables.ruleset != ""
+          || (config.networking.firewall.enable && config.networking.nftables.enable);
+        message = "interconnect needs the NixOS firewall on its nftables backend, or a full nftables ruleset of the site's own";
+      }
     ];
 
     # The carriers' listen ports, for a site whose firewall is the NixOS
@@ -568,6 +578,32 @@ in
     # and checks spoofed sources on its LAN ports, where the expected
     # interface is known.
     networking.firewall.checkReversePath = lib.mkDefault "loose";
+
+    # Site traffic passing between circuits, on the same kind of site. Its
+    # forward chain drops conntrack's invalid state before any rule of ours
+    # runs, and a flow whose return takes another circuit or another site
+    # is seen here in one direction only, which is what invalid means to
+    # conntrack. So such traffic is not tracked: an untracked packet takes
+    # the chain's untracked branch to the accept below. The destination
+    # test keeps what is for this machine tracked and under the input
+    # rules. A site running its own ruleset orders its accept above the
+    # drop instead.
+    networking.nftables.tables.icl-transit = lib.mkIf config.networking.firewall.enable {
+      family = "inet";
+      content = ''
+        chain prerouting {
+          type filter hook prerouting priority raw; policy accept;
+          iifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} fib daddr type != local notrack
+        }
+      '';
+    };
+
+    # Both ends of a transiting flow are ours, so the test is our own space
+    # on each side. The wildcard admits a circuit to a new site without a
+    # second place to remember.
+    networking.firewall.extraForwardRules = lib.mkIf config.networking.firewall.enable ''
+      iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site transit between circuits"
+    '';
 
     # isisd alongside bird, not instead of it. The two carry disjoint
     # prefixes -- our own topology here, the dn42 table there -- so neither
