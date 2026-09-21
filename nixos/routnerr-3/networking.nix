@@ -12,7 +12,10 @@ let
   #
   # The tables hold a copy of each WAN's gateway rather than taking it away
   # from main, which still carries the defaults everything else on this
-  # router uses.
+  # router uses. A WAN with one address family holds an unreachable default
+  # for the other, so a marked packet of that family fails in its own table
+  # rather than falling through to main and leaving by the other WAN, which
+  # is the collapse onto one path the marks exist to prevent.
   wan0 = {
     mark = 1;
     table = 100;
@@ -24,11 +27,11 @@ let
 
   # Rules sit with the WAN they steer to, so a WAN going away takes its rule
   # with it and the marked carrier fails rather than quietly falling back.
-  markRule = wan: family: [
+  markRule = wan: [
     {
       FirewallMark = wan.mark;
       Table = wan.table;
-      Family = family;
+      Family = "both";
       Priority = 100;
     }
   ];
@@ -256,9 +259,9 @@ in
         UseCaptivePortal = false;
       };
 
-      # Both families: this is the only WAN with IPv6, so the carrier pinned
-      # here is the one that can use it.
-      routingPolicyRules = markRule wan0 "both";
+      # This is the only WAN with IPv6, so the carrier pinned here is the
+      # one that can use it.
+      routingPolicyRules = markRule wan0;
       routes = [
         {
           Gateway = "_dhcp4";
@@ -288,12 +291,17 @@ in
           Gateway = "216.82.20.65";
           Table = wan1.table;
         }
+        # This WAN has no IPv6 at all. A carrier marked for it names an
+        # IPv4-only endpoint, and should that name ever resolve to IPv6
+        # the packet meets this rather than main's default out wan0.
+        {
+          Destination = "::/0";
+          Type = "unreachable";
+          Table = wan1.table;
+        }
       ];
 
-      # IPv4 alone, because this WAN has no IPv6 at all. That is also why
-      # the carrier marked for it names an IPv4-only endpoint: a rule can
-      # steer a packet to this table, but nothing here could route it.
-      routingPolicyRules = markRule wan1 "ipv4";
+      routingPolicyRules = markRule wan1;
     };
 
     # Physical management LAN. For physical LANs, we have to make sure to match
