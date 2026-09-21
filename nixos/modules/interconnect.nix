@@ -698,6 +698,13 @@ in
         in
         # The first lines are what the FRR module writes around
         # services.frr.config, which configFile replaces wholesale.
+        #
+        # The overload bit for a while after isisd starts, which every
+        # deploy does: a router which has just formed its adjacencies
+        # attracts transit before its database and routes have settled,
+        # and on a ring every edge is a transit node. With the bit set the
+        # others still reach what this router advertises itself and route
+        # around it for everything else, until it clears.
         ''
           hostname ${config.networking.hostName}
           service integrated-vtysh-config
@@ -708,6 +715,7 @@ in
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
            log-adjacency-changes
+           set-overload-bit on-startup 60
            domain-password md5 ${password} authenticate snp validate
           ${lib.optionalString (
             cfg.isis.aggregate != null
