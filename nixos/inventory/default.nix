@@ -297,7 +297,6 @@
       # Home VLAN.
       lan0 = {
         vlan = 10;
-        legacy = true;
         trusted = true;
         role = "lan";
         hosts = {
