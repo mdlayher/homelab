@@ -62,8 +62,7 @@ VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).
 Every address and MAC lives in `inventory/secrets.yaml`. Prefixes are plain
 data in `inventory/default.nix`: the site ULA /48 and the private IPv4 /8,
 from which each subnet's /64 and /24 follow by site index and VLAN. The ISP's
-GUA prefix is the one per-subnet secret, and a subnet marked `legacy` also
-keeps its IPv4 prefix there:
+GUA prefix is the one per-subnet secret:
 
 ```yaml
 subnets:

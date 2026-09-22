@@ -77,8 +77,8 @@ let
       SubnetId = lib.toLower (lib.toHexString ifi.vlan);
     };
     dhcpServerConfig = {
-      DefaultLeaseTimeSec = 300;
-      MaxLeaseTimeSec = 300;
+      DefaultLeaseTimeSec = 86400;
+      MaxLeaseTimeSec = 86400;
       PoolOffset = 50;
       # The anycast resolver first, held by whichever node is nearest and
       # withdrawn with its service (see modules/anycast.nix), then this
@@ -225,10 +225,6 @@ in
         }
         {
           Destination = inventory.privatePrefix4;
-          Type = "unreachable";
-        }
-        {
-          Destination = inventory.legacyPrefix4;
           Type = "unreachable";
         }
       ];

@@ -66,7 +66,6 @@ let
       "dn42"
       "d.f.ip6.arpa"
       "10.in-addr.arpa"
-      "168.192.in-addr.arpa"
     ]
     ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 31)
   );

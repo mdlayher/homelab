@@ -213,11 +213,10 @@ in
       define physical_lans = ${ifnames (lib.filter (ifi: ifi ? vlan) (trusted ++ restricted))}
 
       # Our own space, for classifying interconnect traffic: both come from
-      # the inventory, which explains why the v4 side is a whole /16 and
-      # what it must stay disjoint from.
+      # the inventory, which explains what each must stay disjoint from.
       define lab6 = ${inventory.labPrefix6}
       define carrier6 = ${inventory.carrierPrefix6}
-      define site4 = { ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }
+      define site4 = ${inventory.privatePrefix4}
       define site6 = ${inventory.ulaPrefix6}
       # dn42's whole space, for dn42 traffic passing between circuits.
       define dn42_v4 = ${inventory.dn42.prefix4}

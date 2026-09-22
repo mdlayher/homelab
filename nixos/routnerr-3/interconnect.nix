@@ -130,14 +130,9 @@ in
         # more specific LANs sort traffic out once it arrives, and anything
         # nobody holds meets the aggregate and is rejected here.
         aggregate6 = inventory.ulaPrefix6;
-        # Both IPv4 blocks: the scheme's, and the one the LANs still number
-        # from, which a far site must hold a route to before it can answer
-        # a LAN host at all. The unreachable routes they match are on lo
-        # (see networking.nix).
-        aggregate4 = [
-          inventory.privatePrefix4
-          inventory.legacyPrefix4
-        ];
+        # The IPv4 scheme's whole space, on the same terms. The
+        # unreachable route it matches is on lo (see networking.nix).
+        aggregate4 = [ inventory.privatePrefix4 ];
       };
     };
   };

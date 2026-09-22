@@ -137,9 +137,8 @@ let
     in
     "${base}${toString (lib.min a b * 10 + lib.max a b)}.${toString (2 * plane + end)}";
 
-  # Our own IPv4 space as the firewalls test for it: the scheme's block and
-  # the space the LANs still number from.
-  site4 = "{ ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }";
+  # Our own IPv4 space as the firewalls test for it.
+  site4 = inventory.privatePrefix4;
 
   # This router's IPv4 loopback, which zebra takes as its router ID so the
   # LSP's TE router ID is an address of ours rather than whichever
@@ -278,10 +277,9 @@ in
         default = [ ];
         description = ''
           The IPv4 prefixes this router originates on behalf of its whole
-          site, on the same terms as aggregate6, or none. Several rather
-          than one because the site's LANs number from a second block until
-          they move under the first, and a far site needs a route to a
-          source in either to answer it at all.
+          site, on the same terms as aggregate6, or none. A list rather than
+          one value because the dn42 module adds its VLANs' on-link blocks
+          here, which merge with the site's own.
         '';
       };
 

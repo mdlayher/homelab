@@ -18,9 +18,8 @@
 let
   inventory = config.homelab.inventory;
 
-  # Our own IPv4 space as the firewall tests for it: the scheme's block and
-  # the space the LANs still number from.
-  site4 = "{ ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }";
+  # Our own IPv4 space as the firewall tests for it.
+  site4 = inventory.privatePrefix4;
 in
 {
   imports = [

@@ -186,7 +186,6 @@ let
     [
       ulaRev
       "10.in-addr.arpa"
-      "168.192.in-addr.arpa"
     ]
     ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 19 ++ lib.range 24 31)
   );

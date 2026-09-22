@@ -30,12 +30,8 @@ let
 
   # A subnet's ULA and IPv4 prefixes are built from the site index and its
   # VLAN (see mkInterface below); only the ISP-delegated GUA prefix is a
-  # secret, and the IPv4 prefix of a subnet still numbered from
-  # legacyPrefix4.
-  subnetKeys =
-    name: subnet:
-    [ "subnets/${name}/gua_prefix" ]
-    ++ lib.optional (subnet.legacy or false) "subnets/${name}/ipv4_prefix";
+  # secret.
+  subnetKeys = name: _: [ "subnets/${name}/gua_prefix" ];
 
   # Interface identifier secret keys needed for a host's IPv6 mode.
   iidKeys =
@@ -110,16 +106,11 @@ let
       # The fourth hextet of the ULA and the third octet of the IPv4 prefix
       # read as decimal SSVV and S.V, site index then VLAN, the layout
       # described in nixos/inventory/default.nix. Written compressed, as
-      # every address built from them is. A subnet marked legacy still
-      # numbers its IPv4 from legacyPrefix4, and that prefix is a secret.
+      # every address built from them is.
       ulaPrefix = "${lib.removeSuffix "::/48" inventory.ulaPrefix6}:${
         toString (100 * siteCfg.index + subnet.vlan)
       }";
-      ipv4Prefix =
-        if subnet.legacy or false then
-          placeholder "subnets/${name}/ipv4_prefix"
-        else
-          "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString siteCfg.index}.${toString subnet.vlan}";
+      ipv4Prefix = "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString siteCfg.index}.${toString subnet.vlan}";
       guaPrefix = placeholder "subnets/${name}/gua_prefix";
       ifi = {
         inherit name;
@@ -228,9 +219,8 @@ in
       are the exception and are plain data, since each names a range rather
       than an address: ulaPrefix6 and privatePrefix4, the spaces every site is
       drawn from, each interface's ULA and IPv4 prefix built from those by
-      site index and VLAN (its GUA prefix stays a placeholder, and so does
-      the IPv4 prefix of a subnet marked legacy), and the carve-outs from
-      the ULA -- labPrefix6,
+      site index and VLAN (its GUA prefix stays a placeholder), and the
+      carve-outs from the ULA -- labPrefix6,
       carrierPrefix6, loopbackPrefix6, circuitPrefix6, locatorPrefix6 and
       anycastPrefix6, plus
       anycast, the service address drawn from that last one for each
@@ -319,7 +309,6 @@ in
       inherit (inventory)
         ulaPrefix6
         privatePrefix4
-        legacyPrefix4
         labPrefix6
         labPrefix4
         carrierPrefix6

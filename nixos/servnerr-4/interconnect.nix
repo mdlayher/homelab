@@ -73,7 +73,6 @@ in
         ];
         kernelDeny4 = [
           inventory.privatePrefix4
-          inventory.legacyPrefix4
           "${inventory.dn42.net4} le 32"
         ];
       };

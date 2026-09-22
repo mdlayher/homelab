@@ -3,9 +3,8 @@
 # Addresses and MACs are secrets in ./secrets.yaml (sops) and are rendered
 # into configuration at activation time by nixos/modules/inventory.nix, which
 # also builds each subnet's ULA and IPv4 prefix from the site index and VLAN.
-# A subnet marked legacy still numbers its IPv4 from legacyPrefix4, and that
-# prefix is a secret. This file only declares what exists and how each
-# host's IPv6 addresses are formed:
+# This file only declares what exists and how each host's IPv6 addresses are
+# formed:
 #
 # - "eui64":        the IID is derived from the MAC (switches, APs, IoT).
 #                   Compute it with lib.nix, see nixos/README.md.
@@ -41,11 +40,6 @@
   # what tells our own traffic from dn42's on a link carrying both (see the
   # router's nftables.nix).
   privatePrefix4 = "10.0.0.0/8";
-
-  # The space the site LANs are drawn from until they move under
-  # privatePrefix4. Classified as ours alongside it wherever the firewalls
-  # test for our own space.
-  legacyPrefix4 = "192.168.0.0/16";
 
   # dn42, the other network the routers carry. Its whole space, as bird's
   # import filters bound it (see nixos/modules/dn42.nix): what a firewall
