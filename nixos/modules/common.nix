@@ -443,32 +443,20 @@ in
         pathConfig.PathChanged = "/nix/var/nix/profiles/system";
       };
       services.update-notify = lib.mkIf isHost {
-        description = "Discord system update notification";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
+        description = "Queue a Discord system update notification";
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
           StateDirectory = "update-notify";
-          Restart = "on-failure";
-          RestartSec = "1min";
         };
         # An embed rather than plain content: Discord only renders markdown
         # links inside embeds, and the commit link is the point.
         #
-        # The path unit fires in the middle of activation, when a changed
-        # resolver (CoreDNS on the router) has been stopped and not yet
-        # started, so the first attempt can fail to resolve the webhook's
-        # host. curl retries cover that gap: resolver errors are not retried
-        # by default, hence --retry-all-errors, and the body is read from
-        # stdin once up front, so a retry resends it. Without this the unit
-        # fails, the switch reports a failed unit, and the announcement
-        # waits for the restart a minute later.
-        #
-        # The window has to outlast the resolver, not just the restart:
-        # names stay unresolvable for about ten seconds after CoreDNS logs
-        # its startup banner. A window that expires first costs one restart
-        # per deploy, and enough deploys in a day trip SystemdUnitRestarting.
+        # This writes a spool file and returns; update-notify-drain owns the
+        # sending. The path unit fires in the middle of activation, while a
+        # changed resolver has been stopped and not yet started, so anything
+        # reaching the network here holds the switch open until names
+        # resolve again, and fails the deploy if they never do.
         script = ''
           current="$(readlink /nix/var/nix/profiles/system)"
           state=/var/lib/update-notify/last
@@ -489,13 +477,81 @@ in
             *) desc="$desc · [''${rev:0:7}](https://github.com/mdlayher/homelab/commit/$rev)" ;;
           esac
 
+          queue=/var/lib/update-notify/queue
+          mkdir -p "$queue"
+          # Nanoseconds since the epoch, so the names sort in activation
+          # order. The .tmp suffix keeps a half-written file out of the
+          # drain's glob.
+          out="$queue/$(date -u +%s%N).json"
           ${pkgs.jq}/bin/jq -cn --arg title ${config.networking.hostName} --arg desc "$desc" \
-            '{embeds: [{title: $title, description: $desc}]}' \
-            | ${pkgs.curl}/bin/curl -sfS -m 10 --retry 10 --retry-delay 6 \
-                --retry-max-time 120 --retry-all-errors \
-                -H 'Content-Type: application/json' -d @- \
-                "$(cat ${config.sops.secrets."discord/ops_webhook_url".path})"
+            '{embeds: [{title: $title, description: $desc}]}' > "$out.tmp"
+          mv "$out.tmp" "$out"
           echo "$current" > "$state"
+        '';
+      };
+
+      # Sending, separated from the switch. The path unit starts a drain as
+      # soon as anything is spooled, so the usual case is immediate; the
+      # timer is what retries an announcement the network was not up for.
+      paths.update-notify-drain = lib.mkIf isHost {
+        description = "Watch for queued system update notifications";
+        wantedBy = [ "multi-user.target" ];
+        pathConfig.PathExistsGlob = "/var/lib/update-notify/queue/*.json";
+      };
+      timers.update-notify-drain = lib.mkIf isHost {
+        description = "Retry queued system update notifications";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "5m";
+          OnUnitActiveSec = "5m";
+        };
+      };
+      services.update-notify-drain = lib.mkIf isHost {
+        description = "Send queued system update notifications";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          StateDirectory = "update-notify";
+        };
+        # Oldest first, stopping at the first failure so announcements keep
+        # the order their generations were activated in. It exits zero even
+        # then: a queue that is not moving is reported by the age metric
+        # below, where a failed unit would also count as a restart and raise
+        # a second, less specific alert.
+        script = ''
+          queue=/var/lib/update-notify/queue
+          mkdir -p "$queue"
+          url="$(cat ${config.sops.secrets."discord/ops_webhook_url".path})"
+
+          for f in "$queue"/*.json; do
+            [ -e "$f" ] || break
+            ${pkgs.curl}/bin/curl -sfS -m 10 --retry 3 --retry-delay 2 \
+              --retry-all-errors -H 'Content-Type: application/json' \
+              -d @"$f" "$url" || break
+            rm -f "$f"
+          done
+
+          depth=0
+          oldest=0
+          for f in "$queue"/*.json; do
+            [ -e "$f" ] || break
+            depth=$((depth + 1))
+            if [ "$depth" -eq 1 ]; then
+              oldest=$(($(date -u +%s) - $(stat -c %Y "$f")))
+            fi
+          done
+
+          out=${config.homelab.textfileDir}/update-notify.prom
+          cat > "$out.tmp" <<METRICS
+          # HELP homelab_deploy_notify_queued Announcements spooled but not yet delivered to the ops channel.
+          # TYPE homelab_deploy_notify_queued gauge
+          homelab_deploy_notify_queued $depth
+          # HELP homelab_deploy_notify_oldest_seconds Age of the oldest undelivered announcement, zero when none is queued.
+          # TYPE homelab_deploy_notify_oldest_seconds gauge
+          homelab_deploy_notify_oldest_seconds $oldest
+          METRICS
+          mv "$out.tmp" "$out"
         '';
       };
 

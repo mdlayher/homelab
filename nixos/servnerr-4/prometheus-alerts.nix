@@ -49,6 +49,7 @@ let
   # The IS-IS sample, matched on its name so the textfile directory's path
   # is not repeated here; node_exporter labels each file by its full path.
   isisTextfile = raw ".*/isis\\.prom";
+  notifyTextfile = raw ".*/update-notify\\.prom";
 
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
@@ -556,6 +557,22 @@ in
           expr = "nixos_system_unpersisted == 1";
           for = "1h";
           annotations.summary = "{{ $labels.instance }} has run a system other than its profile's for over an hour: a test deploy a reboot would revert, or a boot deploy awaiting one.";
+        }
+        # update-notify spools each announcement and returns, so a deploy no
+        # longer waits on a chat webhook (see nixos/modules/common.nix). That
+        # trades a slow deploy for a silent one unless something watches the
+        # spool, since nothing else notices an announcement never delivered.
+        # The drain rewrites its metrics file on every run, empty queue
+        # included, so the file's own age catches a drainer that stopped
+        # running and left the gauge frozen at its last value.
+        {
+          alert = "DeployNotifyUndelivered";
+          expr = ''
+            homelab_deploy_notify_oldest_seconds > 1800
+            or time() - node_textfile_mtime_seconds{file=~${notifyTextfile}} > 1800
+          '';
+          for = "5m";
+          annotations.summary = "{{ $labels.instance }} has not delivered a system update announcement to the ops channel in over 30 minutes.";
         }
         # NVMe wear estimate: 100% is the rated endurance, and the value may
         # keep counting past it. 80% leaves months of lead time at current
