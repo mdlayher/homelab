@@ -281,6 +281,7 @@
         role = "mgmt";
         hosts = {
           ap-basement = { };
+          ap-laundry = { };
           ap-livingroom = { };
           hass.ipv6 = "prefixstable";
           monitnerr-1.ipv6 = "eui64";
