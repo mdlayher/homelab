@@ -1,8 +1,10 @@
 # Exposes the network inventory (nixos/inventory/) to modules as
 # config.homelab.inventory. The structure comes from nixos/inventory/default.nix;
-# every address, prefix, and MAC is a sops placeholder for a value in
+# every address and MAC is a sops placeholder for a value in
 # nixos/inventory/secrets.yaml, so consumers must render it through
-# sops.templates rather than into the Nix store.
+# sops.templates rather than into the Nix store. Prefixes are plain data
+# built from the site index and VLAN, except a subnet's GUA prefix, which
+# the ISP delegates.
 {
   config,
   inventory,
@@ -26,11 +28,14 @@ let
   subnets = siteCfg.subnets or { };
   domain = "${site}.${inventory.zone}";
 
-  subnetKeys = name: [
-    "subnets/${name}/ipv4_prefix"
-    "subnets/${name}/ula_prefix"
-    "subnets/${name}/gua_prefix"
-  ];
+  # A subnet's ULA and IPv4 prefixes are built from the site index and its
+  # VLAN (see mkInterface below); only the ISP-delegated GUA prefix is a
+  # secret, and the IPv4 prefix of a subnet still numbered from
+  # legacyPrefix.
+  subnetKeys =
+    name: subnet:
+    [ "subnets/${name}/gua_prefix" ]
+    ++ lib.optional (subnet.legacy or false) "subnets/${name}/ipv4_prefix";
 
   # Interface identifier secret keys needed for a host's IPv6 mode.
   iidKeys =
@@ -59,7 +64,8 @@ let
   allKeys =
     lib.concatLists (
       lib.mapAttrsToList (
-        name: subnet: subnetKeys name ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
+        name: subnet:
+        subnetKeys name subnet ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
       ) subnets
     )
     # The private DNS zones the router answers itself, space-separated; see
@@ -101,8 +107,19 @@ let
   mkInterface =
     name: subnet:
     let
-      ipv4Prefix = placeholder "subnets/${name}/ipv4_prefix";
-      ulaPrefix = placeholder "subnets/${name}/ula_prefix";
+      # The fourth hextet of the ULA and the third octet of the IPv4 prefix
+      # read as decimal SSVV and S.V, site index then VLAN, the layout
+      # described in nixos/inventory/default.nix. Written compressed, as
+      # every address built from them is. A subnet marked legacy still
+      # numbers its IPv4 from legacyPrefix, and that prefix is a secret.
+      ulaPrefix = "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${
+        toString (100 * siteCfg.index + subnet.vlan)
+      }";
+      ipv4Prefix =
+        if subnet.legacy or false then
+          placeholder "subnets/${name}/ipv4_prefix"
+        else
+          "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString siteCfg.index}.${toString subnet.vlan}";
       guaPrefix = placeholder "subnets/${name}/gua_prefix";
       ifi = {
         inherit name;
@@ -174,7 +191,8 @@ let
     index: "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${lib.fixedWidthNumber 2 index}00::/56";
 
   # The same in IPv4: a site's /16 is its index in the second octet.
-  sitePrefix4 = index: "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString index}.0.0/16";
+  sitePrefix4 =
+    index: "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString index}.0.0/16";
 
   loopbacks = siteLoopbacks site siteCfg;
 
@@ -209,7 +227,10 @@ in
       Network inventory with addresses as sops placeholders. The prefixes
       are the exception and are plain data, since each names a range rather
       than an address: ulaPrefix and privatePrefix, the spaces every site is
-      drawn from, and the carve-outs from the ULA -- labPrefix6,
+      drawn from, each interface's ULA and IPv4 prefix built from those by
+      site index and VLAN (its GUA prefix stays a placeholder, and so does
+      the IPv4 prefix of a subnet marked legacy), and the carve-outs from
+      the ULA -- labPrefix6,
       carrierPrefix, loopbackPrefix6, circuitPrefix6, srv6Prefix and
       anycastPrefix6, plus
       anycast, the service address drawn from that last one for each
@@ -265,6 +286,12 @@ in
         # other way would silently produce prefixes that are not inside it.
         assertion = lib.hasSuffix "::/48" inventory.ulaPrefix;
         message = "inventory ulaPrefix must be written as a compressed /48, since site prefixes are built from it";
+      }
+      {
+        # A subnet's prefixes spell the VLAN in two decimal digits after
+        # the site index, so a larger id would run into the site's.
+        assertion = lib.all (subnet: subnet.vlan < 100) (lib.attrValues subnets);
+        message = "inventory subnet VLAN ids must be below 100, since subnet prefixes spell them in two digits";
       }
     ];
 

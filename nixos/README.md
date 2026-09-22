@@ -59,20 +59,20 @@ Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed, and
 VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).
-Every address, prefix, and MAC lives in `inventory/secrets.yaml`, except the
-site ULA /48, which is publicly registered and declared as plain data in
-`inventory/default.nix`:
+Every address and MAC lives in `inventory/secrets.yaml`. Prefixes are plain
+data in `inventory/default.nix`: the site ULA /48 and the private IPv4 /8,
+from which each subnet's /64 and /24 follow by site index and VLAN. The ISP's
+GUA prefix is the one per-subnet secret, and a subnet marked `legacy` also
+keeps its IPv4 prefix there:
 
 ```yaml
 subnets:
   lan0:
-    ipv4_prefix: 192.0.2             # router is .1
-    ula_prefix: fd00:1234:5678:10     # router is ::1
     gua_prefix: 2001:db8:0:a   # update if the ISP renumbers
 hosts:
   example:
     mac: 02:00:5e:00:53:01
-    ipv4: 192.0.2.13
+    ipv4: 10.1.10.13
     iid: 0:5eff:fe00:5301          # joined as "<prefix>:<iid>"
 ```
 

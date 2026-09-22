@@ -1,9 +1,11 @@
 # Network inventory: the public structure of subnets and hosts.
 #
-# Addresses, prefixes, and MACs are secrets in ./secrets.yaml (sops) and are
-# rendered into configuration at activation time by nixos/modules/inventory.nix.
-# This file only declares what exists and how each host's IPv6 addresses are
-# formed:
+# Addresses and MACs are secrets in ./secrets.yaml (sops) and are rendered
+# into configuration at activation time by nixos/modules/inventory.nix, which
+# also builds each subnet's ULA and IPv4 prefix from the site index and VLAN.
+# A subnet marked legacy still numbers its IPv4 from legacyPrefix, and that
+# prefix is a secret. This file only declares what exists and how each
+# host's IPv6 addresses are formed:
 #
 # - "eui64":        the IID is derived from the MAC (switches, APs, IoT).
 #                   Compute it with lib.nix, see nixos/README.md.
@@ -35,9 +37,9 @@
   # downward from the top as the ULA carve-outs do, and 10.64.0.0/10 is
   # reserved for the cloud sites' VPC internals (10.80/16 at pdx, 10.81/16
   # at iad), which caps the site index at 63. Disjoint from dn42's
-  # 172.20.0.0/14 and from the tailnet's 100.64.0.0/10. The whole /8 rather
-  # than the subnets, which are secrets: it tells our own traffic from
-  # dn42's on a link carrying both (see the router's nftables.nix).
+  # 172.20.0.0/14 and from the tailnet's 100.64.0.0/10. The whole /8 is
+  # what tells our own traffic from dn42's on a link carrying both (see the
+  # router's nftables.nix).
   privatePrefix = "10.0.0.0/8";
 
   # The space the site LANs are drawn from until they move under
@@ -258,6 +260,7 @@
       # Physical management LAN: servers and network infrastructure.
       mgmt0 = {
         vlan = 0;
+        legacy = true;
         trusted = true;
         # DNS namespace for hosts here, and the search domain this segment is
         # handed. A role rather than the interface name: two segments serving
@@ -281,6 +284,7 @@
       # Home VLAN.
       lan0 = {
         vlan = 10;
+        legacy = true;
         trusted = true;
         role = "lan";
         hosts = {
@@ -294,6 +298,7 @@
       # host is named, so the role exists to classify the segment alone.
       guest0 = {
         vlan = 9;
+        legacy = true;
         trusted = false;
         role = "guest";
       };
@@ -302,6 +307,7 @@
       # server running agents and networking experiments.
       dev0 = {
         vlan = 20;
+        legacy = true;
         trusted = false;
         # Networking experiments need to see the fabric they run on, so
         # this segment may ping and trace where the others may not.
@@ -318,6 +324,7 @@
       # IoT VLAN: internet only, mDNS reflected from trusted LANs.
       iot0 = {
         vlan = 66;
+        legacy = true;
         trusted = false;
         role = "iot";
         hosts = {
