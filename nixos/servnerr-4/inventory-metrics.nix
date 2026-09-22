@@ -42,9 +42,15 @@ let
   # with no syntax of its own to get wrong.
   #
   # A host appears once per address family it has, because the address is
-  # the join key and a host with three addresses can be accounted under any
-  # of them. That is at most three rows for each of the inventory's hosts:
-  # a static set, changing only on commit.
+  # the join key and traffic can be accounted under any address it holds.
+  # The set is static, changing only on commit.
+  #
+  # No row for a global address. Privacy extensions mean a host's IPv6
+  # traffic mostly rides temporaries the inventory cannot enumerate, so the
+  # router's neighbor table is what names those (see neighbor-metrics.nix on
+  # the router): join its mac to this metric. A row for the one stable
+  # global address would name a subset of what that join already covers, at
+  # the cost of recording the ISP's delegated prefix.
   row =
     host: family: address:
     let
@@ -55,7 +61,7 @@ let
     '';
 
   rows = lib.concatMapStrings (
-    host: row host "ipv4" host.ipv4 + row host "ula" host.ula + row host "gua" host.gua
+    host: row host "ipv4" host.ipv4 + row host "ula" host.ula
   ) (lib.attrValues hosts);
 
   # Renders the rows above as an info metric. IPv6 addresses are rewritten to

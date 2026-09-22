@@ -9,8 +9,8 @@
 # - "eui64":        the IID is derived from the MAC (switches, APs, IoT).
 #                   Compute it with lib.nix, see nixos/README.md.
 # - "token":        the host sets a fixed IID (networkd Token=static:::N).
-# - "prefixstable": RFC 7217 stable privacy addresses; the observed IIDs are
-#                   recorded per prefix in secrets.yaml.
+# - "prefixstable": RFC 7217 stable privacy addresses; the observed ULA
+#                   identifier is recorded in secrets.yaml.
 # - null/omitted:   no IPv6 address is known; DNS gets an A record only.
 {
   # The zone internal names live under. Each site answers <site>.<zone> and
@@ -279,7 +279,7 @@
           ap-livingroom = { };
           hass.ipv6 = "prefixstable";
           monitnerr-1.ipv6 = "eui64";
-          nerr-4.ipv6 = "prefixstable";
+          nerr-4.ipv6 = "eui64";
           pdu01 = { };
           servnerr-4.ipv6 = "token";
           switch-core.ipv6 = "eui64";

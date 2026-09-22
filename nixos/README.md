@@ -62,12 +62,10 @@ VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).
 Every address and MAC lives in `inventory/secrets.yaml`. Prefixes are plain
 data in `inventory/default.nix`: the site ULA /48 and the private IPv4 /8,
 from which each subnet's /64 and /24 follow by site index and VLAN. The ISP's
-GUA prefix is the one per-subnet secret:
+delegated GUA prefix is recorded nowhere, so subnets hold no secrets and
+only hosts appear:
 
 ```yaml
-subnets:
-  lan0:
-    gua_prefix: 2001:db8:0:a   # update if the ISP renumbers
 hosts:
   example:
     mac: 02:00:5e:00:53:01
@@ -82,8 +80,9 @@ host's `ipv6` mode in `inventory/default.nix`:
   `nix eval --raw --impure --expr '(import ./nixos/inventory/lib.nix { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }).eui64 "02:00:5e:00:53:01"'`.
 - `token`: the host configures a fixed IID (networkd `Token=static:::10` →
   `0:0:0:10`).
-- `prefixstable`: RFC 7217 stable privacy addresses; record the observed IIDs
-  as `iid_ula` and `iid_gua`.
+- `prefixstable`: RFC 7217 stable privacy addresses; record the observed ULA
+  identifier as `iid_ula`. Such a host has no prefix-independent identifier,
+  so it cannot be a Tailscale forward target.
 - omitted: no IPv6 address is known; the host gets an A record only.
 
 `modules/inventory.nix` turns this into `config.homelab.inventory`, where every

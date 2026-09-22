@@ -28,11 +28,6 @@ let
   subnets = siteCfg.subnets or { };
   domain = "${site}.${inventory.zone}";
 
-  # A subnet's ULA and IPv4 prefixes are built from the site index and its
-  # VLAN (see mkInterface below); only the ISP-delegated GUA prefix is a
-  # secret.
-  subnetKeys = name: _: [ "subnets/${name}/gua_prefix" ];
-
   # Interface identifier secret keys needed for a host's IPv6 mode.
   iidKeys =
     name: host:
@@ -40,10 +35,7 @@ let
       mode = host.ipv6 or null;
     in
     if mode == "prefixstable" then
-      [
-        "hosts/${name}/iid_ula"
-        "hosts/${name}/iid_gua"
-      ]
+      [ "hosts/${name}/iid_ula" ]
     else if mode != null then
       [ "hosts/${name}/iid" ]
     else
@@ -61,7 +53,7 @@ let
     lib.concatLists (
       lib.mapAttrsToList (
         name: subnet:
-        subnetKeys name subnet ++ lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
+        lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
       ) subnets
     )
     # The private DNS zones the router answers itself, space-separated; see
@@ -91,13 +83,11 @@ let
           "${ifi.ulaPrefix}:${iid "iid"}"
         else
           null;
-      gua =
-        if mode == "prefixstable" then
-          "${ifi.guaPrefix}:${iid "iid_gua"}"
-        else if mode != null then
-          "${ifi.guaPrefix}:${iid "iid"}"
-        else
-          null;
+      # The interface identifier alone, for a rule matching a host under
+      # whatever prefix it currently holds. Null when the host has no single
+      # one: an RFC 7217 identifier is computed per prefix, so a prefixstable
+      # host has a different identifier in each.
+      iid = if mode == null || mode == "prefixstable" then null else iid "iid";
     };
 
   mkInterface =
@@ -111,7 +101,6 @@ let
         toString (100 * siteCfg.index + subnet.vlan)
       }";
       ipv4Prefix = "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString siteCfg.index}.${toString subnet.vlan}";
-      guaPrefix = placeholder "subnets/${name}/gua_prefix";
       ifi = {
         inherit name;
         inherit (subnet) vlan trusted role;
@@ -125,10 +114,9 @@ let
         preference = subnet.preference or "medium";
 
         # Router addresses: always .1 and ::1.
-        inherit ipv4Prefix ulaPrefix guaPrefix;
+        inherit ipv4Prefix ulaPrefix;
         ipv4 = "${ipv4Prefix}.1";
         ula = "${ulaPrefix}::1";
-        gua = "${guaPrefix}::1";
         lla = "fe80::1";
 
         hosts = lib.mapAttrsToList (mkHost ifi) (subnet.hosts or { });
@@ -234,8 +222,9 @@ in
       /56 built from that index, and the identifier of a link between two
       sites is their pair of indices.
       Interfaces carry the router's addresses and prefixes, their role and
-      searchDomain, plus their hosts; hosts carry mac, ipv4, ula/gua (null
-      when the host has no known IPv6 address) and dnsName, the name DNS
+      searchDomain, plus their hosts; hosts carry mac, ipv4, ula and iid
+      (both null when the host has no known IPv6 address, and iid also where
+      the identifier differs per prefix) and dnsName, the name DNS
       publishes. privateZones is the space-separated private DNS zone list,
       null at a site with no subnets.
       Loopbacks are keyed by machine name and are plain data, since they are

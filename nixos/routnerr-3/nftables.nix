@@ -88,7 +88,7 @@ let
         ) restricted
       } }
       add element inet filter tailscale_v4 { ${forwards (ts: "${ts.host.ipv4} . ${toString ts.port}")} }
-      add element inet filter tailscale_v6 { ${forwards (ts: "${ts.host.gua} . ${toString ts.port}")} }
+      add element inet filter tailscale_v6 { ${forwards (ts: "::${ts.host.iid} . ${toString ts.port}")} }
       ${lib.optionalString (icl && iclServices != [ ])
         "add element inet filter icl_services_v6 { ${
           lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
@@ -170,6 +170,16 @@ in
 {
   # The exporter for the named counters below; see the module.
   imports = [ ../modules/nftables-exporter.nix ];
+
+  # A forward is matched by interface identifier, so a host whose identifier
+  # changes with the prefix cannot be one: its element would name an address
+  # it stops holding at the next renumber, silently.
+  assertions = [
+    {
+      assertion = lib.all (ts: ts.host.iid != null) tailscale.forwards;
+      message = "homelab: every Tailscale forward needs a host with an interface identifier that is the same under every prefix; a prefixstable host has none.";
+    }
+  ];
 
   sops.templates."nftables-inventory.conf".content = elements;
 
@@ -723,7 +733,12 @@ in
           jump icmp_wan
 
           ip daddr . udp dport @tailscale_v4 counter accept comment "Tailscale IPv4 forwarding"
-          ip6 daddr . udp dport @tailscale_v6 counter accept comment "Tailscale IPv6 forwarding"
+          # Matched on the interface identifier alone, so the rule survives
+          # an ISP renumber without anything here recording the delegated
+          # prefix. Sound in this chain because a packet reaching it has
+          # already been routed toward a LAN, so its destination is in a
+          # prefix we were delegated.
+          ip6 daddr & ::ffff:ffff:ffff:ffff . udp dport @tailscale_v6 counter accept comment "Tailscale IPv6 forwarding"
 
           counter name wan_forward_drop drop
         }
