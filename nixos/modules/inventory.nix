@@ -31,7 +31,7 @@ let
   # A subnet's ULA and IPv4 prefixes are built from the site index and its
   # VLAN (see mkInterface below); only the ISP-delegated GUA prefix is a
   # secret, and the IPv4 prefix of a subnet still numbered from
-  # legacyPrefix.
+  # legacyPrefix4.
   subnetKeys =
     name: subnet:
     [ "subnets/${name}/gua_prefix" ]
@@ -111,15 +111,15 @@ let
       # read as decimal SSVV and S.V, site index then VLAN, the layout
       # described in nixos/inventory/default.nix. Written compressed, as
       # every address built from them is. A subnet marked legacy still
-      # numbers its IPv4 from legacyPrefix, and that prefix is a secret.
-      ulaPrefix = "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${
+      # numbers its IPv4 from legacyPrefix4, and that prefix is a secret.
+      ulaPrefix = "${lib.removeSuffix "::/48" inventory.ulaPrefix6}:${
         toString (100 * siteCfg.index + subnet.vlan)
       }";
       ipv4Prefix =
         if subnet.legacy or false then
           placeholder "subnets/${name}/ipv4_prefix"
         else
-          "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString siteCfg.index}.${toString subnet.vlan}";
+          "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString siteCfg.index}.${toString subnet.vlan}";
       guaPrefix = placeholder "subnets/${name}/gua_prefix";
       ifi = {
         inherit name;
@@ -188,11 +188,11 @@ let
   # as decimal SSVV, so a site's space runs from its index with VLAN 00. This
   # is what a site originates into the IGP on its own behalf.
   sitePrefix6 =
-    index: "${lib.removeSuffix "::/48" inventory.ulaPrefix}:${lib.fixedWidthNumber 2 index}00::/56";
+    index: "${lib.removeSuffix "::/48" inventory.ulaPrefix6}:${lib.fixedWidthNumber 2 index}00::/56";
 
   # The same in IPv4: a site's /16 is its index in the second octet.
   sitePrefix4 =
-    index: "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix}${toString index}.0.0/16";
+    index: "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString index}.0.0/16";
 
   loopbacks = siteLoopbacks site siteCfg;
 
@@ -226,15 +226,16 @@ in
     description = ''
       Network inventory with addresses as sops placeholders. The prefixes
       are the exception and are plain data, since each names a range rather
-      than an address: ulaPrefix and privatePrefix, the spaces every site is
+      than an address: ulaPrefix6 and privatePrefix4, the spaces every site is
       drawn from, each interface's ULA and IPv4 prefix built from those by
       site index and VLAN (its GUA prefix stays a placeholder, and so does
       the IPv4 prefix of a subnet marked legacy), and the carve-outs from
       the ULA -- labPrefix6,
-      carrierPrefix, loopbackPrefix6, circuitPrefix6, srv6Prefix and
+      carrierPrefix6, loopbackPrefix6, circuitPrefix6, locatorPrefix6 and
       anycastPrefix6, plus
       anycast, the service address drawn from that last one for each
-      service answered at every site. So is isis, the area
+      service answered at every site. So are dn42, its whole space and
+      our allocation in it, and isis, the area
       and per-router system IDs. See nixos/inventory/ for what each covers.
       Scoped to this machine's homelab.site: domain, interfaces, hosts and
       loopbacks are that site's alone, while sites carries every site's
@@ -284,8 +285,8 @@ in
       {
         # Every site prefix is cut from this string, so a ULA written any
         # other way would silently produce prefixes that are not inside it.
-        assertion = lib.hasSuffix "::/48" inventory.ulaPrefix;
-        message = "inventory ulaPrefix must be written as a compressed /48, since site prefixes are built from it";
+        assertion = lib.hasSuffix "::/48" inventory.ulaPrefix6;
+        message = "inventory ulaPrefix6 must be written as a compressed /48, since site prefixes are built from it";
       }
       {
         # A subnet's prefixes spell the VLAN in two decimal digits after
@@ -316,16 +317,17 @@ in
       inherit interfaces loopbacks;
       # Plain data, not placeholders; see the notes in the inventory.
       inherit (inventory)
-        ulaPrefix
-        privatePrefix
-        legacyPrefix
+        ulaPrefix6
+        privatePrefix4
+        legacyPrefix4
         labPrefix6
         labPrefix4
-        carrierPrefix
+        carrierPrefix6
         circuitPrefix6
         circuitPrefix4
         cloudPrefix4
-        srv6Prefix
+        locatorPrefix6
+        dn42
         siteLinks
         loopbackPrefix6
         loopbackPrefix4

@@ -22,10 +22,10 @@ let
     addr6 = "fde4:d0ad:ee0f:142::84/64";
     router4 = "172.20.140.81";
     router6 = "fde4:d0ad:ee0f:142::1";
-    routes4 = [ "172.20.0.0/14" ];
+    routes4 = [ inventory.dn42.prefix4 ];
     routes6 = [
-      "fde4:d0ad:ee0f::/48"
-      "fd00::/8"
+      inventory.dn42.net6
+      inventory.dn42.prefix6
     ];
     metric = 512;
   };

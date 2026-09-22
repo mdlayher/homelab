@@ -13,18 +13,19 @@ let
   # wildcard root block never sees dn42, and other names are refused
   # there rather than recursed. All registry data, nothing to render.
   dn42 = config.homelab.dn42;
+  inventory = config.homelab.inventory;
 
   inherit (import ../modules/reverse-zones.nix { inherit lib; }) nibbles6;
 
   # The reverse zones as the delegation servers cut them: RFC 2317 form,
   # 80/28.140.20.172.in-addr.arpa, for the /28; nibble boundary for the /48.
-  net4 = lib.splitString "/" dn42.net4;
+  net4 = lib.splitString "/" inventory.dn42.net4;
   octets4 = lib.splitString "." (lib.head net4);
   rev4 = "${lib.last octets4}/${lib.last net4}.${lib.concatStringsSep "." (lib.reverseList (lib.take 3 octets4))}.in-addr.arpa";
   # An address's owner name in that zone: its last octet.
   ptr4 = addr: lib.last (lib.splitString "." addr);
 
-  net6 = lib.splitString "/" dn42.net6;
+  net6 = lib.splitString "/" inventory.dn42.net6;
   net6Nibbles = lib.toInt (lib.last net6) / 4;
   rev6 = "${lib.concatStringsSep "." (lib.reverseList (lib.take net6Nibbles (nibbles6 (lib.head net6))))}.ip6.arpa";
   # An address's owner name in that zone: its remaining nibbles.

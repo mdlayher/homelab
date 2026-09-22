@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   utils,
   ...
@@ -47,9 +48,12 @@
 # one hits the unreachable aggregate; the answer is a second path between
 # sites, not a more specific announcement.
 #
-# That link would be a third interface class: trusted like dn42i- but a
-# tunnel, and the only one which imports -- dn42_import rejects our own
-# space by design (is_self_net), so it needs a filter of its own.
+# That link is the site interconnect (nixos/modules/interconnect.nix), a
+# third interface class: icl-<site><plane>, trusted like dn42i- and the
+# only one which imports. dn42_import rejects our own space by design
+# (is_self_net), so the sessions there carry filters of their own, and
+# every one is a route reflector client, so a site cut off from the one
+# with the peers still learns the table through the third.
 
 let
   cfg = config.homelab.dn42;
@@ -135,6 +139,14 @@ let
   # it sets is on-link and needs no recursion. The kernel protocols below
   # import nothing, so bird's table holds no route zebra installed to
   # resolve one against.
+  #
+  # Every session reflects: iBGP never re-exports what it learned from
+  # another iBGP session, so without this a site whose circuits to the
+  # peering site are down would hear nothing from the third. In a mesh of
+  # three, ORIGINATOR_ID drops a route reflected back to where it started
+  # and CLUSTER_LIST one that already passed through the receiver, and the
+  # reflecting site sets itself as next hop, so it also forwards. A
+  # circuit failing is detected by BFD at both ends, which are both bird.
   ibgpProtocols = lib.concatMapStrings (
     name:
     let
@@ -145,6 +157,8 @@ let
         local ${link.localLla} as OWNAS;
         neighbor ${link.lla} % '${link.interface}' as OWNAS;
         direct;
+        rr client;
+        bfd on;
 
         ipv4 {
           extended next hop on;
@@ -266,16 +280,6 @@ in
       type = lib.types.int;
       default = 4242423610;
       description = "Our dn42 autonomous system number.";
-    };
-    net4 = lib.mkOption {
-      type = lib.types.str;
-      default = "172.20.140.80/28";
-      description = "Our registered dn42 IPv4 allocation.";
-    };
-    net6 = lib.mkOption {
-      type = lib.types.str;
-      default = "fde4:d0ad:ee0f::/48";
-      description = "Our registered dn42 IPv6 allocation.";
     };
     addr4 = lib.mkOption {
       type = lib.types.str;
@@ -423,19 +427,6 @@ in
       '';
     };
 
-    ibgpInternal = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        Whether the iBGP sessions carry our own prefixes as well as the
-        dn42 table. True until the IGP carries our topology: before that
-        nothing else would, and the far site's hosts are unreachable.
-        False after, or both would install the same routes from two
-        daemons and the kernel would pick by metric rather than by design.
-        This is the cutover switch, and flipping it is the cutover.
-      '';
-    };
-
     # Internal dn42 VLANs: our own links carrying dn42-addressed hosts,
     # keyed by name as peers are, and named dn42i-<name> so each inherits
     # the internal class's firewall and bird policy from its interface.
@@ -567,6 +558,14 @@ in
   };
 
   config = {
+    # Every dn42 node's own addresses travel by the IGP, like the site
+    # loopback (see modules/loopback.nix): the dummy holding them is
+    # advertised without running the protocol on it. Only where the
+    # interconnect is declared at all, since the option is its.
+    homelab = lib.optionalAttrs (options.homelab ? interconnect) {
+      interconnect.isis.passiveInterfaces = lib.mkIf (cfg.ibgp != [ ]) [ "dn42" ];
+    };
+
     # wg show is how to read a tunnel's handshake and transfer counters at
     # the shell, the same data the exporter below publishes; bird2 (which
     # carries birdc) arrives with services.bird.
@@ -697,10 +696,10 @@ in
         define OWNIPv6 = ${cfg.addr6};
 
         # Our aggregates only; nothing of the homelab may ever be announced.
-        define OWNNET = ${cfg.net4};
-        define OWNNETv6 = ${cfg.net6};
-        define OWNNETSET = [ ${cfg.net4}+ ];
-        define OWNNETSETv6 = [ ${cfg.net6}+ ];
+        define OWNNET = ${inventory.dn42.net4};
+        define OWNNETv6 = ${inventory.dn42.net6};
+        define OWNNETSET = [ ${inventory.dn42.net4}+ ];
+        define OWNNETSETv6 = [ ${inventory.dn42.net6}+ ];
 
         function is_self_net() -> bool {
           return net ~ OWNNETSET;
@@ -712,20 +711,21 @@ in
 
         # The homelab site ULA: never learned from dn42, never announced.
         # Stating it here as hijack insurance costs nothing.
-        define SITENETSETv6 = [ ${inventory.ulaPrefix}+ ];
+        define SITENETSETv6 = [ ${inventory.ulaPrefix6}+ ];
         function is_site_net_v6() -> bool {
           return net ~ SITENETSETv6;
         }
 
-        # The valid dn42 address space and prefix lengths, from the community
-        # filter template at https://dn42.dev/howto/Bird2 less the networks
+        # The valid dn42 address space (the inventory's dn42 prefixes) and
+        # prefix lengths, from the community filter template at
+        # https://dn42.dev/howto/Bird2 less the networks
         # dn42 interconnects with (ChaosVPN, neonetwork, Freifunk). Those
         # live in 172.31/16 and across 10/8, and 10/8 is our own IPv4 space
-        # (see the inventory's privatePrefix): a route for it must never
+        # (see the inventory's privatePrefix4): a route for it must never
         # come from dn42, and nothing here needs those networks.
         function is_valid_network() -> bool {
           return net ~ [
-            172.20.0.0/14{21,29}, # dn42
+            ${inventory.dn42.prefix4}{21,29}, # dn42
             172.20.0.0/24{28,32}, # dn42 anycast
             172.21.0.0/24{28,32}, # dn42 anycast
             172.22.0.0/24{28,32}, # dn42 anycast
@@ -734,7 +734,7 @@ in
         }
 
         function is_valid_network_v6() -> bool {
-          return net ~ [ fd00::/8{44,64} ];
+          return net ~ [ ${inventory.dn42.prefix6}{44,64} ];
         }
 
         # ROA data from dn42 RTR servers; multiple sources feed the same
@@ -852,33 +852,30 @@ in
         }
 
         ${lib.optionalString (cfg.ibgp != [ ]) ''
-          # The interconnect carries our own more specifics, which dn42_import
-          # rejects by design (is_self_net) -- reusing it here would discard
-          # everything the far site sends. What crosses was ROA checked where
-          # it entered our AS, so this is a sanity check, not a revalidation.
-          # The site ULA stays rejected: it travels by the IGP, never by bird.
+          # The interconnect carries the dn42 table and the aggregates the
+          # peering site originates, which dn42_import would reject by design
+          # (is_self_net) -- reusing it here would discard the aggregates.
+          # What crosses was ROA checked where it entered our AS, so this is
+          # a sanity check, not a revalidation. Our own more specifics and
+          # the site ULA never enter bird: they travel by the IGP.
           filter dn42_ibgp_import {
-            ${lib.optionalString cfg.ibgpInternal "if is_self_net() then accept;"}
             if is_valid_network() then accept;
             reject;
           }
 
           filter dn42_ibgp_import_v6 {
             if is_site_net_v6() then reject;
-            ${lib.optionalString cfg.ibgpInternal "if is_self_net_v6() then accept;"}
             if is_valid_network_v6() then accept;
             reject;
           }
 
           filter dn42_ibgp_export {
-            ${lib.optionalString cfg.ibgpInternal "if is_self_net() then accept;"}
             if is_valid_network() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
             reject;
           }
 
           filter dn42_ibgp_export_v6 {
             if is_site_net_v6() then reject;
-            ${lib.optionalString cfg.ibgpInternal "if is_self_net_v6() then accept;"}
             if is_valid_network_v6() && source ~ [ RTS_STATIC, RTS_BGP ] then accept;
             reject;
           }
@@ -904,14 +901,14 @@ in
           # what the speaker sends in the kernel's main table pointed at the
           # VLAN, so open it deliberately.
           filter dn42i_import_v6 {
-            # if net ~ [ ${cfg.net6}{49,64} ] then accept;
+            # if net ~ [ ${inventory.dn42.net6}{49,64} ] then accept;
             reject;
           }
 
           # dn42 accepts IPv4 down to /29 only (see is_valid_network), which
           # leaves exactly two test prefixes inside our /28.
           filter dn42i_import {
-            # if net ~ [ ${cfg.net4}{29,29} ] then accept;
+            # if net ~ [ ${inventory.dn42.net4}{29,29} ] then accept;
             reject;
           }
         ''}
@@ -920,20 +917,28 @@ in
           scan time 10;
         }
 
-        # Originate our aggregates as unreachable routes: bird announces
-        # them to peers, and their kernel export terminates packets for
-        # unused parts of the allocations instead of looping them back out
-        # a tunnel. More-specific deployed routes override them, the same
-        # pattern as the site ULA /48 unreachable route in networking.nix.
-        protocol static {
-          ipv4;
-          route ${cfg.net4} unreachable;
-        }
+        ${lib.optionalString (cfg.peers != { }) ''
+          # Originate our aggregates as unreachable routes: bird announces
+          # them to peers, and their kernel export terminates packets for
+          # unused parts of the allocations instead of looping them back out
+          # a tunnel. More-specific deployed routes override them, the same
+          # pattern as the site ULA /48 unreachable route in networking.nix.
+          #
+          # Only where there are peers to announce to. A site without them
+          # learns the aggregates over iBGP from one that has, pointing
+          # there, and reaches that site's hosts through its more specifics;
+          # an unreachable route of its own would rank above the learned
+          # one and swallow them.
+          protocol static {
+            ipv4;
+            route ${inventory.dn42.net4} unreachable;
+          }
 
-        protocol static {
-          ipv6;
-          route ${cfg.net6} unreachable;
-        }
+          protocol static {
+            ipv6;
+            route ${inventory.dn42.net6} unreachable;
+          }
+        ''}
 
         # dn42 routes land in the kernel's main table: the space cannot
         # overlap production routing, and imports are filtered above.
@@ -973,10 +978,10 @@ in
         }
 
         protocol bfd {
-          # Both interface classes, named rather than covered by one
+          # Both dn42 interface classes, named rather than covered by one
           # wildcard: a bare dn42-* would match either prefix and quietly
-          # merge them again.
-          interface "dn42e-*", "dn42i-*" {
+          # merge them again. The circuits join them where iBGP runs.
+          interface "dn42e-*", "dn42i-*"${lib.optionalString (cfg.ibgp != [ ]) '', "icl-*"''} {
             min rx interval 200 ms;
             min tx interval 200 ms;
             idle tx interval 1000 ms;
@@ -1064,6 +1069,45 @@ in
       enable = true;
       birdVersion = 2;
     };
+
+    # What a site running the NixOS firewall admits for iBGP; the router's
+    # own ruleset carries the equivalent by hand (see its nftables.nix).
+    # Sessions and BFD arrive from each circuit's far link-local. dn42
+    # between two other sites passes through here when the circuit
+    # joining them is down and the table is reflected this way; such a
+    # flow is seen in one direction only, so it is left untracked before
+    # the firewall's invalid drop can discard it, and accepted from the
+    # untracked branch. Bounded as bird's is_valid_network functions
+    # bound dn42.
+    networking.firewall = lib.mkIf (cfg.ibgp != [ ] && config.networking.firewall.enable) {
+      extraInputRules = lib.concatMapStrings (
+        name:
+        let
+          link = config.homelab.interconnect.links.${name};
+        in
+        ''
+          iifname "${link.interface}" ip6 saddr ${link.lla} tcp dport 179 accept comment "dn42 iBGP over the circuit"
+          iifname "${link.interface}" ip6 saddr ${link.lla} udp dport 3784 accept comment "dn42 iBGP BFD over the circuit"
+        ''
+      ) cfg.ibgp;
+      extraForwardRules = ''
+        iifname "icl-*" oifname "icl-*" ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} counter accept comment "dn42 transit between circuits"
+        iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} counter accept comment "dn42 transit between circuits"
+      '';
+    };
+
+    networking.nftables.tables.dn42-transit =
+      lib.mkIf (cfg.ibgp != [ ] && config.networking.firewall.enable)
+        {
+          family = "inet";
+          content = ''
+            chain prerouting {
+              type filter hook prerouting priority raw; policy accept;
+              iifname "icl-*" ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} fib daddr type != local notrack
+              iifname "icl-*" ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} fib daddr type != local notrack
+            }
+          '';
+        };
 
     # Latency to each external peer across its tunnel, for the
     # DN42PeerLatencyHigh alert, plus a full-size echo at the tunnel's MTU

@@ -18,10 +18,15 @@
     # above. The edge names this literally as its carrier peer.
     homelab.dn42.publicKey = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
 
-    # No other site runs dn42, so there is no internal session to carry the
-    # table across a circuit. A session named here with no speaker at the
-    # far end sits retrying and reports itself down.
-    homelab.dn42.ibgp = [ ];
+    # The dn42 table to the other sites, one session per circuit: a plane
+    # lost is a session lost and the other plane's carries on. Each name
+    # is a link in interconnect.nix, with bird at the far end.
+    homelab.dn42.ibgp = [
+      "pdx0"
+      "pdx1"
+      "iad0"
+      "iad1"
+    ];
 
     # Kioubit: https://dn42.g-load.eu.
     homelab.dn42.peers.kioubit = {

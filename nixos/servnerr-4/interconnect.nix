@@ -59,11 +59,18 @@ in
         # router's forward_icl drops as a far-site flow; the scrapes of
         # the dev0 containers did exactly that on 2026-09-21. The far
         # sites' prefixes are still installed, since the circuit is the
-        # path to those.
-        kernelDeny6 = [ inventory.ulaPrefix ];
+        # path to those. Our dn42 space on the same terms, written as
+        # networking.nix writes it: this machine's dn42 address sits on the
+        # router's dn42 VLAN, and the IGP's routes to the router's own dn42
+        # addresses would pull that traffic onto the circuit too.
+        kernelDeny6 = [
+          inventory.ulaPrefix6
+          inventory.dn42.net6
+        ];
         kernelDeny4 = [
-          inventory.privatePrefix
-          inventory.legacyPrefix
+          inventory.privatePrefix4
+          inventory.legacyPrefix4
+          inventory.dn42.net4
         ];
       };
     };

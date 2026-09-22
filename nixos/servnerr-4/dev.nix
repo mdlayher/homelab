@@ -817,7 +817,7 @@ let
     ifname = "dn42";
     addr4 = "172.20.140.83/32";
     router4 = "172.20.140.81";
-    routes4 = [ "172.20.0.0/14" ];
+    routes4 = [ inventory.dn42.prefix4 ];
   };
 in
 {

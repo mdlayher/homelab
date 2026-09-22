@@ -129,14 +129,14 @@ in
         # on loopback is the route it matches (see networking.nix); the
         # more specific LANs sort traffic out once it arrives, and anything
         # nobody holds meets the aggregate and is rejected here.
-        aggregate6 = inventory.ulaPrefix;
+        aggregate6 = inventory.ulaPrefix6;
         # Both IPv4 blocks: the scheme's, and the one the LANs still number
         # from, which a far site must hold a route to before it can answer
         # a LAN host at all. The unreachable routes they match are on lo
         # (see networking.nix).
         aggregate4 = [
-          inventory.privatePrefix
-          inventory.legacyPrefix
+          inventory.privatePrefix4
+          inventory.legacyPrefix4
         ];
       };
     };

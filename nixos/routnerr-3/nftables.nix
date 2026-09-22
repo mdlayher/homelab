@@ -197,9 +197,12 @@ in
       # the inventory, which explains why the v4 side is a whole /16 and
       # what it must stay disjoint from.
       define lab6 = ${inventory.labPrefix6}
-      define carrier6 = ${inventory.carrierPrefix}
-      define site4 = { ${inventory.privatePrefix}, ${inventory.legacyPrefix} }
-      define site6 = ${inventory.ulaPrefix}
+      define carrier6 = ${inventory.carrierPrefix6}
+      define site4 = { ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }
+      define site6 = ${inventory.ulaPrefix6}
+      # dn42's whole space, for dn42 traffic passing between circuits.
+      define dn42_v4 = ${inventory.dn42.prefix4}
+      define dn42_v6 = ${inventory.dn42.prefix6}
       define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr6}
 
       # The service addresses this router answers at along with every other
@@ -587,6 +590,10 @@ in
             # our own space on each side.
             iifname "icl-*" oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "site transit between circuits"
             iifname "icl-*" oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "site transit between circuits"
+            # dn42 between two other sites, when the circuit joining them
+            # is down and iBGP reflects the table through here instead.
+            iifname "icl-*" oifname "icl-*" ip saddr $dn42_v4 ip daddr $dn42_v4 counter accept comment "dn42 transit between circuits"
+            iifname "icl-*" oifname "icl-*" ip6 saddr $dn42_v6 ip6 daddr $dn42_v6 counter accept comment "dn42 transit between circuits"
           ''}
           ct state invalid counter drop
 

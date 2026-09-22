@@ -3,7 +3,7 @@
 # Addresses and MACs are secrets in ./secrets.yaml (sops) and are rendered
 # into configuration at activation time by nixos/modules/inventory.nix, which
 # also builds each subnet's ULA and IPv4 prefix from the site index and VLAN.
-# A subnet marked legacy still numbers its IPv4 from legacyPrefix, and that
+# A subnet marked legacy still numbers its IPv4 from legacyPrefix4, and that
 # prefix is a secret. This file only declares what exists and how each
 # host's IPv6 addresses are formed:
 #
@@ -28,7 +28,7 @@
   # own space does (see nixos/modules/dn42.nix), and the two agree on which
   # site is which. Site 00 is the network itself rather than a place; sites
   # begin at :0100::/56.
-  ulaPrefix = "fd9e:1a04:f01d::/48";
+  ulaPrefix6 = "fd9e:1a04:f01d::/48";
 
   # Our IPv4 space, laid out as the ULA is. The second octet is the site
   # and the third the VLAN, so a site holds 10.SS.0.0/16 and a segment
@@ -40,12 +40,25 @@
   # 172.20.0.0/14 and from the tailnet's 100.64.0.0/10. The whole /8 is
   # what tells our own traffic from dn42's on a link carrying both (see the
   # router's nftables.nix).
-  privatePrefix = "10.0.0.0/8";
+  privatePrefix4 = "10.0.0.0/8";
 
   # The space the site LANs are drawn from until they move under
-  # privatePrefix. Classified as ours alongside it wherever the firewalls
+  # privatePrefix4. Classified as ours alongside it wherever the firewalls
   # test for our own space.
-  legacyPrefix = "192.168.0.0/16";
+  legacyPrefix4 = "192.168.0.0/16";
+
+  # dn42, the other network the routers carry. Its whole space, as bird's
+  # import filters bound it (see nixos/modules/dn42.nix): what a firewall
+  # matches to tell dn42 traffic from ours on a link carrying both, and
+  # what a host routes toward the router. Within it, the allocation
+  # registered to our AS, public registry data. Site-specific dn42
+  # addresses stay in each site's dn42.nix.
+  dn42 = {
+    prefix4 = "172.20.0.0/14";
+    prefix6 = "fd00::/8";
+    net4 = "172.20.140.80/28";
+    net6 = "fde4:d0ad:ee0f::/48";
+  };
 
   # Site 00 of the IPv4 scheme, holding the loopbacks as 10.0.SS.RR, site
   # then router within it, the tail of the same router's IS-IS system ID.
@@ -106,12 +119,12 @@
   # One /127 per link, addressing the WireGuard carrier. A GRETAP needs a
   # local and a remote address to be built on; these are those, and nothing
   # routes to them.
-  carrierPrefix = "fd9e:1a04:f01d:fe00::/56";
+  carrierPrefix6 = "fd9e:1a04:f01d:fe00::/56";
 
   # SRv6 locators, a /64 per node. Nothing consumes it yet; allocated here
   # so a later carve-out cannot take it, and so the block a node's locator
   # comes from is named in the one place every other range is.
-  srv6Prefix = "fd9e:1a04:f01d:fd00::/56";
+  locatorPrefix6 = "fd9e:1a04:f01d:fd00::/56";
 
   # One /127 per link, addressing the GRETAP that runs inside the carrier.
   # Routes point at the interconnect rather than the tunnel beneath it, so

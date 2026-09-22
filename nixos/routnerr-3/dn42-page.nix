@@ -34,6 +34,7 @@
 
 let
   dn42 = config.homelab.dn42;
+  inventory = config.homelab.inventory;
 
   # The public name, a CNAME to the apex in terraform/cloudflare, and its
   # single-family variants, CNAMEs to the current-egress names the router
@@ -162,7 +163,7 @@ let
         <tr><th>Link-local</th><td><code>${dn42.lla}</code></td></tr>
         <tr><th>Session</th><td>MP-BGP over link-local, IPv4 via extended next hop; BFD on request</td></tr>
         <tr><th>Addresses</th><td><code>${dn42.addr4}</code>, <code>${dn42.addr6}</code></td></tr>
-        <tr><th>Prefixes</th><td><code>${dn42.net4}</code>, <code>${dn42.net6}</code></td></tr>
+        <tr><th>Prefixes</th><td><code>${inventory.dn42.net4}</code>, <code>${inventory.dn42.net6}</code></td></tr>
         <tr><th>Routing</th><td>BIRD 2 with ROA validation</td></tr>
         <tr><th>Services</th><td>NTP at <code>ntp.${dn42.domain}</code></td></tr>
       </table>
@@ -235,7 +236,7 @@ let
         "BFD on request"
       ]}
       ${row "Addresses" "${dn42.addr4}, ${dn42.addr6}"}
-      ${row "Prefixes" "${dn42.net4}, ${dn42.net6}"}
+      ${row "Prefixes" "${inventory.dn42.net4}, ${inventory.dn42.net6}"}
       ${row "Routing" "BIRD 2 with ROA validation"}
       ${row "Services" "NTP at ntp.${dn42.domain}"}
 

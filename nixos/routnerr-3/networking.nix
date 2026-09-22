@@ -220,15 +220,15 @@ in
       matchConfig.Name = "lo";
       routes = [
         {
-          Destination = inventory.ulaPrefix;
+          Destination = inventory.ulaPrefix6;
           Type = "unreachable";
         }
         {
-          Destination = inventory.privatePrefix;
+          Destination = inventory.privatePrefix4;
           Type = "unreachable";
         }
         {
-          Destination = inventory.legacyPrefix;
+          Destination = inventory.legacyPrefix4;
           Type = "unreachable";
         }
       ];

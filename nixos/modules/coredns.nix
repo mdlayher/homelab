@@ -176,7 +176,7 @@ let
   # inventory, and all of RFC 1918 except dn42's 172.20.0.0/14, since the
   # LAN prefixes are secrets and no outside resolver can answer for that
   # space anyway (RFC 6303).
-  ula = lib.splitString "/" inventory.ulaPrefix;
+  ula = lib.splitString "/" inventory.ulaPrefix6;
   ulaRev = "${
     lib.concatStringsSep "." (
       lib.reverseList (lib.take (lib.toInt (lib.last ula) / 4) (nibbles6 (lib.head ula)))

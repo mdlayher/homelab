@@ -20,7 +20,7 @@ let
 
   # Our own IPv4 space as the firewall tests for it: the scheme's block and
   # the space the LANs still number from.
-  site4 = "{ ${inventory.privatePrefix}, ${inventory.legacyPrefix} }";
+  site4 = "{ ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }";
 in
 {
   imports = [
@@ -92,6 +92,7 @@ in
           9100 # node_exporter
           9123 # chrony exporter
           9153 # coredns
+          9324 # bird exporter
           9342 # frr_exporter
           9586 # wireguard exporter
           9630 # nftables exporter
@@ -105,8 +106,8 @@ in
         ports = p: lib.concatMapStringsSep ", " toString p;
       in
       lib.concatMapStrings (link: ''
-        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
-        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix} udp dport { ${ports udp} } accept comment "site services across the circuit"
+        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix6} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
+        iifname "${link.interface}" ip6 saddr ${inventory.ulaPrefix6} udp dport { ${ports udp} } accept comment "site services across the circuit"
         iifname "${link.interface}" ip saddr ${site4} tcp dport { ${ports tcp} } accept comment "site services across the circuit"
         iifname "${link.interface}" ip saddr ${site4} udp dport { ${ports udp} } accept comment "site services across the circuit"
       '') (lib.attrValues config.homelab.interconnect.links);

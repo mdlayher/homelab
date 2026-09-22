@@ -77,7 +77,7 @@ in
                 {
                   lifetime = "45m";
                 }
-                // lib.optionalAttrs (!ifi.trusted) { prefix = inventory.ulaPrefix; }
+                // lib.optionalAttrs (!ifi.trusted) { prefix = inventory.ulaPrefix6; }
               )
             ];
           }
@@ -125,7 +125,7 @@ in
           ];
           route = [
             {
-              prefix = "fd00::/8";
+              prefix = inventory.dn42.prefix6;
               lifetime = "45m";
             }
           ];

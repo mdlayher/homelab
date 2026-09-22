@@ -42,8 +42,8 @@
 #                adjacency.
 #
 # The routing protocols are declared elsewhere. The IGP carries our own
-# topology, the ULA included; bird's iBGP carries the dn42 table and
-# resolves its next hops through the IGP once that is cut over.
+# topology, the ULA included; bird's iBGP carries the dn42 table over the
+# same circuits, with next hops on the circuit itself (see modules/dn42.nix).
 
 let
   cfg = config.homelab.interconnect;
@@ -139,7 +139,7 @@ let
 
   # Our own IPv4 space as the firewalls test for it: the scheme's block and
   # the space the LANs still number from.
-  site4 = "{ ${inventory.privatePrefix}, ${inventory.legacyPrefix} }";
+  site4 = "{ ${inventory.privatePrefix4}, ${inventory.legacyPrefix4} }";
 
   # This router's IPv4 loopback, which zebra takes as its router ID so the
   # LSP's TE router ID is an address of ours rather than whichever
@@ -467,8 +467,8 @@ in
               };
               localAddress = lib.mkOption {
                 type = lib.types.str;
-                default = "${linkAddress inventory.carrierPrefix config.site config.plane true}/127";
-                defaultText = lib.literalExpression "the link's /127 from carrierPrefix";
+                default = "${linkAddress inventory.carrierPrefix6 config.site config.plane true}/127";
+                defaultText = lib.literalExpression "the link's /127 from carrierPrefix6";
                 description = ''
                   Our address with its prefix length, one end of a /127.
                   The GRETAP is built on these two addresses and nothing
@@ -483,7 +483,7 @@ in
               };
               remoteAddress = lib.mkOption {
                 type = lib.types.str;
-                default = linkAddress inventory.carrierPrefix config.site config.plane false;
+                default = linkAddress inventory.carrierPrefix6 config.site config.plane false;
                 defaultText = lib.literalExpression "the far end of the same /127";
                 description = "The far site's carrier address, without a prefix length.";
               };
@@ -703,7 +703,7 @@ in
       content = ''
         chain prerouting {
           type filter hook prerouting priority raw; policy accept;
-          iifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} fib daddr type != local notrack
+          iifname "icl-*" ip6 saddr ${inventory.ulaPrefix6} ip6 daddr ${inventory.ulaPrefix6} fib daddr type != local notrack
           iifname "icl-*" ip saddr ${site4} ip daddr ${site4} fib daddr type != local notrack
         }
       '';
@@ -740,9 +740,7 @@ in
       family = "inet";
       content =
         let
-          circuits = lib.concatMapStringsSep ", " (link: ''"${link.interface}"'') (
-            lib.attrValues cfg.links
-          );
+          circuits = lib.concatMapStringsSep ", " (link: ''"${link.interface}"'') (lib.attrValues cfg.links);
           set = name: ''
             set ${name} {
               type ifname
@@ -774,16 +772,14 @@ in
     # on each side. The wildcard admits a circuit to a new site without a
     # second place to remember.
     networking.firewall.extraForwardRules = lib.mkIf config.networking.firewall.enable ''
-      iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix} ip6 daddr ${inventory.ulaPrefix} counter accept comment "site transit between circuits"
+      iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.ulaPrefix6} ip6 daddr ${inventory.ulaPrefix6} counter accept comment "site transit between circuits"
       iifname "icl-*" oifname "icl-*" ip saddr ${site4} ip daddr ${site4} counter accept comment "site transit between circuits"
     '';
 
     # isisd alongside bird, not instead of it. The two carry disjoint
     # prefixes -- our own topology here, the dn42 table there -- so neither
     # daemon writes a route the other owns, which is what keeps them out of
-    # each other's way in the kernel. The split is only real once dn42's
-    # ibgpInternal is turned off; until then iBGP still carries our own
-    # prefixes and this runs beside it for comparison.
+    # each other's way in the kernel.
     services.frr = lib.mkIf cfg.isis.enable {
       isisd.enable = true;
       # Rendered by sops at activation rather than written to the store,
@@ -869,9 +865,11 @@ in
             !
           '';
           aggregate4 = lib.optionalString (cfg.isis.aggregate4 != [ ]) ''
-            ${lib.concatImapStrings (
-              i: p: "ip prefix-list isis-aggregate4 seq ${toString (5 * i)} permit ${p}\n"
-            ) cfg.isis.aggregate4}!
+            ${
+              lib.concatImapStrings (
+                i: p: "ip prefix-list isis-aggregate4 seq ${toString (5 * i)} permit ${p}\n"
+              ) cfg.isis.aggregate4
+            }!
             route-map isis-aggregate4 permit 10
              match ip address prefix-list isis-aggregate4
             !
@@ -885,9 +883,11 @@ in
               ip = if family == "ipv6" then "ipv6" else "ip";
             in
             lib.optionalString (prefixes != [ ]) ''
-              ${lib.concatImapStrings (
-                i: p: "${ip} prefix-list isis-kernel-deny-${family} seq ${toString (5 * i)} permit ${p}\n"
-              ) prefixes}!
+              ${
+                lib.concatImapStrings (
+                  i: p: "${ip} prefix-list isis-kernel-deny-${family} seq ${toString (5 * i)} permit ${p}\n"
+                ) prefixes
+              }!
               route-map isis-kernel-${family} deny 10
                match ${ip} address prefix-list isis-kernel-deny-${family}
               !

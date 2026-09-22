@@ -7,6 +7,7 @@
   imports = [
     ../modules/aws-edge.nix
     ./interconnect.nix
+    ./dn42.nix
   ];
 
   # Its own site, with no subnets: nothing here is named in internal DNS and

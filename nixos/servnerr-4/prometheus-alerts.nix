@@ -38,6 +38,12 @@ let
   # so it is expected to be down, and to be broken on purpose while someone
   # works on it. The external dn42e_ peers still alert normally.
   internalProtocols = raw "dn42i_.*";
+
+  # The iBGP sessions over the interconnect (icl_<site><plane>, see
+  # modules/dn42.nix): a site without peers of its own exports nothing
+  # over them, so the peering site's end is Established and empty by
+  # design. Session state still alerts; an empty import does not.
+  interconnectProtocols = raw "icl_.*";
   internalInterfaces = raw "dn42i-.*";
 
   # The IS-IS sample, matched on its name so the textfile directory's path
@@ -140,7 +146,7 @@ in
         # silently drops the other address family.
         {
           alert = "BIRDBGPNoRoutesImported";
-          expr = ''bird_protocol_prefix_import_count{proto="BGP",name!~${internalProtocols}} == 0 and on (instance, name, ip_version) bird_protocol_up{proto="BGP"} == 1'';
+          expr = ''bird_protocol_prefix_import_count{proto="BGP",name!~${internalProtocols},name!~${interconnectProtocols}} == 0 and on (instance, name, ip_version) bird_protocol_up{proto="BGP"} == 1'';
           for = "30m";
           annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is Established but has imported no routes.";
         }
