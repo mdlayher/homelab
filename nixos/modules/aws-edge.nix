@@ -96,6 +96,7 @@ in
           9342 # frr_exporter
           9586 # wireguard exporter
           9630 # nftables exporter
+          9631 # dn42 peer exporter
           12345 # alloy
           53 # resolver, when this site is the nearest node holding it
         ];

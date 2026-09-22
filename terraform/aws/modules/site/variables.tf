@@ -49,6 +49,16 @@ variable "carrier_ports" {
   EOT
 }
 
+variable "peer_ports" {
+  type        = set(string)
+  default     = []
+  description = <<-EOT
+    The WireGuard listen ports of this site's dn42 peer tunnels, one per
+    peer, from the peer's port in nixos/<site>/dn42.nix. Not secrets, for
+    the same reason as the carrier ports.
+  EOT
+}
+
 variable "ssh_public_key" {
   type        = string
   description = <<-EOT

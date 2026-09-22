@@ -20,6 +20,8 @@ module "pdx" {
   availability_zone = "us-west-2a"
 
   carrier_ports = ["51120", "51121", "51230"]
+  # sidereal; see nixos/edge-pdx/dn42.nix.
+  peer_ports = ["22016"]
 
   ssh_public_key      = local.ssh_public_key
   ssh_bootstrap_cidrs = lookup(var.ssh_bootstrap_cidrs, "pdx", [])

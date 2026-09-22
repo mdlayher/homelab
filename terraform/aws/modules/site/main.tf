@@ -143,6 +143,33 @@ resource "aws_vpc_security_group_ingress_rule" "carrier_v6" {
   description = "WireGuard carrier"
 }
 
+# The dn42 peer tunnels, on the same terms as the carriers: a peer's
+# address is theirs to change, and WireGuard answers nothing it cannot
+# authenticate.
+resource "aws_vpc_security_group_ingress_rule" "peer_v4" {
+  for_each = var.peer_ports
+
+  security_group_id = aws_security_group.this.id
+
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = tonumber(each.key)
+  to_port     = tonumber(each.key)
+  ip_protocol = "udp"
+  description = "dn42 peer tunnel"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "peer_v6" {
+  for_each = var.peer_ports
+
+  security_group_id = aws_security_group.this.id
+
+  cidr_ipv6   = "::/0"
+  from_port   = tonumber(each.key)
+  to_port     = tonumber(each.key)
+  ip_protocol = "udp"
+  description = "dn42 peer tunnel"
+}
+
 # The interconnect landing page (see nixos/modules/icl-page.nix). Port 80
 # also carries the HTTP-01 challenge that certifies it, which is why the
 # certificate needs no Cloudflare credential on a machine reachable from

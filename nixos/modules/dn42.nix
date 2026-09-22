@@ -562,8 +562,17 @@ in
     # loopback (see modules/loopback.nix): the dummy holding them is
     # advertised without running the protocol on it. Only where the
     # interconnect is declared at all, since the option is its.
+    # What this site's dn42 hosts need from the IGP once another site
+    # originates the aggregates too: that site's own unreachable route
+    # would otherwise swallow them. The VLANs are passive, which
+    # advertises their /64s, and each VLAN's on-link IPv4 block is
+    # redistributed the way the site aggregates are, since a link route
+    # is not an address and a passive interface does not carry it.
     homelab = lib.optionalAttrs (options.homelab ? interconnect) {
-      interconnect.isis.passiveInterfaces = lib.mkIf (cfg.ibgp != [ ]) [ "dn42" ];
+      interconnect.isis = lib.mkIf (cfg.ibgp != [ ]) {
+        passiveInterfaces = [ "dn42" ] ++ lib.mapAttrsToList (_: vlan: vlan.interface) cfg.vlans;
+        aggregate4 = lib.filter (p: p != null) (lib.mapAttrsToList (_: vlan: vlan.onLink4) cfg.vlans);
+      };
     };
 
     # wg show is how to read a tunnel's handshake and transfer counters at
@@ -1070,41 +1079,61 @@ in
       birdVersion = 2;
     };
 
-    # What a site running the NixOS firewall admits for iBGP; the router's
+    # What a site running the NixOS firewall admits for dn42; the router's
     # own ruleset carries the equivalent by hand (see its nftables.nix).
-    # Sessions and BFD arrive from each circuit's far link-local. dn42
-    # between two other sites passes through here when the circuit
-    # joining them is down and the table is reflected this way; such a
-    # flow is seen in one direction only, so it is left untracked before
-    # the firewall's invalid drop can discard it, and accepted from the
-    # untracked branch. Bounded as bird's is_valid_network functions
-    # bound dn42.
-    networking.firewall = lib.mkIf (cfg.ibgp != [ ] && config.networking.firewall.enable) {
-      extraInputRules = lib.concatMapStrings (
-        name:
-        let
-          link = config.homelab.interconnect.links.${name};
-        in
-        ''
-          iifname "${link.interface}" ip6 saddr ${link.lla} tcp dport 179 accept comment "dn42 iBGP over the circuit"
-          iifname "${link.interface}" ip6 saddr ${link.lla} udp dport 3784 accept comment "dn42 iBGP BFD over the circuit"
-        ''
-      ) cfg.ibgp;
-      extraForwardRules = ''
-        iifname "icl-*" oifname "icl-*" ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} counter accept comment "dn42 transit between circuits"
-        iifname "icl-*" oifname "icl-*" ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} counter accept comment "dn42 transit between circuits"
-      '';
-    };
+    # Sessions and BFD arrive from each circuit's far link-local and from
+    # each peer's, and a peer's tunnel listens on its port to the whole
+    # internet, since the far end's address is not ours to pin. dn42
+    # transits here between circuits, when the circuit joining two other
+    # sites is down and the table is reflected this way, and between a
+    # peer and a circuit, which is what a peer at this site is for; either
+    # flow may be seen in one direction only, so it is left untracked
+    # before the firewall's invalid drop can discard it, and accepted from
+    # the untracked branch. Bounded as bird's is_valid_network functions
+    # bound dn42, less the site ULA, which is inside fd00::/8 and never
+    # dn42's to reach.
+    networking.firewall =
+      lib.mkIf ((cfg.ibgp != [ ] || cfg.peers != { }) && config.networking.firewall.enable)
+        {
+          allowedUDPPorts = lib.mapAttrsToList (_: peer: peer.port) cfg.peers;
+          extraInputRules =
+            lib.concatMapStrings (
+              name:
+              let
+                link = config.homelab.interconnect.links.${name};
+              in
+              ''
+                iifname "${link.interface}" ip6 saddr ${link.lla} tcp dport 179 accept comment "dn42 iBGP over the circuit"
+                iifname "${link.interface}" ip6 saddr ${link.lla} udp dport 3784 accept comment "dn42 iBGP BFD over the circuit"
+              ''
+            ) cfg.ibgp
+            + lib.concatMapStrings (peer: ''
+              iifname "${peer.interface}" ip6 saddr ${peer.lla} tcp dport 179 accept comment "dn42 peer session"
+              iifname "${peer.interface}" ip6 saddr ${peer.lla} udp dport 3784 accept comment "dn42 peer BFD"
+            '') (lib.attrValues cfg.peers);
+          extraForwardRules = ''
+            iifname { "icl-*", "dn42e-*" } oifname { "icl-*", "dn42e-*" } ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} counter accept comment "dn42 transit"
+            iifname { "icl-*", "dn42e-*" } oifname { "icl-*", "dn42e-*" } ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} ip6 daddr != ${inventory.ulaPrefix6} counter accept comment "dn42 transit"
+          '';
+        };
 
+    # The tunnels run at 1420 and the circuits at less, so a TCP flow
+    # transiting between them is clamped to the route's MTU on the way
+    # through, before the forward chain sees it.
     networking.nftables.tables.dn42-transit =
-      lib.mkIf (cfg.ibgp != [ ] && config.networking.firewall.enable)
+      lib.mkIf ((cfg.ibgp != [ ] || cfg.peers != { }) && config.networking.firewall.enable)
         {
           family = "inet";
           content = ''
             chain prerouting {
               type filter hook prerouting priority raw; policy accept;
-              iifname "icl-*" ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} fib daddr type != local notrack
-              iifname "icl-*" ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} fib daddr type != local notrack
+              iifname { "icl-*", "dn42e-*" } ip saddr ${inventory.dn42.prefix4} ip daddr ${inventory.dn42.prefix4} fib daddr type != local notrack
+              iifname { "icl-*", "dn42e-*" } ip6 saddr ${inventory.dn42.prefix6} ip6 daddr ${inventory.dn42.prefix6} fib daddr type != local notrack
+            }
+            chain forward {
+              type filter hook forward priority filter - 1; policy accept;
+              oifname { "icl-*", "dn42e-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
+              iifname { "icl-*", "dn42e-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
             }
           '';
         };
