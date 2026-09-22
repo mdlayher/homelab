@@ -57,12 +57,24 @@ let
   # Addresses are secrets from the inventory, so rules reference named sets
   # which are populated at activation time from this rendered file. Empty sets
   # fail closed.
+  #
+  # Each set is flushed before it is filled: an address that changed must
+  # replace the element holding its old value, and a map keyed on port rejects
+  # a second element for a key it already holds. nft applies the file as one
+  # transaction, so no set is observably empty.
   elements =
     let
       routers = ifi: lib.concatMapStringsSep ", " (addr: "${ifi.name} . ${addr}");
       forwards = f: lib.concatMapStringsSep ", " f tailscale.forwards;
     in
     ''
+      flush set inet filter router_v4
+      flush set inet filter router_v6
+      flush set inet filter tailscale_v4
+      flush set inet filter tailscale_v6
+      ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
+      flush map ip nat tailscale_dnat
+
       add element inet filter router_v4 { ${
         lib.concatMapStringsSep ", " (ifi: routers ifi [ ifi.ipv4 ]) restricted
       } }
@@ -159,18 +171,25 @@ in
   # The exporter for the named counters below; see the module.
   imports = [ ../modules/nftables-exporter.nix ];
 
-  sops.templates."nftables-inventory.conf" = {
-    content = elements;
-    restartUnits = [ "nftables-inventory.service" ];
-  };
+  sops.templates."nftables-inventory.conf".content = elements;
 
   # Load inventory set elements after the ruleset is (re)loaded, since loading
-  # the ruleset flushes all sets.
+  # the ruleset flushes all sets, and after the secrets are installed: sops
+  # restarts a template's restartUnits before it swaps /run/secrets to the
+  # newly rendered files, so a unit restarted that way reads the previous
+  # contents and reports success. Binding to the installer's unit runs this
+  # once the new file is in place, and only when a rendered file changed.
   systemd.services.nftables-inventory = {
     description = "nftables inventory set elements";
-    after = [ "nftables.service" ];
+    after = [
+      "nftables.service"
+      "sops-install-secrets.service"
+    ];
     requires = [ "nftables.service" ];
-    partOf = [ "nftables.service" ];
+    partOf = [
+      "nftables.service"
+      "sops-install-secrets.service"
+    ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
