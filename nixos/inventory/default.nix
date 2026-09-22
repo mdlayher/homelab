@@ -311,7 +311,6 @@
       # host is named, so the role exists to classify the segment alone.
       guest0 = {
         vlan = 9;
-        legacy = true;
         trusted = false;
         role = "guest";
       };
