@@ -335,7 +335,6 @@
       # IoT VLAN: internet only, mDNS reflected from trusted LANs.
       iot0 = {
         vlan = 66;
-        legacy = true;
         trusted = false;
         role = "iot";
         hosts = {
