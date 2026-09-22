@@ -319,7 +319,6 @@
       # server running agents and networking experiments.
       dev0 = {
         vlan = 20;
-        legacy = true;
         trusted = false;
         # Networking experiments need to see the fabric they run on, so
         # this segment may ping and trace where the others may not.
