@@ -290,7 +290,9 @@ in
         default = [ ];
         description = ''
           IPv6 prefixes this router learns from the IGP but must not
-          install, exactly as written. A second router at a site learns
+          install, as prefix-list entries: a prefix alone matches exactly,
+          and "le N" after it covers its more specifics too. A second
+          router at a site learns
           its own site's aggregates from the first, pointing over the
           circuit between them, while it reaches that site over its LAN;
           installed, they would carry its LAN traffic across the circuit
@@ -875,7 +877,7 @@ in
             !
           '';
           # What zebra installs from the IGP: everything but the prefixes
-          # named in kernelDeny, matched exactly by a prefix-list and
+          # named in kernelDeny, matched by a prefix-list and
           # dropped by a route-map zebra applies to isisd's routes.
           kernelDeny =
             family: prefixes:

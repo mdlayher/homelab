@@ -62,15 +62,19 @@ in
         # path to those. Our dn42 space on the same terms, written as
         # networking.nix writes it: this machine's dn42 address sits on the
         # router's dn42 VLAN, and the IGP's routes to the router's own dn42
-        # addresses would pull that traffic onto the circuit too.
+        # addresses would pull that traffic onto the circuit too. Those are
+        # host routes from the router's passive dn42 interface, so the
+        # allocation is denied with everything beneath it: every dn42
+        # node's address, this site's or another's, is reached through
+        # the VLAN.
         kernelDeny6 = [
           inventory.ulaPrefix6
-          inventory.dn42.net6
+          "${inventory.dn42.net6} le 128"
         ];
         kernelDeny4 = [
           inventory.privatePrefix4
           inventory.legacyPrefix4
-          inventory.dn42.net4
+          "${inventory.dn42.net4} le 32"
         ];
       };
     };
