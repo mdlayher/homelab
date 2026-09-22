@@ -273,7 +273,6 @@
       # Physical management LAN: servers and network infrastructure.
       mgmt0 = {
         vlan = 0;
-        legacy = true;
         trusted = true;
         # DNS namespace for hosts here, and the search domain this segment is
         # handed. A role rather than the interface name: two segments serving
