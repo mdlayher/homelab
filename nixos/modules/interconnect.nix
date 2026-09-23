@@ -983,6 +983,15 @@ in
     # alternative is a YubiKey touch each.
     users.users.${config.homelab.user}.extraGroups = lib.mkIf cfg.isis.enable [ "frrvty" ];
 
+    # zebra installs its routes as kernel nexthop groups, which networkd
+    # deletes on restart as foreign. zebra's reinstall can fail and is not
+    # retried, leaving IS-IS up with routes missing (2026-09-23), so
+    # networkd leaves routes and nexthops it did not configure alone.
+    systemd.network.config.networkConfig = lib.mkIf cfg.isis.enable {
+      ManageForeignRoutes = false;
+      ManageForeignNextHops = false;
+    };
+
     # There is no IS-IS exporter. tynany's frr_exporter is the only one
     # packaged, and it collects BGP, OSPF, BFD, PIM and VRRP -- the binary
     # does not contain the string "isis". Adjacency state is therefore not
