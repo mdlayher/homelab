@@ -432,12 +432,15 @@ let
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
     # Every host expected to ship logs to Loki: the machines themselves plus
-    # their containers and microvms, whose journals the hosting machine
-    # ships; see nixos/modules/alloy.nix.
+    # the containers and microvms they start, whose journals the hosting
+    # machine ships; see nixos/modules/alloy.nix. A guest started by hand
+    # is left out for the reason it is not scraped.
     logHosts =
       lib.attrNames nixosHosts
       ++ lib.concatMap (
-        system: lib.attrNames system.config.containers ++ lib.attrNames (system.config.microvm.vms or { })
+        system:
+        lib.attrNames (lib.filterAttrs (_: c: c.autoStart) system.config.containers)
+        ++ lib.attrNames (lib.filterAttrs (_: vm: vm.autostart) (system.config.microvm.vms or { }))
       ) (lib.attrValues inputs.self.nixosConfigurations);
   };
 

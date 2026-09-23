@@ -521,7 +521,7 @@ in
         {
           alert = "LokiHostLogsStalled";
           expr = lib.concatMapStringsSep " or " (
-            host: ''absent(max_over_time(host:log_lines:count1h{host="${host}"}[6h]))''
+            host: ''absent_over_time(host:log_lines:count1h{host="${host}"}[6h])''
           ) logHosts;
           for = "30m";
           annotations.summary = "{{ $labels.host }} has shipped no logs to Loki for over six hours.";
