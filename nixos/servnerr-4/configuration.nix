@@ -17,6 +17,7 @@
     ../modules/coredns.nix
     ./dev.nix
     ./inventory-metrics.nix
+    ./netbox.nix
     ./loki.nix
     ./prometheus.nix
   ];

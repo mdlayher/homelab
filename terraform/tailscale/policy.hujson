@@ -79,21 +79,31 @@
 				"svc:consrv",
 				"svc:grafana",
 				"svc:loki",
+				"svc:netbox",
 				"svc:prometheus",
 			],
 			"ip": ["*"],
 		},
 
-		// The development container reads metrics, alerts, and logs only:
-		// no Grafana (it has its own auth and state) and no serial consoles.
+		// The development container reads metrics, alerts, logs, and the
+		// NetBox mirror, but not Grafana (it has its own auth and state).
 		{
 			"src": ["tag:dev"],
 			"dst": [
 				"svc:alertmanager",
 				"svc:loki",
+				"svc:netbox",
 				"svc:prometheus",
 			],
 			"ip": ["tcp:443"],
+		},
+
+		// The serial consoles from the development container. consrv still
+		// requires an SSH login.
+		{
+			"src": ["tag:dev"],
+			"dst": ["svc:consrv"],
+			"ip": ["tcp:22"],
 		},
 
 		// The server's blackbox exporter probes the web services end to end
@@ -121,6 +131,7 @@
 			"svc:consrv":       ["tag:infra"],
 			"svc:grafana":      ["tag:infra"],
 			"svc:loki":         ["tag:infra"],
+			"svc:netbox":       ["tag:infra"],
 			"svc:prometheus":   ["tag:infra"],
 		},
 	},
