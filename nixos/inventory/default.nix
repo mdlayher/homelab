@@ -143,6 +143,11 @@
   # one the choice falls to whatever else the machine happens to hold.
   circuitPrefix6 = "fd9e:1a04:f01d:fc00::/56";
 
+  # Remote access tunnels, a /64 per site written fbSS. Inside the site
+  # ULA, so a restricted LAN's route for it carries replies back to the
+  # router rather than out the dn42 VLAN's fd00::/8.
+  remotePrefix6 = "fd9e:1a04:f01d:fb00::/56";
+
   # Links joining two routers at one site. The interconnect module derives a
   # link's addresses from the two sites' indices, which collapses when both
   # ends sit at the same site: each computes the same pair and each claims

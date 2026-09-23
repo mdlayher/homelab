@@ -22,6 +22,7 @@ in
     ./neighbor-metrics.nix
     ./network-snapshot.nix
     ./peerfinder.nix
+    ./remote-access.nix
   ];
 
   # This machine is at the home site; see nixos/inventory/.

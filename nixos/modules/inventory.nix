@@ -203,30 +203,36 @@ in
     type = lib.types.raw;
     readOnly = true;
     description = ''
-      Network inventory with addresses as sops placeholders. The prefixes
-      are the exception and are plain data, since each names a range rather
-      than an address: ulaPrefix6 and privatePrefix4, the spaces every site is
-      drawn from, each interface's ULA and IPv4 prefix built from those by
-      site index and VLAN (its GUA prefix stays a placeholder), and the
-      carve-outs from the ULA -- labPrefix6,
-      carrierPrefix6, loopbackPrefix6, circuitPrefix6, locatorPrefix6 and
-      anycastPrefix6, plus
-      anycast, the service address drawn from that last one for each
-      service answered at every site. So are dn42, its whole space and
-      our allocation in it, and isis, the area
-      and per-router system IDs. See nixos/inventory/ for what each covers.
-      Scoped to this machine's homelab.site: domain, interfaces, hosts and
-      loopbacks are that site's alone, while sites carries every site's
-      index, domain, prefix and loopbacks. A site's
-      index is the number every addressing scheme keys on, its prefix is the
-      /56 built from that index, and the identifier of a link between two
-      sites is their pair of indices.
-      Interfaces carry the router's addresses and prefixes, their role and
-      searchDomain, plus their hosts; hosts carry mac, ipv4, ula and iid
-      (both null when the host has no known IPv6 address, and iid also where
-      the identifier differs per prefix) and dnsName, the name DNS
-      publishes. privateZones is the space-separated private DNS zone list,
-      null at a site with no subnets.
+      Network inventory with addresses as sops placeholders. See
+      nixos/inventory/ for what each value covers.
+
+      Prefixes are plain data rather than placeholders, since each names a
+      range rather than an address: ulaPrefix6 and privatePrefix4, the
+      spaces every site is drawn from, and the infrastructure blocks within
+      them (labPrefix6, labPrefix4, carrierPrefix6, circuitPrefix6,
+      circuitPrefix4, locatorPrefix6, remotePrefix6, loopbackPrefix6,
+      loopbackPrefix4, anycastPrefix6, anycastPrefix4, cloudPrefix4). So
+      are anycast6 and anycast4, the per-service addresses drawn from the
+      anycast prefixes; dn42, its whole space and our allocation in it;
+      isis, the area and per-router system IDs; and siteLinks, roles,
+      services, zone and tailnetDomain.
+
+      domain, interfaces, hosts, loopbacks and privateZones are scoped to
+      this machine's homelab.site. sites carries every site's index,
+      domain, prefix6, prefix4 and loopbacks. A site's index is the number
+      every addressing scheme keys on, its prefixes are built from that
+      index, and the identifier of a link between two sites is their pair
+      of indices.
+
+      Interfaces carry the router's addresses, their ULA and IPv4 prefixes
+      built from the site index and VLAN (the GUA prefix stays a
+      placeholder), their role and searchDomain, plus their hosts. Hosts
+      carry mac, ipv4, ula and iid (both null when the host has no known
+      IPv6 address, and iid also where the identifier differs per prefix)
+      and dnsName, the name DNS publishes. privateZones is the
+      space-separated private DNS zone list, null at a site with no
+      subnets.
+
       Loopbacks are keyed by machine name and are plain data, since they are
       read across sites: each carries addr, siteFqdn (null except on the
       one loopback a site's fabric is reached at), and dnsName with the
@@ -303,6 +309,7 @@ in
         carrierPrefix6
         circuitPrefix6
         circuitPrefix4
+        remotePrefix6
         cloudPrefix4
         locatorPrefix6
         dn42

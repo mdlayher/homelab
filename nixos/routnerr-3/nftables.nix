@@ -73,6 +73,7 @@ let
       flush set inet filter tailscale_v4
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
+      flush set inet filter remote_access_v6
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -93,6 +94,9 @@ let
         "add element inet filter icl_services_v6 { ${
           lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
         } }"
+      }
+      ${lib.optionalString (remoteReaches != [ ])
+        "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"
       }
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
@@ -136,6 +140,16 @@ let
     port =
       inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port;
   }) inventory.roles.server;
+
+  # The remote access tunnel (see remote-access.nix): each device's
+  # address with every host and port it reaches, as set elements.
+  remote = config.homelab.remoteAccess;
+  remoteReaches = lib.concatMap (
+    device:
+    map (
+      r: "${device.address} . ${inventory.hosts.${r.target}.ula} . ${r.protocol} . ${toString r.port}"
+    ) device.reaches
+  ) (lib.attrValues remote.devices);
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -256,6 +270,8 @@ in
       define mdns = 5353
       define tailscale_router = ${toString tailscale.router}
       define tailscale_relay = ${toString tailscale.relay}
+      define remote_access = ${toString remote.port}
+      define remote_ifname = ${remote.interface}
 
       table inet filter {
         # Named counters for notable drops and rejects, readable as one list
@@ -278,6 +294,7 @@ in
           counter icl_tailscale_probe {}
         ''}
         counter dn42_inbound_drop {}
+        counter remote_forward_drop {}
         counter blackhole_drop {}
 
         # Router addresses on restricted LANs: the only local destinations
@@ -295,6 +312,12 @@ in
         }
         set tailscale_v6 {
           type ipv6_addr . inet_service
+        }
+
+        # What each remote access device may initiate toward, by device
+        # address, host address, protocol and port; see forward_remote.
+        set remote_access_v6 {
+          type ipv6_addr . ipv6_addr . inet_proto . inet_service
         }
 
         ${lib.optionalString icl ''
@@ -443,6 +466,10 @@ in
           # Each accepted connection may cost a ping, and the backend
           # measures rarely, so the rate is far below the page's.
           tcp dport $peerfinder limit rate 5/second burst 10 packets counter accept comment "router WAN peerfinder"
+
+          # The remote access tunnel (see remote-access.nix). WireGuard
+          # answers only a handshake from the one key it knows.
+          udp dport $remote_access counter accept comment "remote access WireGuard"
         }
 
         # From the internet: silently drop everything not explicitly allowed.
@@ -633,6 +660,7 @@ in
           ct state invalid counter drop
 
           iifname $wans jump forward_wan
+          iifname $remote_ifname jump forward_remote
 
           # Our own dn42 hosts face dn42 the way the LANs face the internet:
           # they initiate toward it, and it reaches them only through the
@@ -735,6 +763,15 @@ in
             counter name icl_forward_drop drop
           }
         ''}
+
+        # From the remote access tunnel: each device to the hosts and ports
+        # it reaches, and nothing else. Replies return as established.
+        chain forward_remote {
+          ip6 saddr . ip6 daddr . meta l4proto . th dport @remote_access_v6 counter accept comment "remote access device reaches"
+
+          limit rate 10/minute burst 20 packets log prefix "nft forward remote drop: "
+          counter name remote_forward_drop drop
+        }
 
         # From the internet to LANs: only ICMP errors and Tailscale to
         # specific hosts; silently drop the rest.
