@@ -179,6 +179,13 @@ in
   # firmware to update. fwupd also pulls in udisks2, which the EC2 image
   # module turns off, so leaving it on is an eval conflict rather than
   # merely a useless unit.
+  # Deploys and the nightly upgrade build on the machine, and packages
+  # missing from the binary cache compile here. One job at a time, with
+  # compressed swap, so a build that outgrows memory runs slowly instead of
+  # stalling the whole machine.
+  nix.settings.max-jobs = 1;
+  zramSwap.enable = true;
+
   services.fwupd.enable = lib.mkForce false;
   services.smartd.enable = lib.mkForce false;
   services.prometheus.exporters.smartctl.enable = lib.mkForce false;
