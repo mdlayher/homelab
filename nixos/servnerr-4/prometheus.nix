@@ -155,9 +155,14 @@ let
     lib.concatMap (
       system:
       let
+        # A guest the host does not start is not scraped: its target would
+        # be down for as long as it stays stopped, which is indistinguishable
+        # from one that failed.
         guests =
-          lib.mapAttrs (_: c: c.config) system.config.containers
-          // lib.mapAttrs (_: vm: vm.config.config) (system.config.microvm.vms or { });
+          lib.mapAttrs (_: c: c.config) (lib.filterAttrs (_: c: c.autoStart) system.config.containers)
+          // lib.mapAttrs (_: vm: vm.config.config) (
+            lib.filterAttrs (_: vm: vm.autostart) (system.config.microvm.vms or { })
+          );
       in
       lib.concatMap (
         name:

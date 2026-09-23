@@ -484,6 +484,14 @@ let
     lib.recursiveUpdate {
       autoStart = true;
 
+      # A host switch installs the new configuration but leaves the container
+      # running: these hold sessions and lab state a restart would discard,
+      # and nothing in them serves the rest of the network. Apply it with
+      # `systemctl reload container@<name>`, which activates the new system
+      # inside; scaffolding changes (bind mounts, networking, tun) still need
+      # a manual restart.
+      restartIfChanged = false;
+
       # Own network namespace, bridged onto the dev0 VLAN.
       privateNetwork = true;
       hostBridge = "br-dev0";
@@ -511,6 +519,12 @@ let
   devVM =
     hostName: token: mac: machineId: modules: extra:
     lib.recursiveUpdate {
+      # As with the dev containers above: a host switch installs the new
+      # runner and leaves the guest running. A guest picks up a
+      # configuration only by booting it, so `systemctl restart
+      # microvm@<name>` is how a change is applied, deliberately.
+      restartIfChanged = false;
+
       config = {
         imports = [ (devModule hostName token) ] ++ modules;
 
@@ -891,7 +905,12 @@ in
           }
         )
       ]
-      { };
+      {
+        # Left out of microvm.autostart, so neither a boot nor a host
+        # switch starts it. `systemctl start microvm@quicdev` runs it
+        # when it is wanted.
+        autostart = false;
+      };
 
   # Homa transport development against the Homa kernel module, the same
   # arrangement as quicdev for the same reasons: an out-of-tree module kept
@@ -926,7 +945,12 @@ in
           }
         )
       ]
-      { };
+      {
+        # Left out of microvm.autostart, so neither a boot nor a host
+        # switch starts it. `systemctl start microvm@homadev` runs it
+        # when it is wanted.
+        autostart = false;
+      };
 
   containers = {
     linuxdev =
@@ -1290,12 +1314,9 @@ in
           # (see networking.nix); the container sees it under this name.
           extraVeths.${dn42.ifname}.hostBridge = "br-dn42i-dev0";
 
-          # linuxdev hosts long-lived agent sessions, so never restart it on a
-          # host switch. Config changes are applied to the running container
-          # with `systemctl reload container@linuxdev`, which activates the new
-          # system inside via switch-to-configuration; changes to the container
-          # scaffolding itself (bind mounts, networking, tun) still need a
-          # manual `systemctl restart container@linuxdev`.
+          # Stated again rather than left to the default above: this one
+          # holds the agent sessions, so a change to that default must not
+          # quietly start restarting it out from under them.
           restartIfChanged = false;
         };
 
