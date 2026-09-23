@@ -228,16 +228,18 @@ in
           for = "10m";
           annotations.summary = "FRR on {{ $labels.instance }} is down or a collector is failing, so the IGP is unmonitored.";
         }
-        # The IGP's BFD session on each circuit (modules/interconnect.nix),
-        # one series per session from bfdd. Detection is under a second,
-        # so a session still down after 5 minutes has taken its adjacency
-        # with it; ISISAdjacencyDown fires beside this and this names the
-        # mechanism.
+        # isisd removes a circuit's BFD session with its adjacency, so a
+        # dead circuit's frr_bfd_peer_state vanishes rather than reading 0
+        # and ISISAdjacencyDown covers it. This is the other case: an
+        # adjacency up on hellos alone, with no BFD session behind it. The
+        # adjacency sample labels the circuit interface, the exporter
+        # iface; joined on site, since the two exporters have different
+        # instance ports.
         {
-          alert = "FRRBFDPeerDown";
-          expr = "frr_bfd_peer_state == 0";
+          alert = "ISISBFDSessionMissing";
+          expr = ''homelab_isis_adjacency_up == 1 unless on (site, interface) label_replace(frr_bfd_peer_state == 1, "interface", "$1", "iface", "(.*)")'';
           for = "5m";
-          annotations.summary = "BFD session with {{ $labels.peer }} on {{ $labels.iface }} ({{ $labels.instance }}) is down.";
+          annotations.summary = "IS-IS adjacency on {{ $labels.interface }} ({{ $labels.instance }}) is up without an up BFD session, so a dead circuit would take the 30 s hello holding time to notice.";
         }
         # The adjacency itself, from the textfile exporter in
         # nixos/modules/isis-metrics.nix. Its series are rendered from the

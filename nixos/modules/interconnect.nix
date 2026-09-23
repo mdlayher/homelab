@@ -778,8 +778,8 @@ in
       iifname "icl-*" oifname "icl-*" ip saddr ${site4} ip daddr ${site4} counter accept comment "site transit between circuits"
     '';
 
-    # The IGP's BFD control packets, from each circuit's far link-local.
-    # IS-IS itself is not IP and never meets this firewall; its BFD is.
+    # The IGP's BFD, from each circuit's far link-local. IS-IS itself is
+    # not IP and never meets this firewall.
     networking.firewall.extraInputRules =
       lib.mkIf (cfg.isis.enable && config.networking.firewall.enable)
         (
@@ -794,10 +794,8 @@ in
     # each other's way in the kernel.
     services.frr = lib.mkIf cfg.isis.enable {
       isisd.enable = true;
-      # BFD on every circuit, for isisd: a carrier gives no link-down
-      # signal, and this is what tells the IGP a circuit died within a
-      # second. Nothing else on an IGP node may hold UDP 3784; dn42.nix
-      # asserts bird does not.
+      # BFD for isisd: a carrier gives no link-down signal. bfdd holds UDP
+      # 3784, so dn42.nix asserts bird's BFD is off on an IGP node.
       bfdd.enable = true;
       # Rendered by sops at activation rather than written to the store,
       # since the IS-IS password is in it; see the template below.
@@ -837,13 +835,12 @@ in
           # second at full size is most of an idle carrier's traffic, and
           # the MTU was proved the moment the adjacency came up.
           #
-          # BFD detects a dead circuit, at bfdd's defaults of 300 ms and
-          # three missed; the hellos, a second apart and three missed,
-          # are the backstop while a BFD session has not yet formed.
-          # isisd runs one BFD session per circuit, over IPv6 link-local
-          # when both families are configured, and drops the adjacency
-          # only on a BFD up-to-down transition, so an end whose far side
-          # runs no BFD yet keeps its adjacency on hellos alone.
+          # BFD detects a dead circuit (bfdd defaults, 300 ms x3); hellos
+          # stay at isisd's defaults (3 s, 30 s hold) and only form the
+          # adjacency. One BFD session per circuit, over IPv6 link-local.
+          # isisd drops an adjacency only on a BFD up-to-down transition,
+          # so a far end without BFD keeps its adjacency on hellos, which
+          # ISISBFDSessionMissing reports.
           circuit = link: ''
             interface ${link.interface}
              ip router isis ${tag}
@@ -851,8 +848,6 @@ in
              isis circuit-type level-2-only
              isis network point-to-point
              isis hello padding during-adjacency-formation
-             isis hello-interval 1
-             isis hello-multiplier 3
              isis password md5 ${password}
              isis bfd
             ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
@@ -1004,8 +999,7 @@ in
     #   state of each daemon. isisd can be dead with frr_status_up still 1,
     #   so it is a liveness check for FRR itself and nothing more.
     #
-    # bfd stays on: frr_bfd_peer_state per circuit is the IGP's own
-    # failure detector, one series per session. bgp and ospf are on by
+    # bfd stays on (frr_bfd_peer_state per session). bgp and ospf are on by
     # default and would each query a daemon this router does not run;
     # disabling them is what keeps the scrape from erroring rather than
     # merely reporting nothing.

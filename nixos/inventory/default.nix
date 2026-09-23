@@ -49,9 +49,8 @@
   #
   # Each dn42 node's loopback, keyed by machine name: the IPv4 from the
   # pool of routed /32s, the IPv6 from site 00's loopback /64 with the
-  # site and router digits the ULA loopback uses. Registered here rather
-  # than in each site's dn42.nix because every node names the others as
-  # its iBGP neighbours (see nixos/modules/dn42.nix).
+  # site and router digits the ULA loopback uses. Here rather than in each
+  # site's dn42.nix because every node names the others as iBGP neighbours.
   dn42 = {
     prefix4 = "172.20.0.0/14";
     prefix6 = "fd00::/8";

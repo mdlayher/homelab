@@ -62,14 +62,11 @@ let
   # bird protocol names allow underscores but not dashes.
   birdName = name: lib.replaceStrings [ "-" ] [ "_" ] name;
 
-  # This node's dn42 loopback from the inventory's registry, which every
-  # node reads for its iBGP neighbours' addresses as well as its own.
+  # This node's dn42 loopback; the same registry names its iBGP neighbours.
   loopback = inventory.dn42.loopbacks.${config.networking.hostName};
 
-  # Whether any bird session asks for BFD. bird opens its listeners the
-  # moment the protocol exists, sessions or not, so the block is rendered
-  # only when something uses it: the port is the IGP's on any node
-  # running one, and the assertion below keeps the two apart.
+  # Whether any bird session asks for BFD. bird binds UDP 3784 as soon as
+  # the protocol exists, so it is rendered only when something uses it.
   birdBfd =
     lib.any (peer: peer.bfd) (lib.attrValues cfg.peers)
     || lib.any (vlan: vlan.session && vlan.bfd) (lib.attrValues cfg.vlans);
@@ -142,28 +139,20 @@ let
     }
   ) cfg.peers;
 
-  # iBGP with the other dn42 nodes named by the ibgp option, a full mesh
-  # of multihop sessions between the loopbacks the inventory registers.
-  # The IGP carries those loopbacks, so a session follows whatever path
-  # the IGP has: a circuit failing moves the TCP session and every next
-  # hop to the other plane or around the ring, and the session itself
-  # never notices. A node the IGP loses altogether loses its loopback
-  # route, and bird withdraws everything resolved through it at once.
+  # iBGP with the other dn42 nodes, a full mesh of multihop sessions
+  # between the inventory's loopbacks. The IGP carries the loopbacks, so a
+  # circuit failing moves the session and every next hop to another path
+  # without the session noticing; a node the IGP loses has everything
+  # resolved through its loopback withdrawn at once.
   #
-  # next hop self is what makes the routes usable elsewhere: the next hops
-  # a node learned are link-locals on its own peering tunnels, which no
-  # other node can resolve. Set to our IPv6 loopback on both channels, the
-  # IPv4 one by extended next hop, and resolved at the far end through
-  # the IPv6 table, where the kernel protocol below learns zebra's routes
-  # to the loopbacks (gateway recursive, bird's default for multihop).
-  # IPv4 dn42 rides IPv6 next hops throughout, so nothing here depends on
-  # the IGP's IPv4 side.
-  #
-  # No reflection: with every pair connected the mesh is complete, and a
-  # pair whose own circuit is down still reaches each other through the
-  # third node's forwarding, since the IGP routes their loopbacks that
-  # way. Neither channel uses import table, which bird documents as
-  # breaking recursive next hops.
+  # next hop self, because the next hops a node learned are link-locals on
+  # its own tunnels: our IPv6 loopback on both channels, IPv4 by extended
+  # next hop, resolved at the far end through the IPv6 table where the
+  # kernel protocol below learns zebra's routes to the loopbacks (gateway
+  # recursive, bird's multihop default). IPv4 dn42 rides IPv6 next hops
+  # throughout. No reflection: the mesh is complete, and a pair whose own
+  # circuit is down still forwards through the third node. Neither channel
+  # uses import table, which bird documents as breaking recursive next hops.
   ibgpProtocols = lib.concatMapStrings (
     host:
     let
@@ -297,11 +286,10 @@ in
       default = 4242423610;
       description = "Our dn42 autonomous system number.";
     };
-    # This node's dn42 addresses: the source of what it originates, its
-    # BGP router id, and the addresses its dn42 services answer on. By
-    # default the loopback the inventory registers for it, which is also
-    # what its iBGP sessions run between; a node whose services answer on
-    # another address of ours sets that here and carries both.
+    # This node's dn42 addresses: router id, source of what it originates,
+    # and where its dn42 services answer. Default to the inventory loopback
+    # the iBGP sessions run between; a node whose services answer elsewhere
+    # sets that here and carries both.
     addr4 = lib.mkOption {
       type = lib.types.str;
       default = loopback.addr4;
@@ -444,11 +432,10 @@ in
       default = [ ];
       description = ''
         The other dn42 nodes, by machine name in the inventory's
-        dn42.loopbacks, to run iBGP with: the same AS at both ends,
-        carrying the dn42 table so each site reaches the others' peers.
-        The sessions run between loopbacks over whatever path the IGP
-        has, so the interconnect module must be present. Our own topology
-        travels by the IGP, and the site ULA never enters bird at all.
+        dn42.loopbacks, to run iBGP with, carrying the dn42 table between
+        sites. The sessions ride the IGP between loopbacks, so the
+        interconnect module must be present. Our own topology travels by
+        the IGP, and the site ULA never enters bird at all.
       '';
     };
 
@@ -542,8 +529,7 @@ in
                 default = false;
                 description = ''
                   Run BFD with the speaker, as the peers option does per peer.
-                  Not on a node running the IGP, whose BFD holds the port;
-                  the assertion below says so.
+                  Not on a node running the IGP, whose bfdd holds the port.
                 '';
               };
               debug = lib.mkOption {
@@ -641,8 +627,7 @@ in
           message = "homelab.dn42.publicKey is needed by any site with dn42 peers";
         }
         {
-          # One process holds UDP 3784. The IGP's BFD has it on any node
-          # running the IGP, so no bird session there may ask for BFD.
+          # One process holds UDP 3784, and on an IGP node it is bfdd.
           assertion = !birdBfd || !(config.homelab.interconnect.isis.enable or false);
           message = "dn42 BFD in bird cannot share a node with the IGP's BFD";
         }
@@ -694,8 +679,7 @@ in
       networks = {
         "50-dn42" = {
           matchConfig.Name = "dn42";
-          # The loopback the iBGP sessions run between, and the node's own
-          # addresses where they differ from it.
+          # The iBGP loopback, plus addr4/addr6 where they differ from it.
           address = lib.unique [
             "${loopback.addr4}/32"
             "${loopback.addr6}/128"
@@ -1015,13 +999,11 @@ in
           };
         }
 
-        # The IPv6 side also learns what zebra installed from the IGP for
-        # the dn42 loopbacks (rt_proto 187, isis), and nothing else zebra
-        # knows: this is the IGP table the iBGP sessions resolve their
-        # next hops through, for both families. Learned routes stay
-        # bird's to look at, never to announce: every export filter
-        # above admits static and BGP sources only, and the kernel export
-        # here refuses them so nothing of zebra's is ever written back.
+        # The IPv6 side also learns zebra's IS-IS routes (rt_proto 187) to
+        # the dn42 loopbacks, the IGP table both iBGP channels resolve next
+        # hops through. Learned routes are never announced: every export
+        # filter above admits static and BGP sources only, and the kernel
+        # export refuses them so nothing of zebra's is written back.
         protocol kernel {
           scan time 20;
           learn;
@@ -1137,11 +1119,10 @@ in
     # What a site running the NixOS firewall admits for dn42; the router's
     # own ruleset carries the equivalent by hand (see its nftables.nix).
     # An iBGP session arrives from the far node's loopback on whichever
-    # circuit the IGP routes it over, so it is admitted by source on any
-    # circuit rather than pinned to one. A peer's session and BFD arrive
-    # from its link-local on its tunnel, and the tunnel listens on its
-    # port to the whole internet, since the far end's address is not ours
-    # to pin. dn42
+    # circuit the IGP chose, so it is admitted by source on any circuit. A
+    # peer's session and BFD arrive from its link-local on its tunnel, and
+    # the tunnel listens on its port to the whole internet, since the far
+    # end's address is not ours to pin. dn42
     # transits here between circuits, when the circuit joining two other
     # sites is down and the table is reflected this way, and between a
     # peer and a circuit, which is what a peer at this site is for; either
