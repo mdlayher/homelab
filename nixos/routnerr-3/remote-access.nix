@@ -94,6 +94,17 @@ in
   };
 
   config = {
+    homelab.remoteAccess.devices.psframework = {
+      publicKey = "TPjQairhxMGjiEjWNx5yBx/c8l2L3sYhG5SsxzOYAW4=";
+      host = 2;
+      reaches = [
+        {
+          target = "linuxdev";
+          port = 22;
+        }
+      ];
+    };
+
     assertions = [
       {
         assertion = lib.length hosts == lib.length (lib.unique hosts);
