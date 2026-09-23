@@ -275,6 +275,7 @@ in
         ${lib.optionalString icl ''
           counter icl_input_drop {}
           counter icl_forward_drop {}
+          counter icl_tailscale_probe {}
         ''}
         counter dn42_inbound_drop {}
         counter blackhole_drop {}
@@ -491,6 +492,12 @@ in
             ip daddr $anycast4_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
             ip6 daddr $loopback6 tcp dport $http counter accept comment "router interconnect page"
 
+            # The edges are tailnet nodes, and tailscaled probes every
+            # address a peer holds as a candidate endpoint, which the IGP
+            # delivers here. Dropped, so the tailnet never rides the
+            # circuits it manages; counted apart so the drop below keeps
+            # meaning something unexpected.
+            udp sport $tailscale_router counter name icl_tailscale_probe drop comment "tailscale endpoint discovery over the circuit"
             counter name icl_input_drop drop
           }
         ''}
@@ -666,7 +673,9 @@ in
             # party: every segment at another site draws from that prefix,
             # restricted ones included. What a far site may initiate toward
             # this one is named per service in forward_icl; what this site
-            # initiates across a circuit returns as established.
+            # initiates across a circuit returns as established. The
+            # edges' tailscaled probes hosts here too (see input_icl).
+            iifname "icl-*" udp sport $tailscale_router counter name icl_tailscale_probe drop comment "tailscale endpoint discovery over the circuit"
             iifname "icl-*" ip daddr $site4 jump forward_icl
             iifname "icl-*" ip6 daddr $site6 jump forward_icl
             oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site out"
