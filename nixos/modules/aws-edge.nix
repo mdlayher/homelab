@@ -20,6 +20,9 @@ let
 
   # Our own IPv4 space as the firewall tests for it.
   site4 = inventory.privatePrefix4;
+
+  # The ENA interface as systemd names it.
+  uplink = "ens5";
 in
 {
   imports = [
@@ -63,10 +66,11 @@ in
 
     # The interconnect landing page (see icl-page.nix), and the HTTP-01
     # challenge that certifies it, are the only things here an arbitrary
-    # client may reach. The security group in terraform/aws is what admits
-    # them from outside; this admits them from anywhere else the machine is
-    # reachable.
-    allowedTCPPorts = [
+    # client may reach, and only on the uplink. SSH is there too for the
+    # bootstrap window. The security group in terraform/aws decides which of
+    # these the internet actually reaches.
+    interfaces.${uplink}.allowedTCPPorts = [
+      22
       80
       443
     ];
@@ -88,6 +92,8 @@ in
     extraInputRules =
       let
         tcp = [
+          22 # the server's SSH banner probe
+          80 # the landing page's fabric view
           9100 # node_exporter
           9123 # chrony exporter
           9153 # coredns
@@ -184,4 +190,8 @@ in
   # admin user from common.nix takes over with the same key -- it is the
   # key terraform/aws puts in the EC2 key pair.
   services.openssh.settings.PermitRootLogin = lib.mkForce "no";
+
+  # sshd answers on the tailnet, and on the uplink and circuits through the
+  # firewall rules above, never on a dn42 peer tunnel.
+  services.openssh.openFirewall = false;
 }
