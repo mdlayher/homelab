@@ -1168,6 +1168,11 @@ in
                   # The server shells out to git for worktree create/remove.
                   pkgs.git
                 ];
+                # A switch leaves the server running. Stopping it kills every
+                # pane, and a client that reconnects before the unit starts
+                # again spawns its own server, which crash-loops the unit.
+                # Restart by hand to pick up a new herdr.
+                restartIfChanged = false;
                 # Install the Claude Code integration (a hook in ~/.claude)
                 # and the herdr skill before each start so both track the
                 # herdr package version. The hook reports agent session IDs,
