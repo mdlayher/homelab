@@ -7,24 +7,17 @@
   imports = [ ../modules/dn42.nix ];
 
   config = {
-    # This site's addresses, drawn as the router's are: the IPv4 from the
-    # pool of routed /32s, the IPv6 from site 00's loopback /64 with the
-    # site and router digits the ULA loopback uses. Both ride the IGP.
-    homelab.dn42.addr4 = "172.20.140.85";
-    homelab.dn42.addr6 = "fde4:d0ad:ee0f::201";
-
     # This site's WireGuard public key; the private half is the secret
     # dn42/wireguard_key in this host's secrets file. A peer names this
     # literally as its tunnel peer.
     homelab.dn42.publicKey = "s+gjvLTOg3NRx4zBGigRGt2jLc6UBzwpn3z2Yzmx0BA=";
     homelab.dn42.secretsFile = ./secrets.yaml;
 
-    # The dn42 table over every circuit, one session per plane; each name
-    # is a link in interconnect.nix.
+    # The dn42 table to the other sites, one session per node between
+    # loopbacks; the IGP decides which circuit carries it.
     homelab.dn42.ibgp = [
-      "azo0"
-      "azo1"
-      "iad0"
+      "routnerr-3"
+      "edge-iad"
     ];
 
     # sidereal: https://sidereal.ca, phx1 node.

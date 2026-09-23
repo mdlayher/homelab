@@ -45,13 +45,31 @@
   # import filters bound it (see nixos/modules/dn42.nix): what a firewall
   # matches to tell dn42 traffic from ours on a link carrying both, and
   # what a host routes toward the router. Within it, the allocation
-  # registered to our AS, public registry data. Site-specific dn42
-  # addresses stay in each site's dn42.nix.
+  # registered to our AS, public registry data.
+  #
+  # Each dn42 node's loopback, keyed by machine name: the IPv4 from the
+  # pool of routed /32s, the IPv6 from site 00's loopback /64 with the
+  # site and router digits the ULA loopback uses. Registered here rather
+  # than in each site's dn42.nix because every node names the others as
+  # its iBGP neighbours (see nixos/modules/dn42.nix).
   dn42 = {
     prefix4 = "172.20.0.0/14";
     prefix6 = "fd00::/8";
     net4 = "172.20.140.80/28";
     net6 = "fde4:d0ad:ee0f::/48";
+
+    loopbacks.routnerr-3 = {
+      addr4 = "172.20.140.81";
+      addr6 = "fde4:d0ad:ee0f::101";
+    };
+    loopbacks.edge-pdx = {
+      addr4 = "172.20.140.85";
+      addr6 = "fde4:d0ad:ee0f::201";
+    };
+    loopbacks.edge-iad = {
+      addr4 = "172.20.140.86";
+      addr6 = "fde4:d0ad:ee0f::301";
+    };
   };
 
   # Site 00 of the IPv4 scheme, holding the loopbacks as 10.0.SS.RR, site

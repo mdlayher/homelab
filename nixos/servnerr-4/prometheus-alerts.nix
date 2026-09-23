@@ -39,11 +39,11 @@ let
   # works on it. The external dn42e_ peers still alert normally.
   internalProtocols = raw "dn42i_.*";
 
-  # The iBGP sessions over the interconnect (icl_<site><plane>, see
-  # modules/dn42.nix): a site without peers of its own exports nothing
+  # The iBGP sessions between the dn42 nodes' loopbacks (ibgp_<machine>,
+  # see modules/dn42.nix): a site without peers of its own exports nothing
   # over them, so the peering site's end is Established and empty by
   # design. Session state still alerts; an empty import does not.
-  interconnectProtocols = raw "icl_.*";
+  interconnectProtocols = raw "ibgp_.*";
   internalInterfaces = raw "dn42i-.*";
 
   # The IS-IS sample, matched on its name so the textfile directory's path
@@ -112,7 +112,8 @@ in
           expr = "apcupsd_battery_time_on_seconds > 0";
           annotations.summary = "UPS on {{ $labels.instance }} is running on battery power.";
         }
-        # BFD is opt-in per dn42 peer. The bird exporter reports BFD as
+        # BFD is opt-in per dn42 peer, and only on a node whose IGP does
+        # not hold the port. The bird exporter reports BFD as
         # per-session metrics rather than as a protocol, so there is no
         # bird_protocol_up{proto="BFD"} to key on; this matches one series
         # per peer that runs it, drawn from bird's own `show bfd sessions`.

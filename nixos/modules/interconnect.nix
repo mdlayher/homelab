@@ -42,8 +42,10 @@
 #                adjacency.
 #
 # The routing protocols are declared elsewhere. The IGP carries our own
-# topology, the ULA included; bird's iBGP carries the dn42 table over the
-# same circuits, with next hops on the circuit itself (see modules/dn42.nix).
+# topology, the ULA and every node's dn42 loopback included; bird's iBGP
+# runs between those loopbacks and resolves its next hops through what
+# the IGP installed, so the circuits carry it without naming it (see
+# modules/dn42.nix).
 
 let
   cfg = config.homelab.interconnect;

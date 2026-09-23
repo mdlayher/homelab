@@ -161,7 +161,7 @@ let
         <tr><th>WireGuard key</th><td><code>${dn42.publicKey}</code></td></tr>
         <tr><th>MTU</th><td><code>${toString mtu}</code></td></tr>
         <tr><th>Link-local</th><td><code>${dn42.lla}</code></td></tr>
-        <tr><th>Session</th><td>MP-BGP over link-local, IPv4 via extended next hop; BFD on request</td></tr>
+        <tr><th>Session</th><td>MP-BGP over link-local, IPv4 via extended next hop</td></tr>
         <tr><th>Addresses</th><td><code>${dn42.addr4}</code>, <code>${dn42.addr6}</code></td></tr>
         <tr><th>Prefixes</th><td><code>${inventory.dn42.net4}</code>, <code>${inventory.dn42.net6}</code></td></tr>
         <tr><th>Routing</th><td>BIRD 2 with ROA validation</td></tr>
@@ -231,10 +231,7 @@ let
       ${row "WireGuard key" dn42.publicKey}
       ${row "MTU" (toString mtu)}
       ${row "Link-local" dn42.lla}
-      ${row "Session" [
-        "MP-BGP over link-local, IPv4 via extended next hop;"
-        "BFD on request"
-      ]}
+      ${row "Session" "MP-BGP over link-local, IPv4 via extended next hop"}
       ${row "Addresses" "${dn42.addr4}, ${dn42.addr6}"}
       ${row "Prefixes" "${inventory.dn42.net4}, ${inventory.dn42.net6}"}
       ${row "Routing" "BIRD 2 with ROA validation"}

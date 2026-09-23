@@ -14,18 +14,20 @@
     # module has no way to name it (see its secretsFile option).
     homelab.dn42.secretsFile = ./secrets.yaml;
 
+    # The address this router's dn42 services answer on, and the ns1 glue
+    # the registry publishes for our domain and reverse space. The iBGP
+    # loopback the inventory registers sits beside it on the same dummy.
+    homelab.dn42.addr6 = "fde4:d0ad:ee0f::1";
+
     # This site's WireGuard public key; the private half is the secret named
     # above. The edge names this literally as its carrier peer.
     homelab.dn42.publicKey = "yHaVotqyBwnDqT9mj4t28fFnpLyAGosU3gOq/ngmkHk=";
 
-    # The dn42 table to the other sites, one session per circuit: a plane
-    # lost is a session lost and the other plane's carries on. Each name
-    # is a link in interconnect.nix, with bird at the far end.
+    # The dn42 table to the other sites, one session per node between
+    # loopbacks; the IGP decides which circuit carries it.
     homelab.dn42.ibgp = [
-      "pdx0"
-      "pdx1"
-      "iad0"
-      "iad1"
+      "edge-pdx"
+      "edge-iad"
     ];
 
     # Kioubit: https://dn42.g-load.eu.

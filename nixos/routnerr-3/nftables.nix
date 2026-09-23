@@ -473,10 +473,10 @@ in
         ${lib.optionalString icl ''
           # From our other sites to the router itself. Both ends are ours,
           # but the wire carries dn42 too, so this stays narrow: the iBGP
-          # session, its BFD, the resolver on our own address, and the
-          # anycast clock. An
-          # IGP which runs on the data link (IS-IS) never reaches this
-          # family at all; one which runs over IP would need a rule here.
+          # session from the far node's loopback, the IGP's BFD, the
+          # resolver on our own address, and the anycast clock. An IGP
+          # which runs on the data link (IS-IS) never reaches this family
+          # at all; its BFD does, and one which runs over IP would too.
           chain input_icl {
             jump icmp_lan
 
