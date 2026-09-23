@@ -228,6 +228,17 @@ in
           for = "10m";
           annotations.summary = "FRR on {{ $labels.instance }} is down or a collector is failing, so the IGP is unmonitored.";
         }
+        # The IGP's BFD session on each circuit (modules/interconnect.nix),
+        # one series per session from bfdd. Detection is under a second,
+        # so a session still down after 5 minutes has taken its adjacency
+        # with it; ISISAdjacencyDown fires beside this and this names the
+        # mechanism.
+        {
+          alert = "FRRBFDPeerDown";
+          expr = "frr_bfd_peer_state == 0";
+          for = "5m";
+          annotations.summary = "BFD session with {{ $labels.peer }} on {{ $labels.iface }} ({{ $labels.instance }}) is down.";
+        }
         # The adjacency itself, from the textfile exporter in
         # nixos/modules/isis-metrics.nix. Its series are rendered from the
         # circuits each router is configured with, so an adjacency which

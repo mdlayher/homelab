@@ -111,6 +111,7 @@ in
 
           iifname "${icl}" meta l4proto { ipv6-icmp, icmp } accept
           iifname "${icl}" meta l4proto { tcp, udp } th dport 53 accept comment "resolver across the circuit"
+          iifname "${icl}" udp dport 3784 accept comment "IGP BFD across the circuit"
           iifname "${icl}" ct state new drop comment "nothing else new across the circuit"
         }
       '';

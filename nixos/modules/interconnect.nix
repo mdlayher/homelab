@@ -778,12 +778,27 @@ in
       iifname "icl-*" oifname "icl-*" ip saddr ${site4} ip daddr ${site4} counter accept comment "site transit between circuits"
     '';
 
+    # The IGP's BFD control packets, from each circuit's far link-local.
+    # IS-IS itself is not IP and never meets this firewall; its BFD is.
+    networking.firewall.extraInputRules =
+      lib.mkIf (cfg.isis.enable && config.networking.firewall.enable)
+        (
+          lib.concatMapStrings (link: ''
+            iifname "${link.interface}" ip6 saddr ${link.lla} udp dport 3784 accept comment "IGP BFD over the circuit"
+          '') (lib.attrValues cfg.links)
+        );
+
     # isisd alongside bird, not instead of it. The two carry disjoint
     # prefixes -- our own topology here, the dn42 table there -- so neither
     # daemon writes a route the other owns, which is what keeps them out of
     # each other's way in the kernel.
     services.frr = lib.mkIf cfg.isis.enable {
       isisd.enable = true;
+      # BFD on every circuit, for isisd: a carrier gives no link-down
+      # signal, and this is what tells the IGP a circuit died within a
+      # second. Nothing else on an IGP node may hold UDP 3784; dn42.nix
+      # asserts bird does not.
+      bfdd.enable = true;
       # Rendered by sops at activation rather than written to the store,
       # since the IS-IS password is in it; see the template below.
       configFile = config.sops.templates."frr-isis.conf".path;
@@ -822,9 +837,13 @@ in
           # second at full size is most of an idle carrier's traffic, and
           # the MTU was proved the moment the adjacency came up.
           #
-          # A hello a second, three missed: a carrier gives no link-down
-          # signal and the router cannot run BFD (bird holds its port), so
-          # the hello timeout is the whole of failure detection here.
+          # BFD detects a dead circuit, at bfdd's defaults of 300 ms and
+          # three missed; the hellos, a second apart and three missed,
+          # are the backstop while a BFD session has not yet formed.
+          # isisd runs one BFD session per circuit, over IPv6 link-local
+          # when both families are configured, and drops the adjacency
+          # only on a BFD up-to-down transition, so an end whose far side
+          # runs no BFD yet keeps its adjacency on hellos alone.
           circuit = link: ''
             interface ${link.interface}
              ip router isis ${tag}
@@ -835,6 +854,7 @@ in
              isis hello-interval 1
              isis hello-multiplier 3
              isis password md5 ${password}
+             isis bfd
             ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
           '';
           passive = name: ''
@@ -984,9 +1004,11 @@ in
     #   state of each daemon. isisd can be dead with frr_status_up still 1,
     #   so it is a liveness check for FRR itself and nothing more.
     #
-    # bfd, bgp and ospf are on by default and would each query a daemon this
-    # router does not run; disabling them is what keeps the scrape from
-    # erroring rather than merely reporting nothing.
+    # bfd stays on: frr_bfd_peer_state per circuit is the IGP's own
+    # failure detector, one series per session. bgp and ospf are on by
+    # default and would each query a daemon this router does not run;
+    # disabling them is what keeps the scrape from erroring rather than
+    # merely reporting nothing.
     #
     # Scraped by the server's exporter discovery, which has a hook for this
     # option -- there is no services.prometheus.exporters.frr to be found.
@@ -1003,7 +1025,6 @@ in
           # itself recommends and which needs no sudo.
           "--frr.socket.dir-path=/run/frr"
           "--collector.route.detailed-routes"
-          "--no-collector.bfd"
           "--no-collector.bgp"
           "--no-collector.ospf"
         ];
