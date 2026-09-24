@@ -120,6 +120,14 @@ let
             record = "host_device:smartd_selftest_errors:count15m";
             expr = ''sum by (host, device) (count_over_time({job="systemd-journal", unit="smartd.service"} |~ `Self-Test Log error count increased|new Self-Test Log error` | regexp `^Device: /dev/(?P<device>[^ ,]+)` [15m]))'';
           }
+          # IS-IS adjacencies dropped by BFD, per circuit end, for
+          # ISISAdjacencyFlapping in prometheus-alerts.nix. The window
+          # matches the ruler's default one-minute interval, so each drop
+          # lands in one sample.
+          {
+            record = "host_circuit:isis_bfd_drops:count1m";
+            expr = ''sum by (host, circuit) (count_over_time({job="systemd-journal", unit="frr.service"} |= `bfd session went down` | regexp `Adjacency to \S+ \((?P<circuit>[^)]+)\)` [1m]))'';
+          }
         ];
       }
     ];

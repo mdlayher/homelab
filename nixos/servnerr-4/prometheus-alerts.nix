@@ -256,11 +256,26 @@ in
           for = "5m";
           annotations.summary = "IS-IS adjacency on {{ $labels.interface }} to site {{ $labels.far }} is down, so {{ $labels.instance }} has no IGP path there.";
         }
-        # The adjacency gauge above is only as true as the file it comes
-        # from. node_exporter keeps serving the last sample written, so a
-        # collector which stops running leaves the adjacency reading what it
-        # read when it died, and a circuit which drops after that is never
-        # reported. The sample is written every minute.
+        # A circuit whose path keeps losing BFD for a moment. The adjacency
+        # returns within a second, too fast for ISISAdjacencyDown. Drops
+        # within five minutes of FRR or networkd starting on any IGP node
+        # are left out: a deploy drops the far ends' adjacencies too. The
+        # drops are recorded by Loki's ruler (see nixos/servnerr-4/loki.nix);
+        # each subquery step reads only the samples in its own minute, so
+        # no drop is counted twice.
+        {
+          alert = "ISISAdjacencyFlapping";
+          expr = ''
+            sum by (host, circuit) (sum_over_time((
+              sum_over_time(host_circuit:isis_bfd_drops:count1m[1m])
+                unless on () (min(time() - node_systemd_unit_start_time_seconds{name=~"frr.service|systemd-networkd.service"}) < 300)
+            )[1d:1m])) >= 3
+          '';
+          annotations = {
+            summary = "IS-IS on {{ $labels.circuit }} ({{ $labels.host }}) lost BFD {{ $value }} times in a day outside deploys; check the path under that plane.";
+            logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="frr.service"} |= `bfd session went down`'';
+          };
+        }
         # One LSP per router, while every level-2 circuit is point to
         # point and no router overflows lspMtu: a broadcast circuit adds a
         # pseudonode LSP per level, an overflow adds fragments. Short of
@@ -273,6 +288,11 @@ in
           for = "10m";
           annotations.summary = "{{ $labels.instance }} holds {{ $value }} level-2 LSPs where the area has ${toString isisRouterCount} routers, so its database is missing one or carrying one nobody expects.";
         }
+        # The adjacency gauge is only as true as the file it comes from.
+        # node_exporter keeps serving the last sample written, so a
+        # collector which stops running leaves the adjacency reading what it
+        # read when it died, and a circuit which drops after that is never
+        # reported. The sample is written every minute.
         {
           alert = "ISISMetricsStale";
           expr = "time() - node_textfile_mtime_seconds{file=~${isisTextfile}} > 300";
@@ -290,6 +310,17 @@ in
           for = "10m";
           annotations.summary = "{{ $labels.instance }} ({{ $labels.family }}) answered only {{ $value | humanizePercentage }} of ICMP probes over 15 minutes.";
         }
+        # A holder's reply sourced from an anycast address arriving on a LAN
+        # the router does not route that address to, which its anti-spoof
+        # check drops (the router's nftables.nix counts these apart from
+        # other spoofed sources). One is a client without an answer, so no
+        # hold beyond the scrape.
+        {
+          alert = "AnycastReplyDropped";
+          expr = ''rate(nftables_counter_packets_total{name="anycast_reply_drop"}[2m]) > 0'';
+          for = "1m";
+          annotations.summary = "{{ $labels.instance }} is dropping replies sourced from an anycast address that arrive on a LAN it routes that address away from, so a holder's answers are not reaching clients.";
+        }
         # A LAN client's query to the anycast resolver, probed from a segment
         # no holder sits on (nixos/modules/anycast-probe.nix). AnycastAddressMissing
         # watches whether a site holds the address; this watches whether an
@@ -297,17 +328,6 @@ in
         # can fail while every holder is healthy. Two minutes rather than
         # BlackboxServiceDown's five: every client at the site is without
         # names while it fires.
-        # The same fault seen from where it happens: a holder's reply sourced
-        # from an anycast address arriving on a LAN the router does not route
-        # that address to, which its anti-spoof check drops (the router's
-        # nftables.nix counts these apart from other spoofed sources). One
-        # is a client without an answer, so no hold beyond the scrape.
-        {
-          alert = "AnycastReplyDropped";
-          expr = ''rate(nftables_counter_packets_total{name="anycast_reply_drop"}[2m]) > 0'';
-          for = "1m";
-          annotations.summary = "{{ $labels.instance }} is dropping replies sourced from an anycast address that arrive on a LAN it routes that address away from, so a holder's answers are not reaching clients.";
-        }
         {
           alert = "AnycastResolverUnreachable";
           expr = ''probe_success{job="blackbox_dns_anycast"} == 0'';
