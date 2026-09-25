@@ -836,6 +836,12 @@ in
           expire 7200;
         }
 
+        # Networks with unresponsive maintainers, whose routes the dn42
+        # community has asked networks to stop accepting.
+        function is_blocked_path() {
+          return bgp_path ~ [= * 4242422717 * =];
+        }
+
         # Unknown and invalid ROA both reject: a peer may only send us
         # prefixes it has registered. These rejections used to print, but
         # bird 2.19's filter language has no leveled print (only print and
@@ -846,6 +852,7 @@ in
         # look at: the channels below keep them filtered, so
         # `birdc show route filtered` names the prefix and its origin.
         filter dn42_import {
+          if is_blocked_path() then reject;
           if is_valid_network() && !is_self_net() then {
             if (roa_check(dn42_roa, net, bgp_path.last) != ROA_VALID) then reject;
             # AS0 when flapping, so INVALID rather than !VALID: a
@@ -857,6 +864,7 @@ in
         }
 
         filter dn42_import_v6 {
+          if is_blocked_path() then reject;
           if is_valid_network_v6() && !is_self_net_v6() && !is_site_net_v6() then {
             if (roa_check(dn42_roa_v6, net, bgp_path.last) != ROA_VALID) then reject;
             # AS0 when flapping, so INVALID rather than !VALID: a
