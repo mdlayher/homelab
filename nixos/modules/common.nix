@@ -21,6 +21,7 @@ let
   dotfiles = pkgs.runCommand "dotfiles" { } ''
     install -Dm444 -t $out/share/fish/vendor_conf.d ${../dotfiles/fish/conf.d}/*.fish
     install -Dm444 -t $out/share/fish/vendor_functions.d ${../dotfiles/fish/functions}/*.fish
+    install -Dm444 -t $out/share/fish/vendor_completions.d ${../dotfiles/fish/completions}/*.fish
   '';
 
   users = lib.filter (u: u.isNormalUser) (lib.attrValues config.users.users);
