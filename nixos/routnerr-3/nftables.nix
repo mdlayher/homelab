@@ -534,6 +534,12 @@ in
         # page, and the nameserver for our domain. No router services
         # otherwise: this side faces networks we do not run.
         chain input_dn42e {
+          # A peer only ever delivers dn42 space, plus its link-local
+          # session address. Anything else is a forged source, and
+          # answering it would reflect our replies at a victim.
+          ip saddr != $dn42_v4 counter name dn42_input_drop drop comment "non-dn42 source"
+          ip6 saddr != { $dn42_v6, fe80::/10 } counter name dn42_input_drop drop comment "non-dn42 source"
+
           jump icmp_lan
 
           tcp dport $bgp counter accept comment "router dn42 external BGP"
@@ -641,8 +647,9 @@ in
           # dn42 routing between peers is commonly asymmetric, so tunnel to
           # tunnel transit is accepted before the conntrack invalid drop,
           # which would discard flows whose other direction takes a
-          # different peer.
-          iifname "dn42e-*" oifname "dn42e-*" counter accept comment "dn42 transit"
+          # different peer. Both ends must be dn42 space, as on the edges.
+          iifname "dn42e-*" oifname "dn42e-*" ip saddr $dn42_v4 ip daddr $dn42_v4 counter accept comment "dn42 transit"
+          iifname "dn42e-*" oifname "dn42e-*" ip6 saddr $dn42_v6 ip6 daddr $dn42_v6 counter accept comment "dn42 transit"
 
           ${lib.optionalString icl ''
             # Site traffic passing between circuits, for the same reason:
@@ -656,6 +663,14 @@ in
             # is down and iBGP reflects the table through here instead.
             iifname "icl-*" oifname "icl-*" ip saddr $dn42_v4 ip daddr $dn42_v4 counter accept comment "dn42 transit between circuits"
             iifname "icl-*" oifname "icl-*" ip6 saddr $dn42_v6 ip6 daddr $dn42_v6 counter accept comment "dn42 transit between circuits"
+
+            # Transit between a peer and a circuit, for the same reason. Our
+            # own space is never its destination: a site with a loopback on
+            # the circuit would otherwise be reachable from dn42 here.
+            iifname "dn42e-*" oifname "icl-*" ip daddr $site4 counter name dn42_forward_drop drop comment "dn42 to another site"
+            iifname "dn42e-*" oifname "icl-*" ip6 daddr $site6 counter name dn42_forward_drop drop comment "dn42 to another site"
+            iifname "icl-*" oifname "dn42e-*" counter accept comment "dn42 transit via interconnect"
+            iifname "dn42e-*" oifname "icl-*" counter accept comment "dn42 transit to interconnect"
           ''}
           ct state invalid counter drop
 
@@ -709,15 +724,6 @@ in
             oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site out"
             oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site out"
 
-            # Transit is dn42 reaching dn42. Our own space is never its
-            # destination -- that is the class above, which requires both
-            # ends to be ours -- and a site with a loopback on the circuit
-            # would otherwise be reachable from dn42 through this rule.
-            iifname "dn42e-*" oifname "icl-*" ip daddr $site4 counter name dn42_forward_drop drop comment "dn42 to another site"
-            iifname "dn42e-*" oifname "icl-*" ip6 daddr $site6 counter name dn42_forward_drop drop comment "dn42 to another site"
-
-            iifname "icl-*" oifname "dn42e-*" counter accept comment "dn42 transit via interconnect"
-            iifname "dn42e-*" oifname "icl-*" counter accept comment "dn42 transit to interconnect"
             iifname "dn42i-*" oifname "icl-*" counter accept comment "dn42 internal to interconnect"
             iifname "icl-*" oifname "dn42i-*" jump forward_dn42i
           ''}
