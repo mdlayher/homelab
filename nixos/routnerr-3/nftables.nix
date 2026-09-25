@@ -95,9 +95,9 @@ let
           lib.concatMapStringsSep ", " (s: "${s.host.ula} . ${toString s.port}") iclServices
         } }"
       }
-      ${lib.optionalString (remoteReaches != [ ])
-        "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"
-      }
+      ${lib.optionalString (
+        remoteReaches != [ ]
+      ) "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 

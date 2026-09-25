@@ -1145,7 +1145,9 @@ in
           allowedUDPPorts = lib.mapAttrsToList (_: peer: peer.port) cfg.peers;
           extraInputRules =
             lib.concatMapStrings (host: ''
-              iifname "icl-*" ip6 saddr ${inventory.dn42.loopbacks.${host}.addr6} tcp dport 179 accept comment "dn42 iBGP from ${host}"
+              iifname "icl-*" ip6 saddr ${
+                inventory.dn42.loopbacks.${host}.addr6
+              } tcp dport 179 accept comment "dn42 iBGP from ${host}"
             '') cfg.ibgp
             + lib.concatMapStrings (peer: ''
               iifname "${peer.interface}" ip6 saddr ${peer.lla} tcp dport 179 accept comment "dn42 peer session"

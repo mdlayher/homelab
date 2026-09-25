@@ -52,8 +52,7 @@ let
   allKeys =
     lib.concatLists (
       lib.mapAttrsToList (
-        name: subnet:
-        lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
+        name: subnet: lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
       ) subnets
     )
     # The private DNS zones the router answers itself, space-separated; see

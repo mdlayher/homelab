@@ -60,9 +60,9 @@ let
       ${host.name}	${ifi.name}	${toString ifi.vlan}	${lib.boolToString ifi.trusted}	${host.mac}	${family}	${address}
     '';
 
-  rows = lib.concatMapStrings (
-    host: row host "ipv4" host.ipv4 + row host "ula" host.ula
-  ) (lib.attrValues hosts);
+  rows = lib.concatMapStrings (host: row host "ipv4" host.ipv4 + row host "ula" host.ula) (
+    lib.attrValues hosts
+  );
 
   # Renders the rows above as an info metric. IPv6 addresses are rewritten to
   # their canonical form on the way through, which is what makes the join
