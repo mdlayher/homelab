@@ -153,11 +153,12 @@ in
       // of the journal and buries what the sweep was for. Its own job
       // label takes it out of {job="systemd-journal"} structurally. The
       // sources' static labels merge in before these rules run, which is
-      // what lets a rule override job.
+      // what lets a rule override job. The IS-IS snapshot on every IGP node
+      // (nixos/modules/isis-snapshot.nix) gets its own job the same way.
       rule {
         source_labels = ["__journal__systemd_unit"]
-        regex         = "network-snapshot\\.service"
-        replacement   = "network-snapshot"
+        regex         = "(network|isis)-snapshot\\.service"
+        replacement   = "$1-snapshot"
         target_label  = "job"
       }
     }

@@ -206,6 +206,7 @@ in
     ./anycast.nix
     ./icl-page.nix
     ./isis-metrics.nix
+    ./isis-snapshot.nix
     ./loopback.nix
     ./wireguard-exporter.nix
   ];
