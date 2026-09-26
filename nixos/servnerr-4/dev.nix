@@ -840,8 +840,9 @@ let
   # at the inter-site link MTU, addressed from the inventory's lab
   # ranges. Its area is the inventory's lab area.
   #
-  # lasthop never runs one IS-IS instance spanning this lab area and any
-  # production area.
+  # lasthop runs a separate IS-IS instance here from the one on its link to
+  # the router (isis-azo), under the same system ID; the server filters what
+  # that one sends (see its networking.nix).
   isisLab =
     let
       lab6 = lib.removeSuffix "::/56" inventory.labPrefix6;
