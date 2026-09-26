@@ -1302,7 +1302,10 @@ in
                 serviceConfig = {
                   User = user;
                   WorkingDirectory = home;
-                  ExecStart = "${home}/.local/bin/lasthop-isis";
+                  # Arguments come from LASTHOP_ISIS_ARGS in the optional
+                  # environment file, split on whitespace.
+                  EnvironmentFile = "-${home}/.config/lasthop-isis.env";
+                  ExecStart = "${home}/.local/bin/lasthop-isis $LASTHOP_ISIS_ARGS";
                   AmbientCapabilities = [ "CAP_NET_RAW" ];
                   CapabilityBoundingSet = [ "CAP_NET_RAW" ];
                 };
