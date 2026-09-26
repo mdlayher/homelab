@@ -136,6 +136,33 @@ in
         # The IPv4 scheme's whole space, on the same terms. The
         # unreachable route it matches is on lo (see networking.nix).
         aggregate4 = [ inventory.privatePrefix4 ];
+
+        # lasthop in the server's development container, over a VLAN of
+        # its own. The server admits only lasthop's hellos, neighbor
+        # discovery and BFD onto it (see its networking.nix), so the
+        # adjacency forms and nothing lasthop originates enters the area.
+        devCircuits = [ "isis-lasthop" ];
+      };
+    };
+
+    # The VLAN to lasthop, at the inter-site link MTU. Link-local only.
+    systemd.network = {
+      networks."15-mgmt0".vlan = [ "isis-lasthop" ];
+      netdevs."45-isis-lasthop" = {
+        netdevConfig = {
+          Name = "isis-lasthop";
+          Kind = "vlan";
+          MTUBytes = "1354";
+        };
+        vlanConfig.Id = inventory.isis.lasthopVlan;
+      };
+      networks."45-isis-lasthop" = {
+        matchConfig.Name = "isis-lasthop";
+        networkConfig = {
+          IPv6AcceptRA = false;
+          ConfigureWithoutCarrier = true;
+        };
+        linkConfig.RequiredForOnline = "no";
       };
     };
   };

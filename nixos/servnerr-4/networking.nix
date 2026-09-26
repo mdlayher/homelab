@@ -35,6 +35,9 @@ let
   siteLink = inventory.siteLinks.${config.homelab.site};
   icl = siteLink.${config.networking.hostName}.interface;
   routerCarrier = siteLink.${lib.head inventory.roles.router}.carrier;
+
+  # lasthop's system ID as the hex its hellos carry.
+  lasthopSystemId = lib.replaceStrings [ "." ] [ "" ] inventory.isis.lab.systemIds.lasthop;
 in
 {
   # A machine with a dn42 interface trusts the dn42 CA; see dn42 above.
@@ -116,6 +119,28 @@ in
         }
       '';
     };
+
+    # What lasthop may send over its link to the router, filtered as its
+    # frames cross the bridge: point-to-point hellos from its own system
+    # ID, and neighbor discovery and BFD over link-local. Its LSPs and
+    # sequence number PDUs never arrive, so the router forms the adjacency,
+    # floods lasthop the area, and SPF discards the adjacency as one-way.
+    nftables.tables.isis-lasthop-guard = {
+      family = "bridge";
+      content = ''
+        chain forward {
+          type filter hook forward priority filter; policy accept;
+          iifname "isis-azo" jump from_lasthop
+        }
+
+        chain from_lasthop {
+          @ll,112,32 0xfefe0383 @ll,168,8 0x11 @ll,208,48 0x${lasthopSystemId} counter accept comment "point-to-point hellos from lasthop"
+          icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert } counter accept
+          ip6 saddr fe80::/10 udp dport 3784 counter accept comment "IGP BFD"
+          counter drop
+        }
+      '';
+    };
   };
 
   # This machine answers for the site's zones (see coredns.nix), so it
@@ -184,6 +209,7 @@ in
       vlan = [
         "dev0"
         "dn42i-dev0"
+        "isis-lasthop"
       ];
     };
 
@@ -269,6 +295,87 @@ in
         ConfigureWithoutCarrier = true;
       };
       linkConfig.RequiredForOnline = "no";
+    };
+
+    # The IS-IS lab link between development containers (see isisLab in
+    # dev.nix): a bridge with no uplink, on which the host has no address.
+    # nspawn enslaves each container's veth; the host side is otherwise
+    # unmanaged, as with the dn42 veth above. The MTU is the lab's.
+    netdevs."14-br-isis-lab".netdevConfig = {
+      Name = "br-isis-lab";
+      Kind = "bridge";
+      MTUBytes = "1354";
+    };
+    networks."14-br-isis-lab" = {
+      matchConfig.Name = "br-isis-lab";
+      networkConfig = {
+        LinkLocalAddressing = "no";
+        IPv6AcceptRA = false;
+        ConfigureWithoutCarrier = true;
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+    networks."14-lab-veth" = {
+      matchConfig = {
+        Kind = "veth";
+        Name = "lab-*";
+      };
+      networkConfig = {
+        KeepMaster = true;
+        LinkLocalAddressing = "no";
+      };
+      linkConfig = {
+        MTUBytes = "1354";
+        RequiredForOnline = "no";
+      };
+    };
+
+    # The link from the router to lasthop in the development container
+    # (see its interconnect.nix), bridged to the container's isis-azo veth.
+    # The host has no address here; what lasthop may send is filtered
+    # above.
+    netdevs."14-isis-lasthop" = {
+      netdevConfig = {
+        Name = "isis-lasthop";
+        Kind = "vlan";
+        MTUBytes = "1354";
+      };
+      vlanConfig.Id = inventory.isis.lasthopVlan;
+    };
+    networks."14-isis-lasthop" = {
+      matchConfig.Name = "isis-lasthop";
+      bridge = [ "br-isis-lasthop" ];
+      networkConfig.LinkLocalAddressing = "no";
+    };
+    netdevs."14-br-isis-lasthop" = {
+      netdevConfig = {
+        Name = "br-isis-lasthop";
+        Kind = "bridge";
+        MTUBytes = "1354";
+      };
+    };
+    networks."14-br-isis-lasthop" = {
+      matchConfig.Name = "br-isis-lasthop";
+      networkConfig = {
+        LinkLocalAddressing = "no";
+        IPv6AcceptRA = false;
+        ConfigureWithoutCarrier = true;
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+    networks."14-isis-azo" = {
+      matchConfig = {
+        Kind = "veth";
+        Name = "isis-azo";
+      };
+      networkConfig = {
+        KeepMaster = true;
+        LinkLocalAddressing = "no";
+      };
+      linkConfig = {
+        MTUBytes = "1354";
+        RequiredForOnline = "no";
+      };
     };
 
     # MicroVM tap interfaces (see dev.nix) join the dev VLAN bridge, making

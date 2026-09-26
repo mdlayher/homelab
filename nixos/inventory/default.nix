@@ -191,6 +191,22 @@
       edge-pdx = "0000.0000.0201";
       edge-iad = "0000.0000.0301";
     };
+
+    # The lab area on the server's lab link (see its dev.nix). Hex digits,
+    # which no site's 49.SS00 can be.
+    lab = {
+      area = "49.ff00";
+      systemIds = {
+        frrdev = "0000.0000.01ff";
+        lasthop = "0000.0000.01fe";
+      };
+    };
+
+    # The VLAN carrying this site's IS-IS from the router to lasthop in the
+    # server's development container, where lasthop speaks as its lab
+    # system ID above. 131 is 0x83, the discriminator every IS-IS PDU
+    # opens with.
+    lasthopVlan = 131;
   };
 
   # Tailnet MagicDNS suffix, under which machines and Tailscale Services

@@ -770,6 +770,11 @@ let
   # which never speak BFD still establish, since bgpd only tears down on an
   # up-to-down transition.
   #
+  # isisd starts with a baseline for the IS-IS lab (see isisLab below):
+  # the lab area, the lab interface as point to point, and the production
+  # lsp-mtu, which FRR's default exceeds at the lab's MTU. Anything more
+  # is set at runtime through vtysh, and restarting frr returns to this.
+  #
   # configFile bypasses the NixOS module's generated config and the "log
   # syslog" it writes, so bgpd logged nowhere; the neighbor changes name
   # why a session went down, which the router's own log cannot say.
@@ -807,6 +812,17 @@ let
      exit-address-family
     exit
     !
+    router isis lab
+     net ${inventory.isis.lab.area}.${inventory.isis.lab.systemIds.frrdev}.00
+     lsp-mtu ${toString config.homelab.interconnect.isis.lspMtu}
+    exit
+    !
+    interface ${isisLab.frrdev.ifname}
+     ip router isis lab
+     ipv6 router isis lab
+     isis network point-to-point
+    exit
+    !
   '';
   frrConfigFile = "/run/host-secrets/frr.conf";
 
@@ -833,6 +849,32 @@ let
     router4 = "172.20.140.81";
     routes4 = [ inventory.dn42.prefix4 ];
   };
+
+  # The IS-IS lab link between frrdev and lasthop in the development
+  # container: a bridge on this host with no uplink (see networking.nix),
+  # at the inter-site link MTU, addressed from the inventory's lab
+  # ranges. Its area is the inventory's lab area.
+  #
+  # lasthop never runs one IS-IS instance spanning this lab area and any
+  # production area.
+  isisLab =
+    let
+      lab6 = lib.removeSuffix "::/56" inventory.labPrefix6;
+      lab4 = lib.removeSuffix "0.0/16" inventory.labPrefix4;
+    in
+    {
+      mtu = 1354;
+      frrdev = {
+        ifname = "lab-frrdev";
+        addr6 = "${lab6}::/127";
+        addr4 = "${lab4}0.0/31";
+      };
+      linuxdev = {
+        ifname = "lab-linuxdev";
+        addr6 = "${lab6}::1/127";
+        addr4 = "${lab4}0.1/31";
+      };
+    };
 in
 {
   # MicroVM host support for devVM above: per-VM systemd units, taps, and
@@ -1037,6 +1079,33 @@ in
               linkConfig.RequiredForOnline = "no";
             };
 
+            # The IS-IS lab link; see isisLab above. The addresses are for
+            # lasthop to advertise; nothing here routes over the link.
+            systemd.network.networks."20-${isisLab.linuxdev.ifname}" = {
+              matchConfig.Name = isisLab.linuxdev.ifname;
+              address = [
+                isisLab.linuxdev.addr6
+                isisLab.linuxdev.addr4
+              ];
+              linkConfig = {
+                MTUBytes = toString isisLab.mtu;
+                RequiredForOnline = "no";
+              };
+              networkConfig.IPv6AcceptRA = false;
+            };
+
+            # The link from the router to lasthop, at the inter-site link MTU.
+            # Link-local only; the server filters what lasthop sends here
+            # (see its networking.nix).
+            systemd.network.networks."20-isis-azo" = {
+              matchConfig.Name = "isis-azo";
+              linkConfig = {
+                MTUBytes = toString isisLab.mtu;
+                RequiredForOnline = "no";
+              };
+              networkConfig.IPv6AcceptRA = false;
+            };
+
             # The secrets gate; see sopsGateRun above. The admin's home is
             # group-readable here, and the gate user is the only other
             # member of users, so the worktree is readable by path from
@@ -1093,6 +1162,31 @@ in
                 users = [ user ];
                 runAs = gateUser;
                 commands = [ { command = "${sopsGateRun}/bin/sops-gate-run"; } ];
+              }
+              # Lifecycle control of lasthop-isis alone, without
+              # authentication; the verbs are enumerated so nothing
+              # interactive rides along.
+              {
+                users = [ user ];
+                commands =
+                  lib.concatMap
+                    (
+                      verb:
+                      map
+                        (unit: {
+                          command = "/run/current-system/sw/bin/systemctl ${verb} ${unit}";
+                          options = [ "NOPASSWD" ];
+                        })
+                        [
+                          "lasthop-isis"
+                          "lasthop-isis.service"
+                        ]
+                    )
+                    [
+                      "start"
+                      "stop"
+                      "restart"
+                    ];
               }
             ];
 
@@ -1191,6 +1285,26 @@ in
                   ExecStop = "${pkgs.unstable.llm-agents.herdr}/bin/herdr server stop";
                   Restart = "always";
                   RestartSec = "5s";
+                };
+              };
+
+              # lasthop's IS-IS speaker on the lab link (see isisLab above)
+              # and the link from the router (isis-azo), run from whatever
+              # ~/.local/bin/lasthop-isis points at. IS-IS
+              # needs raw sockets, and agents cannot sudo, so the unit holds
+              # CAP_NET_RAW and the rule below lets them start and stop it.
+              #
+              # Agent sessions run in this container's main routing table:
+              # anything lasthop installs into a kernel FIB must stay out of
+              # it.
+              lasthop-isis = {
+                description = "lasthop IS-IS";
+                serviceConfig = {
+                  User = user;
+                  WorkingDirectory = home;
+                  ExecStart = "${home}/.local/bin/lasthop-isis";
+                  AmbientCapabilities = [ "CAP_NET_RAW" ];
+                  CapabilityBoundingSet = [ "CAP_NET_RAW" ];
                 };
               };
             };
@@ -1319,6 +1433,13 @@ in
           # (see networking.nix); the container sees it under this name.
           extraVeths.${dn42.ifname}.hostBridge = "br-dn42i-dev0";
 
+          # The IS-IS lab link, a veth onto the lab bridge (see
+          # networking.nix).
+          extraVeths.${isisLab.linuxdev.ifname}.hostBridge = "br-isis-lab";
+
+          # The link from the router to lasthop (see networking.nix).
+          extraVeths.isis-azo.hostBridge = "br-isis-lasthop";
+
           # Stated again rather than left to the default above: this one
           # holds the agent sessions, so a change to that default must not
           # quietly start restarting it out from under them.
@@ -1332,7 +1453,28 @@ in
             services.frr = {
               bgpd.enable = true;
               bfdd.enable = true;
+              isisd.enable = true;
               configFile = frrConfigFile;
+            };
+
+            # vtysh's write memory has watchfrr, inside this unit, replace
+            # /etc/frr/frr.conf with the running config, which the next
+            # start would read. Read-only here, so a restart always loads
+            # the rendered config above.
+            systemd.services.frr.serviceConfig.ReadOnlyPaths = [ "/etc/frr" ];
+
+            # The IS-IS lab link; see isisLab above.
+            systemd.network.networks."20-${isisLab.frrdev.ifname}" = {
+              matchConfig.Name = isisLab.frrdev.ifname;
+              address = [
+                isisLab.frrdev.addr6
+                isisLab.frrdev.addr4
+              ];
+              linkConfig = {
+                MTUBytes = toString isisLab.mtu;
+                RequiredForOnline = "no";
+              };
+              networkConfig.IPv6AcceptRA = false;
             };
 
             # vtysh access for the user, plus the frr group so agents can
@@ -1379,6 +1521,10 @@ in
             hostPath = config.sops.templates."frr.conf".path;
             isReadOnly = true;
           };
+
+          # The IS-IS lab link, a second veth onto the lab bridge (see
+          # networking.nix).
+          extraVeths.${isisLab.frrdev.ifname}.hostBridge = "br-isis-lab";
         };
   };
 

@@ -123,10 +123,11 @@ let
           # IS-IS adjacencies dropped by BFD, per circuit end, for
           # ISISAdjacencyFlapping in prometheus-alerts.nix. The window
           # matches the ruler's default one-minute interval, so each drop
-          # lands in one sample.
+          # lands in one sample. Interconnect circuits only, so the IS-IS
+          # lab (isisLab in dev.nix) records nothing.
           {
             record = "host_circuit:isis_bfd_drops:count1m";
-            expr = ''sum by (host, circuit) (count_over_time({job="systemd-journal", unit="frr.service"} |= `bfd session went down` | regexp `Adjacency to \S+ \((?P<circuit>[^)]+)\)` [1m]))'';
+            expr = ''sum by (host, circuit) (count_over_time({job="systemd-journal", unit="frr.service"} |= `bfd session went down` | regexp `Adjacency to \S+ \((?P<circuit>[^)]+)\)` | circuit =~ "icl-.+" [1m]))'';
           }
         ];
       }

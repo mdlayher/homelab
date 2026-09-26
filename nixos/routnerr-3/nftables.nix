@@ -130,6 +130,10 @@ let
   # to a port on the WAN. Only a same-site link is built that way.
   iclBare = lib.any (link: link.carrier == null) (lib.attrValues interconnect.links);
 
+  # Circuits to IS-IS speakers under development (see the module's
+  # devCircuits), by interface name.
+  isisDev = lib.concatStringsSep ", " interconnect.isis.devCircuits;
+
   # Services at this site a far site initiates toward, by the host holding
   # the role and the port that host's own configuration listens on: every
   # edge's Alloy pushes its journal to Loki on each server role holder, the
@@ -413,6 +417,7 @@ in
           iifname "dn42e-*" jump input_dn42e
           iifname "dn42i-*" jump input_dn42i
           ${lib.optionalString icl ''iifname "icl-*" jump input_icl''}
+          ${lib.optionalString (isisDev != "") "iifname { ${isisDev} } jump input_isis_dev"}
           ${lib.optionalString iclBare ''
             # The GRETAP of a carrier-less interconnect, arriving on the LAN
             # which carries it. Both ends must sit inside one of the
@@ -526,6 +531,17 @@ in
             # meaning something unexpected.
             udp sport $tailscale_router counter name icl_tailscale_probe drop comment "tailscale endpoint discovery over the circuit"
             counter name icl_input_drop drop
+          }
+        ''}
+
+        ${lib.optionalString (isisDev != "") ''
+          # From a speaker under development to the router itself: neighbor
+          # discovery and the IGP's BFD over link-local. IS-IS itself is
+          # not IP and never reaches this family.
+          chain input_isis_dev {
+            ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert } counter accept
+            ip6 saddr fe80::/10 udp dport $bfd_control counter accept comment "router IGP development BFD"
+            counter drop
           }
         ''}
 

@@ -358,6 +358,20 @@ in
           anything that answered.
         '';
       };
+
+      devCircuits = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Interfaces facing an IS-IS speaker under development, run as
+          level-2 circuits at the maximum metric so no path prefers them.
+          Their hello password is a public test value, never the area's.
+
+          Nothing here keeps the speaker's LSPs out of the area: the
+          segment must admit only its hellos, neighbor discovery and BFD
+          before they reach this router.
+        '';
+      };
     };
 
     links = lib.mkOption {
@@ -889,6 +903,19 @@ in
              isis passive
             !
           '';
+          # IPv6 only, on link-local, so the circuit adds no prefix to the
+          # area.
+          devCircuit = name: ''
+            interface ${name}
+             ipv6 router isis ${tag}
+             isis circuit-type level-2-only
+             isis network point-to-point
+             isis hello padding during-adjacency-formation
+             isis metric 16777215
+             isis password md5 hunter2
+             isis bfd
+            !
+          '';
           # Redistribution is the only way to originate a prefix which is
           # not an address on an interface, and the route-map is what makes
           # it safe: "kernel" is every route zebra did not write itself,
@@ -999,7 +1026,7 @@ in
            set-overload-bit on-startup 60
           ${domainPassword}${areaPassword}${attachedBit}${redistribute}!
           ${lib.concatMapStrings circuit (lib.attrValues cfg.links)}
-          ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
+          ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}${lib.concatMapStrings devCircuit cfg.isis.devCircuits}
         '';
     };
 
