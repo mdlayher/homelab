@@ -18,12 +18,13 @@ sudo nixos-container root-login linuxdev
 # Container network state, from the host.
 sudo nixos-container run linuxdev -- networkctl status eth0
 
-# First time, over SSH: join Tailscale, log in to GitHub so the dev-repos
-# service can clone into ~/src, and log in to Claude Code (paste the code from
-# the browser when prompted).
+# First time, over SSH: join Tailscale, log in to GitHub so repositories can
+# be cloned into ~/src/<repo>/main, and log in to Claude Code (paste the code
+# from the browser when prompted).
 sudo tailscale up
 gh auth login --git-protocol https
-sudo systemctl start dev-repos
+gh auth setup-git
+gh repo clone mdlayher/homelab ~/src/homelab/main
 claude auth login
 
 # Day to day: herdr keeps a persistent terminal workspace on linuxdev

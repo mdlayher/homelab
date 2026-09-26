@@ -327,21 +327,6 @@ let
     '';
   });
 
-  # Repositories cloned into ~/src on linuxdev, and pulled when that is safe.
-  repos = [
-    "bfd"
-    "bgp"
-    "bgpdev"
-    "bmp"
-    "consrv"
-    "ethtool"
-    "homelab"
-    "ndp"
-    "netlink"
-    "socket"
-    "vsock"
-  ];
-
   # Initial herdr configuration, copied into the user's config directory on
   # first boot only so that later edits win; keep it mirroring the live
   # config inside the container. Updates come from the llm-agents flake, not
@@ -1190,55 +1175,7 @@ in
               }
             ];
 
-            # Re-run the clone job hourly so additions to repos appear without
-            # a restart; the boot-time run comes from herdr-server's
-            # ordering below.
-            systemd.timers.dev-repos = {
-              wantedBy = [ "timers.target" ];
-              timerConfig.OnCalendar = "hourly";
-            };
-
             systemd.services = {
-              # Clone repositories into ~/src/<repo>/main if they aren't
-              # there yet, and fast-forward existing ones from GitHub when
-              # they are on main with no local changes and main tracks an
-              # upstream: a repo mid-migration can sit on an upstream-less
-              # main. A failing remote only warns, so one flaky repo does not
-              # skip the rest of the sweep. Each repo directory holds one
-              # worktree per branch, with main as the primary clone; agents
-              # work in sibling worktrees, so this job never contends with
-              # them for a checkout. Uses gh's credentials; skipped until
-              # `gh auth login` has been run as the user.
-              dev-repos = {
-                description = "Clone development repositories";
-                after = [ "network-online.target" ];
-                wants = [ "network-online.target" ];
-                unitConfig.ConditionPathExists = "${home}/.config/gh/hosts.yml";
-                path = [
-                  pkgs.gh
-                  pkgs.git
-                ];
-                serviceConfig = {
-                  Type = "oneshot";
-                  User = user;
-                  WorkingDirectory = home;
-                };
-                script =
-                  "gh auth setup-git\n"
-                  + lib.concatMapStrings (repo: ''
-                    if [ ! -d ${src}/${repo}/main ]; then
-                      gh repo clone mdlayher/${repo} ${src}/${repo}/main \
-                        || echo "warning: ${repo}: clone failed" >&2
-                    elif [ "$(git -C ${src}/${repo}/main branch --show-current)" = "main" ] \
-                      && git -C ${src}/${repo}/main rev-parse --abbrev-ref 'main@{upstream}' >/dev/null 2>&1 \
-                      && git -C ${src}/${repo}/main diff --quiet \
-                      && git -C ${src}/${repo}/main diff --cached --quiet; then
-                      git -C ${src}/${repo}/main pull --ff-only \
-                        || echo "warning: ${repo}: pull failed" >&2
-                    fi
-                  '') repos;
-              };
-
               # herdr's headless server, so the workspace comes back after a
               # container restart before anyone attaches. Attach with `herdr`
               # inside, or `herdr --remote` from a desktop; agent panes then
@@ -1247,14 +1184,8 @@ in
               herdr-server = {
                 description = "herdr server";
                 wantedBy = [ "multi-user.target" ];
-                after = [
-                  "network-online.target"
-                  "dev-repos.service"
-                ];
-                wants = [
-                  "network-online.target"
-                  "dev-repos.service"
-                ];
+                after = [ "network-online.target" ];
+                wants = [ "network-online.target" ];
                 path = [
                   pkgs.unstable.llm-agents.herdr
                   pkgs.fish
