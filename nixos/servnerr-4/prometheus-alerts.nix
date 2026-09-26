@@ -6,9 +6,9 @@
   # Every anycast service address and the site expected to answer it, as
   # { service, address, site }; see nixos/modules/anycast.nix.
   anycastServices,
-  # How many routers run the IGP, and so how many LSPs each link-state
-  # database should hold.
-  isisRouterCount,
+  # How many routers run the IGP at each level, and so how many LSPs each
+  # link-state database should hold: { level2, level1.<site> }.
+  isisRouterCounts,
   # Builds a Grafana Explore link for a LogQL query, for alerts which fire on
   # what Loki's ruler records; see nixos/servnerr-4/explore-url.nix.
   exploreURL,
@@ -276,17 +276,22 @@ in
             logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="frr.service"} |= `bfd session went down`'';
           };
         }
-        # One LSP per router, while every level-2 circuit is point to
+        # One LSP per router at each level, while every circuit is point to
         # point and no router overflows lspMtu: a broadcast circuit adds a
         # pseudonode LSP per level, an overflow adds fragments. Short of
         # the count a router is gone, which ISISAdjacencyDown misses when a
         # site is reachable by neither plane and the rest agree among
-        # themselves.
+        # themselves. A level-1 database holds its own site's routers.
         {
           alert = "ISISLSDBUnexpected";
-          expr = ''homelab_isis_lsps{level="2"} != ${toString isisRouterCount}'';
+          expr = lib.concatStringsSep " or " (
+            [ ''homelab_isis_lsps{level="2"} != ${toString isisRouterCounts.level2}'' ]
+            ++ lib.mapAttrsToList (
+              site: n: ''homelab_isis_lsps{level="1",site="${site}"} != ${toString n}''
+            ) isisRouterCounts.level1
+          );
           for = "10m";
-          annotations.summary = "{{ $labels.instance }} holds {{ $value }} level-2 LSPs where the area has ${toString isisRouterCount} routers, so its database is missing one or carrying one nobody expects.";
+          annotations.summary = "{{ $labels.instance }} holds {{ $value }} level-{{ $labels.level }} LSPs, more or fewer than the routers at that level, so its database is missing one or carrying one nobody expects.";
         }
         # The adjacency gauge is only as true as the file it comes from.
         # node_exporter keeps serving the last sample written, so a

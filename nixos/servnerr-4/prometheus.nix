@@ -411,18 +411,26 @@ let
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 
-  # Routers running the IGP, which is how many LSPs each level-2 database
-  # should hold. Counted from the machines that enable it rather than from
-  # the inventory's system IDs, because an ID is assigned while a site is
-  # being scaffolded and before any machine carries it. It is the level-2
-  # router count while modules/interconnect.nix renders level-2-only
-  # circuits; a machine speaking only level 1 would need excluding.
-  isisRouterCount = lib.count (system: system.config.homelab.interconnect.isis.enable or false) (
-    lib.attrValues inputs.self.nixosConfigurations
+  # Routers running the IGP at each level, which is how many LSPs each
+  # database should hold: every level-2 router in the backbone's, and each
+  # site's level-1 routers in that site's. Counted from the machines that
+  # enable it rather than from the inventory's system IDs, because an ID
+  # is assigned while a site is being scaffolded and before any machine
+  # carries it.
+  isisRouters = lib.filter (c: c.homelab.interconnect.isis.enable or false) (
+    map (system: system.config) (lib.attrValues inputs.self.nixosConfigurations)
   );
+  isisRouterCounts = {
+    level2 = lib.count (c: c.homelab.interconnect.isis.isType != "level-1") isisRouters;
+    level1 = lib.mapAttrs (_: lib.length) (
+      lib.groupBy (c: c.homelab.site) (
+        lib.filter (c: c.homelab.interconnect.isis.isType != "level-2-only") isisRouters
+      )
+    );
+  };
 
   alerts = import ./prometheus-alerts.nix {
-    inherit lib anycastServices isisRouterCount;
+    inherit lib anycastServices isisRouterCounts;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
     # The anycast probe has its own rule with a shorter hold.

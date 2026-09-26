@@ -49,20 +49,26 @@
 
 let
   cfg = config.homelab.interconnect;
+  ourSite = config.homelab.site;
   inventory = config.homelab.inventory;
 
   # This router's IS-IS system ID, from the inventory registry keyed by
   # machine name. Null for a machine the registry does not name.
   systemId = inventory.isis.systemIds.${config.networking.hostName} or null;
 
-  # The isisd process tag, which names the area in isisd's own
+  # The isisd process tag, which names the instance in isisd's own
   # configuration. The area address routers agree on is the NET's first
-  # half, from the inventory.
+  # half.
   tag = "core";
 
   # Two decimal digits, the way every other scheme here writes a site or a
   # VLAN into a hextet.
   pad = lib.fixedWidthNumber 2;
+
+  # This site's IS-IS area, 49.SS00 from the site index, which reads as
+  # the site's :SS00::/56 does: each site is an area of its own, and 49
+  # is the AFI for private NSAP addressing.
+  area = "49.${pad inventory.sites.${config.homelab.site}.index}00";
 
   # A link's identifier is the two sites' indices in ascending order. It is
   # unique to the pair and both ends derive the same value, so a second link
@@ -226,9 +232,9 @@ in
 
       net = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = if systemId == null then null else "${inventory.isis.area}.${systemId}.00";
-        defaultText = lib.literalExpression "the inventory's area and this machine's system ID";
-        example = "49.0001.0000.0000.0001.00";
+        default = if systemId == null then null else "${area}.${systemId}.00";
+        defaultText = lib.literalExpression "this site's area and this machine's system ID";
+        example = "49.0100.0000.0000.0101.00";
         description = ''
           This router's NET: area address, system ID and selector. The
           system ID is six octets unique to this router within the routing
@@ -239,6 +245,31 @@ in
           Null when the inventory names no system ID for this machine,
           which the assertion below reports. Set it here for a machine
           which is not in that registry.
+        '';
+      };
+
+      isType = lib.mkOption {
+        type = lib.types.enum [
+          "level-1"
+          "level-1-2"
+          "level-2-only"
+        ];
+        default = "level-2-only";
+        description = ''
+          The levels this router runs. Level 2 is the backbone between
+          sites; level 1 is a site's own area, for a site with more than
+          one router. A level-1 router learns nothing from the backbone,
+          and a level-1-2 router at the same site joins the two.
+        '';
+      };
+
+      ignoreAttachedBit = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether a level-1 router ignores the attached bit in a level-1-2
+          router's LSP. Honoured, it installs a default route toward that
+          router over the circuit.
         '';
       };
 
@@ -291,14 +322,13 @@ in
         description = ''
           IPv6 prefixes this router learns from the IGP but must not
           install, as prefix-list entries: a prefix alone matches exactly,
-          and "le N" after it covers its more specifics too. A second
-          router at a site learns
-          its own site's aggregates from the first, pointing over the
-          circuit between them, while it reaches that site over its LAN;
-          installed, they would carry its LAN traffic across the circuit
-          sourced from the circuit address, which the site's policy drops
-          as a far-site flow. zebra filters them before the kernel sees
-          them; isisd still holds them.
+          and "le N" after it covers its more specifics too. A level-1
+          router learns every prefix on the level-1-2 router's interfaces,
+          pointing over the circuit between them, including ones it
+          reaches over a LAN instead; installed, they would carry that
+          traffic across the circuit sourced from the circuit address,
+          which the site's policy drops as a far-site flow. zebra filters
+          them before the kernel sees them; isisd still holds them.
         '';
       };
 
@@ -545,22 +575,21 @@ in
                 description = "Carrier MTU: path MTU less WireGuard's 80.";
               };
 
-              metric = lib.mkOption {
-                type = lib.types.nullOr lib.types.int;
-                default = null;
+              circuitType = lib.mkOption {
+                type = lib.types.enum [
+                  "level-1"
+                  "level-2-only"
+                ];
+                default = if config.site == ourSite then "level-1" else "level-2-only";
+                defaultText = lib.literalExpression "level-1 to our own site, level-2-only to another";
                 description = ''
-                  This circuit's IS-IS metric, or null for isisd's default
-                  of 10.
-
-                  Set it where two circuits are not comparable paths. A link
-                  between two machines on one segment and a tunnel to
-                  another region both default to 10, which makes every
-                  address reachable over either equally good -- and an
-                  address held at both sites is then load balanced between
-                  them by a router that has no way to know one of the two
-                  cannot answer.
+                  The level this circuit forms adjacencies at. Each site is
+                  its own area, so a link to another site can only be
+                  level 2, and a link between two routers at one site is
+                  inside that site's area.
                 '';
               };
+
               mtu = lib.mkOption {
                 type = lib.types.int;
                 default = config.carrierMtu - gretapOverhead;
@@ -804,9 +833,10 @@ in
 
     # One password for the area, from the shared secrets file every router
     # decrypts. Hellos carry it per circuit, so an adjacency forms only with
-    # a router holding it, and level-2 LSPs and SNPs carry it for the
-    # domain, so a router which does form one cannot feed the database
-    # anything unsigned. The circuits between sites are inside WireGuard
+    # a router holding it, and LSPs and SNPs carry it at both levels, as
+    # the domain password at level 2 and the area password at level 1, so
+    # a router which does form one cannot feed the database anything
+    # unsigned. The circuits between sites are inside WireGuard
     # already; the link between two routers on one segment is not, and this
     # is what stands in for that there.
     sops.secrets."isis/password" = lib.mkIf cfg.isis.enable {
@@ -845,12 +875,12 @@ in
             interface ${link.interface}
              ip router isis ${tag}
              ipv6 router isis ${tag}
-             isis circuit-type level-2-only
+             isis circuit-type ${link.circuitType}
              isis network point-to-point
              isis hello padding during-adjacency-formation
              isis password md5 ${password}
              isis bfd
-            ${lib.optionalString (link.metric != null) " isis metric ${toString link.metric}\n"}!
+            !
           '';
           passive = name: ''
             interface ${name}
@@ -872,8 +902,9 @@ in
           #
           # The level is not optional, and isisd rejects the whole line
           # without it -- logged as an unknown command, after which the
-          # daemon carries on with no redistribution at all. level-2 to
-          # match is-type above.
+          # daemon carries on with no redistribution at all. level-2 so the
+          # aggregates stay out of a site's own area: a second router there
+          # reaches the site's LANs directly, not over the circuit.
           aggregate6 = lib.optionalString (cfg.isis.aggregate6 != null) ''
             ipv6 prefix-list isis-aggregate6 seq 5 permit ${cfg.isis.aggregate6}
             !
@@ -927,6 +958,14 @@ in
           # minute, swamping anything worth reading there. FRR logs at debug
           # when nothing tells it otherwise, so tell it.
           logging = "log syslog informational";
+
+          domainPassword = lib.optionalString (
+            cfg.isis.isType != "level-1"
+          ) " domain-password md5 ${password} authenticate snp validate\n";
+          areaPassword = lib.optionalString (
+            cfg.isis.isType != "level-2-only"
+          ) " area-password md5 ${password} authenticate snp validate\n";
+          attachedBit = lib.optionalString cfg.isis.ignoreAttachedBit " attached-bit receive ignore\n";
         in
         # The first lines are what the FRR module writes around
         # services.frr.config, which configFile replaces wholesale.
@@ -952,14 +991,13 @@ in
           ${lib.optionalString (routerId != null) "ip router-id ${routerId}"}
           !
           ${aggregate6}${aggregate4}${kernelDeny "ipv6" cfg.isis.kernelDeny6}${kernelDeny "ipv4" cfg.isis.kernelDeny4}router isis ${tag}
-           is-type level-2-only
+           is-type ${cfg.isis.isType}
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
            log-adjacency-changes
            spf-delay-ietf init-delay 50 short-delay 200 long-delay 5000 holddown 10000 time-to-learn 500
            set-overload-bit on-startup 60
-           domain-password md5 ${password} authenticate snp validate
-          ${redistribute}!
+          ${domainPassword}${areaPassword}${attachedBit}${redistribute}!
           ${lib.concatMapStrings circuit (lib.attrValues cfg.links)}
           ${lib.concatMapStrings passive cfg.isis.passiveInterfaces}
         '';

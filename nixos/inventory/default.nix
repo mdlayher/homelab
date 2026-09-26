@@ -159,17 +159,9 @@
   # does. The far end here is a machine rather than a site, so it is named by
   # its role: that is what the rest of this file keys on, and it outlives the
   # hardware the way a system ID index would not.
-  #
-  # The metric is the link's, set on both ends: this is a hop between two
-  # machines on one segment, and leaving it at the protocol's default would
-  # make it as expensive as a tunnel to another region. An address held at
-  # more than one site is reached at the circuit's metric plus the dummy's,
-  # so equal circuit metrics would put a node here and a node at another
-  # site at the same distance and split traffic between them.
   siteLinks.azo = {
     routnerr-3 = {
       interface = "icl-server0";
-      metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:1";
       circuit6 = "fd9e:1a04:f01d:fcff::1:1";
       circuit4 = "10.252.255.1";
@@ -177,7 +169,6 @@
     };
     servnerr-4 = {
       interface = "icl-router0";
-      metric = 1;
       carrier = "fd9e:1a04:f01d:feff::1:0";
       circuit6 = "fd9e:1a04:f01d:fcff::1:0";
       circuit4 = "10.252.255.0";
@@ -185,20 +176,15 @@
     };
   };
 
-  # IS-IS identity. Assigned here because nothing derives it: a system ID
-  # is not an address and must not be built from one, so it survives any
+  # IS-IS system IDs. Assigned here because nothing derives them: a system
+  # ID is not an address and must not be built from one, so it survives any
   # renumbering, and a file has to be the registry or it drifts.
   #
-  # 49 is the AFI for private NSAP addressing, the CLNS equivalent of
-  # RFC 1918. The area is 49.00SS and the system ID 0000.0000.SSRR, where
-  # SS is the site byte of the addressing scheme (see the router's
-  # dn42.nix) and RR the router within that site.
-  #
-  # One flat level-2 backbone today, so every router shares an area and
-  # the value is mostly latent; per-site level-1 areas would each use
-  # their own site's.
+  # The system ID is 0000.0000.SSRR, where SS is the site byte of the
+  # addressing scheme (see the router's dn42.nix) and RR the router within
+  # that site. Each site is its own area, 49.SS00, which
+  # modules/interconnect.nix derives from the site index.
   isis = {
-    area = "49.0001";
     systemIds = {
       routnerr-3 = "0000.0000.0101";
       servnerr-4 = "0000.0000.0102";

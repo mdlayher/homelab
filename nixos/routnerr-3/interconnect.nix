@@ -99,7 +99,6 @@ in
         localCircuitAddress4 = "${ours.circuit4}/31";
         localLla = ours.lla;
         lla = far.lla;
-        metric = ours.metric;
         # The segment's 1500 less the GRETAP's 66. The module's default is
         # sized for a WireGuard carrier, which this link has none of.
         mtu = 1434;
@@ -123,6 +122,10 @@ in
 
       isis = {
         enable = true;
+
+        # The backbone to the other sites and this site's own area, over
+        # the circuit to the server.
+        isType = "level-1-2";
 
         # The whole site in one prefix, so the far end has a route home
         # without this router advertising a LAN. The unreachable aggregate
