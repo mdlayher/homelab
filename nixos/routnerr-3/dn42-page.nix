@@ -316,7 +316,9 @@ in
     # the name is reachable over HTTPS from the first deploy either way.
     certs.${dn42.domain} = {
       server = dn42Acme;
-      validMinDays = 10;
+      # Above TLSCertificateExpiringSoon's 14 days, so the alert fires only
+      # once renewal has failed for several daily attempts.
+      validMinDays = 20;
       # The page vhost's aliases join on their own; the redirect vhosts'
       # names are added here.
       extraDomainNames = map (prefix: "${prefix}azo.${dn42.domain}") ([ "" ] ++ familyPrefixes);
