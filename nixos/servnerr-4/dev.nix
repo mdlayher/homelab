@@ -867,6 +867,14 @@ in
   # virtiofs, with state under /var/lib/microvms.
   imports = [ inputs.microvm.nixosModules.host ];
 
+  # numtide's binary cache, where the llm-agents flake's CI publishes the
+  # herdr and claude-code builds the containers install. Deploys build here
+  # and linuxdev shares this daemon, so both substitute from it.
+  nix.settings = {
+    substituters = [ "https://cache.numtide.com" ];
+    trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
+  };
+
   # QUIC protocol development against the kernel QUIC module. A VM rather
   # than a container: the module is out of tree, and loading experimental
   # kernel code on the server would put storage and every service in the
@@ -1188,7 +1196,7 @@ in
                 after = [ "network-online.target" ];
                 wants = [ "network-online.target" ];
                 path = [
-                  pkgs.unstable.llm-agents.herdr
+                  pkgs.llm-agents.herdr
                   pkgs.fish
                   pkgs.bashInteractive
                   # The server shells out to git for worktree create/remove.
@@ -1213,8 +1221,8 @@ in
                 serviceConfig = {
                   User = user;
                   WorkingDirectory = src;
-                  ExecStart = "${pkgs.unstable.llm-agents.herdr}/bin/herdr server";
-                  ExecStop = "${pkgs.unstable.llm-agents.herdr}/bin/herdr server stop";
+                  ExecStart = "${pkgs.llm-agents.herdr}/bin/herdr server";
+                  ExecStop = "${pkgs.llm-agents.herdr}/bin/herdr server stop";
                   Restart = "always";
                   RestartSec = "5s";
                 };
@@ -1247,12 +1255,12 @@ in
             environment.systemPackages = with pkgs; [
               # Claude Code and its sandbox dependencies come from the
               # llm-agents flake, which packages each release within a day.
-              unstable.llm-agents.claude-code
+              llm-agents.claude-code
 
               # Persistent terminal workspace for agents; see herdr-server
               # below. Its Claude Code integration hook needs python3 to
               # report agent session IDs, and exits silently without it.
-              unstable.llm-agents.herdr
+              llm-agents.herdr
               python3
 
               # Attach to those agent sessions from a phone: mosh-server for
