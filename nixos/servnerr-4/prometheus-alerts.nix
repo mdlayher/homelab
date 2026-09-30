@@ -261,18 +261,21 @@ in
         # within five minutes of FRR or networkd starting on any IGP node
         # are left out: a deploy drops the far ends' adjacencies too. The
         # drops are recorded by Loki's ruler (see nixos/servnerr-4/loki.nix);
-        # each subquery step reads only the samples in its own minute, so
-        # no drop is counted twice.
+        # each minute step reads only the samples in its own minute, so no
+        # drop is counted twice.
+        #
+        # The alert counts hours with a drop, not drops, so a burst of path
+        # loss counts once and only drops recurring across the day fire it.
         {
           alert = "ISISAdjacencyFlapping";
           expr = ''
-            sum by (host, circuit) (sum_over_time((
+            count_over_time((sum by (host, circuit) (sum_over_time((
               sum_over_time(host_circuit:isis_bfd_drops:count1m[1m])
                 unless on () (min(time() - node_systemd_unit_start_time_seconds{name=~"frr.service|systemd-networkd.service"}) < 300)
-            )[1d:1m])) >= 3
+            )[1h:1m])) > 0)[1d:1h]) >= 3
           '';
           annotations = {
-            summary = "IS-IS on {{ $labels.circuit }} ({{ $labels.host }}) lost BFD {{ $value }} times in a day outside deploys; check the path under that plane.";
+            summary = "IS-IS on {{ $labels.circuit }} ({{ $labels.host }}) lost BFD in {{ $value }} separate hours of a day outside deploys; check the path under that plane.";
             logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="frr.service"} |= `bfd session went down`'';
           };
         }
