@@ -27,6 +27,9 @@ in
 {
   imports = [
     (modulesPath + "/virtualisation/amazon-image.nix")
+    # No documentation, generated completions, or default packages, all of
+    # which the machine would otherwise build itself on every nixpkgs bump.
+    (modulesPath + "/profiles/minimal.nix")
 
     ./edge-chrony.nix
     ./edge-coredns.nix
@@ -185,6 +188,10 @@ in
   # stalling the whole machine.
   nix.settings.max-jobs = 1;
   zramSwap.enable = true;
+
+  # The minimal profile turns logrotate off; it rotates nginx's logs and
+  # btmp, which failed logins from the internet grow.
+  services.logrotate.enable = true;
 
   services.fwupd.enable = lib.mkForce false;
   services.smartd.enable = lib.mkForce false;

@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, modulesPath, ... }:
 
 {
   imports = [
@@ -9,6 +9,13 @@
 
     # SSH to serial console server.
     ./consrv.nix
+
+    # No documentation, generated completions, or default packages, which
+    # the Pi otherwise builds itself on every nixpkgs bump: fish's completion
+    # files alone, one per package from its man pages, pegged its CPU for
+    # over ten minutes per deploy. Completions packages ship themselves
+    # (including the dotfiles from common.nix) are unaffected.
+    (modulesPath + "/profiles/minimal.nix")
   ];
 
   # This machine is at the home site; see nixos/inventory/.
@@ -20,17 +27,12 @@
   # the 60 second default from common.nix does not fit.
   systemd.settings.Manager.RuntimeWatchdogSec = lib.mkForce "10s";
 
-  # The fish module generates a completion file from the man pages of every
-  # package in the system profile, one uncached derivation per package that
-  # the Pi rebuilds itself on every nixpkgs bump: ~150 derivations, pegging
-  # its CPU for over ten minutes per deploy. Skip them here; completions that
-  # packages ship in their own vendor directories (including the dotfiles from
-  # common.nix) are unaffected.
-  programs.fish.generateCompletions = false;
-
   services = {
     # Enable the OpenSSH daemon.
     openssh.enable = true;
+
+    # The minimal profile turns logrotate off; it rotates btmp and wtmp.
+    logrotate.enable = true;
 
     # SD card storage: no SMART to monitor.
     smartd.enable = lib.mkForce false;
