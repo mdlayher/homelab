@@ -82,6 +82,7 @@ let
       and on () count(up{job="node", site="${s.site}"} == 1) > 0
     '';
     for = "10m";
+    labels = { inherit (s) site address; };
     annotations.summary = "No node at site ${s.site} holds ${s.address}, so nothing there answers ${s.service} and every request from its clients crosses the fabric.";
   }) anycastServices;
 in

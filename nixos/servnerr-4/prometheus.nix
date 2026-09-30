@@ -600,6 +600,21 @@ in
     };
   };
 
+  # The prometheus module runs promtool check rules at build, where lint
+  # findings only warn. This fails the build on them.
+  system.checks = [
+    (pkgs.runCommand "prometheus-rules-lint"
+      {
+        preferLocalBuild = true;
+        nativeBuildInputs = [ config.services.prometheus.package.cli ];
+      }
+      ''
+        promtool check rules --lint-fatal ${pkgs.writeText "prometheus.rules" (builtins.toJSON alerts)}
+        touch $out
+      ''
+    )
+  ];
+
   # alertmanager runs with DynamicUser, so hand it the Discord webhook URL via
   # systemd credentials rather than a file owned by a static user.
   systemd.services.alertmanager.serviceConfig.LoadCredential = [
