@@ -1278,6 +1278,10 @@ in
               # nixos/servnerr-4/loki.nix.
               grafana-loki
 
+              # pdftoppm and pdftotext, which Claude Code's Read tool uses to
+              # render PDF pages.
+              poppler-utils
+
               # The admin's half of the secrets gate; see sopsGate above.
               sopsGate
             ];
