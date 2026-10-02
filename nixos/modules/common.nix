@@ -226,35 +226,37 @@ in
     # Enable firmware updates when possible.
     hardware.enableRedistributableFirmware = lib.mkIf isHost true;
 
-    nix = {
-      settings.experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-    }
-    // lib.optionalAttrs isHost {
-      # Flakes only: no channels. Pin the nixpkgs registry entry and NIX_PATH to
-      # the flake input so `nix shell nixpkgs#foo`, `nix-shell -p foo`, and comma
-      # all use the same nixpkgs as the running system.
-      channel.enable = false;
-      registry.nixpkgs.flake = inputs.nixpkgs;
-      nixPath = [ "nixpkgs=flake:nixpkgs" ];
+    nix = lib.mkMerge [
+      {
+        settings.experimental-features = [
+          "nix-command"
+          "flakes"
+        ];
+      }
+      (lib.mkIf isHost {
+        # Flakes only: no channels. Pin the nixpkgs registry entry and NIX_PATH to
+        # the flake input so `nix shell nixpkgs#foo`, `nix-shell -p foo`, and comma
+        # all use the same nixpkgs as the running system.
+        channel.enable = false;
+        registry.nixpkgs.flake = inputs.nixpkgs;
+        nixPath = [ "nixpkgs=flake:nixpkgs" ];
 
-      # Automatic Nix GC.
-      gc = {
-        automatic = true;
-        dates = "04:00";
-        options = "--delete-older-than 7d";
-      };
+        # Automatic Nix GC.
+        gc = {
+          automatic = true;
+          dates = "04:00";
+          options = "--delete-older-than 7d";
+        };
 
-      settings.min-free = 500 * 1024 * 1024;
+        settings.min-free = 500 * 1024 * 1024;
 
-      # Automatic store optimization, after GC.
-      optimise = {
-        automatic = true;
-        dates = [ "04:30" ];
-      };
-    };
+        # Automatic store optimization, after GC.
+        optimise = {
+          automatic = true;
+          dates = [ "04:30" ];
+        };
+      })
+    ];
 
     # Programs installed everywhere. Login shells are bash so that tools which
     # pipe POSIX scripts into a login shell over SSH (VS Code Remote-SSH, Claude
