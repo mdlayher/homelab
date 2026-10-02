@@ -137,13 +137,24 @@ let
   # Services at this site a far site initiates toward, by the host holding
   # the role and the port that host's own configuration listens on: every
   # edge's Alloy pushes its journal to Loki on each server role holder, the
-  # way modules/alloy.nix names them. The addresses are inventory secrets,
-  # so they reach the ruleset through the rendered set below.
-  iclServices = map (server: {
-    host = inventory.hosts.${server};
-    port =
-      inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port;
-  }) inventory.roles.server;
+  # way modules/alloy.nix names them, and substitutes from its binary cache
+  # (modules/nix-cache.nix). The addresses are inventory secrets, so they
+  # reach the ruleset through the rendered set below.
+  iclServices = lib.concatMap (
+    server:
+    let
+      c = inputs.self.nixosConfigurations.${server}.config;
+    in
+    map
+      (port: {
+        host = inventory.hosts.${server};
+        inherit port;
+      })
+      [
+        c.services.loki.configuration.server.http_listen_port
+        c.homelab.nixCache.port
+      ]
+  ) inventory.roles.server;
 
   # The remote access tunnel (see remote-access.nix): each device's
   # address with every host and port it reaches, as set elements.

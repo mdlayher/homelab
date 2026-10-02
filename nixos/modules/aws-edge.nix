@@ -136,9 +136,6 @@ in
     DNS = [ inventory.anycast6.dns ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
-      # Tailnet names, which the router's CoreDNS answers (see
-      # modules/tailscale.nix).
-      "~${inventory.tailnetDomain}"
       # dn42 as a whole: the resolver answers for it through the router, and
       # the VPC's would not.
       "~dn42"

@@ -73,6 +73,9 @@ in
         # Loki push, for the other machines' alloy and for LAN devices which
         # cannot join the tailnet, via loki.svc; see the router's coredns.nix.
         config.services.loki.configuration.server.http_listen_port
+        # The binary cache, for the machines that substitute from it; see
+        # nixos/modules/nix-cache.nix.
+        config.homelab.nixCache.port
         # The resolver this machine answers for at its anycast address, and
         # at its own (see coredns.nix).
         53

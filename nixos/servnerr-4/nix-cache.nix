@@ -1,6 +1,6 @@
 # The binary cache described in nixos/modules/nix-cache.nix. harmonia serves
-# this machine's store on localhost and signs each path as it serves it;
-# Tailscale Services terminates TLS for svc:nix-cache in front of it.
+# this machine's store and signs each path as it serves it, so the plain
+# HTTP it speaks needs no TLS for integrity.
 {
   config,
   inputs,
@@ -24,10 +24,8 @@ in
   services.harmonia.cache = {
     enable = true;
     signKeyPaths = [ config.sops.secrets."nix/cache_key".path ];
-    settings.bind = "127.0.0.1:5000";
+    settings.bind = "[::]:${toString config.homelab.nixCache.port}";
   };
-
-  homelab.tailscale.services.nix-cache."tcp:443" = "tls-terminated-tcp://127.0.0.1:5000";
 
   # Builds each client's system from the published flake before the
   # clients' nightly upgrade at 04:40, after the 04:00 garbage collection.

@@ -63,7 +63,6 @@ let
     lib.mapAttrsToList (_: site: site.domain) inventory.sites
     ++ [
       "svc.${inventory.zone}"
-      inventory.tailnetDomain
       "dn42"
       "d.f.ip6.arpa"
       "10.in-addr.arpa"

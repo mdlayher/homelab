@@ -254,6 +254,7 @@
   # reordered, and hardcoded clients follow it at their next lookup.
   services = {
     loki = "server";
+    nix-cache = "server";
     prometheus = "server";
   };
 

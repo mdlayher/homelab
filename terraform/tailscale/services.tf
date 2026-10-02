@@ -43,11 +43,3 @@ resource "tailscale_service" "consrv" {
   ports   = ["tcp:22"]
   tags    = ["tag:infra"]
 }
-
-# Binary cache on the server for the edges; see nixos/servnerr-4/nix-cache.nix.
-resource "tailscale_service" "nix_cache" {
-  name    = "svc:nix-cache"
-  comment = local.comment
-  ports   = ["tcp:443"]
-  tags    = ["tag:infra"]
-}
