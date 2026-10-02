@@ -86,6 +86,9 @@ let
         // lib.optionalAttrs cfg.services.prometheus.enable {
           prometheus.port = cfg.services.prometheus.port;
         }
+        // lib.optionalAttrs (cfg.homelab.rtrCache.enable or false) {
+          rtrtr.port = cfg.homelab.rtrCache.metricsPort;
+        }
         // lib.optionalAttrs cfg.services.zrepl.enable {
           zrepl.port = portOf (lib.head cfg.services.zrepl.settings.global.monitoring).listen;
         }

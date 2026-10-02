@@ -21,7 +21,7 @@ let
   configFile = (pkgs.formats.toml { }).generate "rtrtr.conf" {
     log_level = "info";
     log_target = "stderr";
-    http-listen = [ "127.0.0.1:8323" ];
+    http-listen = [ "[::]:${toString cfg.metricsPort}" ];
     units.burble = {
       type = "json";
       uri = "https://dn42.burble.com/roa/dn42_roa_46.json";
@@ -43,6 +43,16 @@ in
       readOnly = true;
       default = 8282;
       description = "The port the cache serves RTR on.";
+    };
+
+    metricsPort = lib.mkOption {
+      type = lib.types.port;
+      readOnly = true;
+      default = 8323;
+      description = ''
+        The port rtrtr serves its metrics on. The firewall does not open it,
+        so only the machine's own Prometheus reaches it.
+      '';
     };
   };
 

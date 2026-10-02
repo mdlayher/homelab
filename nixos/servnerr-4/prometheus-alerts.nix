@@ -213,6 +213,16 @@ in
           for = "30m";
           annotations.summary = "RPKI validator session {{ $labels.name }} on {{ $labels.instance }} is not Established.";
         }
+        # rtrtr resets this age only when the RTR cache's ROA set changes
+        # or a fetch starts failing, and the registry can go several days
+        # without a change, so it is checked against the 7 days burble's
+        # export declares itself valid for. The cache keeps serving its last
+        # set meanwhile, and every BIRD node stays Established on it.
+        {
+          alert = "RTRCacheStale";
+          expr = "rtrtr_since_last_update_seconds > 7*24*60*60";
+          annotations.summary = "The RTR cache's ROA set on {{ $labels.instance }} has not changed in 7 days.";
+        }
         # FRR runs the IGP on the site interconnects, beside bird rather
         # than instead of it. This is a liveness check on the daemon and
         # nothing more: the status collector asks zebra for `show version`,
