@@ -119,6 +119,15 @@ deploy() {
   closure="?"
 
   drv="$(nix eval --raw ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" "$@")"
+
+  # linuxdev shares the server's store, which the binary cache serves (see
+  # nixos/modules/nix-cache.nix): a client's system built here first is one
+  # it downloads rather than compiles.
+  if [[ $(hostname -s) == linuxdev ]] &&
+    [[ $(nix eval ".#nixosConfigurations.$host.config.homelab.nixCache.client" "$@") == true ]]; then
+    nix build "$drv^*" --no-link
+  fi
+
   nix copy --to "ssh://$user@$addr" "$drv"
   path="$(ssh "${sshopts[@]}" "$user@$addr" \
     nix --extra-experimental-features nix-command build "$drv^*" --no-link --print-out-paths)"

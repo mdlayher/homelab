@@ -66,6 +66,7 @@ let
       opentofu
       sops
       wireguard-tools
+      config.nix.package
     ];
     text = ''
       # Verbs:
@@ -73,6 +74,7 @@ let
       #   edit <file>                       edit a sops file in place with nano
       #   updatekeys <file>                 re-encrypt to the recipients .sops.yaml names
       #   keygen-wg <file> <key>            generate a WireGuard key into the file, print its public half
+      #   keygen-nix <file> <key> <name>    generate a Nix signing key into the file, print its public half
       #   exec-env <secrets> -- <cmd...>    run cmd with the file's values in its environment
       #   tofu-plan <module>                init and plan terraform/<module>
       #   tofu-import <module> <addr> <id>  adopt an existing object into the state
@@ -80,30 +82,46 @@ let
       export SOPS_AGE_KEY_FILE=${gateKey}
 
       usage() {
-        echo "usage: sops-gate {decrypt|edit|updatekeys|check} <file> | keygen-wg <file> <key> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module> | tofu-import <module> <address> <id>" >&2
+        echo "usage: sops-gate {decrypt|edit|updatekeys|check} <file> | keygen-wg <file> <key> | keygen-nix <file> <key> <name> | exec-env <secrets> -- <cmd...> | {tofu-plan|tofu-apply} <module> | tofu-import <module> <address> <id>" >&2
         exit 2
       }
 
-      # A WireGuard private key that no human handles: generated here,
-      # written straight into the encrypted file, and only its public half
-      # printed, which is the half the far end's configuration names. The
-      # key is addressed the way sops-nix names it, interconnect/wireguard_key
-      # becoming ["interconnect"]["wireguard_key"]. Refuses to overwrite: a
-      # key already in the file belongs to a tunnel that is probably up.
-      keygen_wg() {
-        local file=$1 key=$2 index="" part priv
+      # The keygen verbs mint a private key that no human handles: generated
+      # here, written straight into the encrypted file, and only its public
+      # half printed, which is the half other configuration names. The key
+      # is addressed the way sops-nix names it, interconnect/wireguard_key
+      # becoming ["interconnect"]["wireguard_key"]. Each refuses to
+      # overwrite: a key already in the file is probably in use.
+      new_key_index() {
+        local file=$1 key=$2 index="" part
         while IFS= read -r part; do
           index+="[\"$part\"]"
         done < <(tr '/' '\n' <<<"$key")
 
         if sops decrypt --extract "$index" "$file" >/dev/null 2>&1; then
           echo "sops-gate: $file already holds $key" >&2
-          exit 1
+          return 1
         fi
+        echo "$index"
+      }
 
+      keygen_wg() {
+        local index priv
+        index=$(new_key_index "$1" "$2") || exit 1
         priv=$(wg genkey)
-        sops set "$file" "$index" "\"$priv\""
+        sops set "$1" "$index" "\"$priv\""
         wg pubkey <<<"$priv"
+      }
+
+      # A binary cache's signing key; name is the key's label, which its
+      # public half carries and clients list in trusted-public-keys.
+      keygen_nix() {
+        local index priv
+        index=$(new_key_index "$1" "$2") || exit 1
+        priv=$(nix key generate-secret --key-name "$3")
+        sops set "$1" "$index" "\"$priv\""
+        printf '%s' "$priv" | nix key convert-secret-to-public
+        echo
       }
 
       # sops exec-env takes one string for /bin/sh -c; quote each argument.
@@ -192,6 +210,10 @@ let
         keygen-wg)
           [[ $# -eq 2 ]] || usage
           keygen_wg "$1" "$2"
+          ;;
+        keygen-nix)
+          [[ $# -eq 3 ]] || usage
+          keygen_nix "$1" "$2" "$3"
           ;;
         exec-env)
           [[ $# -ge 3 && $2 == -- ]] || usage
@@ -286,7 +308,7 @@ let
         exit $rc
       fi
 
-      if [[ ''${1:-} == edit || ''${1:-} == keygen-wg ]] && [[ -n ''${2:-} && ! -e $2 ]]; then
+      if [[ ''${1:-} =~ ^(edit|keygen-wg|keygen-nix)$ ]] && [[ -n ''${2:-} && ! -e $2 ]]; then
         echo '{}' > "$2"
         # Leave no plaintext stub behind if no creation rule matches.
         if ! sops encrypt -i "$2"; then
@@ -297,7 +319,7 @@ let
 
       # These verbs rewrite the file in place, which the gate user can only
       # do through the group.
-      if [[ ''${1:-} =~ ^(edit|updatekeys|keygen-wg)$ ]] && [[ -n ''${2:-} ]]; then
+      if [[ ''${1:-} =~ ^(edit|updatekeys|keygen-wg|keygen-nix)$ ]] && [[ -n ''${2:-} ]]; then
         chmod g+w "$2"
         trap 'chmod g-w "$2"' EXIT
       fi

@@ -136,6 +136,9 @@ in
     DNS = [ inventory.anycast6.dns ];
     Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
       "~svc.${inventory.zone}"
+      # Tailnet names, which the router's CoreDNS answers (see
+      # modules/tailscale.nix).
+      "~${inventory.tailnetDomain}"
       # dn42 as a whole: the resolver answers for it through the router, and
       # the VPC's would not.
       "~dn42"
@@ -188,6 +191,10 @@ in
   # stalling the whole machine.
   nix.settings.max-jobs = 1;
   zramSwap.enable = true;
+
+  # The server builds this machine's system first and serves it, so what
+  # is left to build here is only what the server has not.
+  homelab.nixCache.client = true;
 
   # The minimal profile turns logrotate off; it rotates nginx's logs and
   # btmp, which failed logins from the internet grow.

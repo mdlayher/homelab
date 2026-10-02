@@ -120,6 +120,16 @@
 			],
 			"ip": ["tcp:443"],
 		},
+
+		// The edges substitute their systems from the server's binary cache;
+		// every path it serves is signed. The infra machines hold it so the
+		// resolvers' tailscaled can answer its name for the edges, and the
+		// development container to inspect it.
+		{
+			"src": ["tag:edge", "tag:infra", "tag:dev"],
+			"dst": ["svc:nix-cache"],
+			"ip":  ["tcp:443"],
+		},
 	],
 
 	// The router self-approves as an exit node; infrastructure machines
@@ -132,6 +142,7 @@
 			"svc:grafana":      ["tag:infra"],
 			"svc:loki":         ["tag:infra"],
 			"svc:netbox":       ["tag:infra"],
+			"svc:nix-cache":    ["tag:infra"],
 			"svc:prometheus":   ["tag:infra"],
 		},
 	},
