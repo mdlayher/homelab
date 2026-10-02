@@ -129,6 +129,14 @@ let
             record = "host_circuit:isis_bfd_drops:count1m";
             expr = ''sum by (host, circuit) (count_over_time({job="systemd-journal", unit="frr.service"} |= `bfd session went down` | regexp `Adjacency to \S+ \((?P<circuit>[^)]+)\)` | circuit =~ "icl-.+" [1m]))'';
           }
+          # The binary cache failing a client's nightly upgrade, for
+          # NixCacheFailing in prometheus-alerts.nix: unreachable, or serving
+          # a path whose signature the client does not trust. Either way the
+          # client builds that path itself instead.
+          {
+            record = "host:nix_cache_failures:count1m";
+            expr = ''sum by (host) (count_over_time({job="systemd-journal", unit="nixos-upgrade.service"} |= `nix-cache.svc.${config.homelab.inventory.zone}` |~ `unable to download|not signed by any of the keys` [1m]))'';
+          }
         ];
       }
     ];

@@ -555,6 +555,16 @@ in
           for = "30m";
           annotations.summary = "{{ $labels.host }} has shipped no logs to Loki for over six hours.";
         }
+        # A client of the binary cache (modules/nix-cache.nix) that could not
+        # use it during its nightly upgrade, recorded by Loki's ruler (see
+        # loki.nix). The upgrade still succeeds by building those paths on
+        # the machine, which is the work the cache exists to take off it, so
+        # nothing else fails. A day's window covers the next morning.
+        {
+          alert = "NixCacheFailing";
+          expr = "sum by (host) (sum_over_time(host:nix_cache_failures:count1m[1d])) > 0";
+          annotations.summary = "{{ $labels.host }} could not use the binary cache {{ $value }} times in its upgrades over the last day, so it built those paths itself.";
+        }
         # SystemdUnitFailed catches an upgrade run that fails, but a timer
         # that never runs (masked, wedged, or dropped from configuration)
         # fails nothing, and the machine silently stops tracking main. The

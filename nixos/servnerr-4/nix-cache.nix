@@ -5,6 +5,7 @@
   config,
   inputs,
   lib,
+  pkgs,
   ...
 }:
 
@@ -19,6 +20,27 @@ let
   flake = config.system.autoUpgrade.flake;
 in
 {
+  # harmonia signs every path in this store, and the clients install what
+  # it signs as root. An untrusted user, the agents in linuxdev among
+  # them, can add only paths named for their own contents or for a build
+  # the daemon ran itself, so a client asking for a path gets what that
+  # name promises. A trusted user could import any content under any name,
+  # which would then be signed and trusted everywhere.
+  assertions = [
+    {
+      assertion = config.nix.settings.trusted-users == [ "root" ];
+      message = "nix-cache: the server signs its whole store, so trusted-users must stay [ \"root\" ].";
+    }
+  ];
+
+  # Builds for clients of another architecture (the monitor) run here under
+  # emulation, slowly but off the client.
+  boot.binfmt.emulatedSystems = lib.unique (
+    lib.filter (system: system != pkgs.stdenv.hostPlatform.system) (
+      map (host: inputs.self.nixosConfigurations.${host}.pkgs.stdenv.hostPlatform.system) clients
+    )
+  );
+
   sops.secrets."nix/cache_key" = { };
 
   services.harmonia.cache = {

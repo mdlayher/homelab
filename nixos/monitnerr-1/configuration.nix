@@ -27,6 +27,10 @@
   # the 60 second default from common.nix does not fit.
   systemd.settings.Manager.RuntimeWatchdogSec = lib.mkForce "10s";
 
+  # The server builds this machine's system under emulation and serves it,
+  # so the Pi builds only what the server has not.
+  homelab.nixCache.client = true;
+
   services = {
     # Enable the OpenSSH daemon.
     openssh.enable = true;

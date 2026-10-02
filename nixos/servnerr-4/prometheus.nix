@@ -268,6 +268,8 @@ let
       "${grafanaUrl}/api/health"
       "${lokiUrl}/ready"
       "${prometheusUrl}/-/healthy"
+      # By the name its clients use; see modules/nix-cache.nix.
+      "http://nix-cache.svc.${config.homelab.inventory.zone}:${toString config.homelab.nixCache.port}/nix-cache-info"
 
       "https://alertmanager.${tailnetDomain}/-/healthy"
       "https://grafana.${tailnetDomain}/api/health"
