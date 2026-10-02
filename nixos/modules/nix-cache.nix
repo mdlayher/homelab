@@ -22,7 +22,7 @@ in
     publicKey = lib.mkOption {
       type = lib.types.str;
       readOnly = true;
-      default = "@PUBLIC_KEY@";
+      default = "nix-cache.taild07ab.ts.net-1:+mqw7ahA2hN+tv65B3PMui2ogd1oc/a5VNTC/nTyvhE=";
       description = "The public half of the key the cache signs with.";
     };
   };

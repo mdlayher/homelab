@@ -18,6 +18,7 @@
     ./dev.nix
     ./inventory-metrics.nix
     ./netbox.nix
+    ./nix-cache.nix
     ./loki.nix
     ./prometheus.nix
   ];
