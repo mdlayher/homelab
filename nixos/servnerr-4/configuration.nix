@@ -26,6 +26,9 @@
   # This machine is at the home site; see nixos/inventory/.
   homelab.site = "azo";
 
+  # The dn42 RTR cache; see modules/rtr-cache.nix.
+  homelab.rtrCache.enable = true;
+
   system.stateVersion = "22.11";
 
   # Secrets for this machine, encrypted with sops. Edit with:

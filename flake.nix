@@ -51,6 +51,7 @@
             ./nixos/modules/unstable.nix
             ./nixos/modules/inventory.nix
             ./nixos/modules/nix-cache.nix
+            ./nixos/modules/rtr-cache.nix
             ./nixos/modules/system-metrics.nix
             ./nixos/modules/tailscale.nix
             ./nixos/modules/tailscale-serve.nix

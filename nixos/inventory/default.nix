@@ -256,6 +256,7 @@
     loki = "server";
     nix-cache = "server";
     prometheus = "server";
+    rtr = "server";
   };
 
   # The sites this network spans, each answering <name>.<zone>. A machine

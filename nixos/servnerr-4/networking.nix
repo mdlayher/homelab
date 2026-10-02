@@ -76,6 +76,8 @@ in
         # The binary cache, for the machines that substitute from it; see
         # nixos/modules/nix-cache.nix.
         config.homelab.nixCache.port
+        # The dn42 RTR cache, for every BIRD node; see modules/rtr-cache.nix.
+        config.homelab.rtrCache.port
         # The resolver this machine answers for at its anycast address, and
         # at its own (see coredns.nix).
         53

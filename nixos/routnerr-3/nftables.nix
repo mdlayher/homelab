@@ -137,8 +137,9 @@ let
   # Services at this site a far site initiates toward, by the host holding
   # the role and the port that host's own configuration listens on: every
   # edge's Alloy pushes its journal to Loki on each server role holder, the
-  # way modules/alloy.nix names them, and substitutes from its binary cache
-  # (modules/nix-cache.nix). The addresses are inventory secrets, so they
+  # way modules/alloy.nix names them, substitutes from its binary cache
+  # (modules/nix-cache.nix), and takes ROAs from its RTR cache
+  # (modules/rtr-cache.nix). The addresses are inventory secrets, so they
   # reach the ruleset through the rendered set below.
   iclServices = lib.concatMap (
     server:
@@ -153,6 +154,7 @@ let
       [
         c.services.loki.configuration.server.http_listen_port
         c.homelab.nixCache.port
+        c.homelab.rtrCache.port
       ]
   ) inventory.roles.server;
 

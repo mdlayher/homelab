@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   options,
   pkgs,
@@ -61,6 +62,32 @@ let
 
   # bird protocol names allow underscores but not dashes.
   birdName = name: lib.replaceStrings [ "-" ] [ "_" ] name;
+
+  # A ROA feed into the tables every route is validated against; see the
+  # roa tables in the config below.
+  rpkiFeed = name: remote: port: ''
+    protocol rpki rpki_${birdName name} {
+      roa4 { table dn42_roa; };
+      roa6 { table dn42_roa_v6; };
+      remote "${remote}" port ${toString port};
+      refresh 600;
+      retry 300;
+      expire 7200;
+    }
+  '';
+
+  # The ROA feeds, from https://dn42.dev/services/RPKI.
+  rtrFeeds = {
+    akaere = "rpki.akae.re";
+    launchpadx = "rpki.dn42.launchpadx.top";
+    routedbits = "rpki.routedbits.dn42";
+  };
+
+  # The RTR cache's port, from its primary holder's own configuration.
+  rtrCachePort =
+    inputs.self.nixosConfigurations.${
+      lib.head inventory.roles.${inventory.services.rtr}
+    }.config.homelab.rtrCache.port;
 
   # This node's dn42 loopback; the same registry names its iBGP neighbours.
   loopback = inventory.dn42.loopbacks.${config.networking.hostName};
@@ -782,36 +809,17 @@ in
         # the network they validate. Different failure domains on purpose;
         # a .dn42 feed cannot resolve until dn42 is up, so a clearnet feed
         # always stays.
+        #
+        # The RTR cache (modules/rtr-cache.nix) is one more source: the
+        # server serves burble's JSON export of the registry's ROAs, reached
+        # over our own network rather than this node's path to the feeds.
         roa4 table dn42_roa;
         roa6 table dn42_roa_v6;
 
-        protocol rpki rpki_akaere {
-          roa4 { table dn42_roa; };
-          roa6 { table dn42_roa_v6; };
-          remote "rpki.akae.re" port 8082;
-          refresh 600;
-          retry 300;
-          expire 7200;
-        }
-
-        protocol rpki rpki_launchpadx {
-          roa4 { table dn42_roa; };
-          roa6 { table dn42_roa_v6; };
-          remote "rpki.dn42.launchpadx.top" port 8082;
-          refresh 600;
-          retry 300;
-          expire 7200;
-        }
-
-        protocol rpki rpki_routedbits {
-          roa4 { table dn42_roa; };
-          roa6 { table dn42_roa_v6; };
-          remote "rpki.routedbits.dn42" port 8082;
-          refresh 600;
-          retry 300;
-          expire 7200;
-        }
-
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (name: remote: rpkiFeed name remote 8082) rtrFeeds
+          ++ [ (rpkiFeed "cache" "rtr.svc.${inventory.zone}" rtrCachePort) ]
+        )}
         # A FlapAlerted feed, in tables of its own: it publishes an AS0 ROA
         # for a prefix that is currently flapping, to keep the flap from
         # spreading. It cannot share the tables above, where roa_check
