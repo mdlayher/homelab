@@ -5,8 +5,8 @@
 #
 # --check prints how the device differs from the build and changes nothing,
 # exiting 1 if it does. host defaults to the KVM's tailnet name. Logins from
-# the development container require the admin's FIDO2 key, and one
-# connection is shared by the whole run, so a deploy is one touch.
+# the development container require the admin's FIDO2 key, and a run is a
+# single connection, so a deploy is one touch.
 set -euo pipefail
 
 check=()
@@ -23,11 +23,8 @@ export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
 cd "$(dirname "$0")/.."
 out=$(nix build --no-link --print-out-paths .#pikvm)
 
-control=$(mktemp -d)
-trap 'ssh -o ControlPath="$control/cm" -O exit "root@$host" 2>/dev/null; rm -rf "$control"' EXIT
-sshopts=(-o ControlMaster=auto -o ControlPath="$control/cm" -o ControlPersist=60)
-
-# /tmp is a tmpfs on PiKVM OS, so unpacking there needs no rw.
-tar -C "$out" -chf - . | ssh "${sshopts[@]}" "root@$host" \
-  'rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && tar -C /tmp/pikvm-deploy -xf -'
-ssh "${sshopts[@]}" "root@$host" bash /tmp/pikvm-deploy/apply.sh "${check[@]}"
+# One connection uploads and applies, so a deploy is one touch with no
+# control socket left behind. /tmp is a tmpfs on PiKVM OS, so unpacking
+# there needs no rw; apply.sh reads nothing from stdin.
+tar -C "$out" -chf - . | ssh -o ControlMaster=no -o ControlPath=none "root@$host" \
+  "rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && tar -C /tmp/pikvm-deploy -xf - && exec bash /tmp/pikvm-deploy/apply.sh ${check[*]:-}"

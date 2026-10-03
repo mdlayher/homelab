@@ -1336,7 +1336,18 @@ in
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
                 shortName = n: lib.head (lib.splitString "." n);
               in
+              # Root on the KVM controls the server's console and power, and
+              # consrv's serial consoles can be left logged in, so each
+              # connection to either costs its own touch, none outlives its
+              # command, and the agent stays here: neither runs sudo. ssh
+              # takes the first value for each option, so this precedes the
+              # tailnet-wide block.
               ''
+                Host pikvm.${inventory.tailnetDomain} consrv.${inventory.tailnetDomain}
+                  ControlMaster no
+                  ControlPath none
+                  ForwardAgent no
+
                 Host ${lib.concatStringsSep " " machines} *.${inventory.tailnetDomain}
                   ControlMaster auto
                   ControlPath ~/.ssh/cm-%r@%h:%p
