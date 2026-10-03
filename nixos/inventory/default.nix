@@ -307,6 +307,7 @@
           monitnerr-1.ipv6 = "eui64";
           nerr-4.ipv6 = "eui64";
           pdu01 = { };
+          pikvm.ipv6 = "eui64";
           servnerr-4.ipv6 = "token";
           switch-core.ipv6 = "eui64";
           switch-livingroom.ipv6 = "eui64";

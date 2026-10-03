@@ -51,6 +51,10 @@ let
         host = psframework;
         port = 41643;
       }
+      {
+        host = pikvm;
+        port = 41644;
+      }
     ];
   };
 

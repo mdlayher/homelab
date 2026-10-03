@@ -303,7 +303,8 @@ let
     ]
     # Liveness for the cloud-managed switches and APs in the management LAN
     # inventory, which expose no SNMP or local API; ping is the only local
-    # signal that they are alive.
+    # signal that they are alive. The KVM is pinged as well, which tells the
+    # device being unreachable apart from its scrape below failing.
     #
     # Fully qualified, as are the SNMP targets below: a relative name with a
     # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
@@ -314,7 +315,7 @@ let
     # truthful for them.
     ++ map (h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))) (
       lib.filter (
-        h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name
+        h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name || h.name == "pikvm"
       ) config.homelab.inventory.interfaces.mgmt0.hosts
     );
 
@@ -756,6 +757,19 @@ in
         metrics_path = "/api/prometheus";
         authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
         static_configs = siteConfigs [ (at "hass" "${qualify "hass"}:8123") ];
+      }
+
+      # The KVM's metrics, exempted from kvmd's authentication on the device
+      # by kvmd.prometheus.auth.enabled = false in /etc/kvmd/override.yaml:
+      # every kvmd user has full control of the server, so no credential is
+      # held here.
+      # The device serves a self-signed certificate.
+      {
+        job_name = "pikvm";
+        scheme = "https";
+        metrics_path = "/api/export/prometheus/metrics";
+        tls_config.insecure_skip_verify = true;
+        static_configs = siteConfigs [ (at "pikvm" "${qualify "pikvm"}:443") ];
       }
 
       # Blackbox probes for HTTP endpoints, internet reachability per address
