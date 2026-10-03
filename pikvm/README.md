@@ -49,10 +49,9 @@ Generated or set on the device, and never copied off it:
 
 1. Flash PiKVM OS, then as root: `rw`, `passwd`, `kvmd-htpasswd set admin`,
    `kvmd-totp init`, and `pikvm-update`.
-2. Install the packages listed in `default.nix`: `pacman -S tailscale-pikvm
-   modemmanager networkmanager prometheus-node-exporter grafana-alloy`, then `systemctl
-   enable --now tailscaled ModemManager NetworkManager`. `apply.sh` refuses
-   to run while one is missing.
+2. `pacman -S` every package in `packages` in `default.nix`, then
+   `systemctl enable --now tailscaled ModemManager NetworkManager`.
+   `apply.sh` refuses to run while one is missing.
 3. Join the tailnet with `tailscale up --hostname=pikvm`, give the machine
    `tag:kvm` in the admin console, and `ro`.
 4. Install the admin's keys by hand so the first deploy can log in, from

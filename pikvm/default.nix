@@ -73,10 +73,13 @@ let
   ) null (lib.attrNames inventory.sites);
   tailscalePort = (lib.findFirst (f: f.host == "pikvm") null inventory.tailscaleForwards).port;
 
-  # Packages the managed files belong to, installed by hand (see README.md);
-  # apply.sh refuses to change anything while one is missing.
+  # Packages the KVM needs beyond PiKVM OS, for the managed files and for
+  # working on it by hand, installed by hand (see README.md); apply.sh
+  # refuses to change anything while one is missing.
   packages = [
     "grafana-alloy"
+    "lm_sensors"
+    "magic-wormhole"
     "modemmanager"
     "networkmanager"
     "prometheus-node-exporter"
