@@ -23,6 +23,8 @@
   readOnlyRoots,
   # Hosts expected to ship their journals to Loki.
   logHosts,
+  # SNMP targets with an environment sensor attached, by instance.
+  environmentSensors,
 }:
 
 let
@@ -56,6 +58,7 @@ let
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
   readOnlyRootInstances = hostsRegex readOnlyRoots;
+  environmentSensorInstances = raw (anyOf environmentSensors);
   excludedJobsRegex = raw (anyOf excludedJobs);
 
   # The smartctl exporter keys every metric by kernel device name, which is
@@ -692,6 +695,30 @@ in
           expr = "vector(1)";
           annotations.summary = "Prometheus and Alertmanager on {{ $externalURL }} are alive.";
         }
+        # The rack's environment sensor against the thresholds set on the
+        # card it is attached to, so changing a threshold there changes the
+        # alert. A card with no sensor attached reads zero, which this
+        # reports as out of range.
+        {
+          alert = "RackHumidityOutOfRange";
+          expr = ''
+            envirHumidity{instance=~${environmentSensorInstances}} > envirHumidHighThreshold
+              or
+            envirHumidity{instance=~${environmentSensorInstances}} < envirHumidLowThreshold
+          '';
+          for = "15m";
+          annotations.summary = "Rack humidity reported by {{ $labels.instance }} is {{ $value }}%, outside the card's thresholds.";
+        }
+        {
+          alert = "RackTemperatureOutOfRange";
+          expr = ''
+            envirTemperature{instance=~${environmentSensorInstances}} / 10 > envirTempHighThreshold
+              or
+            envirTemperature{instance=~${environmentSensorInstances}} / 10 < envirTempLowThreshold
+          '';
+          for = "15m";
+          annotations.summary = "Rack temperature reported by {{ $labels.instance }} is {{ $value }} °F, outside the card's thresholds.";
+        }
         # A root filesystem meant to stay read-only, left writable after a
         # hand edit or a deploy which stopped partway.
         {
@@ -782,6 +809,18 @@ in
           expr = "probe_ssl_earliest_cert_expiry - time() < 14 * 86400";
           for = "1h";
           annotations.summary = "TLS certificate for {{ $labels.instance }} expires in under 14 days.";
+        }
+        # The UPS's own battery verdicts, read from its management card.
+        {
+          alert = "UPSBatteryNeedsReplacing";
+          expr = "upsAdvanceBatteryReplaceIndicator == 2";
+          for = "15m";
+          annotations.summary = "The UPS behind {{ $labels.instance }} reports that its batteries need replacing.";
+        }
+        {
+          alert = "UPSSelfTestFailed";
+          expr = "upsAdvanceTestDiagnosticsResults == 2";
+          annotations.summary = "The UPS behind {{ $labels.instance }} failed its last self-test.";
         }
         # The router's two uplinks fail in different ways and neither was
         # visible before this rule.

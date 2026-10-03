@@ -357,6 +357,10 @@ let
     "ups01"
   ];
 
+  # The SNMP targets with an environment sensor attached. pdu01's card has
+  # none and reports zeros.
+  environmentSensors = [ "ups01" ];
+
   # NixOS exporters running on this machine which probe jobs are relabeled
   # through.
   local = exporter: "${qualify hostName}:${toString exporters.${exporter}.port}";
@@ -460,6 +464,7 @@ let
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
     readOnlyRoots = map qualify (hostsWhere (h: h.readOnlyRoot or false));
+    environmentSensors = map qualify environmentSensors;
     # Every host expected to ship logs to Loki: the machines themselves plus
     # the containers and microvms they start, whose journals the hosting
     # machine ships; see nixos/modules/alloy.nix. A guest started by hand
