@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Builds the KVM's configuration from this flake and applies it over SSH.
+#
+# Usage: pikvm/deploy [--check] [host]
+#
+# --check prints how the device differs from the build and changes nothing,
+# exiting 1 if it does. host defaults to the KVM's tailnet name. Logins from
+# the development container require the admin's FIDO2 key, and one
+# connection is shared by the whole run, so a deploy is one touch.
+set -euo pipefail
+
+check=()
+if [[ ${1:-} == --check ]]; then
+  check=(--check)
+  shift
+fi
+host=${1:-pikvm.taild07ab.ts.net}
+
+# Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
+export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}experimental-features = nix-command flakes"
+
+cd "$(dirname "$0")/.."
+out=$(nix build --no-link --print-out-paths .#pikvm)
+
+control=$(mktemp -d)
+trap 'ssh -o ControlPath="$control/cm" -O exit "root@$host" 2>/dev/null; rm -rf "$control"' EXIT
+sshopts=(-o ControlMaster=auto -o ControlPath="$control/cm" -o ControlPersist=60)
+
+# /tmp is a tmpfs on PiKVM OS, so unpacking there needs no rw.
+tar -C "$out" -chf - . | ssh "${sshopts[@]}" "root@$host" \
+  'rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && tar -C /tmp/pikvm-deploy -xf -'
+ssh "${sshopts[@]}" "root@$host" bash /tmp/pikvm-deploy/apply.sh "${check[@]}"

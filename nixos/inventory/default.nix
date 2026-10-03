@@ -223,6 +223,24 @@
     ipv6 = "fd7a:115c:a1e0::212e:fb6e";
   };
 
+  # LAN hosts running their own tailscaled, each on the port the router
+  # forwards to it from the WAN; see the router's nftables.nix. Read there
+  # and by the KVM's configuration (pikvm/), which sets its own port.
+  tailscaleForwards = [
+    {
+      host = "nerr-4";
+      port = 41642;
+    }
+    {
+      host = "psframework";
+      port = 41643;
+    }
+    {
+      host = "pikvm";
+      port = 41644;
+    }
+  ];
+
   # Stable role names for machines whose hostnames carry a generation number.
   # Configuration on other machines references roles rather than hostnames,
   # so replacing hardware only touches this file, the new machine's own

@@ -42,20 +42,10 @@ let
     # WireGuard, encrypted end to end; usage is gated by a tailnet policy
     # grant.
     relay = 41462;
-    forwards = with inventory.hosts; [
-      {
-        host = nerr-4;
-        port = 41642;
-      }
-      {
-        host = psframework;
-        port = 41643;
-      }
-      {
-        host = pikvm;
-        port = 41644;
-      }
-    ];
+    forwards = map (f: {
+      host = inventory.hosts.${f.host};
+      inherit (f) port;
+    }) inventory.tailscaleForwards;
   };
 
   # Addresses are secrets from the inventory, so rules reference named sets

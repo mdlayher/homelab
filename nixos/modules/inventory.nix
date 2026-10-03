@@ -214,7 +214,7 @@ in
       are anycast6 and anycast4, the per-service addresses drawn from the
       anycast prefixes; dn42, its whole space and our allocation in it;
       isis, the area and per-router system IDs; and siteLinks, roles,
-      services, zone and tailnetDomain.
+      services, tailscaleForwards, zone and tailnetDomain.
 
       domain, interfaces, hosts, loopbacks and privateZones are scoped to
       this machine's homelab.site. sites carries every site's index,
@@ -285,6 +285,7 @@ in
         roles
         services
         tailnetDomain
+        tailscaleForwards
         zone
         ;
       inherit domain;

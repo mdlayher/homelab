@@ -1,0 +1,29 @@
+[Unit]
+Description=consrv serial console SSH server
+Documentation=https://github.com/mdlayher/consrv
+After=network.target
+# consrv enumerates USB serial adapters once at startup and exits if a
+# configured device is missing. At boot it races USB enumeration, so it
+# keeps restarting until the adapters appear.
+StartLimitIntervalSec=0
+
+[Service]
+# The root filesystem is read-only, so nothing here is written at runtime:
+# the host key is generated once into /etc/consrv and handed over as a
+# credential, which systemd copies to a tmpfs only this service can read.
+LoadCredential=host_key:/etc/consrv/host_key
+ExecStart=/usr/local/bin/consrv -c /etc/consrv.toml -k ${CREDENTIALS_DIRECTORY}/host_key
+Restart=always
+RestartSec=2
+
+# Unprivileged, with access to USB serial devices via the uucp group.
+DynamicUser=yes
+SupplementaryGroups=uucp
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

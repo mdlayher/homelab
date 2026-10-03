@@ -71,6 +71,20 @@
         servnerr-4 = mkSystem "servnerr-4";
       };
 
+      # The KVM's configuration, built here and applied by pikvm/deploy; the
+      # device runs PiKVM OS rather than NixOS.
+      packages = forAllSystems (system: {
+        pikvm = import ./pikvm {
+          inherit inventory;
+          inherit (nixpkgs) lib;
+          pkgs = nixpkgs.legacyPackages.${system};
+          # consrv 1.3.0 requires go >= 1.27, newer than the stable
+          # release's default Go toolchain.
+          go = nixpkgs-unstable.legacyPackages.${system}.go_1_27;
+          sshKeys = import ./nixos/ssh-keys.nix;
+        };
+      });
+
       # nix fmt: Nix files, and HuJSON in the layout Tailscale stores a
       # tailnet policy in, so a tofu plan for it shows only real changes.
       formatter = forAllSystems (

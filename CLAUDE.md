@@ -29,6 +29,9 @@ Guidance for agents working in this repository.
 - On the router, always `deploy routnerr-3 test` first (a reboot reverts
   it), verify, then `boot` or `switch`. Serial consoles for the router and
   server are reachable via consrv on the KVM (svc:consrv) if SSH is lost.
+- The KVM runs PiKVM OS, not NixOS, and the nightly upgrade never touches
+  it: `pikvm/deploy` applies the files `pikvm/` builds, and
+  `pikvm/deploy --check` reports drift. See pikvm/README.md.
 - To prove a refactor is a no-op, compare
   `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath`
   before and after: identical drv paths mean identical systems.
