@@ -23,9 +23,15 @@ pikvm/deploy --check
 pikvm/deploy
 ```
 
-A deploy may restart kvmd (open web sessions drop), consrv (open
-console sessions drop) and tailscaled (a few seconds off the tailnet, after
-the deploy has finished).
+A deploy may restart kvmd (open web sessions drop, and a change to the
+override rebuilds the USB gadget, so the server's KVM keyboard, mouse and
+serial port disconnect and return), consrv (open console sessions drop)
+and tailscaled (a few seconds off the tailnet, after the deploy has
+finished).
+
+The server reaches the KVM's own login prompt over USB at `/dev/ttyACM0`,
+for when the KVM is off the network:
+`sudo minicom -o -b 115200 -D /dev/ttyACM0`.
 
 ## Not managed here
 

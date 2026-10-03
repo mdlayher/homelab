@@ -72,7 +72,14 @@ if [[ ! -f /etc/consrv/host_key ]]; then
   echo "missing: /etc/consrv/host_key"
 fi
 
-if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok ]]; then
+# The login prompt on the OTG serial device, a unit kvmd ships.
+getty=ok
+if ! systemctl -q is-enabled kvmd-otg-getty@ttyGS0.service; then
+  getty=disabled
+  echo "disabled: kvmd-otg-getty@ttyGS0.service"
+fi
+
+if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok ]]; then
   echo "up to date"
   exit 0
 fi
@@ -112,8 +119,16 @@ if [[ -n ${todo[node-exporter]:-} ]]; then
   systemctl enable prometheus-node-exporter
   systemctl restart prometheus-node-exporter
 fi
+# kvmd-otg builds the USB gadget from the override when it starts, and kvmd
+# holds the gadget's devices, so kvmd is stopped while it is rebuilt. The
+# host on the OTG port sees its USB devices disconnect and return.
 if [[ -n ${todo[kvmd]:-} ]]; then
-  systemctl restart kvmd
+  systemctl stop kvmd
+  systemctl restart kvmd-otg
+  systemctl start kvmd
+fi
+if [[ $getty == disabled ]]; then
+  systemctl enable --now kvmd-otg-getty@ttyGS0.service
 fi
 if [[ -n ${todo[sshd]:-} ]]; then
   sshd -t

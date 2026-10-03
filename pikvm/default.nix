@@ -91,12 +91,18 @@ let
       mode = "644";
       action = "kvmd";
       # Prometheus scrapes the metrics without a login: every kvmd user has
-      # full control of the server, so no credential is held there.
+      # full control of the server, so no credential is held there. The
+      # OTG serial device gives the host on the USB OTG port a serial port
+      # with the KVM's login prompt on it (ttyACM0 there, ttyGS0 here).
       text = ''
         kvmd:
             prometheus:
                 auth:
                     enabled: false
+        otg:
+            devices:
+                serial:
+                    enabled: true
       '';
     }
     {
