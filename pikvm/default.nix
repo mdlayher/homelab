@@ -18,13 +18,13 @@ let
   # directory, and the build machine's strip and patchelf stay off it.
   consrv = (pkgs.buildGoModule.override { inherit go; }) {
     pname = "consrv";
-    version = "1.3.0";
+    version = "1.3.1";
 
     src = pkgs.fetchFromGitHub {
       owner = "mdlayher";
       repo = "consrv";
-      rev = "v1.3.0";
-      hash = "sha256-0tUt4fXqpWLmGXo9S4KBHafbyDickfbOCjLpZXERsDk=";
+      rev = "v1.3.1";
+      hash = "sha256-Xodu8J0/2ormnjUs9wnfizWh9I5QFLU56uRLj8z3rSY=";
     };
 
     vendorHash = "sha256-/kU1hGu1LLHxy7Df7bu+9Qg6upu23BcV8j7xVOMFcTA=";
@@ -270,6 +270,25 @@ let
             selector = "{unit=\"kvmd.service\"} |= \"aiohttp.access\" |= \"/export/prometheus/metrics\""
             action   = "drop"
           }
+
+          // consrv logs each console's output as "<console>: <line>" and
+          // its own messages after a timestamp. The console becomes a label
+          // and the line keeps only the output.
+          stage.match {
+            selector = "{unit=\"consrv.service\"}"
+
+            stage.regex {
+              expression = `^(?P<console>[^:\s]+): (?P<output>.*)$`
+            }
+
+            stage.labels {
+              values = {console = ""}
+            }
+
+            stage.output {
+              source = "output"
+            }
+          }
         }
 
         loki.write "server" {
@@ -295,6 +314,7 @@ let
             lib.optionalString (c ? interface) "interface = ${toString c.interface}\n"
           }baud = ${toString (c.baud or 115200)}
           identities = ["mdlayher"]
+          logtostdout = true
 
         '') consoles
       )
