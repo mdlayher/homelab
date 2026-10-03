@@ -13,6 +13,8 @@
 		"tag:hass":  ["autogroup:admin"],
 		// Infrastructure machines with services.
 		"tag:infra": ["autogroup:admin"],
+		// IP KVM for the server, a PiKVM appliance.
+		"tag:kvm":   ["autogroup:admin"],
 		// The router (superset of tag:infra): exit node.
 		"tag:router": ["autogroup:admin"],
 	},
@@ -23,7 +25,7 @@
 		{
 			"action": "accept",
 			"src":    ["autogroup:member"],
-			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:edge:*", "tag:hass:*", "tag:infra:*"],
+			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:edge:*", "tag:hass:*", "tag:infra:*", "tag:kvm:*"],
 		},
 
 		// Only personal devices route through the exit node offered by the
@@ -51,6 +53,15 @@
 			"action": "accept",
 			"src":    ["tag:dev"],
 			"dst":    ["tag:infra:22", "tag:edge:22"],
+		},
+
+		// SSH to the KVM from the development container. The KVM accepts
+		// only the admin's FIDO2 keys from the container's addresses, so
+		// each login needs a physical touch, as on the machines.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:kvm:22"],
 		},
 	],
 
