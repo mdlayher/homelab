@@ -242,9 +242,28 @@ let
         }
 
         loki.source.journal "journal" {
-          forward_to    = [loki.write.server.receiver]
+          forward_to    = [loki.process.journal.receiver]
           relabel_rules = loki.relabel.journal.rules
           labels        = {job = "systemd-journal", site = "${site}"}
+        }
+
+        loki.process "journal" {
+          forward_to = [loki.write.server.receiver]
+
+          // ModemManager asks for the operator every few seconds while the
+          // modem searches for a network, warning each time it has none.
+          // The registration attempts and their failures still land.
+          stage.match {
+            selector = "{unit=\"ModemManager.service\"} |~ \"couldn't load operator (name|code): \""
+            action   = "drop"
+          }
+
+          // kvmd's access log line for each Prometheus scrape of its
+          // metrics; every other request it serves still lands.
+          stage.match {
+            selector = "{unit=\"kvmd.service\"} |= \"aiohttp.access\" |= \"/export/prometheus/metrics\""
+            action   = "drop"
+          }
         }
 
         loki.write "server" {
