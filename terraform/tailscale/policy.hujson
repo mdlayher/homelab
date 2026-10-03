@@ -128,7 +128,6 @@
 		// The server's blackbox exporter probes the web services end to end
 		// through the serve path (https://<name>.<tailnet>.ts.net), so the
 		// ServiceDown alerts cover TLS and serve, not just the backends.
-		// svc:consrv is not probed this way.
 		{
 			"src": ["tag:infra"],
 			"dst": [
@@ -138,6 +137,14 @@
 				"svc:prometheus",
 			],
 			"ip": ["tcp:443"],
+		},
+
+		// The same for the serial consoles: an SSH banner check through the
+		// KVM's serve path, which never logs in.
+		{
+			"src": ["tag:infra"],
+			"dst": ["svc:consrv"],
+			"ip":  ["tcp:22"],
 		},
 	],
 

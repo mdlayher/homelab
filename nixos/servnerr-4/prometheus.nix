@@ -192,10 +192,13 @@ let
       alerts = false;
     };
   }
-  # The KVM runs consrv for the serial consoles, installed by hand outside
-  # this flake.
+  # The KVM runs consrv for the serial consoles; see pikvm/. Its sshd is
+  # probed as the machines' are, since pikvm/deploy edits its configuration.
   // {
-    pikvm.jobs.consrv.port = 9288;
+    pikvm = {
+      jobs.consrv.port = 9288;
+      ssh = true;
+    };
   }
   # nftables_exporter runs on every IGP node, the router, edge and server
   # role holders; see nixos/modules/nftables-exporter.nix. The exporter
@@ -382,7 +385,12 @@ let
   # Hosts with SSH banner probing enabled: the machines a bad firewall rule
   # would lock the admin out of, not every host running sshd. It costs a
   # journal line a minute, which on a dev guest buried the real logins.
-  sshTargets = map (host: at host "${qualify host}:22") (hostsWhere (h: h.ssh or false));
+  sshTargets =
+    map (host: at host "${qualify host}:22") (hostsWhere (h: h.ssh or false))
+    # The serial consoles through the KVM's tailscale serve, the path
+    # svc:consrv's clients take, which a probe of consrv's own port would
+    # not cover.
+    ++ [ (at "pikvm" "consrv.${tailnetDomain}:22") ];
 
   # Host lists are qualified to match the instance labels the targets above
   # produce; the rules only ever evaluate current data, so nothing needs to
