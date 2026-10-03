@@ -49,10 +49,16 @@ let
     doCheck = false;
   };
 
-  # The serial consoles consrv serves, by USB adapter serial number.
+  # The serial consoles consrv serves, by USB adapter serial number, with
+  # the interface number selecting one port of a multi-port adapter.
   consoles = {
-    router = "Q3245527461";
-    server = "A64NMAJS";
+    pdu01 = {
+      serial = "FT9DX98X";
+      interface = 1;
+      baud = 9600;
+    };
+    router.serial = "Q3245527461";
+    server.serial = "A64NMAJS";
   };
 
   linuxdev = inventory.tailnetHosts.linuxdev;
@@ -280,14 +286,18 @@ let
       text = ''
         # consrv on the PiKVM: SSH to the serial consoles attached to it.
       ''
-      + lib.concatMapStrings (name: ''
-        [[devices]]
-        name = "${name}"
-        serial = "${consoles.${name}}"
-        baud = 115200
-        identities = ["mdlayher"]
+      + lib.concatStrings (
+        lib.mapAttrsToList (name: c: ''
+          [[devices]]
+          name = "${name}"
+          serial = "${c.serial}"
+          ${
+            lib.optionalString (c ? interface) "interface = ${toString c.interface}\n"
+          }baud = ${toString (c.baud or 115200)}
+          identities = ["mdlayher"]
 
-      '') (lib.attrNames consoles)
+        '') consoles
+      )
       + ''
         [[identities]]
         name = "mdlayher"
