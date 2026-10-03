@@ -3,8 +3,8 @@
 Raspberry Pi 4 Model B Rev 1.2 serial console server, replacing the previous
 gokrazy deployment. Runs
 [consrv](https://github.com/mdlayher/consrv) (built from source in
-`consrv.nix`; not packaged in nixpkgs) with USB serial adapters attached to the
-router and server, plus the usual base system: node_exporter and Tailscale.
+`consrv.nix`; not packaged in nixpkgs) with a USB serial adapter attached to the
+router, plus the usual base system: node_exporter and Tailscale.
 
 ## Bootstrap
 

@@ -197,6 +197,11 @@ let
   // lib.genAttrs roles.monitor (_: {
     jobs.consrv.port = 9288;
   })
+  # The KVM runs consrv for the server's serial console, installed by hand
+  # outside this flake.
+  // {
+    pikvm.jobs.consrv.port = 9288;
+  }
   # nftables_exporter runs on every IGP node, the router, edge and server
   # role holders; see nixos/modules/nftables-exporter.nix. The exporter
   # mirrors nftables faithfully, so the homelab naming conventions are

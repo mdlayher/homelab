@@ -57,11 +57,13 @@
 
 		// SSH to the KVM from the development container. The KVM accepts
 		// only the admin's FIDO2 keys from the container's addresses, so
-		// each login needs a physical touch, as on the machines.
+		// each login needs a physical touch, as on the machines. 2222 is
+		// consrv, the server's serial console, which requires an SSH login
+		// as svc:consrv does.
 		{
 			"action": "accept",
 			"src":    ["tag:dev"],
-			"dst":    ["tag:kvm:22"],
+			"dst":    ["tag:kvm:22", "tag:kvm:2222"],
 		},
 	],
 
