@@ -1,6 +1,7 @@
-# Completions for nixos/deploy: machine names from the sibling machine
-# directories of the deploy script being invoked, then the action. Lives in
-# conf.d rather than a completions directory because fish only autoloads
+# Completions for nixos/deploy and pikvm/deploy, told apart by the directory
+# of the script being invoked since both are named deploy: for nixos/deploy,
+# machine names from its sibling machine directories, then the action. Lives
+# in conf.d rather than a completions directory because fish only autoloads
 # completion files for commands resolvable in PATH, and deploy is always
 # invoked by path.
 
@@ -11,10 +12,20 @@ function __deploy_hosts
     end
 end
 
+# Whether the deploy script being invoked lives in directory $argv[1] and
+# the completion is for argument $argv[2].
+function __deploy_arg
+    set -l words (commandline -opc)
+    test (basename (dirname $words[1])) = $argv[1]; and test (count $words) -eq $argv[2]
+end
+
 complete -c deploy -f
-complete -c deploy -n 'test (count (commandline -opc)) -eq 1' -a '(__deploy_hosts)' -d machine
-complete -c deploy -n 'test (count (commandline -opc)) -eq 1' -a '--all' -d 'monitor, then server, then router'
-complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'switch' -d 'activate and add boot entry (default)'
-complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'test' -d 'activate without boot entry; reboot reverts'
-complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'boot' -d 'boot entry only, no activation'
-complete -c deploy -n 'test (count (commandline -opc)) -eq 2' -a 'dry-activate' -d 'show what would change'
+
+complete -c deploy -n '__deploy_arg nixos 1' -a '(__deploy_hosts)' -d machine
+complete -c deploy -n '__deploy_arg nixos 1' -a '--all' -d 'edges, then server, then router'
+complete -c deploy -n '__deploy_arg nixos 2' -a 'switch' -d 'activate and add boot entry (default)'
+complete -c deploy -n '__deploy_arg nixos 2' -a 'test' -d 'activate without boot entry; reboot reverts'
+complete -c deploy -n '__deploy_arg nixos 2' -a 'boot' -d 'boot entry only, no activation'
+complete -c deploy -n '__deploy_arg nixos 2' -a 'dry-activate' -d 'show what would change'
+
+complete -c deploy -n '__deploy_arg pikvm 1' -a '--check' -d 'show drift, change nothing'
