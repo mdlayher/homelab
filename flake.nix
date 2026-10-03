@@ -82,6 +82,8 @@
           # release's default Go toolchain.
           go = nixpkgs-unstable.legacyPackages.${system}.go_1_27;
           sshKeys = import ./nixos/ssh-keys.nix;
+          lokiPort =
+            self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
       });
 

@@ -8,6 +8,8 @@
   go,
   inventory,
   sshKeys,
+  # Loki's port on the server, from its configuration.
+  lokiPort,
 }:
 
 let
@@ -54,11 +56,21 @@ let
   };
 
   linuxdev = inventory.tailnetHosts.linuxdev;
+
+  # The site whose LAN the KVM is on, for the label every log stream
+  # carries; see nixos/modules/alloy.nix.
+  site = lib.findFirst (
+    name:
+    lib.any (subnet: (subnet.hosts or { }) ? pikvm) (
+      lib.attrValues (inventory.sites.${name}.subnets or { })
+    )
+  ) null (lib.attrNames inventory.sites);
   tailscalePort = (lib.findFirst (f: f.host == "pikvm") null inventory.tailscaleForwards).port;
 
   # Packages the managed files belong to, installed by hand (see README.md);
   # apply.sh refuses to change anything while one is missing.
   packages = [
+    "grafana-alloy"
     "modemmanager"
     "networkmanager"
     "prometheus-node-exporter"
@@ -168,6 +180,81 @@ let
       '';
     }
     {
+      path = "/etc/default/grafana-alloy";
+      mode = "644";
+      action = "alloy";
+      text = ''
+        CONFIG_FILE="/etc/grafana-alloy/config.alloy"
+        CUSTOM_ARGS="--server.http.listen-addr=0.0.0.0:12345 --disable-reporting"
+      '';
+    }
+    {
+      # The journal lives in a tmpfs (/var/log) and starts over at every
+      # boot, so Alloy's storage, which holds its place in the journal,
+      # lives in /run alongside it. It is kept across restarts of the
+      # service, which would otherwise ship the journal again.
+      path = "/etc/systemd/system/grafana-alloy.service.d/pikvm.conf";
+      mode = "644";
+      action = "alloy";
+      text = ''
+        [Service]
+        RuntimeDirectory=grafana-alloy
+        RuntimeDirectoryPreserve=yes
+        WorkingDirectory=/run/grafana-alloy
+        ExecStart=
+        ExecStart=/usr/bin/grafana-alloy run $CUSTOM_ARGS --storage.path=/run/grafana-alloy/data $CONFIG_FILE
+      '';
+    }
+    {
+      # The journal to Loki on the server by its service name, labeled as
+      # the machines' journals are; see nixos/modules/alloy.nix.
+      path = "/etc/grafana-alloy/config.alloy";
+      mode = "644";
+      action = "alloy";
+      comment = "//";
+      text = ''
+        loki.relabel "journal" {
+          forward_to = []
+
+          rule {
+            source_labels = ["__journal__hostname"]
+            target_label  = "host"
+          }
+
+          rule {
+            source_labels = ["__journal__systemd_unit"]
+            target_label  = "unit"
+          }
+
+          rule {
+            source_labels = ["unit"]
+            regex         = "sshd@.+"
+            replacement   = "sshd.service"
+            target_label  = "unit"
+          }
+
+          rule {
+            source_labels = ["unit"]
+            regex         = "session-.+\\.scope"
+            replacement   = "session.scope"
+            target_label  = "unit"
+          }
+        }
+
+        loki.source.journal "journal" {
+          forward_to    = [loki.write.server.receiver]
+          relabel_rules = loki.relabel.journal.rules
+          labels        = {job = "systemd-journal", site = "${site}"}
+        }
+
+        loki.write "server" {
+          endpoint {
+            url = "http://loki.svc.${inventory.zone}:${toString lokiPort}/loki/api/v1/push"
+          }
+        }
+      '';
+    }
+    {
       path = "/etc/consrv.toml";
       mode = "644";
       action = "consrv";
@@ -206,19 +293,19 @@ let
     }
   ];
 
-  # Every text file opens with this, in the comment syntax all of them
-  # share, so an edit made on the device is recognizable as one the next
-  # deploy overwrites.
-  header = ''
-    # Managed by pikvm/deploy from the homelab repository: edit pikvm/ there,
-    # not this file, which the next deploy overwrites.
+  # Every text file opens with this, in its comment syntax (# unless the
+  # file says otherwise), so an edit made on the device is recognizable as
+  # one the next deploy overwrites.
+  header = comment: ''
+    ${comment} Managed by pikvm/deploy from the homelab repository: edit pikvm/ there,
+    ${comment} not this file, which the next deploy overwrites.
 
   '';
 
   sourceOf =
     f:
     f.binary or (pkgs.writeText (lib.replaceStrings [ "/" ] [ "-" ] (lib.removePrefix "/" f.path)) (
-      header + f.text
+      header (f.comment or "#") + f.text
     ));
 in
 pkgs.runCommand "pikvm-config" { } (

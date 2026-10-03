@@ -93,6 +93,11 @@ if [[ -n ${todo[consrv]:-} ]]; then
   systemctl enable consrv
   systemctl restart consrv
 fi
+if [[ -n ${todo[alloy]:-} ]]; then
+  systemctl daemon-reload
+  systemctl enable grafana-alloy
+  systemctl restart grafana-alloy
+fi
 if [[ -n ${todo[node-exporter]:-} ]]; then
   systemctl enable prometheus-node-exporter
   systemctl restart prometheus-node-exporter

@@ -197,11 +197,13 @@ let
   // {
     pikvm = {
       jobs = {
+        alloy.port = 12345;
         consrv.port = 9288;
         node.port = 9100;
       };
       ssh = true;
       readOnlyRoot = true;
+      logs = true;
     };
   }
   # nftables_exporter runs on every IGP node, the router, edge and server
@@ -464,6 +466,7 @@ let
     # is left out for the reason it is not scraped.
     logHosts =
       lib.attrNames nixosHosts
+      ++ hostsWhere (h: h.logs or false)
       ++ lib.concatMap (
         system:
         lib.attrNames (lib.filterAttrs (_: c: c.autoStart) system.config.containers)
