@@ -192,13 +192,8 @@ let
       alerts = false;
     };
   }
-  # consrv exposes its own metrics endpoint on every monitor role holder; see
-  # the monitor host's consrv.nix.
-  // lib.genAttrs roles.monitor (_: {
-    jobs.consrv.port = 9288;
-  })
-  # The KVM runs consrv for the server's serial console, installed by hand
-  # outside this flake.
+  # The KVM runs consrv for the serial consoles, installed by hand outside
+  # this flake.
   // {
     pikvm.jobs.consrv.port = 9288;
   }

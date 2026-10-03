@@ -33,8 +33,8 @@ in
     }
   ];
 
-  # Builds for clients of another architecture (the monitor) run here under
-  # emulation, slowly but off the client.
+  # Builds for clients of another architecture run here under emulation,
+  # slowly but off the client.
   boot.binfmt.emulatedSystems = lib.unique (
     lib.filter (system: system != pkgs.stdenv.hostPlatform.system) (
       map (host: inputs.self.nixosConfigurations.${host}.pkgs.stdenv.hostPlatform.system) clients

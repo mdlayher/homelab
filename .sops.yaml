@@ -12,7 +12,6 @@ keys:
   - &linuxdev-gate age1szssulmqnc0n650xcqvn7rpu2zjwnhrta4tvcm7tpxtmg26lsqysna0fks
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
   - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
-  - &monitnerr-1 age15k9ztajdwg8w98t297pml8zq0x37mm5wd85vhxvyqul6zmfpygvsl7akg6
   - &edge-pdx age1323pt5w9df0ealmd0xy954ajy5gtrhvdlh4nf3d4pjqvnvvqfq3qjf5lpa
   - &edge-iad age1rf9xq9wuqcvtr9u7g4vd80ck0us2nfqc3f8uey0gafsvqxf73grqcjtkfk
 creation_rules:
@@ -33,7 +32,6 @@ creation_rules:
       - age:
           - *mdlayher
           - *linuxdev-gate
-          - *monitnerr-1
           - *routnerr-3
           - *servnerr-4
           - *edge-pdx

@@ -5,8 +5,8 @@
 #
 # action is one of switch (default), test, boot, or dry-activate. On the
 # router, prefer test first: it activates without a boot entry, so a reboot
-# reverts it. --all deploys every machine in blast-radius order: the monitor,
-# the edge, then the server, then the router.
+# reverts it. --all deploys every machine in blast-radius order: the edges,
+# then the server, then the router.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -15,14 +15,14 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $1 == --all ]]; then
-  # Ordered by hand, because blast radius is a judgement: the monitor first,
-  # then the edges, which have no clients and whose sites hold nothing else,
+  # Ordered by hand, because blast radius is a judgement: the edges first,
+  # which have no clients and whose sites hold nothing else,
   # then the server, then the router, which is the network. The edges are in
   # a fixed order rather than a meaningful one: what matters is that a
   # failure on the first stops the run before the second is touched. Checked
   # against the flake below so a machine cannot be left out of --all by
   # omission.
-  hosts=(monitnerr-1 edge-iad edge-pdx servnerr-4 routnerr-3)
+  hosts=(edge-iad edge-pdx servnerr-4 routnerr-3)
   all_requested=yes
 else
   hosts=("$1")

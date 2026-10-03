@@ -36,7 +36,7 @@ resource "tailscale_service" "web" {
   tags    = ["tag:infra"]
 }
 
-# Serial console SSH server on the monitor; see nixos/monitnerr-1/consrv.nix.
+# Serial console SSH server on the KVM, served by its tailscaled.
 resource "tailscale_service" "consrv" {
   name    = "svc:consrv"
   comment = local.comment

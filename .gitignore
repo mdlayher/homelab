@@ -1,5 +1,4 @@
 *.retry
 *.bak
 secrets.nix
-gokrazy/monitnerr-1/config.json
 obs/profiles/Programming/service.json

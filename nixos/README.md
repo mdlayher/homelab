@@ -3,7 +3,6 @@
 NixOS configurations for my machines, built from the `flake.nix` at the root
 of this repository. Individual machines have their own directories:
 
-- `monitnerr-1/`: Raspberry Pi 4 serial console server (consrv)
 - `routnerr-3/`: home router (WAN, VLANs, DHCP, DNS, IPv6 RAs, nftables)
 - `servnerr-4/`: home server (monitoring, hypervisor, NAS, development containers)
 
@@ -19,7 +18,7 @@ Shared configuration lives in `modules/`:
 ## Tailscale Services
 
 Well-known service names on the tailnet (`grafana`, `prometheus`,
-`alertmanager`, `loki` on the server; `consrv` on the monitor) decouple frequently
+`alertmanager`, `loki` on the server; `consrv` on the KVM, served by hand) decouple frequently
 used endpoints from generation-numbered hostnames: `homelab.tailscale.services`
 on each machine renders a serve configuration which is applied declaratively at
 activation. The tailnet side lives in `terraform/tailscale/`: `services.tf`
@@ -49,8 +48,8 @@ YubiKey touch (`sops-gate`, see `servnerr-4/dev.nix`).
 
 `inventory/default.nix` declares the network's structure: subnets (VLAN ID,
 trust level) and the hosts on them, with each host's IPv6 addressing mode.
-Its top-level `roles` map lists the machines holding each role (`router`,
-`server`, `monitor`) in precedence order: configuration on other machines
+Its top-level `roles` map lists the machines holding each role (`edge`,
+`router`, `server`) in precedence order: configuration on other machines
 references `inventory.roles.<role>`, so a hardware swap only touches the
 inventory, the new machine's own directory, and `flake.nix`. During a
 generation swap, append the new machine to the role: consumers which fan out

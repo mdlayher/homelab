@@ -3,18 +3,18 @@
 {
 	"tagOwners": {
 		// Development containers with unattended agents.
-		"tag:dev":   ["autogroup:admin"],
+		"tag:dev": ["autogroup:admin"],
 		// Network termination points for somewhere that is not the homelab.
 		// Not tag:infra: that tag auto-approves a machine as the host of any
 		// service, and an edge hosts none while being the most exposed
 		// machine in the fleet.
-		"tag:edge":  ["autogroup:admin"],
+		"tag:edge": ["autogroup:admin"],
 		// Home Assistant appliance.
-		"tag:hass":  ["autogroup:admin"],
+		"tag:hass": ["autogroup:admin"],
 		// Infrastructure machines with services.
 		"tag:infra": ["autogroup:admin"],
 		// IP KVM for the server, a PiKVM appliance.
-		"tag:kvm":   ["autogroup:admin"],
+		"tag:kvm": ["autogroup:admin"],
 		// The router (superset of tag:infra): exit node.
 		"tag:router": ["autogroup:admin"],
 	},
@@ -25,7 +25,14 @@
 		{
 			"action": "accept",
 			"src":    ["autogroup:member"],
-			"dst":    ["autogroup:member:*", "tag:dev:*", "tag:edge:*", "tag:hass:*", "tag:infra:*", "tag:kvm:*"],
+			"dst": [
+				"autogroup:member:*",
+				"tag:dev:*",
+				"tag:edge:*",
+				"tag:hass:*",
+				"tag:infra:*",
+				"tag:kvm:*",
+			],
 		},
 
 		// Only personal devices route through the exit node offered by the
@@ -58,8 +65,8 @@
 		// SSH to the KVM from the development container. The KVM accepts
 		// only the admin's FIDO2 keys from the container's addresses, so
 		// each login needs a physical touch, as on the machines. 2222 is
-		// consrv, the server's serial console, which requires an SSH login
-		// as svc:consrv does.
+		// consrv, behind svc:consrv, reachable directly as well since the
+		// serial consoles are break-glass access.
 		{
 			"action": "accept",
 			"src":    ["tag:dev"],
@@ -82,7 +89,6 @@
 				"tailscale.com/cap/relay": [],
 			},
 		},
-
 
 		// Personal devices reach every service.
 		{
@@ -116,7 +122,7 @@
 		{
 			"src": ["tag:dev"],
 			"dst": ["svc:consrv"],
-			"ip": ["tcp:22"],
+			"ip":  ["tcp:22"],
 		},
 
 		// The server's blackbox exporter probes the web services end to end
@@ -135,13 +141,13 @@
 		},
 	],
 
-	// The router self-approves as an exit node; infrastructure machines
-	// self-approve as hosts for their services.
+	// The router self-approves as an exit node; infrastructure machines and
+	// the KVM self-approve as hosts for their services.
 	"autoApprovers": {
 		"exitNode": ["tag:router"],
 		"services": {
 			"svc:alertmanager": ["tag:infra"],
-			"svc:consrv":       ["tag:infra"],
+			"svc:consrv":       ["tag:kvm"],
 			"svc:grafana":      ["tag:infra"],
 			"svc:loki":         ["tag:infra"],
 			"svc:netbox":       ["tag:infra"],
@@ -166,10 +172,10 @@
 		// the machines beyond it still require the admin's FIDO2 key. The
 		// check gates new connections only; open sessions outlive it.
 		{
-			"action":      "check",
-			"src":         ["autogroup:member"],
-			"dst":         ["tag:dev"],
-			"users":       ["mdlayher"],
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:dev"],
+			"users":  ["mdlayher"],
 		},
 
 		// Personal devices into an edge, on the same terms and for the same
@@ -177,10 +183,10 @@
 		// the admin console's SSH Console is the path that depends on nothing
 		// but the coordination server. Requires --ssh on the machine.
 		{
-			"action":      "check",
-			"src":         ["autogroup:member"],
-			"dst":         ["tag:edge"],
-			"users":       ["mdlayher"],
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:edge"],
+			"users":  ["mdlayher"],
 		},
 	],
 }

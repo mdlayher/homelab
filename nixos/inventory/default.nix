@@ -243,7 +243,6 @@
     ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
-    monitor = [ "monitnerr-1" ];
   };
 
   # Stable service names, published in internal DNS as <service>.svc.<domain>
@@ -304,7 +303,6 @@
           ap-laundry = { };
           ap-livingroom = { };
           hass.ipv6 = "prefixstable";
-          monitnerr-1.ipv6 = "eui64";
           nerr-4.ipv6 = "eui64";
           pdu01 = { };
           pikvm.ipv6 = "eui64";

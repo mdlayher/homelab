@@ -27,9 +27,8 @@ Guidance for agents working in this repository.
   tarball is cached (~1h TTL) and can apply a stale main. Deploy from a local
   checkout instead, or wait out the TTL.
 - On the router, always `deploy routnerr-3 test` first (a reboot reverts
-  it), verify, then `boot` or `switch`. The router's serial console is
-  reachable via consrv on the monitor if SSH is lost, and the server's via
-  consrv on the KVM (port 2222).
+  it), verify, then `boot` or `switch`. Serial consoles for the router and
+  server are reachable via consrv on the KVM (svc:consrv) if SSH is lost.
 - To prove a refactor is a no-op, compare
   `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath`
   before and after: identical drv paths mean identical systems.
@@ -71,7 +70,7 @@ Guidance for agents working in this repository.
 ## Style
 
 - Prose and comments refer to machines by role — the server, the router, the
-  monitor, the workstation — not by hostname. Hostnames appear only in
+  KVM, the workstation — not by hostname. Hostnames appear only in
   functional configuration (inventory, flake attrs, probe targets).
 - Don't write counts into prose or comments — "three RTR servers", "both
   peers", "the clearnet pair". A count is a second place to update when the
