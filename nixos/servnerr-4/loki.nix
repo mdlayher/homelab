@@ -124,7 +124,7 @@ let
             expr = ''sum by (host, console) (count_over_time(${consrvSessions} | regexp `opened serial connection "(?P<console>[^"]+)"` [5m]))'';
             labels.notify = "ops";
             annotations = {
-              summary = "A session opened on the {{ $labels.console }} serial console on {{ $labels.host }}.";
+              summary = "Opened a session on the {{ $labels.console }} serial console";
               logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="consrv.service"}'';
             };
           }

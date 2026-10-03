@@ -497,6 +497,19 @@ let
     Resolved <t:{{ .EndsAt.Unix }}:R> after {{ (.EndsAt.Sub .StartsAt).Seconds | humanizeDuration }}
     {{ end -}}
     {{ end }}
+
+    {{/* Notices for the ops channel, shaped like the system update
+    announcements there (see update-notify in modules/common.nix): the
+    host as the title, then a line per event with its log link. */}}
+    {{ define "homelab.discord.notice.title" -}}
+    {{ with .CommonLabels.host }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}
+    {{- end }}
+
+    {{ define "homelab.discord.notice" -}}
+    {{ range .Alerts.Firing -}}
+    {{ .Annotations.summary }}{{ with .Annotations.logs_url }} · [Logs]({{ . }}){{ end }}
+    {{ end -}}
+    {{ end }}
   '';
 
   # Which site a machine is at, from its own configuration, so a target
@@ -695,11 +708,13 @@ in
             }
             # Notices rather than alerts: an event worth knowing about that
             # needs nothing done, posted once to the ops channel beside the
-            # update announcements.
+            # update announcements. A notice stays active for minutes, so a
+            # day never repeats one, and stays inside the notification log's
+            # retention, which alertmanager warns about exceeding.
             {
               matchers = [ "notify = ops" ];
               receiver = "ops";
-              repeat_interval = "1y";
+              repeat_interval = "1d";
             }
           ];
         };
@@ -718,7 +733,8 @@ in
             discord_configs = [
               {
                 webhook_url_file = "/run/credentials/alertmanager.service/discord_ops_webhook_url";
-                message = ''{{ template "homelab.discord.message" . }}'';
+                title = ''{{ template "homelab.discord.notice.title" . }}'';
+                message = ''{{ template "homelab.discord.notice" . }}'';
                 send_resolved = false;
               }
             ];
