@@ -43,6 +43,15 @@ let
 
   exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
 
+  # consrv, the serial consoles on the KVM (see pikvm/), logs a line per key
+  # a client offers, "<addr>: accepted|rejected public key authentication
+  # for ...", and one per session, naming the console in quotes: "<addr>:
+  # opened serial connection "router": ...". Clients of svc:consrv arrive
+  # through the KVM's tailscale serve, so their address is 127.0.0.1.
+  consrvLines = filter: ''{job="systemd-journal", unit="consrv.service"} |= `${filter}`'';
+  consrvAuth = verdict: consrvLines ": ${verdict} public key authentication";
+  consrvSessions = consrvLines ": opened serial connection ";
+
   # Log-derived rules, evaluated continuously by the ruler: alerts cover what
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
   # units, including nightly upgrades), and the recording rule feeds per-host
@@ -91,6 +100,32 @@ let
             annotations = {
               summary = "{{ $labels.host }} logged {{ $value }} SSH attempts for nonexistent accounts in 15 minutes.";
               logs_url = failureLogs invalidUserLine;
+            };
+          }
+          {
+            # A client offers each key it holds in turn, so a legitimate login
+            # can log rejections seconds before the key consrv accepts.
+            # Rejections with no acceptance in the same window are someone
+            # without a key; the window is short so that a login of the
+            # admin's does not hide them for long. Per host, since the
+            # address does not identify svc:consrv clients.
+            alert = "SerialConsoleAuthRejected";
+            expr = "sum by (host) (count_over_time(${consrvAuth "rejected"} [2m])) unless on (host) sum by (host) (count_over_time(${consrvAuth "accepted"} [2m]))";
+            annotations = {
+              summary = "consrv on {{ $labels.host }} rejected serial console logins with no successful one.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="consrv.service"} |= `public key authentication`'';
+            };
+          }
+          {
+            # A serial console session is break-glass access, so each one is
+            # announced in the ops channel rather than raised as an alert;
+            # see the notify route in prometheus.nix.
+            alert = "SerialConsoleLogin";
+            expr = ''sum by (host, console) (count_over_time(${consrvSessions} | regexp `opened serial connection "(?P<console>[^"]+)"` [5m]))'';
+            labels.notify = "ops";
+            annotations = {
+              summary = "A session opened on the {{ $labels.console }} serial console on {{ $labels.host }}.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="consrv.service"}'';
             };
           }
           {

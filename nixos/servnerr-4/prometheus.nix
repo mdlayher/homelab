@@ -616,6 +616,9 @@ in
       restartUnits = [ "alertmanager.service" ];
     };
     "alertmanager/deadman_url".restartUnits = [ "alertmanager.service" ];
+    # Declared for update-notify in modules/common.nix; alertmanager posts
+    # notify="ops" alerts there too.
+    "discord/ops_webhook_url".restartUnits = [ "alertmanager.service" ];
     "prometheus/homeassistant_token" = {
       owner = "prometheus";
       restartUnits = [ "prometheus.service" ];
@@ -642,6 +645,7 @@ in
   systemd.services.alertmanager.serviceConfig.LoadCredential = [
     "discord_webhook_url:${config.sops.secrets."discord/alerts_webhook_url".path}"
     "deadman_url:${config.sops.secrets."alertmanager/deadman_url".path}"
+    "discord_ops_webhook_url:${config.sops.secrets."discord/ops_webhook_url".path}"
   ];
 
   # Prometheus monitoring server and exporter configuration.
@@ -689,6 +693,14 @@ in
               group_interval = "1m";
               repeat_interval = "2m";
             }
+            # Notices rather than alerts: an event worth knowing about that
+            # needs nothing done, posted once to the ops channel beside the
+            # update announcements.
+            {
+              matchers = [ "notify = ops" ];
+              receiver = "ops";
+              repeat_interval = "1y";
+            }
           ];
         };
         receivers = [
@@ -698,6 +710,16 @@ in
               {
                 webhook_url_file = "/run/credentials/alertmanager.service/discord_webhook_url";
                 message = ''{{ template "homelab.discord.message" . }}'';
+              }
+            ];
+          }
+          {
+            name = "ops";
+            discord_configs = [
+              {
+                webhook_url_file = "/run/credentials/alertmanager.service/discord_ops_webhook_url";
+                message = ''{{ template "homelab.discord.message" . }}'';
+                send_resolved = false;
               }
             ];
           }
