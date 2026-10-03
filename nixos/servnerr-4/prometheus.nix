@@ -196,8 +196,12 @@ let
   # probed as the machines' are, since pikvm/deploy edits its configuration.
   // {
     pikvm = {
-      jobs.consrv.port = 9288;
+      jobs = {
+        consrv.port = 9288;
+        node.port = 9100;
+      };
       ssh = true;
+      readOnlyRoot = true;
     };
   }
   # nftables_exporter runs on every IGP node, the router, edge and server
@@ -453,6 +457,7 @@ let
       anycastProbeJob
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
+    readOnlyRoots = map qualify (hostsWhere (h: h.readOnlyRoot or false));
     # Every host expected to ship logs to Loki: the machines themselves plus
     # the containers and microvms they start, whose journals the hosting
     # machine ships; see nixos/modules/alloy.nix. A guest started by hand

@@ -19,6 +19,8 @@
   excludedJobs,
   # Hosts acting as routers, whose CoreRAD default route comes from the WAN.
   routers,
+  # Hosts whose root filesystem is mounted read-only except while edited.
+  readOnlyRoots,
   # Hosts expected to ship their journals to Loki.
   logHosts,
 }:
@@ -53,6 +55,7 @@ let
 
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
+  readOnlyRootInstances = hostsRegex readOnlyRoots;
   excludedJobsRegex = raw (anyOf excludedJobs);
 
   # The smartctl exporter keys every metric by kernel device name, which is
@@ -688,6 +691,14 @@ in
           alert = "PrometheusWatchdog";
           expr = "vector(1)";
           annotations.summary = "Prometheus and Alertmanager on {{ $externalURL }} are alive.";
+        }
+        # A root filesystem meant to stay read-only, left writable after a
+        # hand edit or a deploy which stopped partway.
+        {
+          alert = "RootFilesystemWritable";
+          expr = ''node_filesystem_readonly{instance=~${readOnlyRootInstances},mountpoint="/"} == 0'';
+          for = "1h";
+          annotations.summary = "The root filesystem on {{ $labels.instance }} has been writable for an hour; run ro.";
         }
         {
           alert = "SMARTCriticalWarning";

@@ -18,6 +18,16 @@ if [[ ${1:-} == --check ]]; then
   check=yes
 fi
 
+missing=()
+while read -r pkg; do
+  [[ -z $pkg ]] && continue
+  pacman -Q "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+done <packages
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "error: packages not installed: ${missing[*]}; see pikvm/README.md" >&2
+  exit 1
+fi
+
 changed=()
 while read -r mode path action; do
   src=tree$path
@@ -82,6 +92,10 @@ if [[ -n ${todo[consrv]:-} ]]; then
   systemctl daemon-reload
   systemctl enable consrv
   systemctl restart consrv
+fi
+if [[ -n ${todo[node-exporter]:-} ]]; then
+  systemctl enable prometheus-node-exporter
+  systemctl restart prometheus-node-exporter
 fi
 if [[ -n ${todo[kvmd]:-} ]]; then
   systemctl restart kvmd

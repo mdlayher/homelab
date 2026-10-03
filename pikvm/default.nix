@@ -56,6 +56,15 @@ let
   linuxdev = inventory.tailnetHosts.linuxdev;
   tailscalePort = (lib.findFirst (f: f.host == "pikvm") null inventory.tailscaleForwards).port;
 
+  # Packages the managed files belong to, installed by hand (see README.md);
+  # apply.sh refuses to change anything while one is missing.
+  packages = [
+    "modemmanager"
+    "networkmanager"
+    "prometheus-node-exporter"
+    "tailscale-pikvm"
+  ];
+
   # Each managed file: its path on the device, mode, contents, and what
   # applying a change to it takes (see apply.sh).
   files = [
@@ -149,6 +158,16 @@ let
       '';
     }
     {
+      # The collectors and flags the machines' node exporters run with; see
+      # nixos/modules/common.nix.
+      path = "/etc/conf.d/prometheus-node-exporter";
+      mode = "644";
+      action = "node-exporter";
+      text = ''
+        NODE_EXPORTER_ARGS="--collector.systemd --collector.systemd.enable-restarts-metrics --collector.systemd.enable-start-time-metrics"
+      '';
+    }
+    {
       path = "/etc/consrv.toml";
       mode = "644";
       action = "consrv";
@@ -206,6 +225,7 @@ pkgs.runCommand "pikvm-config" { } (
   ''
     mkdir -p $out/tree
     install -m 0755 ${./apply.sh} $out/apply.sh
+    echo ${lib.escapeShellArg (lib.concatLines packages)} > $out/packages
   ''
   + lib.concatMapStrings (f: ''
     install -D -m ${f.mode} ${sourceOf f} $out/tree${f.path}
