@@ -55,6 +55,16 @@ if ! grep -q 'svc:consrv' <<<"$status" || ! grep -q '127.0.0.1:2222' <<<"$status
   echo "missing: tailscale serve for svc:consrv"
 fi
 
+# The tailnet's DNS settings are for personal devices: their split DNS
+# names the router's tailnet address, which tag:kvm may not reach, so the
+# KVM keeps the LAN resolvers DHCP hands it, as the machines do with
+# --accept-dns=false (see nixos/modules/tailscale.nix).
+dns=ok
+if tailscale debug prefs 2>/dev/null | grep -q '"CorpDNS": true'; then
+  dns=accepted
+  echo "differs: tailscale accepts the tailnet's DNS settings"
+fi
+
 # consrv's SSH host key is generated on the device and never leaves it.
 hostkey=ok
 if [[ ! -f /etc/consrv/host_key ]]; then
@@ -62,7 +72,7 @@ if [[ ! -f /etc/consrv/host_key ]]; then
   echo "missing: /etc/consrv/host_key"
 fi
 
-if [[ ${#changed[@]} -eq 0 && $serve == ok && $hostkey == ok ]]; then
+if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok ]]; then
   echo "up to date"
   exit 0
 fi
@@ -113,8 +123,11 @@ if [[ -n ${todo[networkmanager]:-} ]] && systemctl -q is-active NetworkManager; 
   nmcli connection reload
 fi
 
-# tailscaled saves the serve configuration to its state file, which needs
-# the filesystem writable, so this runs before ro.
+# tailscaled saves its preferences and the serve configuration to its state
+# file, which needs the filesystem writable, so these run before ro.
+if [[ $dns == accepted ]]; then
+  tailscale set --accept-dns=false
+fi
 if [[ $serve == missing ]]; then
   tailscale serve --service=svc:consrv --tcp=22 tcp://127.0.0.1:2222 >/dev/null
   sync
