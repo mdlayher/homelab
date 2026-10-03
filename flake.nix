@@ -91,12 +91,33 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+
+          # hujsonfmt -w rewrites every file it is given, formatted or not,
+          # and treefmt --ci counts the new modification time as a change,
+          # so a file is written only when its contents differ. The x keeps
+          # command substitution from trimming the trailing newline, and a
+          # file which fails to parse is left alone.
+          hujsonfmt = pkgs.writeShellApplication {
+            name = "hujsonfmt-changed";
+            runtimeInputs = [
+              pkgs.hujsonfmt
+              pkgs.diffutils
+            ];
+            text = ''
+              for f in "$@"; do
+                out=$(hujsonfmt "$f" && echo x)
+                out=''${out%x}
+                if ! cmp -s "$f" <(printf %s "$out"); then
+                  printf %s "$out" >"$f"
+                fi
+              done
+            '';
+          };
         in
         pkgs.nixfmt-tree.override {
-          runtimeInputs = [ pkgs.hujsonfmt ];
+          runtimeInputs = [ hujsonfmt ];
           settings.formatter.hujsonfmt = {
-            command = "hujsonfmt";
-            options = [ "-w" ];
+            command = "hujsonfmt-changed";
             includes = [ "*.hujson" ];
           };
         }
