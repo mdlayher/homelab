@@ -1,6 +1,7 @@
-# Completions for nixos/deploy and pikvm/deploy, told apart by the directory
-# of the script being invoked since both are named deploy: for nixos/deploy,
-# machine names from its sibling machine directories, then the action. Lives
+# Completions for nixos/deploy, pikvm/deploy and windows/deploy, told apart
+# by the directory of the script being invoked since all are named deploy:
+# for nixos/deploy, machine names from its sibling machine directories, then
+# the action; for windows/deploy, any of the machines in its hosts.nix. Lives
 # in conf.d rather than a completions directory because fish only autoloads
 # completion files for commands resolvable in PATH, and deploy is always
 # invoked by path.
@@ -10,6 +11,12 @@ function __deploy_hosts
     for conf in (dirname $script)/*/configuration.nix
         basename (dirname $conf)
     end
+end
+
+# The quoted names in the hosts list of windows/hosts.nix.
+function __deploy_windows_hosts
+    set -l script (commandline -opc)[1]
+    sed -n '/hosts = \[/,/\];/p' (dirname $script)/hosts.nix | string match -rg '"([^"]+)"'
 end
 
 # Whether the deploy script being invoked lives in directory $argv[1] and
@@ -29,3 +36,6 @@ complete -c deploy -n '__deploy_arg nixos 2' -a 'boot' -d 'boot entry only, no a
 complete -c deploy -n '__deploy_arg nixos 2' -a 'dry-activate' -d 'show what would change'
 
 complete -c deploy -n '__deploy_arg pikvm 1' -a '--check' -d 'show drift, change nothing'
+
+complete -c deploy -n '__deploy_arg windows 1' -a '--check' -d 'show drift, change nothing'
+complete -c deploy -n 'test (basename (dirname (commandline -opc)[1])) = windows' -a '(__deploy_windows_hosts)' -d machine

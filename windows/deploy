@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Builds the Windows PCs' configuration from this flake and applies it to one
+# of them over SSH.
+#
+# Usage: windows/deploy [--check] [host...]
+#
+# --check prints how each machine differs from the build and changes nothing,
+# exiting 1 if any does. Without hosts, every machine in windows/hosts.nix,
+# skipping any that are off. Each machine is reached at its tailnet name over
+# one multiplexed SSH session, so a deploy is one touch of the admin's FIDO2
+# key per machine.
+#
+# HWiNFO's license key comes from windows/secrets.yaml, which decrypts
+# without the gate.
+set -euo pipefail
+
+check=()
+if [[ ${1:-} == --check ]]; then
+  check=(-Check)
+  shift
+fi
+
+# Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
+export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}experimental-features = nix-command flakes"
+
+cd "$(dirname "$0")/.."
+out=$(nix build --no-link --print-out-paths .#windows)
+hosts=("$@")
+if [[ ${#hosts[@]} -eq 0 ]]; then
+  mapfile -t hosts < <(nix eval --json --file windows/hosts.nix hosts | jq -r '.[]')
+fi
+
+# The license key joins the build's files outside the Nix store, which any
+# user can read.
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+cp -r "$out"/. "$stage"
+chmod -R u+w "$stage"
+sops -d --extract '["hwinfo_key"]' windows/secrets.yaml >"$stage/HWiNFO64_KEY.txt"
+
+# Uploaded to a directory the deploy recreates each time and removes after.
+dir='C:\ProgramData\homelab-deploy'
+status=0
+for name in "${hosts[@]}"; do
+  host="mdlayher@$name.taild07ab.ts.net"
+  echo "== $name"
+  if ! timeout 5 bash -c "exec 3<>/dev/tcp/$name.taild07ab.ts.net/22" 2>/dev/null; then
+    echo "unreachable, skipped"
+    continue
+  fi
+  ssh "$host" "Remove-Item -Recurse -Force '$dir' -ErrorAction SilentlyContinue; New-Item -ItemType Directory '$dir' | Out-Null"
+  scp -q "$stage"/* "$host:/C:/ProgramData/homelab-deploy/"
+  ssh "$host" "powershell -NoProfile -ExecutionPolicy Bypass -File '$dir\\apply.ps1' ${check[*]:-}" || status=1
+  ssh "$host" "Remove-Item -Recurse -Force '$dir'"
+done
+exit "$status"

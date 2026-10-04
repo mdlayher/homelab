@@ -17,6 +17,8 @@ let
   grafanaUrl = self config.services.grafana.settings.server.http_port;
   lokiUrl = self config.services.loki.configuration.server.http_listen_port;
 
+  windows = import ../../windows/hosts.nix;
+
   # Extracts the port from a "host:port" or ":port" listen address.
   portOf = addr: lib.toInt (lib.last (lib.splitString ":" addr));
 
@@ -185,32 +187,19 @@ let
         node.port = 9100;
       };
     };
-    # Windows machines run windows_exporter and are never on around the
-    # clock, so none of them alerts.
-    gamnerr-1 = {
-      jobs = {
-        # go/internal/hwinfo_exporter, reading HWiNFO's shared memory.
-        hwinfo.port = 9888;
-        # nvidia_gpu_exporter, reading nvidia-smi.
-        nvidia_gpu.port = 9835;
-        windows.port = 9182;
-      };
-      alerts = false;
-    };
     nerr-4 = {
       jobs = {
         node.port = 9100;
       };
       alerts = false;
     };
-    theatnerr-2 = {
-      jobs = {
-        nvidia_gpu.port = 9835;
-        windows.port = 9182;
-      };
-      alerts = false;
-    };
   }
+  # The Windows PCs and their exporters; see windows/hosts.nix. None is on
+  # around the clock, so none of them alerts.
+  // lib.genAttrs windows.hosts (_: {
+    jobs = lib.mapAttrs (_: port: { inherit port; }) windows.exporters;
+    alerts = false;
+  })
   # The KVM runs consrv for the serial consoles; see pikvm/. Its sshd is
   # probed as the machines' are, since pikvm/deploy edits its configuration.
   // {

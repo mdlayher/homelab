@@ -86,6 +86,14 @@
             self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
 
+        # The Windows PCs' configuration, built here and applied by
+        # windows/deploy.
+        windows = import ./windows {
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit (self.packages.${system}) hwinfo_exporter;
+          sshKeys = import ./nixos/ssh-keys.nix;
+        };
+
         # The HWiNFO exporter for the Windows machines, as a Windows
         # executable; see go/internal/hwinfo_exporter. Go cross-compiles it,
         # so the binary moves out of GOPATH's per-platform directory.

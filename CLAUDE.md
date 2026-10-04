@@ -32,6 +32,9 @@ Guidance for agents working in this repository.
 - The KVM runs PiKVM OS, not NixOS, and the nightly upgrade never touches
   it: `pikvm/deploy` applies the files `pikvm/` builds, and
   `pikvm/deploy --check` reports drift. See pikvm/README.md.
+- The Windows PCs are likewise outside the nightly upgrade:
+  `windows/deploy <host>` applies what `windows/` builds, and
+  `windows/deploy --check <host>` reports drift. See windows/README.md.
 - To prove a refactor is a no-op, compare
   `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath`
   before and after: identical drv paths mean identical systems.
@@ -49,12 +52,13 @@ Guidance for agents working in this repository.
   workstation. In the linuxdev container the decryption key for every
   file belongs to the `sops-gate` user, reachable solely via
   `sops-gate <verb>`, which is `sudo -u sops-gate` behind a YubiKey touch
-  on every call; agents cannot read or edit secrets. The one exception is
-  `nixos/inventory/secrets.yaml`, which also decrypts to the container
-  user's own key (`sops -d` works there with no gate) so agents can check
-  addresses and MACs. Its plaintext stays out of everything agents write:
-  repo files, commit messages, docs, plans. Editing it still goes through
-  the gate. For sops changes, compose the exact command
+  on every call; agents cannot read or edit secrets. The exceptions are
+  `nixos/inventory/secrets.yaml`, so agents can check addresses and MACs,
+  and `windows/secrets.yaml`, so `windows/deploy` runs without the gate:
+  both also decrypt to the container user's own key (`sops -d` works there
+  with no gate). Their plaintext stays out of everything agents write:
+  repo files, commit messages, docs, plans. Editing the inventory still
+  goes through the gate. For sops changes, compose the exact command
   for Matt to run (`!` in the prompt works): `sops-gate edit <file>` in the
   container, or plain `sops <file>` on the workstation. The gate forces
   nano as the editor, so scripted edits without printing plaintext happen
