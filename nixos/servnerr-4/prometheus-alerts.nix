@@ -544,6 +544,26 @@ in
           for = "1m";
           annotations.summary = "Disk usage on {{ $labels.instance }}:{{ $labels.mountpoint }} ({{ $labels.device }}) exceeds 75%.";
         }
+        # The gaming PC's GPU power cable, as the WireView Pro II inline on its
+        # 12V-2x6 connector reports it through HWiNFO (see
+        # go/internal/hwinfo_exporter). Its own verdicts come first, so its
+        # limits are set in Thermal Grizzly's software rather than here. The
+        # per-pin backstop catches a pin carrying too much while the device's
+        # limits are set loose; the connector's terminals are rated around
+        # 9.5 A each. Both read only while the PC runs HWiNFO, so they cannot
+        # fire while it is off.
+        {
+          alert = "GPUPowerConnectorFlagged";
+          expr = ''hwinfo_sensor_value{sensor=~"Thermal Grizzly WireView.*",unit="Yes/No",label=~"Current Imbalance|Over Current Limit Exceeded.*|Power Limit Exceeded|Temperature Limit Exceeded.*"} == 1'';
+          for = "30s";
+          annotations.summary = "The WireView on {{ $labels.instance }} reports {{ $labels.label }} on the GPU's power connector.";
+        }
+        {
+          alert = "GPUPowerPinCurrentHigh";
+          expr = ''hwinfo_sensor_value{sensor=~"Thermal Grizzly WireView.*",label=~"Pin [0-9]+ Current"} > 9'';
+          for = "30s";
+          annotations.summary = "{{ $labels.label }} on the GPU's power connector at {{ $labels.instance }} is {{ $value | printf \"%.2f\" }} A, above the 9 A backstop.";
+        }
         # Battery-powered sensors die silently: the entity goes unavailable
         # and its data just stops. The join against the entity registry keeps
         # only sensors assigned to an area of the house, which excludes
