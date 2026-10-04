@@ -189,6 +189,8 @@ let
     # clock, so none of them alerts.
     gamnerr-1 = {
       jobs = {
+        # nvidia_gpu_exporter, reading nvidia-smi.
+        nvidia_gpu.port = 9835;
         windows.port = 9182;
       };
       alerts = false;
