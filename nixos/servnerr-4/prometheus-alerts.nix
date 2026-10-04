@@ -55,6 +55,44 @@ let
   isisTextfile = raw ".*/isis\\.prom";
   notifyTextfile = raw ".*/update-notify\\.prom";
 
+  # The server board's power rails as its Super I/O reads them. The chip
+  # sees the 5 V and 12 V rails through resistor dividers the driver does
+  # not know, so those inputs are multiplied back up; the factors match
+  # LibreHardwareMonitor's tables for ASUS X570 boards with the same
+  # NCT6798D. The 3.3 V inputs arrive already scaled by the driver.
+  #
+  # The 12 V and 5 V inputs have never changed by one step of the chip
+  # (96 mV and 40 mV after scaling), at idle or under full CPU load, so
+  # whether they track the rails at all is unconfirmed; the 3.3 V inputs
+  # do move.
+  railBoard = "ROG STRIX X570-E GAMING";
+  rails = [
+    {
+      rail = "+12V";
+      sensor = "in4";
+      factor = 12;
+      nominal = 12;
+    }
+    {
+      rail = "+5V";
+      sensor = "in1";
+      factor = 5;
+      nominal = 5;
+    }
+    {
+      rail = "+3.3V";
+      sensor = "in3";
+      factor = 1;
+      nominal = 3.3;
+    }
+    {
+      rail = "+3.3V standby";
+      sensor = "in7";
+      factor = 1;
+      nominal = 3.3;
+    }
+  ];
+
   excludedInstances = hostsRegex excludedHosts;
   routerInstances = hostsRegex routers;
   readOnlyRootInstances = hostsRegex readOnlyRoots;
@@ -717,6 +755,18 @@ in
           for = "2m";
           annotations.summary = "{{ $labels.instance }} is undervolted; check its power supply.";
         }
+        # A power rail outside the ATX specification's ±5%, the usual first
+        # sign of a failing power supply; see rails above.
+        {
+          alert = "PowerRailOutOfRange";
+          expr = ''
+            instance_rail:node_hwmon_in_volts:scaled
+              and on (instance, rail)
+            abs(instance_rail:node_hwmon_in_volts:nominal_ratio - 1) > 0.05
+          '';
+          for = "5m";
+          annotations.summary = "The {{ $labels.rail }} rail on {{ $labels.instance }} reads {{ $value | printf \"%.2f\" }} V, outside ±5% of nominal.";
+        }
         {
           alert = "PrometheusInstanceDown";
           expr = "up{instance!~${excludedInstances},job!~${excludedJobsRegex}} == 0";
@@ -999,7 +1049,24 @@ in
           record = "instance_name_ip_version:bird_protocol_up:changes1h";
           expr = ''changes((max by (instance, name, ip_version) (bird_protocol_up{proto="BGP"}))[1h:15s])'';
         }
-      ];
+      ]
+      # The server board's power rails in volts, and as a fraction of each
+      # rail's nominal voltage; see rails above.
+      ++ lib.concatMap (r: [
+        {
+          record = "instance_rail:node_hwmon_in_volts:scaled";
+          expr = ''
+            node_hwmon_in_volts{chip=~"platform_nct6775_.*",sensor="${r.sensor}"} * ${toString r.factor}
+              and on (instance) node_dmi_info{board_name="${railBoard}"}
+          '';
+          labels.rail = r.rail;
+        }
+        {
+          record = "instance_rail:node_hwmon_in_volts:nominal_ratio";
+          expr = ''instance_rail:node_hwmon_in_volts:scaled{rail="${r.rail}"} / ${toString r.nominal}'';
+          labels.rail = r.rail;
+        }
+      ]) rails;
     }
   ];
 }
