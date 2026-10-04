@@ -320,7 +320,7 @@
           ap-basement = { };
           ap-laundry = { };
           ap-livingroom = { };
-          gamnerr-1 = { };
+          gamnerr-1.ipv6 = "eui64";
           hass.ipv6 = "prefixstable";
           nerr-4.ipv6 = "eui64";
           pdu01 = { };
@@ -338,7 +338,6 @@
         trusted = true;
         role = "lan";
         hosts = {
-          matt-4.ipv6 = "eui64";
           psframework.ipv6 = "eui64";
           theatnerr-2.ipv6 = "eui64";
         };
@@ -375,10 +374,9 @@
         trusted = false;
         role = "iot";
         hosts = {
-          keylight.ipv6 = "eui64";
           living-room-hue-hub.ipv6 = "eui64";
-          living-room-myq-hub.ipv6 = "eui64";
-          office-printer.ipv6 = "eui64";
+          living-room-myq-hub = { };
+          office-printer = { };
           prusa-core-one.ipv6 = "eui64";
         };
       };

@@ -17,6 +17,8 @@
 		"tag:kvm": ["autogroup:admin"],
 		// The router (superset of tag:infra): exit node.
 		"tag:router": ["autogroup:admin"],
+		// Windows PCs, reached over SSH from the development container.
+		"tag:windows": ["autogroup:admin"],
 	},
 
 	"acls": [
@@ -32,6 +34,7 @@
 				"tag:hass:*",
 				"tag:infra:*",
 				"tag:kvm:*",
+				"tag:windows:*",
 			],
 		},
 
@@ -71,6 +74,15 @@
 			"action": "accept",
 			"src":    ["tag:dev"],
 			"dst":    ["tag:kvm:22", "tag:kvm:2222"],
+		},
+
+		// SSH to the Windows PCs from the development container. Their
+		// OpenSSH servers accept only the admin's FIDO2 keys, so each login
+		// needs a physical touch, as on the machines.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:windows:22"],
 		},
 	],
 
