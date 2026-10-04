@@ -205,6 +205,7 @@ let
     };
     theatnerr-2 = {
       jobs = {
+        nvidia_gpu.port = 9835;
         windows.port = 9182;
       };
       alerts = false;
