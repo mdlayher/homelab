@@ -1,4 +1,4 @@
-*.retry
 *.bak
-secrets.nix
-obs/profiles/Programming/service.json
+# nix build output links.
+/result
+/result-*

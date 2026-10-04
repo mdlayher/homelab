@@ -359,6 +359,9 @@ in
             "--collector.systemd.enable-restarts-metrics"
             "--collector.systemd.enable-start-time-metrics"
           ];
+          # A container reads its host's /sys, so its hwmon collector would
+          # repeat the host's hardware sensors under the container's name.
+          disabledCollectors = lib.optional (!isHost) "hwmon";
           # Containers run a firewall; machines don't.
           openFirewall = !isHost;
         };

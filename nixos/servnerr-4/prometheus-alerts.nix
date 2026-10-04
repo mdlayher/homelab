@@ -538,6 +538,21 @@ in
           for = "15m";
           annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) answers small echo requests but not ones filling the tunnel's MTU, so the path drops full-size packets.";
         }
+        # A fan header which has spun within the week and now reads zero.
+        # Headers with nothing attached never spin, so they never match,
+        # and the week keeps a dead fan firing well past the day it stopped.
+        # The ASUS EC's fan is the chipset fan, which stops by design when
+        # the chipset is cool.
+        {
+          alert = "FanStopped";
+          expr = ''
+            node_hwmon_fan_rpm{instance!~${excludedInstances},chip!="platform_asus_ec_sensors"} == 0
+              and on (instance, chip, sensor)
+            max_over_time(node_hwmon_fan_rpm[7d]) > 0
+          '';
+          for = "2m";
+          annotations.summary = "Fan {{ $labels.sensor }} ({{ $labels.chip }}) on {{ $labels.instance }} reads 0 RPM after spinning within the last week.";
+        }
         {
           alert = "FilesystemUsageHigh";
           expr = ''(1 - node_filesystem_free_bytes{fstype=~"ext4|vfat"} / node_filesystem_size_bytes) > 0.75'';
