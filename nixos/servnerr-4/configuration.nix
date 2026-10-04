@@ -20,7 +20,6 @@
     ./dev.nix
     ./hba-metrics.nix
     ./inventory-metrics.nix
-    ./netbox.nix
     ./nix-cache.nix
     ./loki.nix
     ./prometheus.nix

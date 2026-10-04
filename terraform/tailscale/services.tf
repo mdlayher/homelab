@@ -15,12 +15,11 @@
 
 locals {
   # Web UIs on the server: TLS terminated on 443 with a plain HTTP
-  # convenience on 80; see nixos/servnerr-4/prometheus.nix and netbox.nix.
+  # convenience on 80; see nixos/servnerr-4/prometheus.nix.
   web_services = toset([
     "alertmanager",
     "grafana",
     "loki",
-    "netbox",
     "prometheus",
   ])
 
