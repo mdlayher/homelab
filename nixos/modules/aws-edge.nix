@@ -200,6 +200,9 @@ in
   services.fwupd.enable = lib.mkForce false;
   services.smartd.enable = lib.mkForce false;
   services.prometheus.exporters.smartctl.enable = lib.mkForce false;
+  # The instance's only hwmon sensor is an EBS NVMe temperature reading
+  # -273.15 °C.
+  services.prometheus.exporters.node.disabledCollectors = [ "hwmon" ];
 
   # amazon-image.nix permits key-based root login, which is how the stock
   # AMI is reachable at all. common.nix's "no" is the posture every other

@@ -406,6 +406,19 @@ in
         # As with BIRDExporterFailing: a failed command socket query drops the
         # chrony metrics rather than zeroing them, so every rule below goes
         # quiet exactly when this one fires.
+        # Tctl, the temperature the CPU throttles on; k10temp reports it as
+        # temp1.
+        {
+          alert = "CPUTemperatureHigh";
+          expr = ''
+            node_hwmon_temp_celsius{instance!~${excludedInstances},sensor="temp1"}
+              * on (instance, chip) group_left (chip_name)
+            node_hwmon_chip_names{chip_name="k10temp"}
+              > 90
+          '';
+          for = "10m";
+          annotations.summary = "The CPU on {{ $labels.instance }} has been at {{ $value }} °C for 10 minutes.";
+        }
         {
           alert = "ChronyExporterFailing";
           expr = ''up{job="chrony"} == 0 or chrony_up == 0'';
@@ -576,6 +589,19 @@ in
           for = "15m";
           annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) answers small echo requests but not ones filling the tunnel's MTU, so the path drops full-size packets.";
         }
+        # SATA drives through the drivetemp driver. Their self-reported
+        # limits disagree wildly between models, so one threshold for all.
+        {
+          alert = "DriveTemperatureHigh";
+          expr = ''
+            node_hwmon_temp_celsius{instance!~${excludedInstances}}
+              * on (instance, chip) group_left (chip_name)
+            node_hwmon_chip_names{chip_name="drivetemp"}
+              > 50
+          '';
+          for = "15m";
+          annotations.summary = "Drive {{ $labels.chip }} on {{ $labels.instance }} has been at {{ $value }} °C for 15 minutes.";
+        }
         # A fan header which has spun within the week and now reads zero.
         # Headers with nothing attached never spin, so they never match,
         # and the week keeps a dead fan firing well past the day it stopped.
@@ -733,7 +759,27 @@ in
           for = "1h";
           annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} has used {{ $value }}% of its rated write endurance.";
         }
+        # The drive's own warning threshold (WCTEMP), which the NVMe
+        # specification requires every controller to report.
+        {
+          alert = "NVMeTemperatureHigh";
+          expr = ''
+            node_hwmon_temp_celsius{instance!~${excludedInstances},chip=~"nvme_.*"}
+              >= on (instance, chip, sensor)
+            (node_hwmon_temp_max_celsius > 0)
+          '';
+          for = "5m";
+          annotations.summary = "NVMe drive {{ $labels.chip }} on {{ $labels.instance }} is at {{ $value }} °C, at or above its warning threshold.";
+        }
         # The KVM's fan, as kvmd's fan controller reports it.
+        # A PDU bank past the near-overload threshold configured on the PDU
+        # itself (3 is nearOverload, 4 overload).
+        {
+          alert = "PDUBankOverloaded";
+          expr = "ePDU2BankStatusLoadState >= 3";
+          for = "5m";
+          annotations.summary = "Bank {{ $labels.ePDU2BankStatusIndex }} of {{ $labels.instance }} is near or past overload.";
+        }
         {
           alert = "PiKVMFanFailed";
           expr = "pikvm_fan_state_fan_ok == 0";
@@ -909,6 +955,12 @@ in
           expr = "upsAdvanceBatteryReplaceIndicator == 2";
           for = "15m";
           annotations.summary = "The UPS behind {{ $labels.instance }} reports that its batteries need replacing.";
+        }
+        {
+          alert = "UPSLoadHigh";
+          expr = "upsAdvanceOutputLoad > 80";
+          for = "5m";
+          annotations.summary = "{{ $labels.instance }} is carrying {{ $value }}% of its rated load.";
         }
         {
           alert = "UPSSelfTestFailed";
