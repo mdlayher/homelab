@@ -57,6 +57,13 @@
       # 56GiB ZFS ARC.
       "zfs.zfs_arc_max=58720256"
     ];
+
+    # The motherboard's Nuvoton Super I/O, which carries its fan speeds and
+    # voltage rails. The firmware claims the chip's I/O ports, so nct6775
+    # reaches it through ASUS's WMI interface on boards it lists, this one
+    # included; nothing loads the module on its own because the chip has no
+    # device ID to match.
+    kernelModules = [ "nct6775" ];
   };
 
   # Start getty over serial console.
