@@ -356,9 +356,15 @@ in
         # collector which stops running leaves the adjacency reading what it
         # read when it died, and a circuit which drops after that is never
         # reported. The sample is written every minute.
+        #
+        # The wait covers reboots: a rebooted machine keeps its old sample
+        # on disk until the collector's first run, and a restarted
+        # Prometheus evaluates samples from before it went down until the
+        # first scrapes land.
         {
           alert = "ISISMetricsStale";
           expr = "time() - node_textfile_mtime_seconds{file=~${isisTextfile}} > 300";
+          for = "10m";
           annotations.summary = "The IS-IS sample on {{ $labels.instance }} is {{ $value | humanizeDuration }} old, so its adjacency state is not to be trusted.";
         }
         # BlackboxServiceDown only sees a probe hard down for 5 straight
@@ -926,10 +932,13 @@ in
         # is not recovering. The second term is what says "still": without it
         # a unit that looped once and settled keeps alerting until something
         # restarts it.
+        #
+        # The KVM's getty on its USB serial gadget exits whenever the host on
+        # the other end reboots or resets the link, and systemd restarts it.
         {
           alert = "SystemdUnitRestarting";
           expr = ''
-            node_systemd_service_restart_total > 2
+            node_systemd_service_restart_total{name!~"kvmd-otg-getty@.*"} > 2
             and increase(node_systemd_service_restart_total[30m]) > 0
           '';
           for = "10m";
