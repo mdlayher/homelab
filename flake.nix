@@ -85,6 +85,37 @@
           lokiPort =
             self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
+
+        # The HWiNFO exporter for the Windows machines, as a Windows
+        # executable; see go/internal/hwinfo_exporter. Go cross-compiles it,
+        # so the binary moves out of GOPATH's per-platform directory.
+        hwinfo_exporter =
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+          in
+          (pkgs.buildGoModule.override { go = nixpkgs-unstable.legacyPackages.${system}.go_1_27; }) {
+            pname = "hwinfo_exporter";
+            version = "unstable";
+            src = ./go/internal/hwinfo_exporter;
+            vendorHash = "sha256-hp/Z7ecXkewUwBSW2K8Tf4QM787e0nIBPn1H7fFoOFQ=";
+            env.CGO_ENABLED = "0";
+            ldflags = [
+              "-s"
+              "-w"
+            ];
+            # buildGoModule sets GOOS for the build machine during configure.
+            preBuild = ''
+              export GOOS=windows GOARCH=amd64
+            '';
+            postInstall = ''
+              mv $out/bin/windows_amd64/hwinfo_exporter.exe $out/bin/hwinfo_exporter.exe
+              rmdir $out/bin/windows_amd64
+            '';
+            dontStrip = true;
+            dontPatchELF = true;
+            # The tests would build for Windows too; run them with go test.
+            doCheck = false;
+          };
       });
 
       # nix fmt: Nix files, and HuJSON in the layout Tailscale stores a
