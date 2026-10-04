@@ -579,6 +579,14 @@ in
           for = "30s";
           annotations.summary = "{{ $labels.label }} on the GPU's power connector at {{ $labels.instance }} is {{ $value | printf \"%.2f\" }} A, above the 9 A backstop.";
         }
+        # The SAS HBA cools passively and idled at 71–80 °C when first
+        # measured; see the server's hba-metrics.nix.
+        {
+          alert = "HBATemperatureHigh";
+          expr = "homelab_hba_temperature_celsius > 90";
+          for = "10m";
+          annotations.summary = "SAS HBA controller {{ $labels.controller }} on {{ $labels.instance }} is at {{ $value }} °C.";
+        }
         # Battery-powered sensors die silently: the entity goes unavailable
         # and its data just stops. The join against the entity registry keeps
         # only sensors assigned to an area of the house, which excludes

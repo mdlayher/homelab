@@ -17,6 +17,7 @@
     ./agent-triage.nix
     ../modules/coredns.nix
     ./dev.nix
+    ./hba-metrics.nix
     ./inventory-metrics.nix
     ./netbox.nix
     ./nix-cache.nix

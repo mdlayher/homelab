@@ -165,7 +165,12 @@ in
 
   nixpkgs = {
     # Only allow certain unfree packages.
-    config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "tarsnap" ];
+    config.allowUnfreePredicate =
+      pkg:
+      builtins.elem (lib.getName pkg) [
+        "storcli"
+        "tarsnap"
+      ];
   };
 
   services = {
