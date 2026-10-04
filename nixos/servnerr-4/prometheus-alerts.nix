@@ -794,6 +794,23 @@ in
           for = "5m";
           annotations.summary = "NVMe drive {{ $labels.chip }} on {{ $labels.instance }} is at {{ $value }} °C, at or above its warning threshold.";
         }
+        # HWiNFO on the Windows PCs (see windows/), beside the GPU power
+        # alerts above. The PCs are often off, so these read only what a PC
+        # reports while it is on.
+        #
+        # Errors Windows logs for the hardware itself (WHEA): machine checks,
+        # PCIe and memory errors. HWiNFO counts them since it started.
+        {
+          alert = "WindowsHardwareErrors";
+          expr = ''increase(hwinfo_sensor_value{sensor="Windows Hardware Errors (WHEA)", label="Total Errors"}[1h]) > 0'';
+          annotations.summary = "{{ $labels.instance }} logged {{ $value | humanize }} Windows hardware errors (WHEA) in the last hour.";
+        }
+        # The drive's own SMART verdicts, as HWiNFO reads them.
+        {
+          alert = "WindowsSMARTDriveWarning";
+          expr = ''hwinfo_sensor_value{sensor=~"S\\.M\\.A\\.R\\.T\\..*", label=~"Drive Warning|Drive Failure"} > 0'';
+          annotations.summary = "{{ $labels.sensor }} on {{ $labels.instance }} reports {{ $labels.label }}.";
+        }
         # The KVM's fan, as kvmd's fan controller reports it.
         # A PDU bank past the near-overload threshold configured on the PDU
         # itself (3 is nearOverload, 4 overload).

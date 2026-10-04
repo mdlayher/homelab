@@ -69,6 +69,34 @@ foreach ($s in $config.services.PSObject.Properties) {
     }
 }
 
+# Configuration files from this tree, each replaced when it differs and its
+# service restarted, once the package that reads it is installed.
+foreach ($f in $config.files) {
+    $new = Join-Path $here $f.source
+    if (-not (Test-Path (Split-Path $f.path))) { continue }
+    if (-not (Test-Path $f.path) -or (Get-FileHash $f.path).Hash -ne (Get-FileHash $new).Hash) {
+        Fix "update $($f.path)" {
+            Copy-Item $new $f.path -Force
+            if (Get-Service $f.service -ErrorAction SilentlyContinue) { Restart-Service $f.service }
+        }
+    }
+}
+
+# The clock, synced from the anycast NTP address rather than
+# time.windows.com, by a time service that runs at boot instead of on
+# demand.
+$w32 = Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\Parameters
+$peer = "$($config.ntp),0x8"
+$w32svc = Get-CimInstance Win32_Service -Filter "Name='W32Time'"
+if ($w32.NtpServer -ne $peer -or $w32.Type -ne 'NTP' -or $w32svc.StartMode -ne 'Auto') {
+    Fix "time from $($config.ntp)" {
+        Set-Service W32Time -StartupType Automatic
+        Start-Service W32Time
+        w32tm /config /manualpeerlist:$peer /syncfromflags:manual /update | Out-Null
+        w32tm /resync /nowait | Out-Null
+    }
+}
+
 # Inbound firewall rules, on every profile: TCP ports, and ICMP by type.
 foreach ($r in $config.firewall) {
     $rule = Get-NetFirewallRule -DisplayName $r.name -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -192,7 +220,8 @@ if (-not $program -or -not (Test-Path $program)) {
 
 # Everything above in place: start what is stopped. HWiNFO starts only when
 # someone is logged on, which its logon task otherwise covers.
-foreach ($s in @('windows_exporter') + @($config.services.PSObject.Properties | ForEach-Object Name)) {
+$running = @($config.packages | ForEach-Object { $_.services }) + @($config.services.PSObject.Properties | ForEach-Object Name) + 'W32Time'
+foreach ($s in $running) {
     $svc = Get-Service $s -ErrorAction SilentlyContinue
     if ($svc -and $svc.Status -ne 'Running') { Fix "start $s" { Start-Service $s } }
 }

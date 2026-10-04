@@ -13,6 +13,10 @@ applies it over SSH. Nothing applies it nightly.
   built from `go/internal/hwinfo_exporter`. Built as `.#windows`. apply.ps1
   also keeps sshd's password logins off and IPv6 addresses derived from the
   adapter's MAC, which the inventory's records for these machines assume.
+- Configuration files: windows_exporter's collectors, and Alloy's, which
+  ships the Application, System and OpenSSH event logs to Loki through
+  `loki.svc` under `{job="windows-eventlog"}`, labeled by `host` and
+  `channel`. The clock syncs from the anycast NTP address.
 - `apply.ps1`: runs on the machine; installs or upgrades what differs from
   the pins, creates what is missing, and starts what is stopped.
 - `deploy`: builds, uploads and applies over SSH as the admin, to one

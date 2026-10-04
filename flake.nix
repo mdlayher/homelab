@@ -90,8 +90,12 @@
         # windows/deploy.
         windows = import ./windows {
           pkgs = nixpkgs.legacyPackages.${system};
+          inherit inventory;
+          inherit (nixpkgs) lib;
           inherit (self.packages.${system}) hwinfo_exporter;
           sshKeys = import ./nixos/ssh-keys.nix;
+          lokiPort =
+            self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
 
         # The HWiNFO exporter for the Windows machines, as a Windows

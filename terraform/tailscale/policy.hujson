@@ -76,6 +76,15 @@
 			"dst":    ["tag:kvm:22", "tag:kvm:2222"],
 		},
 
+		// The Windows PCs accept the tailnet's DNS settings, whose split DNS
+		// sends the internal zones to the router's CoreDNS at its tailnet
+		// address (see dns.tf).
+		{
+			"action": "accept",
+			"src":    ["tag:windows"],
+			"dst":    ["tag:router:53"],
+		},
+
 		// SSH to the Windows PCs from the development container. Their
 		// OpenSSH servers accept only the admin's FIDO2 keys, so each login
 		// needs a physical touch, as on the machines.
