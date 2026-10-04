@@ -195,9 +195,19 @@ let
     };
   }
   # The Windows PCs and their exporters; see windows/hosts.nix. None is on
-  # around the clock, so none of them alerts.
+  # around the clock, so none of them alerts. HWiNFO's PresentMon sensor
+  # names itself after the foreground app, so each app switch mints a new
+  # set of series; it is dropped.
   // lib.genAttrs windows.hosts (_: {
-    jobs = lib.mapAttrs (_: port: { inherit port; }) windows.exporters;
+    jobs = lib.recursiveUpdate (lib.mapAttrs (_: port: { inherit port; }) windows.exporters) {
+      hwinfo.metric_relabel_configs = [
+        {
+          source_labels = [ "sensor" ];
+          regex = "PresentMon .*";
+          action = "drop";
+        }
+      ];
+    };
     alerts = false;
   })
   # The KVM runs consrv for the serial consoles; see pikvm/. Its sshd is
