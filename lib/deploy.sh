@@ -4,10 +4,15 @@
 # A later investigation can then tell a deploy, a dirty one included, from a
 # manual change on the machine. Sourced from the repository root.
 #
+# NixOS machines announce each new system in the Discord ops channel
+# themselves (update-notify in nixos/modules/common.nix); deploy_notify
+# posts the same announcement for the machines that are not NixOS.
+#
 # Dirtiness follows nix's definition: modified tracked files, not untracked
 # ones, which is also what strips the revision from a built NixOS system.
 
-deploy_rev="$(git rev-parse --short=12 HEAD)"
+deploy_commit="$(git rev-parse HEAD)"
+deploy_rev=${deploy_commit:0:12}
 deploy_branch="$(git rev-parse --abbrev-ref HEAD)"
 if git diff-index --quiet HEAD --; then deploy_dirty=no; else deploy_dirty=yes; fi
 deploy_by="$(id -un)@$(hostname -s)"
@@ -25,4 +30,24 @@ deploy_line() {
     line="$line $*"
   fi
   echo "$line"
+}
+
+# deploy_notify <host> <what>: announces in the Discord ops channel that
+# <what> was applied to <host>, in update-notify's shape: the host as the
+# title, then the commit. Best effort: Discord being away never fails a
+# deploy. The webhook comes from lib/secrets.yaml, which decrypts without the
+# gate.
+deploy_notify() {
+  local host=$1 what=$2 desc url
+  desc="Applied $what · [${deploy_commit:0:7}](https://github.com/mdlayher/homelab/commit/$deploy_commit)"
+  if [[ $deploy_dirty == yes ]]; then
+    desc="$desc + uncommitted changes"
+  fi
+  if ! url="$(sops -d --extract '["discord_ops_webhook_url"]' lib/secrets.yaml 2>/dev/null)"; then
+    echo "deploy: cannot read the ops webhook from lib/secrets.yaml; not announced" >&2
+    return 0
+  fi
+  jq -cn --arg title "$host" --arg desc "$desc" '{embeds: [{title: $title, description: $desc}]}' |
+    curl -sfS -m 10 -H 'Content-Type: application/json' --data-binary @- "$url" >/dev/null ||
+    echo "deploy: could not announce $host's deploy in Discord" >&2
 }

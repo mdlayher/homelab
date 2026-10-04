@@ -38,8 +38,8 @@ Guidance for agents working in this repository.
 - Every deploy script takes `[--check] <host>|--all`, the host optional
   where the script has a single target (the KVM), and logs provenance
   under `{unit="deploy"}` in Loki (lib/deploy.sh). NixOS machines announce
-  each new system in the Discord ops channel themselves; deploys to the KVM
-  and the Windows PCs are announced there from those log lines.
+  each new system in the Discord ops channel themselves; the deploy scripts
+  for the KVM and the Windows PCs post the same announcement.
 - To prove a refactor is a no-op, compare
   `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath`
   before and after: identical drv paths mean identical systems.
@@ -59,7 +59,8 @@ Guidance for agents working in this repository.
   `sops-gate <verb>`, which is `sudo -u sops-gate` behind a YubiKey touch
   on every call; agents cannot read or edit secrets. The exceptions are
   `nixos/inventory/secrets.yaml`, so agents can check addresses and MACs,
-  and `windows/secrets.yaml`, so `windows/deploy` runs without the gate:
+  and `lib/secrets.yaml` and `windows/secrets.yaml`, so the deploy scripts
+  run without the gate:
   both also decrypt to the container user's own key (`sops -d` works there
   with no gate). Their plaintext stays out of everything agents write:
   repo files, commit messages, docs, plans. Editing the inventory still

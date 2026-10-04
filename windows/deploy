@@ -43,8 +43,9 @@ out=$(nix build --no-link --print-out-paths .#windows)
 
 # Provenance (see lib/deploy.sh). Windows ships no logs, so the lines go to
 # Loki directly, labeled as the machines' journal lines are, under
-# {unit="deploy"}. Best effort: Loki being away never fails a deploy. A check
-# changes nothing and logs nothing.
+# {unit="deploy"}, and a finished deploy is announced in the Discord ops
+# channel. Best effort: Loki being away never fails a deploy. A check changes
+# nothing, and logs and announces nothing.
 source lib/deploy.sh
 log() {
   local host=$1 line=$2
@@ -82,6 +83,7 @@ for name in "${hosts[@]}"; do
   ssh "$host" "Remove-Item -Recurse -Force '$dir'"
   if [[ $applied -eq 0 ]]; then
     log "$name" "$(deploy_line apply finished)"
+    [[ ${#check[@]} -gt 0 ]] || deploy_notify "$name" "windows/"
   else
     log "$name" "$(deploy_line apply failed "status=$applied")"
     status=1

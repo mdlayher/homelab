@@ -39,7 +39,8 @@ cd "$(dirname "$0")/.."
 out=$(nix build --no-link --print-out-paths .#pikvm)
 
 # Provenance for the device's journal (see lib/deploy.sh), which its Alloy
-# ships to Loki under {unit="deploy"}. A check changes nothing and logs
+# ships to Loki under {unit="deploy"}, and a finished deploy announced in the
+# Discord ops channel. A check changes nothing, and logs and announces
 # nothing.
 source lib/deploy.sh
 logs=(: : :)
@@ -54,10 +55,15 @@ fi
 # One connection uploads and applies, so a deploy is one touch with no
 # control socket left behind. /tmp is a tmpfs on PiKVM OS, so unpacking
 # there needs no rw; apply.sh reads nothing from stdin.
+status=0
 tar -C "$out" -chf - . | ssh -o ControlMaster=no -o ControlPath=none "root@$host" "
   ${logs[0]}
   status=0
   { rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && tar -C /tmp/pikvm-deploy -xf - &&
     bash /tmp/pikvm-deploy/apply.sh ${check[*]:-}; } || status=\$?
   if [ \$status -eq 0 ]; then ${logs[1]}; else ${logs[2]}; fi
-  exit \$status"
+  exit \$status" || status=$?
+if [[ $status -eq 0 && ${#check[@]} -eq 0 ]]; then
+  deploy_notify "$name" "pikvm/"
+fi
+exit "$status"

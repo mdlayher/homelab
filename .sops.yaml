@@ -9,9 +9,9 @@
 #   the admin edit secrets from the container behind a YubiKey touch
 # - linuxdev-agent: the development container user's own key in
 #   ~/.config/sops/age/keys.txt, with no gate; reads the inventory, so
-#   agents can check addresses and MACs, and the Windows PCs' secrets, so
-#   windows/deploy runs without the gate. Editing the inventory still goes
-#   through the gate.
+#   agents can check addresses and MACs, and the deploy scripts' secrets
+#   (lib/, windows/), so a deploy runs without the gate. Editing the
+#   inventory still goes through the gate.
 keys:
   - &mdlayher age136z4kwkfsqlvaa7e6f5c79rzjstg4ktq2lw6zadv23c038jnafssp2mngs
   - &linuxdev-gate age1szssulmqnc0n650xcqvn7rpu2zjwnhrta4tvcm7tpxtmg26lsqysna0fks
@@ -64,9 +64,9 @@ creation_rules:
           - *mdlayher
           - *linuxdev-gate
           - *edge-iad
-  # The Windows PCs' secrets, read by windows/deploy; no machine decrypts
-  # these.
-  - path_regex: windows/secrets\.yaml$
+  # The deploy scripts' secrets: lib/ for every deploy script, windows/ for
+  # windows/deploy. No machine decrypts these.
+  - path_regex: (lib|windows)/secrets\.yaml$
     key_groups:
       - age:
           - *mdlayher
