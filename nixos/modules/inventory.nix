@@ -125,8 +125,6 @@ let
 
   interfaces = lib.mapAttrs mkInterface subnets;
 
-  hostNames = lib.concatMap (ifi: map (h: h.name) ifi.hosts) (lib.attrValues interfaces);
-
   # A router loopback, keyed by the machine's name. Plain data throughout,
   # unlike everything above: a loopback is named and read across sites, and a
   # sops placeholder only means anything on the machine which declared the
@@ -189,6 +187,8 @@ let
   anycastBase = lib.removeSuffix "/64" inventory.anycastPrefix6;
 in
 {
+  imports = [ ./inventory-checks.nix ];
+
   options.homelab.site = lib.mkOption {
     type = lib.types.enum (lib.attrNames inventory.sites);
     description = ''
@@ -242,10 +242,6 @@ in
 
   config = {
     assertions = [
-      {
-        assertion = hostNames == lib.unique hostNames;
-        message = "inventory host names must be unique across a site's subnets";
-      }
       {
         assertion = lib.all (lo: lib.hasPrefix loopbackBase lo.addr6) allLoopbacks;
         message = "inventory loopback addresses must come from loopbackPrefix6";
