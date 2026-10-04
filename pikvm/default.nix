@@ -186,12 +186,13 @@ let
     }
     {
       # The collectors and flags the machines' node exporters run with; see
-      # nixos/modules/common.nix.
+      # nixos/modules/common.nix. The Pi has no RAPL energy counters, so the
+      # rapl collector is off.
       path = "/etc/conf.d/prometheus-node-exporter";
       mode = "644";
       action = "node-exporter";
       text = ''
-        NODE_EXPORTER_ARGS="--collector.systemd --collector.systemd.enable-restarts-metrics --collector.systemd.enable-start-time-metrics"
+        NODE_EXPORTER_ARGS="--collector.systemd --collector.systemd.enable-restarts-metrics --collector.systemd.enable-start-time-metrics --no-collector.rapl"
       '';
     }
     {

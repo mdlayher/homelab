@@ -343,6 +343,13 @@ in
           AuthorizedKeysFile /etc/ssh/${user}_fido_keys
       '';
 
+      # The kernel keeps the CPU energy counters readable by root only, a
+      # mitigation for power side channels; the node exporter's group may
+      # read them too, for its rapl collector.
+      udev.extraRules = lib.mkIf isHost ''
+        SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", RUN+="${pkgs.coreutils}/bin/chgrp node-exporter /sys%p/energy_uj", RUN+="${pkgs.coreutils}/bin/chmod 0440 /sys%p/energy_uj"
+      '';
+
       prometheus.exporters = {
         node = {
           enable = true;
@@ -359,9 +366,13 @@ in
             "--collector.systemd.enable-restarts-metrics"
             "--collector.systemd.enable-start-time-metrics"
           ];
-          # A container reads its host's /sys, so its hwmon collector would
-          # repeat the host's hardware sensors under the container's name.
-          disabledCollectors = lib.optional (!isHost) "hwmon";
+          # A container reads its host's /sys, so its hwmon and rapl
+          # collectors would repeat the host's sensors and power counters
+          # under the container's name.
+          disabledCollectors = lib.optionals (!isHost) [
+            "hwmon"
+            "rapl"
+          ];
           # Containers run a firewall; machines don't.
           openFirewall = !isHost;
         };
