@@ -101,19 +101,33 @@ let
 
   # The smartctl exporter keys every metric by kernel device name, which is
   # not stable across reboots, and carries the model and serial only on its
-  # smartctl_device info metric. Joining those in names the physical drive in
-  # a notification and gives a silence a matcher that survives a renumber.
-  # Both come from one scrape, so the info series is never missing alone.
+  # smartctl_device info metric. Joining those in and dropping the device
+  # name keys each series by the physical drive, so a renumber neither
+  # re-fires an alert under a new name nor moves one drive's counters onto
+  # another, and a silence on the serial keeps matching. Both come from one
+  # scrape, so the info series is never missing alone.
+  #
+  # Only each device name's freshest info series joins. A restarted
+  # Prometheus evaluates samples from before it went down, with no
+  # staleness markers, so after a reboot that renumbered the drives two
+  # serials can hold one name until the old sample ages out, and the join
+  # would fail on the duplicate.
+  currentDrives = "(smartctl_device and on (instance, device, serial_number) (timestamp(smartctl_device) == on (instance, device) group_left () max by (instance, device) (timestamp(smartctl_device))))";
   withDrive =
-    expr: "(${expr}) * on (instance, device) group_left(model_name, serial_number) smartctl_device";
+    expr:
+    "max without (device) ((${expr}) * on (instance, device) group_left(model_name, serial_number) ${currentDrives})";
+
+  # The drive's current device name, for a summary: looked up by serial at
+  # notification time, since the alert itself no longer carries it.
+  driveDevice = ''{{ with printf "smartctl_device{serial_number='%s'}" $labels.serial_number | query }}{{ . | first | label "device" }}{{ end }}'';
 
   # The same join for a metric recorded by Loki's ruler, which labels by host
   # rather than instance. The host is derived from the instance label so that
   # no domain or exporter port is repeated here.
   withDriveByHost =
     expr:
-    "(${expr}) * on (host, device) group_left(model_name, serial_number) "
-    + ''label_replace(smartctl_device, "host", "$1", "instance", ${raw "([^.:]+).*"})'';
+    "max without (device) ((${expr}) * on (host, device) group_left(model_name, serial_number) "
+    + ''label_replace(${currentDrives}, "host", "$1", "instance", ${raw "([^.:]+).*"}))'';
 
   # One rule per site and service address. A single node withdrawing its
   # address is the design working; a site where nothing holds it is not.
@@ -766,7 +780,7 @@ in
           alert = "NVMeWearHigh";
           expr = withDrive "smartctl_device_percentage_used >= 80";
           for = "1h";
-          annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} has used {{ $value }}% of its rated write endurance.";
+          annotations.summary = "NVMe ${driveDevice} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} has used {{ $value }}% of its rated write endurance.";
         }
         # The drive's own warning threshold (WCTEMP), which the NVMe
         # specification requires every controller to report.
@@ -879,7 +893,7 @@ in
           alert = "SMARTCriticalWarning";
           expr = withDrive "smartctl_device_critical_warning > 0";
           for = "5m";
-          annotations.summary = "NVMe {{ $labels.device }} on {{ $labels.instance }} reports a critical warning.";
+          annotations.summary = "NVMe ${driveDevice} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} reports a critical warning.";
         }
         # Early warning ahead of SMARTCriticalWarning and SMARTStatusFailed:
         # a drive's own SMART verdict flips (and can flap) only once the
@@ -890,8 +904,8 @@ in
         # drives.
         {
           alert = "SMARTErrorLogGrowing";
-          expr = withDrive "increase(smartctl_device_error_log_count[1d]) > 0 or increase(smartctl_device_media_errors[1d]) > 0";
-          annotations.summary = "Disk {{ $labels.device }} on {{ $labels.instance }} logged new SMART errors in the last day.";
+          expr = "increase(instance_serial:smartctl_device_error_log_count:max[1d]) > 0 or increase(instance_serial:smartctl_device_media_errors:max[1d]) > 0";
+          annotations.summary = "Disk ${driveDevice} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} logged new SMART errors in the last day.";
         }
         # Fires from a log line rather than a metric, recorded into Prometheus
         # by Loki's ruler (see nixos/servnerr-4/loki.nix) so that the drive's
@@ -901,7 +915,7 @@ in
           alert = "SMARTSelfTestFailed";
           expr = withDriveByHost "host_device:smartd_selftest_errors:count15m > 0";
           annotations = {
-            summary = "Disk {{ $labels.device }} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.host }} failed a SMART self-test.";
+            summary = "Disk ${driveDevice} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.host }} failed a SMART self-test.";
             logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="smartd.service"}'';
           };
         }
@@ -909,7 +923,7 @@ in
           alert = "SMARTStatusFailed";
           expr = withDrive "smartctl_device_smart_status == 0";
           for = "5m";
-          annotations.summary = "Disk {{ $labels.device }} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} reports SMART failure.";
+          annotations.summary = "Disk ${driveDevice} ({{ $labels.model_name }}, {{ $labels.serial_number }}) on {{ $labels.instance }} reports SMART failure.";
         }
         # Any failed systemd unit, on any machine: this covers failed nightly
         # upgrades, sops secrets, and services which died after a switch.
@@ -1109,6 +1123,17 @@ in
         # right. Not filtered to external peers: the internal dn42i_*
         # sessions are expected to bounce, and it is the alerts, not the
         # record, that leave them out.
+        # SMART error counters keyed by drive rather than device name, for
+        # SMARTErrorLogGrowing: increase() over a device-named counter
+        # compares two drives' counts across a renumber.
+        {
+          record = "instance_serial:smartctl_device_error_log_count:max";
+          expr = withDrive "smartctl_device_error_log_count";
+        }
+        {
+          record = "instance_serial:smartctl_device_media_errors:max";
+          expr = withDrive "smartctl_device_media_errors";
+        }
         {
           record = "instance_name_ip_version:bird_protocol_up:changes1h";
           expr = ''changes((max by (instance, name, ip_version) (bird_protocol_up{proto="BGP"}))[1h:15s])'';
