@@ -16,6 +16,7 @@
     # Service configuration.
     ./agent-triage.nix
     ../modules/coredns.nix
+    ./asus-ec-sensors.nix
     ./dev.nix
     ./hba-metrics.nix
     ./inventory-metrics.nix

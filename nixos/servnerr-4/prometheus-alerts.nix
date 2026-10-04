@@ -611,12 +611,15 @@ in
         # A fan header which has spun within the week and now reads zero.
         # Headers with nothing attached never spin, so they never match,
         # and the week keeps a dead fan firing well past the day it stopped.
-        # The ASUS EC's fan is the chipset fan, which stops by design when
-        # the chipset is cool.
+        # The ASUS EC's chipset fan stops by design when the chipset is cool;
+        # it is matched by label, since its sensor number depends on which
+        # other EC fans the driver reports.
         {
           alert = "FanStopped";
           expr = ''
-            node_hwmon_fan_rpm{instance!~${excludedInstances},chip!="platform_asus_ec_sensors"} == 0
+            node_hwmon_fan_rpm{instance!~${excludedInstances}} == 0
+              unless on (instance, chip, sensor)
+            node_hwmon_sensor_label{chip="platform_asus_ec_sensors",label="Chipset"}
               and on (instance, chip, sensor)
             max_over_time(node_hwmon_fan_rpm[7d]) > 0
           '';
