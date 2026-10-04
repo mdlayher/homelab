@@ -46,10 +46,15 @@ Guidance for agents working in this repository.
   shared file it must decrypt; `nixos/secrets/common.yaml` at minimum, since
   the user password hashes there are `neededForUsers`.
 - The admin age key lives at `~/.config/sops/age/keys.txt` on the
-  workstation. In the linuxdev container the only decryption key belongs
-  to the `sops-gate` user, reachable solely via `sops-gate <verb>`, which
-  is `sudo -u sops-gate` behind a YubiKey touch on every call; agents
-  cannot read or edit secrets. For sops changes, compose the exact command
+  workstation. In the linuxdev container the decryption key for every
+  file belongs to the `sops-gate` user, reachable solely via
+  `sops-gate <verb>`, which is `sudo -u sops-gate` behind a YubiKey touch
+  on every call; agents cannot read or edit secrets. The one exception is
+  `nixos/inventory/secrets.yaml`, which also decrypts to the container
+  user's own key (`sops -d` works there with no gate) so agents can check
+  addresses and MACs. Its plaintext stays out of everything agents write:
+  repo files, commit messages, docs, plans. Editing it still goes through
+  the gate. For sops changes, compose the exact command
   for Matt to run (`!` in the prompt works): `sops-gate edit <file>` in the
   container, or plain `sops <file>` on the workstation. The gate forces
   nano as the editor, so scripted edits without printing plaintext happen

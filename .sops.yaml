@@ -7,9 +7,14 @@
 # - linuxdev-gate: the development container's secrets gate, generated in
 #   place by its sops-gate-keygen unit (see nixos/servnerr-4/dev.nix); lets
 #   the admin edit secrets from the container behind a YubiKey touch
+# - linuxdev-agent: the development container user's own key in
+#   ~/.config/sops/age/keys.txt, with no gate; reads the inventory only,
+#   so agents can check addresses and MACs. Editing still goes through the
+#   gate.
 keys:
   - &mdlayher age136z4kwkfsqlvaa7e6f5c79rzjstg4ktq2lw6zadv23c038jnafssp2mngs
   - &linuxdev-gate age1szssulmqnc0n650xcqvn7rpu2zjwnhrta4tvcm7tpxtmg26lsqysna0fks
+  - &linuxdev-agent age1v6mhrhylaretpey25vyax8032vg060yrg5mrs3rz5gvstzqs2pcqsaqhzj
   - &servnerr-4 age1dt4928w6c2py0rzcnwntdr6dcf62mf8wkhe3hm8mnscqxcewrdkqz6jh3d
   - &routnerr-3 age1vgxvcs9q6zr4l8udgxgnzj02rzcqy4dt9x2gz9u2k97dnhj88pvqlhlvk8
   - &edge-pdx age1323pt5w9df0ealmd0xy954ajy5gtrhvdlh4nf3d4pjqvnvvqfq3qjf5lpa
@@ -27,11 +32,21 @@ creation_rules:
           - *mdlayher
           - *linuxdev-gate
           - *routnerr-3
-  - path_regex: nixos/(secrets/common|inventory/secrets)\.yaml$
+  - path_regex: nixos/secrets/common\.yaml$
     key_groups:
       - age:
           - *mdlayher
           - *linuxdev-gate
+          - *routnerr-3
+          - *servnerr-4
+          - *edge-pdx
+          - *edge-iad
+  - path_regex: nixos/inventory/secrets\.yaml$
+    key_groups:
+      - age:
+          - *mdlayher
+          - *linuxdev-gate
+          - *linuxdev-agent
           - *routnerr-3
           - *servnerr-4
           - *edge-pdx
