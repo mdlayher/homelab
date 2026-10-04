@@ -56,7 +56,7 @@ let
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
   # units, including nightly upgrades), and the recording rule feeds per-host
   # log freshness into Prometheus for the LokiHostLogsStalled alert; see
-  # prometheus-alerts.nix. LogQL regexes use raw backtick strings.
+  # alerts/systems.nix. LogQL regexes use raw backtick strings.
   #
   # Every pattern-matching rule is scoped to the units which can legitimately
   # produce its message (the kernel logs with no unit, PID 1 as init.scope).
@@ -149,14 +149,14 @@ let
           # attribute counter is visible only in this log line. It is
           # recorded rather than alerted on here so that the alert can join
           # the drive's serial from the exporter; see SMARTSelfTestFailed in
-          # prometheus-alerts.nix. The device keeps its kernel name, without
+          # alerts/storage.nix. The device keeps its kernel name, without
           # the /dev/ prefix, which is what that join matches on.
           {
             record = "host_device:smartd_selftest_errors:count15m";
             expr = ''sum by (host, device) (count_over_time({job="systemd-journal", unit="smartd.service"} |~ `Self-Test Log error count increased|new Self-Test Log error` | regexp `^Device: /dev/(?P<device>[^ ,]+)` [15m]))'';
           }
           # IS-IS adjacencies dropped by BFD, per circuit end, for
-          # ISISAdjacencyFlapping in prometheus-alerts.nix. The window
+          # ISISAdjacencyFlapping in alerts/routing.nix. The window
           # matches the ruler's default one-minute interval, so each drop
           # lands in one sample. Interconnect circuits only, so the IS-IS
           # lab (isisLab in dev.nix) records nothing.
@@ -165,7 +165,7 @@ let
             expr = ''sum by (host, circuit) (count_over_time({job="systemd-journal", unit="frr.service"} |= `bfd session went down` | regexp `Adjacency to \S+ \((?P<circuit>[^)]+)\)` | circuit =~ "icl-.+" [1m]))'';
           }
           # The binary cache failing a client's nightly upgrade, for
-          # NixCacheFailing in prometheus-alerts.nix: unreachable, or serving
+          # NixCacheFailing in alerts/systems.nix: unreachable, or serving
           # a path whose signature the client does not trust. Either way the
           # client builds that path itself instead.
           {

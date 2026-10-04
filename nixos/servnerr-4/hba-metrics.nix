@@ -2,7 +2,7 @@
 # node_exporter's textfile collector; the mpt3sas driver exposes no hwmon
 # sensor, so Broadcom's storcli reads them. The card carries one SAS3008
 # per controller, each with its own ROC (RAID-on-chip) sensor, and cools
-# passively. See HBATemperatureHigh in prometheus-alerts.nix.
+# passively. See HBATemperatureHigh in alerts/hardware.nix.
 {
   config,
   lib,

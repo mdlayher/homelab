@@ -461,7 +461,7 @@ let
     );
   };
 
-  alerts = import ./prometheus-alerts.nix {
+  alerts = import ./alerts {
     inherit lib anycastServices isisRouterCounts;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));

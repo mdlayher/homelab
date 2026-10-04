@@ -8,7 +8,7 @@
 # changes persists like any other, and the nightly upgrade silently replaces
 # it; only the revision baked into the system tells. See the
 # NixOSSystemUnpersisted and NixOSSystemDirty alerts in
-# nixos/servnerr-4/prometheus-alerts.nix.
+# nixos/servnerr-4/alerts/systems.nix.
 { config, lib, ... }:
 
 let

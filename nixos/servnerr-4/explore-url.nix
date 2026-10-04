@@ -5,7 +5,7 @@
 #
 # Shared because the alerts which want such a link are split across two rule
 # sets: Loki's own ruler in nixos/servnerr-4/loki.nix, and the Prometheus
-# rules in nixos/servnerr-4/prometheus-alerts.nix, which alert on what that
+# rules in nixos/servnerr-4/alerts/, which alert on what that
 # ruler records.
 { lib, tailnetDomain }:
 

@@ -177,7 +177,7 @@ in
     # Pool health and capacity metrics; node_exporter's zfs collector only
     # covers ARC and I/O stats. Scraping and host alerting are wired up
     # automatically by discovery in prometheus.nix, plus a pool health alert
-    # in prometheus-alerts.nix.
+    # in alerts/storage.nix.
     prometheus.exporters.zfs.enable = true;
 
     # Enable tarsnap backups.
