@@ -14,6 +14,7 @@
     ../modules/nftables-exporter.nix
 
     # Service configuration.
+    ./agent-triage.nix
     ../modules/coredns.nix
     ./dev.nix
     ./inventory-metrics.nix

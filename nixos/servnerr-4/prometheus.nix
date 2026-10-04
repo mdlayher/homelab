@@ -720,6 +720,21 @@ in
           repeat_interval = "1h";
           receiver = "default";
           routes = [
+            # Every alert, notices and the dead man's switch aside, also goes
+            # to the agent for a first diagnosis (see agent-triage.nix), and
+            # matching continues so the routes below still notify. A group
+            # is diagnosed once: its repeats a day apart reach the receiver,
+            # which skips a group it diagnosed within its cooldown.
+            {
+              matchers = [
+                "notify != ops"
+                "alertname != PrometheusWatchdog"
+              ];
+              receiver = "triage";
+              continue = true;
+              group_wait = "30s";
+              repeat_interval = "1d";
+            }
             # Dead man's switch: keep pinging the heartbeat service while the
             # PrometheusWatchdog alert fires; it pages when the pings stop.
             {
@@ -739,6 +754,10 @@ in
               receiver = "ops";
               repeat_interval = "1d";
             }
+            # Everything else. Explicit because the triage route above
+            # matches first: once any child route matches, alertmanager never
+            # falls back to the parent's receiver, continue or not.
+            { receiver = "default"; }
           ];
         };
         receivers = [
@@ -759,6 +778,16 @@ in
                 title = ''{{ template "homelab.discord.notice.title" . }}'';
                 message = ''{{ template "homelab.discord.notice" . }}'';
                 send_resolved = false;
+              }
+            ];
+          }
+          {
+            name = "triage";
+            webhook_configs = [
+              {
+                url = "http://127.0.0.1:9097/";
+                send_resolved = false;
+                max_alerts = 20;
               }
             ];
           }
