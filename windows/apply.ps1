@@ -18,10 +18,12 @@ function Fix([string]$what, [scriptblock]$action) {
     if ($Check) { "would: $what" } else { "apply: $what"; & $action }
 }
 
-# The installed version of a winget package, or $null.
+# The installed version of a winget package, or $null. Some installers
+# register their version with a leading v (Alloy's v1.20.1), which is
+# dropped to compare with the pinned version.
 function Installed-Version([string]$id) {
     $out = winget list --id $id --exact --accept-source-agreements --disable-interactivity 2>$null | Out-String
-    if ($out -match "\s$([regex]::Escape($id))\s+(\S+)") { return $Matches[1] }
+    if ($out -match "\s$([regex]::Escape($id))\s+v?(\S+)") { return $Matches[1] }
     return $null
 }
 
@@ -33,9 +35,14 @@ foreach ($p in $config.packages) {
     Fix "$verb $($p.id) $have -> $($p.version)" {
         foreach ($s in $p.services) { Stop-Service $s -ErrorAction SilentlyContinue }
         foreach ($n in $p.processes) { Stop-Process -Name $n -Force -ErrorAction SilentlyContinue }
-        winget $verb --id $p.id --exact --version $p.version --scope machine --silent `
-            --accept-package-agreements --accept-source-agreements --disable-interactivity
-        if ($LASTEXITCODE -ne 0) { throw "winget $verb $($p.id) failed: $LASTEXITCODE" }
+        try {
+            winget $verb --id $p.id --exact --version $p.version --scope machine --silent `
+                --accept-package-agreements --accept-source-agreements --disable-interactivity
+            if ($LASTEXITCODE -ne 0) { throw "winget $verb $($p.id) failed: $LASTEXITCODE" }
+        } finally {
+            # Services stopped for the upgrade start again even when it fails.
+            foreach ($s in $p.services) { Start-Service $s -ErrorAction SilentlyContinue }
+        }
     }
 }
 
@@ -78,6 +85,18 @@ foreach ($f in $config.files) {
         Fix "update $($f.path)" {
             Copy-Item $new $f.path -Force
             if (Get-Service $f.service -ErrorAction SilentlyContinue) { Restart-Service $f.service }
+        }
+    }
+}
+
+# Alloy's service arguments, read from the registry when the service starts.
+$alloyKey = 'HKLM:\SOFTWARE\GrafanaLabs\Alloy'
+if (Test-Path $alloyKey) {
+    $have = @((Get-ItemProperty $alloyKey).Arguments)
+    if (($have -join "`n") -ne ($config.alloyArguments -join "`n")) {
+        Fix 'Alloy service arguments' {
+            Set-ItemProperty $alloyKey -Name Arguments -Type MultiString -Value ([string[]]$config.alloyArguments)
+            Restart-Service Alloy
         }
     }
 }

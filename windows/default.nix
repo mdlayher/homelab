@@ -134,6 +134,11 @@ let
         port = windows.exporters.hwinfo;
       }
       {
+        name = "Alloy";
+        protocol = "TCP";
+        port = windows.exporters.alloy;
+      }
+      {
         name = "ICMPv4 echo";
         protocol = "ICMPv4";
         icmpType = "8";
@@ -158,6 +163,15 @@ let
         path = ''C:\Program Files\GrafanaLabs\Alloy\config.alloy'';
         service = "Alloy";
       }
+    ];
+
+    # The arguments Alloy's service runs with, kept in the registry: the
+    # installer's own, and its HTTP server on every address for Prometheus.
+    alloyArguments = [
+      "run"
+      ''C:\Program Files\GrafanaLabs\Alloy\config.alloy''
+      ''--storage.path=C:\ProgramData\GrafanaLabs\Alloy\data''
+      "--server.http.listen-addr=0.0.0.0:${toString windows.exporters.alloy}"
     ];
 
     # The anycast NTP address, served at every site; see nixos/inventory/.
