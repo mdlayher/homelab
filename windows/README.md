@@ -15,18 +15,21 @@ applies it over SSH. Nothing applies it nightly.
   adapter's MAC, which the inventory's records for these machines assume.
 - `apply.ps1`: runs on the machine; installs or upgrades what differs from
   the pins, creates what is missing, and starts what is stopped.
-- `deploy`: builds, uploads and applies over SSH as the admin, to the
-  machines named or to every machine in `hosts.nix` that is on.
+- `deploy`: builds, uploads and applies over SSH as the admin, to one
+  machine or, with `--all`, to every machine in `hosts.nix` that is on.
+  Windows ships no logs, so it sends each deploy's provenance to Loki
+  itself, under `{unit="deploy"}`, and a finished one is announced in the
+  Discord ops channel; see lib/deploy.sh.
 - `secrets.yaml`: HWiNFO's license key, which `deploy` installs. It
   decrypts with the admin's key or the development container's own, so a
   deploy needs no gate.
 
 ```sh
 # Show how the machines differ from this checkout; changes nothing.
-windows/deploy --check
+windows/deploy --check --all
 
 # Apply to every machine, or to one.
-windows/deploy
+windows/deploy --all
 windows/deploy gamnerr-1
 ```
 

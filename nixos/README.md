@@ -121,6 +121,11 @@ nixos/deploy <host>
 nixos/deploy <host> test
 nixos/deploy <host> switch
 
+# Show what would change (dry-activate), or deploy every machine in
+# blast-radius order.
+nixos/deploy --check <host>
+nixos/deploy --all
+
 # Or on the machine itself.
 sudo nixos-rebuild switch --flake /home/mdlayher/src/homelab#<host>
 ```

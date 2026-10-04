@@ -87,9 +87,21 @@ if [[ $check == yes ]]; then
   exit 1
 fi
 
+# A service restarted just before can still hold a file on / open for
+# writing, which makes remounting it read-only fail as busy, so ro is
+# retried for a few seconds and only the last attempt's error is shown.
+restore_ro() {
+  local i
+  for i in {1..9}; do
+    ro >/dev/null 2>&1 && return
+    sleep 1
+  done
+  ro >/dev/null
+}
+
 if findmnt -no OPTIONS / | tr , '\n' | grep -qx ro; then
   rw >/dev/null
-  trap 'ro >/dev/null; rm -rf "$dir"' EXIT
+  trap 'restore_ro; rm -rf "$dir"' EXIT
 fi
 
 declare -A todo=()

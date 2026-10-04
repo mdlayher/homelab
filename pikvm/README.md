@@ -23,6 +23,10 @@ pikvm/deploy --check
 pikvm/deploy
 ```
 
+Each deploy logs its provenance in the KVM's journal, which reaches Loki
+under `{unit="deploy"}`, and a finished one is announced in the Discord ops
+channel; see lib/deploy.sh.
+
 A deploy may restart kvmd (open web sessions drop, and a change to the
 override rebuilds the USB gadget, so the server's KVM keyboard, mouse and
 serial port disconnect and return), consrv (open console sessions drop)

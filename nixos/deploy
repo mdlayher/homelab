@@ -1,16 +1,29 @@
 #!/usr/bin/env bash
 # Deploys a machine from this flake over SSH.
 #
-# Usage: nixos/deploy <host>|--all [action] [nix eval args...]
+# Usage: nixos/deploy [--check] <host>|--all [action] [nix eval args...]
 #
-# action is one of switch (default), test, boot, or dry-activate. On the
-# router, prefer test first: it activates without a boot entry, so a reboot
-# reverts it. --all deploys every machine in blast-radius order: the edges,
-# then the server, then the router.
+# action is one of switch (default), test, boot, or dry-activate; --check is
+# dry-activate, which shows what would change. On the router, prefer test
+# first: it activates without a boot entry, so a reboot reverts it. --all
+# deploys every machine in blast-radius order: the edges, then the server,
+# then the router. With a single machine in the flake, host may be left out.
 set -euo pipefail
 
+check=no
+if [[ ${1:-} == --check ]]; then
+  check=yes
+  shift
+fi
+if [[ $# -eq 0 ]]; then
+  mapfile -t machines < <(cd "$(dirname "$0")/.." && nix eval --json .#nixosConfigurations \
+    --apply builtins.attrNames | jq -r '.[]')
+  if [[ ${#machines[@]} -eq 1 ]]; then
+    set -- "${machines[0]}"
+  fi
+fi
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <host>|--all [switch|test|boot|dry-activate] [nix eval args...]" >&2
+  echo "usage: $0 [--check] <host>|--all [switch|test|boot|dry-activate] [nix eval args...]" >&2
   exit 2
 fi
 
@@ -27,8 +40,13 @@ if [[ $1 == --all ]]; then
 else
   hosts=("$1")
 fi
-action=${2:-switch}
-shift $(( $# >= 2 ? 2 : 1 ))
+if [[ $check == yes ]]; then
+  action=dry-activate
+  shift
+else
+  action=${2:-switch}
+  shift $(( $# >= 2 ? 2 : 1 ))
+fi
 
 # Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
 export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
@@ -78,19 +96,12 @@ fi
 sshopts=(-o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h:%p -o ControlPersist=1h)
 export NIX_SSHOPTS="${sshopts[*]}${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
 
-# Provenance for the target's journal: which tree is being deployed, and by
-# whom, so a later investigation can tell a deploy (test from a dirty
-# checkout included) from a manual change on the machine. Written by the
+# Provenance for the target's journal (see lib/deploy.sh), written by the
 # unprivileged SSH user through logger, so it costs no extra sudo touch;
-# journalctl -t deploy on the machine, or unit="deploy" in Loki, finds
-# the lines. Dirtiness follows nix's definition: modified tracked
-# files, not untracked ones, which is also what strips the revision from the
-# built system. The closing line is best effort: a deploy that succeeded
-# and then lost SSH is still a successful deploy.
-rev="$(git rev-parse --short=12 HEAD)"
-branch="$(git rev-parse --abbrev-ref HEAD)"
-if git diff-index --quiet HEAD --; then dirty=no; else dirty=yes; fi
-by="$(id -un)@$(hostname -s)"
+# journalctl -t deploy on the machine, or unit="deploy" in Loki, finds the
+# lines. The closing line is best effort: a deploy that succeeded and then
+# lost SSH is still a successful deploy.
+source lib/deploy.sh
 log() {
   local host=$1 addr=${DEPLOY_ADDRESS:-$1}
   shift
@@ -166,15 +177,15 @@ echo "deploy: a pause at activation may be waiting for a YubiKey touch" >&2
 for host in "${hosts[@]}"; do
   echo "deploy: $action $host" >&2
   if [[ $action != dry-activate ]]; then
-    log "$host" "$action starting: rev=$rev branch=$branch dirty=$dirty user=$by"
+    log "$host" "$(deploy_line "$action" starting)"
   fi
   status=0
   deploy "$host" "$action" "$@" || status=$?
   if [[ $action != dry-activate ]]; then
     if [[ $status -eq 0 ]]; then
-      log "$host" "$action finished: rev=$rev closure=$closure" || echo "deploy: could not log to $host" >&2
+      log "$host" "$(deploy_line "$action" finished "closure=$closure")" || echo "deploy: could not log to $host" >&2
     else
-      log "$host" "$action failed: rev=$rev status=$status" || echo "deploy: could not log to $host" >&2
+      log "$host" "$(deploy_line "$action" failed "status=$status")" || echo "deploy: could not log to $host" >&2
     fi
   fi
   if [[ $status -ne 0 ]]; then

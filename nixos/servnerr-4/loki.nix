@@ -4,6 +4,7 @@
 # svc:loki Tailscale Service; see nixos/servnerr-4/prometheus.nix.
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -52,6 +53,10 @@ let
   consrvAuth = verdict: consrvLines ": ${verdict} public key authentication";
   consrvSessions = consrvLines ": opened serial connection ";
 
+  # The machines a NixOS deploy reaches, which announce each new system in
+  # the ops channel themselves (update-notify in modules/common.nix).
+  nixosHosts = lib.concatStringsSep "|" (lib.attrNames inputs.self.nixosConfigurations);
+
   # Log-derived rules, evaluated continuously by the ruler: alerts cover what
   # the metrics stack cannot see (SystemdUnitFailed already catches failed
   # units, including nightly upgrades), and the recording rule feeds per-host
@@ -69,6 +74,19 @@ let
         name = "logs";
         # Alerts sorted alphabetically, with the recording rule last.
         rules = [
+          {
+            # A finished deploy to a machine that is not NixOS (the KVM, the
+            # Windows PCs; see lib/deploy.sh), announced in the ops channel
+            # beside the NixOS machines' own announcements; see the notify
+            # route in prometheus.nix.
+            alert = "DeployFinished";
+            expr = ''sum by (host, action, rev, dirty) (count_over_time({unit="deploy", host!~"${nixosHosts}"} |= ` finished: ` | regexp `^(?P<action>\S+) finished: rev=(?P<rev>\S+) dirty=(?P<dirty>\S+)` [5m]))'';
+            labels.notify = "ops";
+            annotations = {
+              summary = ''Deployed [{{ $labels.rev }}](https://github.com/mdlayher/homelab/commit/{{ $labels.rev }}){{ if eq $labels.dirty "yes" }} + uncommitted changes{{ end }}'';
+              logs_url = exploreURL ''{host="__host__", unit="deploy"}'';
+            };
+          }
           {
             alert = "KernelIOError";
             expr = ''sum by (host) (count_over_time({job="systemd-journal", unit=""} |~ `(?i)i/o error` [15m])) > 0'';

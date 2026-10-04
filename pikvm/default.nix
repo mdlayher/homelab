@@ -255,6 +255,15 @@ let
             replacement   = "session.scope"
             target_label  = "unit"
           }
+
+          // pikvm/deploy's provenance lines, keyed off their syslog
+          // identifier as on the machines, so {unit="deploy"} finds them.
+          rule {
+            source_labels = ["__journal_syslog_identifier"]
+            regex         = "deploy"
+            replacement   = "deploy"
+            target_label  = "unit"
+          }
         }
 
         loki.source.journal "journal" {

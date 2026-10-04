@@ -35,6 +35,11 @@ Guidance for agents working in this repository.
 - The Windows PCs are likewise outside the nightly upgrade:
   `windows/deploy <host>` applies what `windows/` builds, and
   `windows/deploy --check <host>` reports drift. See windows/README.md.
+- Every deploy script takes `[--check] <host>|--all`, the host optional
+  where the script has a single target (the KVM), and logs provenance
+  under `{unit="deploy"}` in Loki (lib/deploy.sh). NixOS machines announce
+  each new system in the Discord ops channel themselves; deploys to the KVM
+  and the Windows PCs are announced there from those log lines.
 - To prove a refactor is a no-op, compare
   `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath`
   before and after: identical drv paths mean identical systems.
