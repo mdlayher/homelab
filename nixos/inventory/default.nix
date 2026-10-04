@@ -320,6 +320,7 @@
           ap-basement = { };
           ap-laundry = { };
           ap-livingroom = { };
+          gamnerr-1 = { };
           hass.ipv6 = "prefixstable";
           nerr-4.ipv6 = "eui64";
           pdu01 = { };

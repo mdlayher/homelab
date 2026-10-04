@@ -185,9 +185,23 @@ let
         node.port = 9100;
       };
     };
+    # Windows machines run windows_exporter and are never on around the
+    # clock, so none of them alerts.
+    gamnerr-1 = {
+      jobs = {
+        windows.port = 9182;
+      };
+      alerts = false;
+    };
     nerr-4 = {
       jobs = {
         node.port = 9100;
+      };
+      alerts = false;
+    };
+    theatnerr-2 = {
+      jobs = {
+        windows.port = 9182;
       };
       alerts = false;
     };
