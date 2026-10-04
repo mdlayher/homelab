@@ -60,14 +60,62 @@ let
         }
       '') channels
     )
+    + ''
+
+      // Steam's record of the game processes it starts and stops, from the
+      // lines naming an app: "AppID <id> adding PID <pid> as a tracked
+      // process <command line>", "AppID <id> no longer tracking PID <pid>,
+      // exit code <n>" and "Remove <id> from running list". A machine
+      // without Steam matches no file. The lines carry the local time.
+      local.file_match "steam" {
+        path_targets = [{"__path__" = "C:/Program Files (x86)/Steam/logs/gameprocess_log.txt"}]
+      }
+
+      loki.source.file "steam" {
+        targets       = local.file_match.steam.targets
+        tail_from_end = true
+        forward_to    = [loki.process.steam.receiver]
+      }
+
+      loki.process "steam" {
+        forward_to = [loki.write.server.receiver]
+
+        stage.static_labels {
+          values = {
+            host = string.to_lower(sys.env("COMPUTERNAME")),
+            job  = "steam",
+          }
+        }
+
+        stage.match {
+          selector = "{job=\"steam\"} !~ \"^\\\\[[^]]+\\\\] (AppID|Remove) [0-9]+ \""
+          action   = "drop"
+        }
+
+        stage.regex {
+          expression = "^\\[(?P<time>[^]]+)\\] "
+        }
+
+        stage.timestamp {
+          source   = "time"
+          format   = "2006-01-02 15:04:05"
+          location = "Local"
+        }
+      }
+    ''
   );
 
-  # windows_exporter's configuration: its default collectors, and time for
-  # the clock's offset from its NTP source.
+  # windows_exporter's configuration: its default collectors, time for the
+  # clock's offset from its NTP source, diskdrive for each drive's status,
+  # tcp, update for pending Windows updates, and scheduled_task for HWiNFO's
+  # logon task alone.
   windowsExporterConfig = pkgs.writeText "config.yaml" ''
     # Managed by windows/deploy from the homelab repository: edit windows/ there.
     collectors:
-      enabled: cpu,logical_disk,memory,net,os,physical_disk,service,system,time
+      enabled: cpu,diskdrive,logical_disk,memory,net,os,physical_disk,scheduled_task,service,system,tcp,time,update
+    collector:
+      scheduled_task:
+        include: "/HWiNFO"
   '';
 
   config = {
