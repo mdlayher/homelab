@@ -795,6 +795,12 @@ in
           # dn42, ours or anyone's, may never initiate toward LANs or WANs.
           iifname { "dn42e-*", "dn42i-*" } counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
 
+          # Hosts on our dn42 VLANs are tailnet nodes too, so tailscaled on
+          # the LANs probes their dn42 addresses as candidate endpoints, as
+          # it does the router's (see input_dn42i). Dropped without logging,
+          # above the reject that would otherwise count them.
+          oifname "dn42i-*" udp dport { $tailscale_router, $tailscale_relay } counter drop comment "Tailscale probes toward dn42 internal hosts"
+
           # A deploy from the development container to a device it manages
           # over SSH, above the drop that keeps restricted LANs apart.
           ip saddr . ip daddr @deploy_ssh_v4 tcp dport $ssh counter accept comment "deploy SSH"

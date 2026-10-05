@@ -540,6 +540,26 @@ let
     );
   };
 
+  # Every alert, notices and the dead man's switch aside, also goes to the
+  # agent for a first diagnosis (see agent-triage.nix), and matching
+  # continues so the routes after it still notify. A group is diagnosed
+  # once: its repeats a day apart reach the receiver, which skips a group it
+  # diagnosed within its cooldown.
+  triageRoute = {
+    matchers = [
+      "notify != ops"
+      "alertname != PrometheusWatchdog"
+    ];
+    receiver = "triage";
+    continue = true;
+    group_wait = "30s";
+    repeat_interval = "1d";
+  };
+
+  # The LG TVs are offline overnight on a schedule set on each TV, 02:00 to
+  # 07:00 local; the mute runs a little past it while a TV comes back.
+  lgtvOffline = "lgtv-offline";
+
   alerts = import ./alerts {
     inherit lib anycastServices isisRouterCounts;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
@@ -791,6 +811,24 @@ in
       configuration = {
         templates = [ (toString alertmanagerTemplates) ];
 
+        time_intervals = [
+          {
+            name = lgtvOffline;
+            time_intervals = [
+              {
+                times = [
+                  {
+                    start_time = "02:00";
+                    end_time = "07:15";
+                  }
+                ];
+                # The homelab's zone, set in modules/common.nix.
+                location = config.time.timeZone;
+              }
+            ];
+          }
+        ];
+
         route = {
           group_by = [ "alertname" ];
           group_wait = "10s";
@@ -798,21 +836,16 @@ in
           repeat_interval = "1h";
           receiver = "default";
           routes = [
-            # Every alert, notices and the dead man's switch aside, also goes
-            # to the agent for a first diagnosis (see agent-triage.nix), and
-            # matching continues so the routes below still notify. A group
-            # is diagnosed once: its repeats a day apart reach the receiver,
-            # which skips a group it diagnosed within its cooldown.
+            # Glasshouse on the LG TVs, routed as everything else is but
+            # muted while the TVs are offline.
             {
-              matchers = [
-                "notify != ops"
-                "alertname != PrometheusWatchdog"
+              matchers = [ "job = glasshouse" ];
+              routes = map (r: r // { mute_time_intervals = [ lgtvOffline ]; }) [
+                triageRoute
+                { receiver = "default"; }
               ];
-              receiver = "triage";
-              continue = true;
-              group_wait = "30s";
-              repeat_interval = "1d";
             }
+            triageRoute
             # Dead man's switch: keep pinging the heartbeat service while the
             # PrometheusWatchdog alert fires; it pages when the pings stop.
             {
