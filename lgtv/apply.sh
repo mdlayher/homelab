@@ -1,8 +1,9 @@
 #!/bin/sh
 # Applies a built TV configuration on the TV, from the directory lgtv/deploy
 # unpacked it into: installs each file in the manifest that differs from the
-# TV. With --check it prints the differences and changes nothing, exiting 1
-# if there are any.
+# TV and merges the managed settings into Glasshouse's config.json. With
+# --check it prints the differences and changes nothing, exiting 1 if there
+# are any.
 #
 # POSIX sh, for webOS's BusyBox.
 set -eu
@@ -39,6 +40,21 @@ while read -r mode path; do
     mv -f "$path.new" "$path"
   fi
 done <manifest
+
+# Glasshouse reads config.json only at start, so a changed setting restarts
+# it.
+if [ $check = yes ]; then
+  diffs=$(/usr/bin/node settings.js --check settings.json /var/lib/tvweb/config.json)
+else
+  diffs=$(/usr/bin/node settings.js settings.json /var/lib/tvweb/config.json)
+fi
+if [ -n "$diffs" ]; then
+  changed=yes
+  echo "$diffs"
+  if [ $check = no ]; then
+    /var/lib/tvweb/tvwebctl restart
+  fi
+fi
 
 if [ $changed = no ]; then
   echo "up to date"

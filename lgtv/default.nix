@@ -22,12 +22,33 @@ let
     }
   ];
 
+  # Keys merged into Glasshouse's config.json by settings.js; the token and
+  # anything set in the dashboard stay as the TV has them. The device id
+  # keys Glasshouse's MQTT topics and Home Assistant entities, and its
+  # dashboard accepts only [a-z0-9_] there.
+  settings =
+    name:
+    let
+      id = lib.replaceStrings [ "-" ] [ "_" ] name;
+    in
+    assert lib.assertMsg (
+      builtins.match "[a-z0-9_]{1,64}" id != null
+    ) "lgtv: ${name} gives device id ${id}, outside [a-z0-9_]{1,64}";
+    {
+      device = {
+        inherit id name;
+      };
+      apps.hosts = [ fqdn.${name} ];
+    };
+
   tree =
     name:
     pkgs.runCommand "lgtv-${name}" { } (
       ''
         mkdir -p $out/tree
         install -m 0755 ${./apply.sh} $out/apply.sh
+        install -m 0644 ${./settings.js} $out/settings.js
+        install -m 0644 ${pkgs.writeText "settings.json" (builtins.toJSON (settings name))} $out/settings.json
         echo ${fqdn.${name}} > $out/fqdn
       ''
       + lib.concatMapStrings (f: ''

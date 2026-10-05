@@ -12,6 +12,9 @@ NixOS, so this directory builds what the repository manages on them and
   `nixos/ssh-keys.nix`, so every login takes a YubiKey touch.
   Built as `.#lgtv`.
 - `apply.sh`: runs on the TV; installs what differs.
+- `settings.js`: merges the Glasshouse settings `default.nix` manages into
+  its `config.json`, on the TV with Glasshouse's node, and leaves every
+  other key alone. A changed setting restarts Glasshouse.
 - `deploy`: builds and applies over SSH as root. The TVs ship no logs, so
   it sends each deploy's provenance to Loki itself, under
   `{unit="deploy"}`, and a finished one is announced in the Discord ops
@@ -39,9 +42,9 @@ Installed or set on the TV, and never copied off it:
 - the Homebrew Channel and its settings: SSH on, telnet off, updates
   blocked
 - Glasshouse itself, installed by its own `server/deploy.sh` from a
-  checkout of a release tag, and its settings in
-  `/var/lib/tvweb/config.json`, set in its dashboard; a TV's token goes in
-  `secrets.yaml` as well
+  checkout of a release tag, and the settings in
+  `/var/lib/tvweb/config.json` that `default.nix` does not manage, set in
+  its dashboard or by hand; a TV's token goes in `secrets.yaml` as well
 - the dropbear host key
 
 ## Setting up a TV
