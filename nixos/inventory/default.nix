@@ -380,12 +380,23 @@
         hosts = {
           living-room-hue-hub.ipv6 = "eui64";
           living-room-myq-hub = { };
+          office-printer = { };
+          prusa-core-one.ipv6 = "eui64";
+        };
+      };
+
+      # Second IoT VLAN, for rooted devices, kept apart from the appliances
+      # on iot0. It shares iot0's role, so its hosts are named in the same
+      # namespace.
+      iot1 = {
+        vlan = 67;
+        trusted = false;
+        role = "iot";
+        hosts = {
           office-lgc4 = {
             ipv6 = "eui64";
             wan = false;
           };
-          office-printer = { };
-          prusa-core-one.ipv6 = "eui64";
         };
       };
     };

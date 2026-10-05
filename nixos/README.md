@@ -54,7 +54,7 @@ references `inventory.roles.<role>`, so a hardware swap only touches the
 inventory, the new machine's own directory, and `flake.nix`. During a
 generation swap, append the new machine to the role: consumers which fan out
 over every holder cover both machines until the old one is removed.
-Untrusted subnets (`guest0`, `iot0`, `dev0`) only reach the internet and the
+Untrusted subnets (`guest0`, `iot0`, `iot1`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed, and
 VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).
