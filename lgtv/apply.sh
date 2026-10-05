@@ -59,8 +59,10 @@ fi
 if [ -n "$diffs" ]; then
   changed=yes
   echo "$diffs"
+  # From /, since this directory is deleted on exit and Glasshouse and its
+  # watchdog keep the working directory they start in.
   if [ $check = no ]; then
-    $tvwebctl restart
+    (cd / && $tvwebctl restart)
   fi
 fi
 
