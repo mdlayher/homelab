@@ -42,19 +42,12 @@ fi
 out=$(nix build --no-link --print-out-paths .#windows)
 
 # Provenance (see lib/deploy.sh). Windows ships no logs, so the lines go to
-# Loki directly, labeled as the machines' journal lines are, under
-# {unit="deploy"}, and a finished deploy is announced in the Discord ops
-# channel. Best effort: Loki being away never fails a deploy. A check changes
-# nothing, and logs and announces nothing.
+# Loki directly, and a finished deploy is announced in the Discord ops
+# channel. A check changes nothing, and logs and announces nothing.
 source lib/deploy.sh
 log() {
-  local host=$1 line=$2
   [[ ${#check[@]} -eq 0 ]] || return 0
-  jq -cn --arg host "$host" --arg line "$line" --arg ts "$(date +%s%N)" \
-    '{streams: [{stream: {host: $host, unit: "deploy", job: "deploy"}, values: [[$ts, $line]]}]}' |
-    curl -sfS -m 10 -H 'Content-Type: application/json' --data-binary @- \
-      https://loki.taild07ab.ts.net/loki/api/v1/push ||
-    echo "deploy: could not log $host's deploy to Loki" >&2
+  deploy_loki "$@"
 }
 
 # The license key joins the build's files outside the Nix store, which any

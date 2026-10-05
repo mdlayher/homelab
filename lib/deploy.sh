@@ -1,5 +1,5 @@
 # Provenance shared by the deploy scripts (nixos/deploy, pikvm/deploy,
-# windows/deploy): which tree is being deployed and by whom, written as lines
+# windows/deploy, lgtv/deploy): which tree is being deployed and by whom, written as lines
 # of the same shape by every deploy and found under {unit="deploy"} in Loki.
 # A later investigation can then tell a deploy, a dirty one included, from a
 # manual change on the machine. Sourced from the repository root.
@@ -30,6 +30,19 @@ deploy_line() {
     line="$line $*"
   fi
   echo "$line"
+}
+
+# deploy_loki <host> <line>: sends a provenance line to Loki directly, for
+# a machine that ships no logs of its own, labeled as the machines' journal
+# lines are, under {unit="deploy"}. Best effort: Loki being away never fails
+# a deploy.
+deploy_loki() {
+  local host=$1 line=$2
+  jq -cn --arg host "$host" --arg line "$line" --arg ts "$(date +%s%N)" \
+    '{streams: [{stream: {host: $host, unit: "deploy", job: "deploy"}, values: [[$ts, $line]]}]}' |
+    curl -sfS -m 10 -H 'Content-Type: application/json' --data-binary @- \
+      https://loki.taild07ab.ts.net/loki/api/v1/push ||
+    echo "deploy: could not log $host's deploy to Loki" >&2
 }
 
 # deploy_notify <host> <what>: announces in the Discord ops channel that

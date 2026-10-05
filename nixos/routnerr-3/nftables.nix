@@ -70,6 +70,8 @@ let
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
       flush set inet filter remote_access_v6
+      flush set inet filter deploy_ssh_v4
+      flush set inet filter deploy_ssh_v6
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -97,6 +99,16 @@ let
       ${lib.optionalString (
         remoteReaches != [ ]
       ) "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"}
+      ${lib.optionalString (lgtvDeploys != [ ]) ''
+        add element inet filter deploy_ssh_v4 { ${
+          lib.concatMapStringsSep ", " (tv: "${deployFrom.ipv4} . ${tv.ipv4}") lgtvDeploys
+        } }
+        ${lib.optionalString (lgtvDeploys6 != [ ])
+          "add element inet filter deploy_ssh_v6 { ${
+            lib.concatMapStringsSep ", " (tv: "${deployFrom.ula} . ${tv.ula}") lgtvDeploys6
+          } }"
+        }
+      ''}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 
@@ -166,6 +178,14 @@ let
       r: "${device.address} . ${inventory.hosts.${r.target}.ula} . ${r.protocol} . ${toString r.port}"
     ) device.reaches
   ) (lib.attrValues remote.devices);
+
+  # lgtv/deploy runs from the development container, which is on a
+  # restricted LAN, and reaches each TV over SSH (see lgtv/README.md).
+  lgtv = import ../../lgtv/hosts.nix;
+  deployFrom = inventory.hosts.linuxdev;
+  lgtvDeploys = map (name: inventory.hosts.${name}) lgtv.hosts;
+  # A TV with no known IPv6 address is reached over IPv4 alone.
+  lgtvDeploys6 = lib.filter (tv: tv.ula != null) lgtvDeploys;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -272,6 +292,7 @@ in
       define anycast4_dns = ${inventory.anycast4.dns}
       define anycast4_ntp = ${inventory.anycast4.ntp}
 
+      define ssh = 22
       define dns = 53
       define ntp = 123
       define http = 80
@@ -340,6 +361,15 @@ in
         # address, host address, protocol and port; see forward_remote.
         set remote_access_v6 {
           type ipv6_addr . ipv6_addr . inet_proto . inet_service
+        }
+
+        # Deploy hosts and the devices they reach over SSH, by source and
+        # destination address; see lgtvDeploys.
+        set deploy_ssh_v4 {
+          type ipv4_addr . ipv4_addr
+        }
+        set deploy_ssh_v6 {
+          type ipv6_addr . ipv6_addr
         }
 
         ${lib.optionalString icl ''
@@ -764,6 +794,11 @@ in
 
           # dn42, ours or anyone's, may never initiate toward LANs or WANs.
           iifname { "dn42e-*", "dn42i-*" } counter name dn42_forward_drop drop comment "dn42 to LANs and WANs"
+
+          # A deploy from the development container to a device it manages
+          # over SSH, above the drop that keeps restricted LANs apart.
+          ip saddr . ip daddr @deploy_ssh_v4 tcp dport $ssh counter accept comment "deploy SSH"
+          ip6 saddr . ip6 daddr @deploy_ssh_v6 tcp dport $ssh counter accept comment "deploy SSH"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.

@@ -379,6 +379,75 @@ let
   # none and reports zeros.
   environmentSensors = [ "ups01" ];
 
+  # The LG TVs' Glasshouse servers (lgtv/hosts.nix), read through the json
+  # exporter. Glasshouse takes its token only as a query parameter, so the
+  # target URLs are secrets: they are rendered from sops into a file_sd
+  # file, and each instance label is set there rather than taken from the
+  # URL.
+  lgtv = import ../../lgtv/hosts.nix;
+  glasshouseTargets = builtins.toJSON (
+    map (
+      host:
+      let
+        target = "${qualify host}:${toString lgtv.port}";
+      in
+      {
+        targets = [
+          "http://${target}/api/stats?k=${config.sops.placeholder.glasshouse_token}"
+        ];
+        labels = {
+          instance = target;
+          site = siteOf host;
+        };
+      }
+    ) lgtv.hosts
+  );
+
+  # Glasshouse's /api/stats fields as metrics. Units are Glasshouse's own:
+  # memory in kilobytes as /proc/meminfo reports it, frequency in MHz.
+  glasshouseMetric = name: help: path: {
+    name = "glasshouse_${name}";
+    inherit help;
+    path = "{${path}}";
+  };
+  glasshouseModule = {
+    metrics = [
+      (glasshouseMetric "soc_temperature_celsius" "SoC temperature." ".temp")
+      (glasshouseMetric "cpu_load_percent" "CPU load across all cores." ".load")
+      (glasshouseMetric "cpu_frequency_mhz" "CPU clock." ".mhz")
+      (glasshouseMetric "gpu_frequency_mhz" "GPU clock." ".gpuMhz")
+      (glasshouseMetric "memory_total_kilobytes" "Total memory." ".mem.total")
+      (glasshouseMetric "memory_available_kilobytes" "Available memory." ".mem.avail")
+      (glasshouseMetric "swap_total_kilobytes" "Total swap." ".swap.total")
+      (glasshouseMetric "swap_free_kilobytes" "Free swap." ".swap.free")
+      (glasshouseMetric "uptime_seconds" "Time since the TV booted." ".uptime")
+      (glasshouseMetric "wifi_signal_dbm" "Wi-Fi signal level." ".wifi.level")
+      (glasshouseMetric "wifi_link_quality" "Wi-Fi link quality." ".wifi.link")
+      (glasshouseMetric "current_milliamps" "Current draw." ".power.current_ma")
+      (glasshouseMetric "app_storage_used_percent" "App partition used." ".appStorage.pct")
+      (glasshouseMetric "oled_panel_hours" "OLED panel on-time." ".oled.panel_hours_exact")
+      (glasshouseMetric "oled_hours_since_compensation"
+        "OLED panel on-time since the last compensation run."
+        ".oled.hours_since_comp"
+      )
+      (
+        glasshouseMetric "network_receive_bytes_total" "Bytes received on the active interface."
+          ".netTotal.rx"
+        // {
+          valuetype = "counter";
+        }
+      )
+      (
+        glasshouseMetric "network_transmit_bytes_total" "Bytes sent on the active interface." ".netTotal.tx"
+        // {
+          valuetype = "counter";
+        }
+      )
+      # A JSON boolean, which the exporter reads as 1 or 0.
+      (glasshouseMetric "screen_on" "Whether the screen is on." ".powerState.screenOn")
+    ];
+  };
+
   # NixOS exporters running on this machine which probe jobs are relabeled
   # through.
   local = exporter: "${qualify hostName}:${toString exporters.${exporter}.port}";
@@ -659,6 +728,15 @@ in
       owner = "prometheus";
       restartUnits = [ "prometheus.service" ];
     };
+    # Set in Glasshouse's dashboard on each TV; see lgtv/README.md.
+    glasshouse_token.sopsFile = ../../lgtv/secrets.yaml;
+  };
+
+  # Glasshouse's target, its token in the URL; see glasshouseTargets.
+  # Prometheus rereads file_sd files on change, so no restart is needed.
+  sops.templates."prometheus-glasshouse.json" = {
+    content = glasshouseTargets;
+    owner = "prometheus";
   };
 
   # The prometheus module runs promtool check rules at build, where lint
@@ -818,6 +896,11 @@ in
 
       apcupsd.enable = true;
 
+      json = {
+        enable = true;
+        configFile = pkgs.writeText "json.yml" (builtins.toJSON { modules.glasshouse = glasshouseModule; });
+      };
+
       blackbox = {
         enable = true;
         configFile = pkgs.writeText "blackbox.yml" (
@@ -876,6 +959,29 @@ in
         metrics_path = "/api/export/prometheus/metrics";
         tls_config.insecure_skip_verify = true;
         static_configs = siteConfigs [ (at "pikvm" "${qualify "pikvm"}:443") ];
+      }
+
+      # The TV's Glasshouse stats through the json exporter. Every scrape
+      # makes Glasshouse collect afresh on the TV, so once a minute; it
+      # answers with its last reading after 4.5 s, inside the timeout. The
+      # instance label comes from the file, never the tokened URL.
+      {
+        job_name = "glasshouse";
+        scrape_interval = "1m";
+        scrape_timeout = "10s";
+        metrics_path = "/probe";
+        params.module = [ "glasshouse" ];
+        file_sd_configs = [ { files = [ config.sops.templates."prometheus-glasshouse.json".path ]; } ];
+        relabel_configs = [
+          {
+            source_labels = [ "__address__" ];
+            target_label = "__param_target";
+          }
+          {
+            target_label = "__address__";
+            replacement = local "json";
+          }
+        ];
       }
 
       # Blackbox probes for HTTP endpoints, internet reachability per address

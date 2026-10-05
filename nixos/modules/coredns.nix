@@ -312,9 +312,9 @@ in
       # Private zones, a server block rendered from the inventory secrets.
       import /run/credentials/coredns.service/${privateZonesCredential}
 
-      # LG TV firmware updates, answered NXDOMAIN: an update can close the
-      # exploit a TV is rooted with. The hosts are those the Homebrew
-      # Channel blocks on the TV itself. Logged, so a TV checking for an
+      # LG TV firmware updates, answered NXDOMAIN, so the TVs stay on the
+      # firmware they have. The hosts are those the Homebrew Channel blocks
+      # on the TV itself. Logged, so a TV checking for an
       # update shows in the journal.
       snu.lge.com su.lge.com su-ssl.lge.com su-dev.lge.com {
         log . {

@@ -64,6 +64,14 @@ creation_rules:
           - *mdlayher
           - *linuxdev-gate
           - *edge-iad
+  # Glasshouse's token on the LG TVs, set in its dashboard; the server's
+  # Prometheus scrapes with it.
+  - path_regex: lgtv/secrets\.yaml$
+    key_groups:
+      - age:
+          - *mdlayher
+          - *linuxdev-gate
+          - *servnerr-4
   # The deploy scripts' secrets: lib/ for every deploy script, windows/ for
   # windows/deploy. No machine decrypts these.
   - path_regex: (lib|windows)/secrets\.yaml$
