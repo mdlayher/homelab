@@ -1335,6 +1335,8 @@ in
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
                 shortName = n: lib.head (lib.splitString "." n);
+                # The LG TVs lgtv/deploy manages, by their inventory names.
+                tvs = (import ../../lgtv/hosts.nix).hosts;
               in
               # Root on the KVM controls the server's console and power, and
               # consrv's serial consoles can be left logged in, so each
@@ -1360,6 +1362,22 @@ in
                 Host ${m}
                   HostName ${m}.${inventory.tailnetDomain}
               '') machines
+              # The TVs are root over dropbear with the FIDO2 keys alone (see
+              # lgtv/README.md): a touch per connection, nothing shared or
+              # forwarded, as with the KVM. Their dropbear has no post-quantum
+              # key exchange, so ssh's warning about it is noise.
+              + lib.concatMapStrings (tv: ''
+                Host ${tv}
+                  HostName ${inventory.hosts.${tv}.dnsName}.${inventory.domain}
+              '') tvs
+              + ''
+                Host ${lib.concatStringsSep " " tvs} *.iot.${inventory.domain}
+                  User root
+                  ControlMaster no
+                  ControlPath none
+                  ForwardAgent no
+                  WarnWeakCrypto no
+              ''
               # dev0 neighbors authenticate with the dedicated dev0 key (see
               # devSSHKey), touch-free; IdentitiesOnly keeps the forwarded
               # agent's FIDO2 keys out of authentication, though the agent is
