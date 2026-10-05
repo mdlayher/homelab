@@ -12,17 +12,18 @@ NixOS, so this directory builds what the repository manages on them and
   `nixos/ssh-keys.nix`, so every login takes a YubiKey touch.
   Built as `.#lgtv`.
 - `apply.sh`: runs on the TV; installs what differs.
-- `settings.js`: merges the Glasshouse settings `default.nix` manages into
-  its `config.json`, on the TV with Glasshouse's node, and leaves every
-  other key alone. A changed setting restarts Glasshouse.
+- `settings.js`: merges the Glasshouse settings `default.nix` manages and
+  the token into its `config.json`, on the TV with Glasshouse's node, and
+  leaves every other key alone. A changed setting restarts Glasshouse.
 - `deploy`: builds and applies over SSH as root. The TVs ship no logs, so
   it sends each deploy's provenance to Loki itself, under
   `{unit="deploy"}`, and a finished one is announced in the Discord ops
   channel; see lib/deploy.sh.
-- `secrets.yaml`: the one Glasshouse token every TV is set to in its
-  dashboard, which the server's json exporter sends as a bearer token to
-  each. It decrypts with the admin's key or the server's; edit it from
-  the container through the gate.
+- `secrets.yaml`: the one Glasshouse token, which `deploy` writes into
+  each TV's `config.json` as `token` and the server's json exporter sends
+  as a bearer token to each. It decrypts with the admin's key, the
+  container user's and the server's; edit it from the container through
+  the gate.
 
 ```sh
 # Show how the TVs differ from this checkout; changes nothing.
@@ -47,7 +48,7 @@ Installed or set on the TV, and never copied off it:
 - Glasshouse itself, installed by its own `server/deploy.sh` from a
   checkout of a release tag, and the settings in
   `/var/lib/tvweb/config.json` that `default.nix` does not manage, set in
-  its dashboard or by hand; its token is the one in `secrets.yaml`
+  its dashboard or by hand
 - the dropbear host key
 
 ## Setting up a TV

@@ -36,6 +36,12 @@ else
 fi
 out=$(nix build --no-link --print-out-paths .#lgtv)
 
+# Glasshouse's token travels beside the built tree rather than in it, so it
+# never enters the Nix store. lgtv/secrets.yaml decrypts without the gate.
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+(umask 077 && sops -d --extract '["glasshouse_token"]' lgtv/secrets.yaml >"$stage/token")
+
 # Provenance (see lib/deploy.sh). The TVs ship no logs, so the lines go to
 # Loki directly, and a finished deploy is announced in the Discord ops
 # channel. A check changes nothing, and logs and announces nothing.
@@ -52,11 +58,13 @@ for host in "${hosts[@]}"; do
     failed=1
     continue
   fi
+  echo "== $host"
   log "$host" "$(deploy_line apply starting)"
   # One connection uploads and applies, so a deploy is one touch with no
-  # control socket left behind. /tmp is a tmpfs on webOS.
+  # control socket left behind. /tmp is a tmpfs on webOS. The TVs' dropbear
+  # has no post-quantum key exchange, so ssh's warning about it is noise.
   status=0
-  tar -C "$out/$host" -chf - . | ssh -o ControlMaster=no -o ControlPath=none "root@$(<"$out/$host/fqdn")" "
+  tar -chf - -C "$out/$host" . -C "$stage" token | ssh -o ControlMaster=no -o ControlPath=none -o WarnWeakCrypto=no "root@$(<"$out/$host/fqdn")" "
     rm -rf /tmp/lgtv-deploy && mkdir -m 0700 /tmp/lgtv-deploy && tar -C /tmp/lgtv-deploy -xf - &&
       sh /tmp/lgtv-deploy/apply.sh ${check[*]:-}" || status=$?
   if [[ $status -eq 0 ]]; then

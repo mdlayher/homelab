@@ -22,10 +22,10 @@ let
     }
   ];
 
-  # Keys merged into Glasshouse's config.json by settings.js; the token and
-  # anything set in the dashboard stay as the TV has them. The device id
-  # keys Glasshouse's MQTT topics and Home Assistant entities, and its
-  # dashboard accepts only [a-z0-9_] there.
+  # Keys merged into Glasshouse's config.json by settings.js, beside the
+  # token lgtv/deploy ships; anything set in the dashboard stays as the TV
+  # has it. The device id keys Glasshouse's MQTT topics and Home Assistant
+  # entities, and its dashboard accepts only [a-z0-9_] there.
   settings =
     name:
     let

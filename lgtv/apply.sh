@@ -52,9 +52,9 @@ if [ ! -x $tvwebctl ]; then
   exit 0
 fi
 if [ $check = yes ]; then
-  diffs=$(/usr/bin/node settings.js --check settings.json $config)
+  diffs=$(/usr/bin/node settings.js --check settings.json token $config)
 else
-  diffs=$(/usr/bin/node settings.js settings.json $config)
+  diffs=$(/usr/bin/node settings.js settings.json token $config)
 fi
 if [ -n "$diffs" ]; then
   changed=yes
