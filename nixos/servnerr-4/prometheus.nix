@@ -380,28 +380,22 @@ let
   environmentSensors = [ "ups01" ];
 
   # The LG TVs' Glasshouse servers (lgtv/hosts.nix), read through the json
-  # exporter. Glasshouse takes its token only as a query parameter, so the
-  # target URLs are secrets: they are rendered from sops into a file_sd
-  # file, and each instance label is set there rather than taken from the
-  # URL.
+  # exporter. The target is the stats URL, so each instance label is set
+  # to the TV's address and port rather than taken from it.
   lgtv = import ../../lgtv/hosts.nix;
-  glasshouseTargets = builtins.toJSON (
-    map (
-      host:
-      let
-        target = "${qualify host}:${toString lgtv.port}";
-      in
-      {
-        targets = [
-          "http://${target}/api/stats?k=${config.sops.placeholder.glasshouse_token}"
-        ];
-        labels = {
-          instance = target;
-          site = siteOf host;
-        };
-      }
-    ) lgtv.hosts
-  );
+  glasshouseTargets = map (
+    host:
+    let
+      target = "${qualify host}:${toString lgtv.port}";
+    in
+    {
+      targets = [ "http://${target}/api/stats" ];
+      labels = {
+        instance = target;
+        site = siteOf host;
+      };
+    }
+  ) lgtv.hosts;
 
   # Glasshouse's /api/stats fields as metrics. Units are Glasshouse's own:
   # memory in kilobytes as /proc/meminfo reports it, frequency in MHz.
@@ -410,12 +404,18 @@ let
     inherit help;
     path = "{${path}}";
   };
+  # The exporter sends the token as a bearer token, read from the
+  # credential the unit loads.
   glasshouseModule = {
+    http_client_config.authorization = {
+      type = "Bearer";
+      credentials_file = "/run/credentials/prometheus-json-exporter.service/glasshouse_token";
+    };
     metrics = [
       (glasshouseMetric "soc_temperature_celsius" "SoC temperature." ".temp")
       (glasshouseMetric "cpu_load_percent" "CPU load across all cores." ".load")
+      (glasshouseMetric "cpu_load_peak_percent" "CPU load on the busiest core." ".loadPeak")
       (glasshouseMetric "cpu_frequency_mhz" "CPU clock." ".mhz")
-      (glasshouseMetric "gpu_frequency_mhz" "GPU clock." ".gpuMhz")
       (glasshouseMetric "memory_total_kilobytes" "Total memory." ".mem.total")
       (glasshouseMetric "memory_available_kilobytes" "Available memory." ".mem.avail")
       (glasshouseMetric "swap_total_kilobytes" "Total swap." ".swap.total")
@@ -429,6 +429,29 @@ let
       (glasshouseMetric "oled_hours_since_compensation"
         "OLED panel on-time since the last compensation run."
         ".oled.hours_since_comp"
+      )
+      # Panel care runs and alerts LG's pnwash files count, as Glasshouse
+      # reads them.
+      (
+        glasshouseMetric "oled_compensation_runs_total" "Completed OLED compensation runs."
+          ".oled.comp_cycles"
+        // {
+          valuetype = "counter";
+        }
+      )
+      (
+        glasshouseMetric "oled_refresher_runs_total" "Completed OLED pixel refresher runs."
+          ".oled.refresher_cycles"
+        // {
+          valuetype = "counter";
+        }
+      )
+      (
+        glasshouseMetric "oled_failure_alerts_total" "OLED panel care failure alerts."
+          ".oled.failure_alerts"
+        // {
+          valuetype = "counter";
+        }
       )
       (
         glasshouseMetric "network_receive_bytes_total" "Bytes received on the active interface."
@@ -445,6 +468,24 @@ let
       )
       # A JSON boolean, which the exporter reads as 1 or 0.
       (glasshouseMetric "screen_on" "Whether the screen is on." ".powerState.screenOn")
+      (glasshouseMetric "remote_battery_percent" "Magic Remote battery level." ".remote.battery")
+      (glasshouseMetric "adblock_list_entries" "Entries in the ad block list." ".privacy.adblock.count")
+      # A JSON boolean, read as 1 or 0.
+      (glasshouseMetric "adblock_enabled" "Whether the ad blocker is on." ".privacy.adblock.enabled")
+      # The eMMC's wear band and pre-EOL state as labels. Glasshouse reads
+      # them once per start, so a change shows after its next restart.
+      {
+        # The exporter appends each value key to the name.
+        name = "glasshouse_emmc";
+        help = "eMMC wear band and pre-EOL state.";
+        type = "object";
+        path = "{.emmc}";
+        labels = {
+          wear = "{.wear}";
+          eol = "{.eol}";
+        };
+        values.info = 1;
+      }
     ];
   };
 
@@ -749,14 +790,10 @@ in
       restartUnits = [ "prometheus.service" ];
     };
     # Set in Glasshouse's dashboard on each TV; see lgtv/README.md.
-    glasshouse_token.sopsFile = ../../lgtv/secrets.yaml;
-  };
-
-  # Glasshouse's target, its token in the URL; see glasshouseTargets.
-  # Prometheus rereads file_sd files on change, so no restart is needed.
-  sops.templates."prometheus-glasshouse.json" = {
-    content = glasshouseTargets;
-    owner = "prometheus";
+    glasshouse_token = {
+      sopsFile = ../../lgtv/secrets.yaml;
+      restartUnits = [ "prometheus-json-exporter.service" ];
+    };
   };
 
   # The prometheus module runs promtool check rules at build, where lint
@@ -780,6 +817,12 @@ in
     "discord_webhook_url:${config.sops.secrets."discord/alerts_webhook_url".path}"
     "deadman_url:${config.sops.secrets."alertmanager/deadman_url".path}"
     "discord_ops_webhook_url:${config.sops.secrets."discord/ops_webhook_url".path}"
+  ];
+
+  # The json exporter runs with DynamicUser too; glasshouseModule reads the
+  # TVs' Glasshouse token from this credential.
+  systemd.services.prometheus-json-exporter.serviceConfig.LoadCredential = [
+    "glasshouse_token:${config.sops.secrets.glasshouse_token.path}"
   ];
 
   # Prometheus monitoring server and exporter configuration.
@@ -996,15 +1039,14 @@ in
 
       # The TV's Glasshouse stats through the json exporter. Every scrape
       # makes Glasshouse collect afresh on the TV, so once a minute; it
-      # answers with its last reading after 4.5 s, inside the timeout. The
-      # instance label comes from the file, never the tokened URL.
+      # answers with its last reading after 4.5 s, inside the timeout.
       {
         job_name = "glasshouse";
         scrape_interval = "1m";
         scrape_timeout = "10s";
         metrics_path = "/probe";
         params.module = [ "glasshouse" ];
-        file_sd_configs = [ { files = [ config.sops.templates."prometheus-glasshouse.json".path ]; } ];
+        static_configs = glasshouseTargets;
         relabel_configs = [
           {
             source_labels = [ "__address__" ];

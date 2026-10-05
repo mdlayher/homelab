@@ -20,8 +20,9 @@ NixOS, so this directory builds what the repository manages on them and
   `{unit="deploy"}`, and a finished one is announced in the Discord ops
   channel; see lib/deploy.sh.
 - `secrets.yaml`: Glasshouse's token, as set in its dashboard, which the
-  server's Prometheus scrapes with. It decrypts with the admin's key or the
-  server's; edit it from the container through the gate.
+  server's json exporter sends as a bearer token. It decrypts with the
+  admin's key or the server's; edit it from the container through the
+  gate.
 
 ```sh
 # Show how the TVs differ from this checkout; changes nothing.
