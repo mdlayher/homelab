@@ -60,10 +60,12 @@ let
     let
       routers = ifi: lib.concatMapStringsSep ", " (addr: "${ifi.name} . ${addr}");
       forwards = f: lib.concatMapStringsSep ", " f tailscale.forwards;
+      wanDenied = lib.filter (h: !h.wan) (lib.attrValues inventory.hosts);
     in
     ''
       flush set inet filter router_v4
       flush set inet filter router_v6
+      flush set inet filter wan_denied
       flush set inet filter tailscale_v4
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
@@ -82,6 +84,9 @@ let
           ]
         ) restricted
       } }
+      ${lib.optionalString (wanDenied != [ ])
+        "add element inet filter wan_denied { ${lib.concatMapStringsSep ", " (h: h.mac) wanDenied} }"
+      }
       add element inet filter tailscale_v4 { ${forwards (ts: "${ts.host.ipv4} . ${toString ts.port}")} }
       add element inet filter tailscale_v6 { ${forwards (ts: "::${ts.host.iid} . ${toString ts.port}")} }
       ${lib.optionalString (icl && iclServices != [ ])
@@ -295,6 +300,7 @@ in
         counter restricted_crossvlan_drop {}
         counter restricted_input_drop {}
         counter restricted_forward_drop {}
+        counter wan_denied_drop {}
         counter forward_reject {}
         counter wan_forward_drop {}
         counter dn42_input_drop {}
@@ -315,6 +321,11 @@ in
         }
         set router_v6 {
           type ifname . ipv6_addr
+        }
+
+        # MACs of LAN hosts the inventory denies the internet.
+        set wan_denied {
+          type ether_addr
         }
 
         # LAN hosts which accept inbound Tailscale traffic from the WAN.
@@ -757,6 +768,10 @@ in
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.
           iifname $restricted_lans oifname $all_lans counter name restricted_forward_drop drop comment "restricted LANs to LANs"
+
+          # Hosts the inventory denies the internet, by MAC, so the drop
+          # holds for every address they take, IPv6 privacy ones included.
+          oifname $wans ether saddr @wan_denied counter name wan_denied_drop drop comment "hosts denied the internet"
 
           jump icmp_lan
 

@@ -204,6 +204,10 @@ in
       message = "inventory host ipv6 must be eui64, token, prefixstable, or null";
     }
     {
+      assertion = lib.all (h: lib.isBool (h.value.wan or true)) hosts;
+      message = "inventory host wan must be a boolean";
+    }
+    {
       assertion = unknown roleHolders == [ ];
       message = "inventory roles name unknown machines: ${toString (unknown roleHolders)}";
     }

@@ -312,6 +312,17 @@ in
       # Private zones, a server block rendered from the inventory secrets.
       import /run/credentials/coredns.service/${privateZonesCredential}
 
+      # LG TV firmware updates, answered NXDOMAIN: an update can close the
+      # exploit a TV is rooted with. The hosts are those the Homebrew
+      # Channel blocks on the TV itself. Logged, so a TV checking for an
+      # update shows in the journal.
+      snu.lge.com su.lge.com su-ssl.lge.com su-dev.lge.com {
+        log . {
+          class denial
+        }
+        file ${emptyZone}
+      }
+
       # dn42: the forwarders in the root block are on the internet, where
       # no dn42 name exists. Names under dn42 go to its anycast resolvers
       # instead, a0 and a3 of recursive-servers.dn42, reached from this

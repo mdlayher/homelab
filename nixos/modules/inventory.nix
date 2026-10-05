@@ -75,6 +75,8 @@ let
       dnsName = "${name}.${ifi.role}";
       mac = placeholder "hosts/${name}/mac";
       ipv4 = placeholder "hosts/${name}/ipv4";
+      # False for a host the router denies the internet.
+      wan = host.wan or true;
       ula =
         if mode == "prefixstable" then
           "${ifi.ulaPrefix}:${iid "iid_ula"}"
@@ -227,8 +229,9 @@ in
       built from the site index and VLAN (the GUA prefix stays a
       placeholder), their role and searchDomain, plus their hosts. Hosts
       carry mac, ipv4, ula and iid (both null when the host has no known
-      IPv6 address, and iid also where the identifier differs per prefix)
-      and dnsName, the name DNS publishes. privateZones is the
+      IPv6 address, and iid also where the identifier differs per prefix),
+      dnsName, the name DNS publishes, and wan, false where the host is
+      denied the internet. privateZones is the
       space-separated private DNS zone list, null at a site with no
       subnets.
 

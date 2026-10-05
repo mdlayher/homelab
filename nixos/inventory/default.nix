@@ -371,7 +371,8 @@
         };
       };
 
-      # IoT VLAN: internet only, mDNS reflected from trusted LANs.
+      # IoT VLAN: internet only, mDNS reflected from trusted LANs. A host
+      # with wan = false is denied the internet as well.
       iot0 = {
         vlan = 66;
         trusted = false;
@@ -379,6 +380,10 @@
         hosts = {
           living-room-hue-hub.ipv6 = "eui64";
           living-room-myq-hub = { };
+          office-lgc4 = {
+            ipv6 = "eui64";
+            wan = false;
+          };
           office-printer = { };
           prusa-core-one.ipv6 = "eui64";
         };
