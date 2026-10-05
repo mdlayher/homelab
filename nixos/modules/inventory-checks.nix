@@ -30,6 +30,20 @@ let
 
   roleHolders = lib.concatLists (lib.attrValues inventory.roles);
 
+  # Every cable end, and the ends landing on a device that declares its
+  # ports.
+  inherit (inventory.physical) devices;
+  cables = lib.concatLists (lib.attrValues inventory.physical.cables);
+  cableEnds = lib.concatMap (c: [
+    c.src
+    c.dst
+  ]) cables;
+  declaredEnds = lib.filter (e: devices ? ${e.device}) cableEnds;
+  unknownEnds = unknown (lib.subtractLists (lib.attrNames devices) (map (e: e.device) cableEnds));
+
+  # Where each card sits.
+  fittings = map (d: d.fittedIn) (lib.filter (d: d ? fittedIn) (lib.attrValues devices));
+
   # The SSRR tail of a system ID, as site and router numbers.
   systemIds = inventory.isis.systemIds;
   ssrr = id: lib.last (lib.splitString "." id);
@@ -274,6 +288,42 @@ in
         lo: lo.addr4 == null || !(contains4 inventory.anycastPrefix4 "${lo.addr4}/32")
       ) (map (lo: { addr4 = lo.addr4 or null; }) siteLoopbacks);
       message = "inventory loopback IPv4 addresses must not fall in anycastPrefix4";
+    }
+
+    # Physical inventory.
+    {
+      assertion = unknownEnds == [ ];
+      message = "inventory cables name unknown devices: ${toString unknownEnds}";
+    }
+    {
+      assertion = lib.all (e: lib.elem e.port (devices.${e.device}.ports or [ ])) declaredEnds;
+      message = "inventory cables name ports their device does not declare";
+    }
+    {
+      assertion = isUnique (map (e: "${e.device}:${e.port}") cableEnds);
+      message = "inventory cables must not share a port";
+    }
+    {
+      assertion = lib.all (
+        d: lib.all (p: lib.elem p (d.ports or [ ])) (lib.attrNames (d.reserved or { }))
+      ) (lib.attrValues devices);
+      message = "inventory physical devices reserve ports they do not declare";
+    }
+    {
+      assertion = lib.all (e: !(devices.${e.device}.reserved or { } ? ${e.port})) declaredEnds;
+      message = "inventory cables must not land on a reserved port";
+    }
+    {
+      assertion = lib.all (f: lib.elem f.slot (devices.${f.device}.slots or [ ])) fittings;
+      message = "inventory cards must be fitted in a slot their device declares";
+    }
+    {
+      assertion = isUnique (map (f: "${f.device}:${f.slot}") fittings);
+      message = "inventory cards must not share a slot";
+    }
+    {
+      assertion = lib.all (c: c.console ? baud) (lib.filter (c: c ? console) cables);
+      message = "inventory console lines must set console.baud";
     }
   ];
 }

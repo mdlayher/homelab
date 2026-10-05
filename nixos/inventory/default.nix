@@ -213,6 +213,9 @@
   # (see nixos/modules/tailscale-serve.nix) get their names.
   tailnetDomain = "taild07ab.ts.net";
 
+  # Devices without an address and the cables between them; see the file.
+  physical = import ./physical.nix;
+
   # Tailnet addresses referenced in configuration. Tailscale assigns them
   # when a node joins and they are stable for the node's lifetime; a node
   # replacement must be reflected here. sshd on the machines matches the
