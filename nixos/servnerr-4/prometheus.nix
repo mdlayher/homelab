@@ -423,7 +423,6 @@ let
       (glasshouseMetric "uptime_seconds" "Time since the TV booted." ".uptime")
       (glasshouseMetric "wifi_signal_dbm" "Wi-Fi signal level." ".wifi.level")
       (glasshouseMetric "wifi_link_quality" "Wi-Fi link quality." ".wifi.link")
-      (glasshouseMetric "current_milliamps" "Current draw." ".power.current_ma")
       (glasshouseMetric "app_storage_used_percent" "App partition used." ".appStorage.pct")
       (glasshouseMetric "oled_panel_hours" "OLED panel on-time." ".oled.panel_hours_exact")
       (glasshouseMetric "oled_hours_since_compensation"
@@ -1038,11 +1037,12 @@ in
       }
 
       # The TV's Glasshouse stats through the json exporter. Every scrape
-      # makes Glasshouse collect afresh on the TV, so once a minute; it
-      # answers with its last reading after 4.5 s, inside the timeout.
+      # makes Glasshouse collect afresh on the TV; its maintainer recommends
+      # an interval of 15 s or more. It answers with its last reading after
+      # 4.5 s, inside the timeout.
       {
         job_name = "glasshouse";
-        scrape_interval = "1m";
+        scrape_interval = "15s";
         scrape_timeout = "10s";
         metrics_path = "/probe";
         params.module = [ "glasshouse" ];
