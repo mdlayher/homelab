@@ -49,16 +49,11 @@ let
     ]
     ++ iidKeys name host;
 
-  allKeys =
-    lib.concatLists (
-      lib.mapAttrsToList (
-        name: subnet: lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
-      ) subnets
-    )
-    # The private DNS zones the router answers itself, space-separated; see
-    # the router host's coredns.nix. Declared only where there are subnets to
-    # serve, so a site with no LAN decrypts nothing from this file.
-    ++ lib.optional (subnets != { }) "private_zones";
+  allKeys = lib.concatLists (
+    lib.mapAttrsToList (
+      name: subnet: lib.concatLists (lib.mapAttrsToList hostKeys (subnet.hosts or { }))
+    ) subnets
+  );
 
   mkHost =
     ifi: name: host:
@@ -218,7 +213,7 @@ in
       isis, the area and per-router system IDs; and siteLinks, roles,
       services, tailscaleForwards, zone and tailnetDomain.
 
-      domain, interfaces, hosts, loopbacks and privateZones are scoped to
+      domain, interfaces, hosts and loopbacks are scoped to
       this machine's homelab.site. sites carries every site's index,
       domain, prefix6, prefix4 and loopbacks. A site's index is the number
       every addressing scheme keys on, its prefixes are built from that
@@ -231,9 +226,7 @@ in
       carry mac, ipv4, ula and iid (both null when the host has no known
       IPv6 address, and iid also where the identifier differs per prefix),
       dnsName, the name DNS publishes, and wan, false where the host is
-      denied the internet. privateZones is the
-      space-separated private DNS zone list, null at a site with no
-      subnets.
+      denied the internet.
 
       Loopbacks are keyed by machine name and are plain data, since they are
       read across sites: each carries addr, siteFqdn (null except on the
@@ -321,7 +314,6 @@ in
         anycast4
         isis
         ;
-      privateZones = if subnets == { } then null else placeholder "private_zones";
       hosts = lib.listToAttrs (
         lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)
       );

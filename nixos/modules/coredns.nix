@@ -151,20 +151,6 @@ let
     site: lib.concatMapStrings loopbackReverse (siteLoopbacks site)
   ) (lib.attrValues remoteSites);
 
-  # Private zones: answered NXDOMAIN here, never forwarded or logged. The
-  # names are an inventory secret, so the block is rendered rather than
-  # written into the Corefile, and carries neither log nor prometheus, which
-  # both label their output with the zone. The file plugin rather than
-  # template for the same reason: template's match counter is zone-labelled
-  # and served by the root zone's endpoint regardless. The zone file uses
-  # relative names only, so one file serves every zone without naming any.
-  privateZonesCredential = "private-zones";
-  privateZonesFile = ''
-    ${inventory.privateZones} {
-      file ${emptyZone}
-    }
-  '';
-
   # A zone with nothing in it: every name beneath is NXDOMAIN, and the
   # relative names let one file serve any zone.
   emptyZone = pkgs.writeText "coredns-empty.zone" ''
@@ -204,10 +190,6 @@ in
       content = hostsFile + routerFile + servicesFile + localLoopbackFile;
       restartUnits = [ "coredns.service" ];
     };
-    "coredns-private-zones" = {
-      content = privateZonesFile;
-      restartUnits = [ "coredns.service" ];
-    };
     "coredns-ptr" = {
       content = ptrFile;
       restartUnits = [ "coredns.service" ];
@@ -236,7 +218,6 @@ in
   # systemd credentials.
   systemd.services.coredns.serviceConfig.LoadCredential = [
     "${credential}:${config.sops.templates."coredns-hosts".path}"
-    "${privateZonesCredential}:${config.sops.templates."coredns-private-zones".path}"
     "${ptrCredential}:${config.sops.templates."coredns-ptr".path}"
   ];
 
@@ -308,9 +289,6 @@ in
         prometheus :9153
         forward . 100.100.100.100
       }
-
-      # Private zones, a server block rendered from the inventory secrets.
-      import /run/credentials/coredns.service/${privateZonesCredential}
 
       # LG TV firmware updates, answered NXDOMAIN, so the TVs stay on the
       # firmware they have. The hosts are those the Homebrew Channel blocks
