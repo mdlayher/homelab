@@ -183,9 +183,12 @@ let
   lgtvDeploys = map (name: inventory.hosts.${name}) lgtv.hosts;
   # A TV with no known IPv6 address is reached over IPv4 alone.
   lgtvDeploys6 = lib.filter (tv: tv.ula != null) lgtvDeploys;
+  # SSH, Glasshouse, and the SSH of webOS developer mode, which enrolls a
+  # TV before it is rooted.
   lgtvPorts = [
     22
     lgtv.port
+    9922
   ];
   deployElements =
     from: addr: tvs:
