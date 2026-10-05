@@ -14,7 +14,9 @@ if (check) args.shift();
 
 var managed = JSON.parse(fs.readFileSync(args[0], 'utf8'));
 var path = args[1];
-var config = JSON.parse(fs.readFileSync(path, 'utf8'));
+// Glasshouse writes config.json on the first save in its dashboard and runs
+// on defaults until then, so a missing file is an empty one.
+var config = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : {};
 
 function isObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);

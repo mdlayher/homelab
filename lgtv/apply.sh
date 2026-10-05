@@ -44,9 +44,10 @@ done <manifest
 # Glasshouse reads config.json only at start, so a changed setting restarts
 # it. Its install is by hand (see README.md), so a TV without it takes the
 # files above and is reported as differing.
+tvwebctl=/var/lib/tvweb/tvwebctl
 config=/var/lib/tvweb/config.json
-if [ ! -f $config ]; then
-  echo "glasshouse: not installed, no $config; settings skipped"
+if [ ! -x $tvwebctl ]; then
+  echo "glasshouse: not installed, no $tvwebctl; settings skipped"
   [ $check = yes ] && exit 1
   exit 0
 fi
@@ -59,7 +60,7 @@ if [ -n "$diffs" ]; then
   changed=yes
   echo "$diffs"
   if [ $check = no ]; then
-    /var/lib/tvweb/tvwebctl restart
+    $tvwebctl restart
   fi
 fi
 
