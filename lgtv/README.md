@@ -33,8 +33,8 @@ lgtv/deploy
 ```
 
 The TVs are on their own restricted VLAN with no internet access (see
-`nixos/inventory/`). The router admits SSH to them from the development
-container alone, so `deploy` runs from there.
+`nixos/inventory/`). The router admits SSH and Glasshouse's port on them
+from the development container alone, so `deploy` runs from there.
 
 ## Not managed here
 

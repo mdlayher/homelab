@@ -70,8 +70,8 @@ let
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
       flush set inet filter remote_access_v6
-      flush set inet filter deploy_ssh_v4
-      flush set inet filter deploy_ssh_v6
+      flush set inet filter deploy_v4
+      flush set inet filter deploy_v6
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -100,13 +100,9 @@ let
         remoteReaches != [ ]
       ) "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"}
       ${lib.optionalString (lgtvDeploys != [ ]) ''
-        add element inet filter deploy_ssh_v4 { ${
-          lib.concatMapStringsSep ", " (tv: "${deployFrom.ipv4} . ${tv.ipv4}") lgtvDeploys
-        } }
+        add element inet filter deploy_v4 { ${deployElements deployFrom.ipv4 (tv: tv.ipv4) lgtvDeploys} }
         ${lib.optionalString (lgtvDeploys6 != [ ])
-          "add element inet filter deploy_ssh_v6 { ${
-            lib.concatMapStringsSep ", " (tv: "${deployFrom.ula} . ${tv.ula}") lgtvDeploys6
-          } }"
+          "add element inet filter deploy_v6 { ${deployElements deployFrom.ula (tv: tv.ula) lgtvDeploys6} }"
         }
       ''}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
@@ -180,12 +176,22 @@ let
   ) (lib.attrValues remote.devices);
 
   # lgtv/deploy runs from the development container, which is on a
-  # restricted LAN, and reaches each TV over SSH (see lgtv/README.md).
+  # restricted LAN, and reaches each TV over SSH and at Glasshouse's port
+  # (see lgtv/README.md).
   lgtv = import ../../lgtv/hosts.nix;
   deployFrom = inventory.hosts.linuxdev;
   lgtvDeploys = map (name: inventory.hosts.${name}) lgtv.hosts;
   # A TV with no known IPv6 address is reached over IPv4 alone.
   lgtvDeploys6 = lib.filter (tv: tv.ula != null) lgtvDeploys;
+  lgtvPorts = [
+    22
+    lgtv.port
+  ];
+  deployElements =
+    from: addr: tvs:
+    lib.concatMapStringsSep ", " (
+      tv: lib.concatMapStringsSep ", " (port: "${from} . ${addr tv} . ${toString port}") lgtvPorts
+    ) tvs;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -363,13 +369,13 @@ in
           type ipv6_addr . ipv6_addr . inet_proto . inet_service
         }
 
-        # Deploy hosts and the devices they reach over SSH, by source and
-        # destination address; see lgtvDeploys.
-        set deploy_ssh_v4 {
-          type ipv4_addr . ipv4_addr
+        # Deploy hosts and the devices they manage, by source address,
+        # destination address and port; see lgtvDeploys.
+        set deploy_v4 {
+          type ipv4_addr . ipv4_addr . inet_service
         }
-        set deploy_ssh_v6 {
-          type ipv6_addr . ipv6_addr
+        set deploy_v6 {
+          type ipv6_addr . ipv6_addr . inet_service
         }
 
         ${lib.optionalString icl ''
@@ -801,10 +807,10 @@ in
           # above the reject that would otherwise count them.
           oifname "dn42i-*" udp dport { $tailscale_router, $tailscale_relay } counter drop comment "Tailscale probes toward dn42 internal hosts"
 
-          # A deploy from the development container to a device it manages
-          # over SSH, above the drop that keeps restricted LANs apart.
-          ip saddr . ip daddr @deploy_ssh_v4 tcp dport $ssh counter accept comment "deploy SSH"
-          ip6 saddr . ip6 daddr @deploy_ssh_v6 tcp dport $ssh counter accept comment "deploy SSH"
+          # A deploy from the development container to a device it manages,
+          # above the drop that keeps restricted LANs apart.
+          ip saddr . ip daddr . tcp dport @deploy_v4 counter accept comment "deploy"
+          ip6 saddr . ip6 daddr . tcp dport @deploy_v6 counter accept comment "deploy"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.
