@@ -3,7 +3,10 @@
 # by the server's Prometheus (nixos/servnerr-4/prometheus.nix) for its
 # scrape job, and by lgtv/deploy for what it applies to.
 {
-  hosts = [ "office-lgc4" ];
+  hosts = [
+    "living-room-lgcx"
+    "office-lgc4"
+  ];
 
   # Glasshouse's dashboard and API port.
   port = 8080;

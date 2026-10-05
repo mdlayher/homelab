@@ -385,7 +385,7 @@
         };
       };
 
-      # Second IoT VLAN, for the LG TV, kept apart from the appliances on
+      # Second IoT VLAN, for the LG TVs, kept apart from the appliances on
       # iot0. It shares iot0's role, so its hosts are named in the same
       # namespace.
       iot1 = {
@@ -393,6 +393,7 @@
         trusted = false;
         role = "iot";
         hosts = {
+          living-room-lgcx.ipv6 = "eui64";
           office-lgc4.ipv6 = "eui64";
         };
       };
