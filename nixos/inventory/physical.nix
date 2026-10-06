@@ -210,7 +210,7 @@ in
         type = "USB-A to USB-B";
         src = {
           device = "pikvm";
-          port = "usb2";
+          port = "usb1";
         };
         dst = {
           device = "serial-8port";
@@ -222,7 +222,7 @@ in
         via = [ "USB-A to USB-C adapter" ];
         src = {
           device = "pikvm";
-          port = "usb1";
+          port = "usb2";
         };
         dst = {
           device = "pikvm-switch";
