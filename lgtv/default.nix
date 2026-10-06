@@ -39,6 +39,9 @@ let
         inherit id name;
       };
       apps.hosts = [ fqdn.${name} ];
+      # The server's Prometheus scrapes /api/prometheus/metrics, which
+      # Glasshouse serves only while this is on.
+      prometheus.enabled = true;
     };
 
   tree =
