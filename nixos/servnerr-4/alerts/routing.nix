@@ -181,19 +181,30 @@
     #
     # The alert counts hours with a drop, not drops, so a burst of path
     # loss counts once and only drops recurring across the day fire it.
-    {
-      alert = "ISISAdjacencyFlapping";
-      expr = ''
-        count_over_time((sum by (host, circuit) (sum_over_time((
-          sum_over_time(host_circuit:isis_bfd_drops:count1m[1m])
-            unless on () (min(time() - node_systemd_unit_start_time_seconds{name=~"frr.service|systemd-networkd.service"}) < 300)
-        )[1h:1m])) > 0)[1d:1h]) >= 3
-      '';
-      annotations = {
-        summary = "IS-IS on {{ $labels.circuit }} ({{ $labels.host }}) lost BFD in {{ $value }} separate hours of a day outside deploys; check the path under that plane.";
-        logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="frr.service"} |= `bfd session went down`'';
-      };
-    }
+    # It fires only while the latest drop is under an hour old, so a
+    # path that settles resolves after that hour rather than once the
+    # day has aged out.
+    (
+      let
+        hourlyDrops = ''
+          sum by (host, circuit) (sum_over_time((
+            sum_over_time(host_circuit:isis_bfd_drops:count1m[1m])
+              unless on () (min(time() - node_systemd_unit_start_time_seconds{name=~"frr.service|systemd-networkd.service"}) < 300)
+          )[1h:1m])) > 0
+        '';
+      in
+      {
+        alert = "ISISAdjacencyFlapping";
+        expr = ''
+          count_over_time((${hourlyDrops})[1d:1h]) >= 3
+            and on (host, circuit) (${hourlyDrops})
+        '';
+        annotations = {
+          summary = "IS-IS on {{ $labels.circuit }} ({{ $labels.host }}) lost BFD in {{ $value }} separate hours of a day outside deploys; check the path under that plane.";
+          logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="frr.service"} |= `bfd session went down`'';
+        };
+      }
+    )
     # One LSP per router at each level, while every circuit is point to
     # point and no router overflows lspMtu: a broadcast circuit adds a
     # pseudonode LSP per level, an overflow adds fragments. Short of
