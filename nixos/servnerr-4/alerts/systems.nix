@@ -163,16 +163,35 @@
     # a unit that looped once and settled keeps alerting until something
     # restarts it.
     #
-    # The KVM's getty on its USB serial gadget exits whenever the host on
-    # the other end reboots or resets the link, and systemd restarts it.
+    # Gettys are left out: one exits at every logout and login timeout,
+    # and the KVM's USB serial gadget getty whenever the host on the other
+    # end reboots or resets the link, so systemd restarting them is normal
+    # use. SerialGettyInactive watches whether they are there.
     {
       alert = "SystemdUnitRestarting";
       expr = ''
-        node_systemd_service_restart_total{name!~"kvmd-otg-getty@.*"} > 2
+        node_systemd_service_restart_total{name!~".*getty@.*"} > 2
         and increase(node_systemd_service_restart_total[30m]) > 0
       '';
       for = "10m";
       annotations.summary = "Unit {{ $labels.name }} on {{ $labels.instance }} has been restarted {{ $value | humanize }} times by systemd since it was last started.";
+    }
+    # A serial console's getty that was active in the last day and is not
+    # now. A stopped unit that nothing wants is unloaded and its series
+    # vanish rather than read inactive, so the rule compares against the
+    # day's history instead of testing for zero. A machine that is down
+    # is left to the target alerts. The hold covers the moment between a
+    # getty exiting and systemd starting the next.
+    {
+      alert = "SerialGettyInactive";
+      expr = ''
+        max_over_time(node_systemd_unit_state{name=~"(serial|kvmd-otg)-getty@.*", state="active"}[1d]) == 1
+        unless on (instance, name)
+          node_systemd_unit_state{name=~"(serial|kvmd-otg)-getty@.*", state="active"} == 1
+        and on (instance) up == 1
+      '';
+      for = "5m";
+      annotations.summary = "Serial console getty {{ $labels.name }} on {{ $labels.instance }} is not active.";
     }
   ];
 }
