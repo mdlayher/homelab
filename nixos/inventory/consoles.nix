@@ -5,7 +5,8 @@
 # when it holds none, so a hardware swap keeps the name. A port on a card
 # belongs to the machine the card is fitted in. A line ending on a
 # multi-port adapter belongs to the machine on the adapter's upstream port
-# and selects the port by interface number, the label minus one. A USB
+# and selects the port by the chip serving its label and the interface
+# number within that chip. A USB
 # serial cable belongs to the machine it plugs into, and any other line to
 # the machine whose port it ends on.
 { lib, inventory }:
@@ -51,15 +52,17 @@ let
           inherit (end) device;
           port = adapter.upstream;
         };
-        spec = {
-          serial =
-            if adapter.serial != null then
-              adapter.serial
-            else
-              throw "${end.device} has no serial; read it from consrv's startup log";
-          interface = lib.toInt end.port - 1;
-          inherit baud;
-        };
+        spec =
+          let
+            numbered = lib.filter (p: builtins.match "[0-9]+" p != null) adapter.ports;
+            perChip = lib.length numbered / lib.length adapter.serials;
+            index = lib.toInt end.port - 1;
+          in
+          {
+            serial = lib.elemAt adapter.serials (index / perChip);
+            interface = lib.mod index perChip;
+            inherit baud;
+          };
       }
     else if c ? serial then
       {

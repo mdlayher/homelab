@@ -111,10 +111,15 @@ in
     };
 
     # USB serial adapter. Port names are the front-panel labels; the
-    # adapter's host reaches it on `upstream`.
+    # adapter's host reaches it on `upstream`. `serials` lists its
+    # multi-port chips, each serving an equal run of the numbered ports in
+    # order.
     serial-8port = {
       model = "StarTech ICUSB23208FD";
-      serial = null;
+      serials = [
+        "ST271335"
+        "ST271336"
+      ];
       upstream = "usb-b";
       ports = map toString (range 8) ++ [
         "usb-b"
@@ -205,7 +210,7 @@ in
         type = "USB-A to USB-B";
         src = {
           device = "pikvm";
-          port = "usb1";
+          port = "usb2";
         };
         dst = {
           device = "serial-8port";
@@ -217,7 +222,7 @@ in
         via = [ "USB-A to USB-C adapter" ];
         src = {
           device = "pikvm";
-          port = "usb2";
+          port = "usb1";
         };
         dst = {
           device = "pikvm-switch";
