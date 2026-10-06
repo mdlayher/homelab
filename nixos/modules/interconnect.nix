@@ -880,9 +880,10 @@ in
           # second at full size is most of an idle carrier's traffic, and
           # the MTU was proved the moment the adjacency came up.
           #
-          # BFD detects a dead circuit (bfdd defaults, 300 ms x3); hellos
-          # stay at isisd's defaults (3 s, 30 s hold) and only form the
-          # adjacency. One BFD session per circuit, over IPv6 link-local.
+          # BFD detects a dead circuit, at the timers of the icl profile
+          # below; hellos stay at isisd's defaults (3 s, 30 s hold) and only
+          # form the adjacency. One BFD session per circuit, over IPv6
+          # link-local.
           # isisd drops an adjacency only on a BFD up-to-down transition,
           # so a far end without BFD keeps its adjacency on hellos, which
           # ISISBFDSessionMissing reports.
@@ -895,6 +896,7 @@ in
              isis hello padding during-adjacency-formation
              isis password md5 ${password}
              isis bfd
+             isis bfd profile icl
             !
           '';
           passive = name: ''
@@ -915,6 +917,7 @@ in
              isis metric 16777215
              isis password md5 hunter2
              isis bfd
+             isis bfd profile icl
             !
           '';
           # Redistribution is the only way to originate a prefix which is
@@ -987,6 +990,21 @@ in
           # when nothing tells it otherwise, so tell it.
           logging = "log syslog informational";
 
+          # The circuits cross residential WANs and the internet, where
+          # loss of a second or so is routine. bfdd's defaults (300 ms x3)
+          # dropped adjacencies on those bursts; 1 s x3 detects a dead
+          # circuit in 3 s, still well inside the 30 s hello hold, and
+          # the other plane carries traffic meanwhile.
+          bfdProfile = ''
+            bfd
+             profile icl
+              transmit-interval 1000
+              receive-interval 1000
+              detect-multiplier 3
+             !
+            !
+          '';
+
           domainPassword = lib.optionalString (
             cfg.isis.isType != "level-1"
           ) " domain-password md5 ${password} authenticate snp validate\n";
@@ -1018,7 +1036,7 @@ in
           ${logging}
           ${lib.optionalString (routerId != null) "ip router-id ${routerId}"}
           !
-          ${aggregate6}${aggregate4}${kernelDeny "ipv6" cfg.isis.kernelDeny6}${kernelDeny "ipv4" cfg.isis.kernelDeny4}router isis ${tag}
+          ${bfdProfile}${aggregate6}${aggregate4}${kernelDeny "ipv6" cfg.isis.kernelDeny6}${kernelDeny "ipv4" cfg.isis.kernelDeny4}router isis ${tag}
            is-type ${cfg.isis.isType}
            net ${cfg.isis.net}
            lsp-mtu ${toString cfg.isis.lspMtu}
