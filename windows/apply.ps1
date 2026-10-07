@@ -189,6 +189,18 @@ foreach ($store in 'active', 'persistent') {
     }
 }
 
+# Tailscale's subnet routes off. The router advertises the house's networks
+# to personal devices, and these machines reach them on the LAN; the policy
+# grants them none of those addresses, so a route through the tailnet would
+# only drop their traffic.
+$tailscale = 'C:\Program Files\Tailscale\tailscale.exe'
+if ((Test-Path $tailscale) -and (& $tailscale debug prefs | ConvertFrom-Json).RouteAll) {
+    Fix 'Tailscale subnet routes off' {
+        & $tailscale set --accept-routes=false
+        if ($LASTEXITCODE -ne 0) { throw "tailscale set failed: $LASTEXITCODE" }
+    }
+}
+
 # HWiNFO's settings, merged into its INI file. HWiNFO writes the file back
 # when it exits, so it keeps these as long as they match what it runs with.
 # Lines that are neither a section, a setting nor blank are dropped.

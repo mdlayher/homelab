@@ -375,5 +375,23 @@ in
   # advertises it; useRoutingFeatures only turns on the forwarding sysctls
   # it needs, and a node advertising nothing still sets those happily.
   services.tailscale.useRoutingFeatures = "server";
-  services.tailscale.extraSetFlags = [ "--advertise-exit-node" ];
+
+  # It also advertises this site's networks and the anycast services as
+  # subnet routes, for personal devices off the LAN; the policy approves
+  # and grants the same prefixes.
+  services.tailscale.extraSetFlags =
+    let
+      site = inventory.sites.${config.homelab.site};
+    in
+    [
+      "--advertise-exit-node"
+      "--advertise-routes=${
+        lib.concatStringsSep "," [
+          site.prefix4
+          site.prefix6
+          inventory.anycastPrefix4
+          inventory.anycastPrefix6
+        ]
+      }"
+    ];
 }

@@ -124,6 +124,20 @@
 			"ip": ["*"],
 		},
 
+		// Personal devices reach the house's networks and the anycast
+		// services through the router's subnet routes. Tagged machines get
+		// no grant here: those at the house reach these networks on the LAN.
+		{
+			"src": ["autogroup:member"],
+			"dst": [
+				"10.0.0.0/24",
+				"10.1.0.0/16",
+				"fd9e:1a04:f01d:1::/64",
+				"fd9e:1a04:f01d:100::/56",
+			],
+			"ip": ["*"],
+		},
+
 		// The development container reads metrics, alerts, and logs, but not
 		// Grafana (it has its own auth and state).
 		{
@@ -167,10 +181,17 @@
 		},
 	],
 
-	// The router self-approves as an exit node; infrastructure machines and
-	// the KVM self-approve as hosts for their services.
+	// The router self-approves as an exit node and for its subnet routes;
+	// infrastructure machines and the KVM self-approve as hosts for their
+	// services.
 	"autoApprovers": {
 		"exitNode": ["tag:router"],
+		"routes": {
+			"10.0.0.0/24":             ["tag:router"],
+			"10.1.0.0/16":             ["tag:router"],
+			"fd9e:1a04:f01d:1::/64":   ["tag:router"],
+			"fd9e:1a04:f01d:100::/56": ["tag:router"],
+		},
 		"services": {
 			"svc:alertmanager": ["tag:infra"],
 			"svc:consrv":       ["tag:kvm"],
