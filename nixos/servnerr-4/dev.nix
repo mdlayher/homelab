@@ -1405,6 +1405,8 @@ in
                 shortName = n: lib.head (lib.splitString "." n);
                 # The LG TVs lgtv/deploy manages, by their inventory names.
                 tvs = (import ../../lgtv/hosts.nix).hosts;
+                # The Windows PCs windows/deploy manages, by their tailnet names.
+                pcs = map (pc: "${pc}.${inventory.tailnetDomain}") (import ../../windows/hosts.nix).hosts;
               in
               # Root on the KVM controls the server's console and power, and
               # consrv's serial consoles can be left logged in, so each
@@ -1417,6 +1419,11 @@ in
                   ControlMaster no
                   ControlPath none
                   ForwardAgent no
+
+                # The Windows build of OpenSSH offers no post-quantum key
+                # exchange, so ssh's warning about it is noise.
+                Host ${lib.concatStringsSep " " pcs}
+                  WarnWeakCrypto no-pq-kex
 
                 Host ${lib.concatStringsSep " " machines} *.${inventory.tailnetDomain}
                   ControlMaster auto
