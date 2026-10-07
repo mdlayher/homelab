@@ -349,6 +349,51 @@ let
     '';
   });
 
+  # Terminal dashboards for Prometheus (github.com/qf-studio/grom). Pinned
+  # by revision on main; nixpkgs has no package.
+  grom = (pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; }) {
+    pname = "grom";
+    version = "0.3.0-unstable-2026-10-05";
+    src = pkgs.fetchFromGitHub {
+      owner = "qf-studio";
+      repo = "grom";
+      rev = "fed08004c82966d812da58be9049c6a391ddb547";
+      hash = "sha256-g0m07+9MYKvR4oupFy5LlB3FdjreGJNHgm0kOtisQaA=";
+    };
+    vendorHash = "sha256-/1niwdNbfERsA4R5jPNoUbYlRs3Xpn9Cvfxn0EXiBSk=";
+    subPackages = [ "cmd/grom" ];
+    ldflags = [
+      "-s"
+      "-w"
+      "-X main.version=${grom.version}"
+    ];
+  };
+
+  # Dashboards are Grafana dashboard JSON in grafana/dashboards/, with the
+  # Prometheus datasource uid "prometheus".
+  dashboards = ./grafana/dashboards;
+
+  # grom-dash <name|file> [grom run flags]: opens a dashboard from
+  # grafana/dashboards/ (or a JSON file) against the server's Prometheus.
+  # With no arguments it lists the dashboards.
+  gromDash = pkgs.writeShellApplication {
+    name = "grom-dash";
+    runtimeInputs = [ grom ];
+    text = ''
+      if [ $# -eq 0 ]; then
+        echo "usage: grom-dash <dashboard|file.json> [grom run flags]" >&2
+        echo "dashboards:" >&2
+        for f in ${dashboards}/*.json; do basename "$f" .json; done >&2
+        exit 2
+      fi
+      dash=$1
+      shift
+      [ -f "$dash" ] || dash=${dashboards}/$dash.json
+      exec grom run --grafana-json "$dash" \
+        --prom https://prometheus.taild07ab.ts.net --theme tokyo-night "$@"
+    '';
+  };
+
   # Initial herdr configuration, copied into the user's config directory on
   # first boot only so that later edits win; keep it mirroring the live
   # config inside the container. Updates come from the llm-agents flake, not
@@ -1010,6 +1055,24 @@ in
         autostart = false;
       };
 
+  # Fails the build when grom cannot import a dashboard cleanly, such as a
+  # panel type it renders as a placeholder.
+  system.checks = [
+    (pkgs.runCommand "grom-dashboards-check"
+      {
+        preferLocalBuild = true;
+        nativeBuildInputs = [ grom ];
+      }
+      ''
+        for f in ${dashboards}/*.json; do
+          echo "$f"
+          grom import --check "$f"
+        done
+        touch $out
+      ''
+    )
+  ];
+
   containers = {
     linuxdev =
       devContainer "linuxdev" "10"
@@ -1307,6 +1370,11 @@ in
               # logcli, for querying Loki logs over the tailnet; see
               # nixos/servnerr-4/loki.nix.
               grafana-loki
+
+              # Terminal graphs of Prometheus; grom-dash opens the
+              # dashboards in grafana/dashboards/.
+              grom
+              gromDash
 
               # pdftoppm and pdftotext, which Claude Code's Read tool uses to
               # render PDF pages.

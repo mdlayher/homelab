@@ -1,0 +1,1246 @@
+{
+  "uid": "glasshouse",
+  "title": "TVs",
+  "description": "The LG OLED TVs, from Glasshouse's native metrics (job=\"glasshouse\"). Every query relabels instance to a short tv label for legends. A TV asleep off the network shows up 0 and its other rows go missing; source, HDMI and frame rate rows exist only with an HDMI source on screen, and an HDMI row only while that input has PHY lock.",
+  "tags": [
+    "glasshouse"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "15s",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "bargauge",
+      "title": "TVs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_info, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} {{model}} fw {{firmware}} webOS {{webos}} v{{version}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 2,
+      "type": "bargauge",
+      "title": "power (up, system, screen)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 8,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(up{job=\"glasshouse\"}, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} up",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_system_on, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} system",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_screen_on, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} screen",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "signal (mode, ALLM)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 3,
+        "w": 8,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_info, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} {{dynamic_range}} {{picture_mode}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_low_latency, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} ALLM",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 4,
+      "type": "bargauge",
+      "title": "HDMI links Gbps",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 3,
+        "w": 8,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Gbps",
+          "max": 48
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace( glasshouse_hdmi_link_bits_per_second / 1e9 * on (instance, input) group_left (phy_mode, chroma, hdcp) glasshouse_hdmi_link_info, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} {{input}} {{phy_mode}} {{chroma}} {{hdcp}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 5,
+      "type": "bargauge",
+      "title": "source on screen",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_width_pixels, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} width",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_height_pixels, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} height",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_refresh_hertz, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} refresh Hz",
+          "instant": true
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_frame_rate_hertz, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} frame rate Hz, VRR {{vrr_type}}",
+          "instant": true
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_signal_vrr, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} VRR",
+          "instant": true
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_hdmi_qms, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} {{input}} QMS",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "frame rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Hz"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(sum without (vrr_type) (glasshouse_signal_frame_rate_hertz), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "SoC temperature",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°C"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_soc_temperature_celsius, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "CPU busy",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace( sum by (instance) (rate(glasshouse_cpu_seconds_total{mode!=\"idle\"}[2m])) / sum by (instance) (rate(glasshouse_cpu_seconds_total[2m])), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "network bytes/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(rate(glasshouse_network_receive_bytes_total[2m]), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} rx"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(rate(glasshouse_network_transmit_bytes_total[2m]), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} tx"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "GSR stress events/h",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(rate(glasshouse_oled_gsr_stress_events_total[10m]) * 3600, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "memory used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace( 1 - glasshouse_memory_available_bytes / glasshouse_memory_total_bytes, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "office Wi-Fi",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 28,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": -75
+              },
+              {
+                "color": "green",
+                "value": -65
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "glasshouse_wifi_signal_dbm{instance=~\"office-lgc4[.].*\"}",
+          "instant": true
+        }
+      ],
+      "description": "A stat per TV: bar gauges cannot fill or colour a negative value.",
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "living room Wi-Fi",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": -75
+              },
+              {
+                "color": "green",
+                "value": -65
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "glasshouse_wifi_signal_dbm{instance=~\"living-room-lgcx[.].*\"}",
+          "instant": true
+        }
+      ],
+      "description": "A stat per TV: bar gauges cannot fill or colour a negative value.",
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 14,
+      "type": "bargauge",
+      "title": "storage used (swap, apps)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 28,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace( 1 - glasshouse_swap_free_bytes / glasshouse_swap_total_bytes, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} swap",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace( 1 - glasshouse_app_storage_available_bytes / glasshouse_app_storage_size_bytes, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} apps",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 15,
+      "type": "bargauge",
+      "title": "uptime",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(time() - glasshouse_boot_time_seconds, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 16,
+      "type": "bargauge",
+      "title": "CPU frequency",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 32,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "GHz"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_cpu_frequency_hertz / 1e9, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 17,
+      "type": "bargauge",
+      "title": "OLED light",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_picture_backlight_ratio, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 18,
+      "type": "bargauge",
+      "title": "remote battery",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 32,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.15
+              },
+              {
+                "color": "green",
+                "value": 0.3
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_remote_battery_ratio, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 19,
+      "type": "bargauge",
+      "title": "panel hours",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(round(glasshouse_oled_panel_usage_seconds_total / 3600), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 20,
+      "type": "bargauge",
+      "title": "next compensation in",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(clamp_min( glasshouse_oled_last_compensation_usage_seconds + glasshouse_oled_compensation_interval_seconds - glasshouse_oled_panel_usage_seconds_total, 0), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "description": "Clamped: the countdown dips below zero while a due cycle waits.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 21,
+      "type": "bargauge",
+      "title": "next Pixel Refresher in",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 36,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(clamp_min( glasshouse_oled_last_refresher_usage_seconds + glasshouse_oled_refresher_interval_seconds - glasshouse_oled_panel_usage_seconds_total, 0), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}}",
+          "instant": true
+        }
+      ],
+      "description": "Only a TV that has run a Pixel Refresher has a last run to count from.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 22,
+      "type": "bargauge",
+      "title": "OLED care runs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_compensation_runs_total, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} compensation",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_refresher_runs_total, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} Pixel Refresher",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 23,
+      "type": "bargauge",
+      "title": "OLED care running",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_compensation_running, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} compensation",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_refresher_running, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} Pixel Refresher",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 24,
+      "type": "bargauge",
+      "title": "eMMC life used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 44,
+        "w": 8,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_emmc_life_used_ratio, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} type {{type}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 25,
+      "type": "bargauge",
+      "title": "attention",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 16,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(1 - glasshouse_oled_protection_enabled, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} {{protection}} off",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(1 - glasshouse_adblock_enabled, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} adblock off",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_refresher_scheduled, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} Pixel Refresher scheduled",
+          "instant": true
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(max by (instance) (glasshouse_emmc_pre_eol_state{state!=\"normal\"}), \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} eMMC pre-EOL warning",
+          "instant": true
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(glasshouse_oled_failure_alerts_total, \"tv\", \"$1\", \"instance\", \"([^.]+?)(-lg[a-z0-9]+)?[.].*\")",
+          "legendFormat": "{{tv}} OLED failure alerts",
+          "instant": true
+        }
+      ],
+      "description": "Every row reads 0 when all is well; a lit bar needs attention.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    }
+  ]
+}
