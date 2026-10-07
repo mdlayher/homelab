@@ -103,6 +103,10 @@ in
           target = "linuxdev";
           port = 22;
         }
+        {
+          target = "pikvm";
+          port = 443;
+        }
       ];
     };
 
