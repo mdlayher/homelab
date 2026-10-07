@@ -383,6 +383,13 @@ let
   lgtv = import ../../lgtv/hosts.nix;
   glasshouseTargets = map (host: at host "${qualify host}:${toString lgtv.port}") lgtv.hosts;
 
+  # The same TVs pinged beside their scrapes, by the same names: a stall in
+  # both at once is the network, a slow scrape alone is Glasshouse. A job of
+  # its own, kept out of the ICMP alerts, since the TVs leave the network
+  # overnight.
+  lgtvPingJob = "blackbox_icmp_lgtv";
+  lgtvPings = map (host: at host (qualify host)) lgtv.hosts;
+
   # NixOS exporters running on this machine which probe jobs are relabeled
   # through.
   local = exporter: "${qualify hostName}:${toString exporters.${exporter}.port}";
@@ -499,10 +506,12 @@ let
     inherit lib anycastServices isisRouterCounts;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
-    # The anycast probe has its own rule with a shorter hold.
+    # The anycast probe has its own rule with a shorter hold; the TV pings
+    # have none.
     excludedJobs = [
       snmpCyberpowerJob
       anycastProbeJob
+      lgtvPingJob
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
     readOnlyRoots = map qualify (hostsWhere (h: h.readOnlyRoot or false));
@@ -943,6 +952,7 @@ in
           relabel_configs = familyRelabel ".*:.*" ++ relabelTarget (local "blackbox");
         }
       )
+      ((blackboxScrape "icmp" "15s" lgtvPings) // { job_name = lgtvPingJob; })
       (blackboxScrape "dns_lan" "1m" dnsServers)
       (
         (blackboxScrape "dns_anycast" "15s" anycastResolvers)
