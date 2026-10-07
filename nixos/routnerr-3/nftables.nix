@@ -493,6 +493,9 @@ in
           ip6 nexthdr icmpv6 icmpv6 type nd-router-solicit counter accept
 
           iifname { lo, $trusted_lans } counter accept comment "localhost and trusted LANs to router"
+          # The remote access tunnel reaches the resolver alone, at its
+          # anycast address; the tunnel carries IPv6 only.
+          iifname $remote_ifname ip6 daddr $anycast_dns meta l4proto { tcp, udp } th dport $dns counter accept comment "remote access anycast DNS"
           iifname $restricted_lans jump input_restricted
 
           limit rate 10/minute burst 20 packets log prefix "nft input reject: "

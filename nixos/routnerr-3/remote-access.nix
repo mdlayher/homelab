@@ -6,8 +6,9 @@
 
 # A WireGuard tunnel from devices off the tailnet into this site. Each
 # device holds one address in the tunnel and reaches only the hosts and
-# ports it lists; names on the tailnet resolve past an SSH host with
-# ssh -J. nftables.nix admits each device's reaches and nothing else.
+# ports it lists, plus the anycast resolver for the site's names; names on
+# the tailnet resolve past an SSH host with ssh -J. nftables.nix admits
+# each device's reaches and the resolver, and nothing else.
 
 let
   inventory = config.homelab.inventory;
