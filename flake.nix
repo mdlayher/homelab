@@ -87,19 +87,21 @@
         };
 
         # The LG TVs' configuration, built here and applied by lgtv/deploy.
-        # Each TV's name as the server's inventory publishes it.
-        lgtv = import ./lgtv {
-          pkgs = nixpkgs.legacyPackages.${system};
-          inherit (nixpkgs) lib;
-          sshKeys = import ./nixos/ssh-keys.nix;
-          fqdn =
-            let
-              inv = self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.homelab.inventory;
-            in
-            nixpkgs.lib.genAttrs (import ./lgtv/hosts.nix).hosts (
-              name: "${inv.hosts.${name}.dnsName}.${inv.domain}"
-            );
-        };
+        # Each TV's name, and Loki's service name, as the server's inventory
+        # publishes them.
+        lgtv =
+          let
+            server = nixpkgs.lib.head inventory.roles.server;
+            inv = self.nixosConfigurations.${server}.config.homelab.inventory;
+            qualify = name: "${inv.hosts.${name}.dnsName}.${inv.domain}";
+          in
+          import ./lgtv {
+            pkgs = nixpkgs.legacyPackages.${system};
+            inherit (nixpkgs) lib;
+            sshKeys = import ./nixos/ssh-keys.nix;
+            fqdn = nixpkgs.lib.genAttrs (import ./lgtv/hosts.nix).hosts qualify;
+            syslogServer = "loki.svc.${inv.zone}";
+          };
 
         # The Windows PCs' configuration, built here and applied by
         # windows/deploy.

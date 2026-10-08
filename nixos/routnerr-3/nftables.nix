@@ -72,6 +72,8 @@ let
       flush set inet filter remote_access_v6
       flush set inet filter deploy_v4
       flush set inet filter deploy_v6
+      flush set inet filter lgtv_syslog_v4
+      flush set inet filter lgtv_syslog_v6
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -103,6 +105,10 @@ let
         add element inet filter deploy_v4 { ${deployElements deployFrom.ipv4 (tv: tv.ipv4) lgtvDeploys} }
         ${lib.optionalString (lgtvDeploys6 != [ ])
           "add element inet filter deploy_v6 { ${deployElements deployFrom.ula (tv: tv.ula) lgtvDeploys6} }"
+        }
+        add element inet filter lgtv_syslog_v4 { ${syslogElements (h: h.ipv4) lgtvDeploys} }
+        ${lib.optionalString (lgtvDeploys6 != [ ])
+          "add element inet filter lgtv_syslog_v6 { ${syslogElements (h: h.ula) lgtvDeploys6} }"
         }
       ''}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
@@ -197,6 +203,18 @@ let
     from: addr: tvs:
     lib.concatMapStringsSep ", " (
       tv: lib.concatMapStringsSep ", " (port: "${from} . ${addr tv} . ${toString port}") lgtvPorts
+    ) tvs;
+
+  # Glasshouse on each TV forwards its logs to the syslog listener on each
+  # server role holder (see the server's loki.nix), at whichever of its
+  # addresses the TV resolves.
+  syslogElements =
+    addr: tvs:
+    lib.concatMapStringsSep ", " (
+      tv:
+      lib.concatMapStringsSep ", " (
+        server: "${addr tv} . ${addr inventory.hosts.${server}} . ${toString lgtv.syslogPort}"
+      ) inventory.roles.server
     ) tvs;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
@@ -381,6 +399,15 @@ in
           type ipv4_addr . ipv4_addr . inet_service
         }
         set deploy_v6 {
+          type ipv6_addr . ipv6_addr . inet_service
+        }
+
+        # The LG TVs' syslog to the server, by source address, destination
+        # address and UDP port; see syslogElements.
+        set lgtv_syslog_v4 {
+          type ipv4_addr . ipv4_addr . inet_service
+        }
+        set lgtv_syslog_v6 {
           type ipv6_addr . ipv6_addr . inet_service
         }
 
@@ -820,6 +847,10 @@ in
           # above the drop that keeps restricted LANs apart.
           ip saddr . ip daddr . tcp dport @deploy_v4 counter accept comment "deploy"
           ip6 saddr . ip6 daddr . tcp dport @deploy_v6 counter accept comment "deploy"
+
+          # The LG TVs' logs to the server, above the same drop.
+          ip saddr . ip daddr . udp dport @lgtv_syslog_v4 counter accept comment "LG TV syslog"
+          ip6 saddr . ip6 daddr . udp dport @lgtv_syslog_v6 counter accept comment "LG TV syslog"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.

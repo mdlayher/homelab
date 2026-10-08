@@ -6,8 +6,9 @@ whose stats the server's Prometheus scrapes. They run webOS rather than
 NixOS, so this directory builds what the repository manages on them and
 `deploy` applies it over SSH. Nothing applies it nightly.
 
-- `hosts.nix`: the TVs and Glasshouse's port, read by the router's firewall
-  and the server's Prometheus as well.
+- `hosts.nix`: the TVs, Glasshouse's port and the server's syslog port for
+  them, read by the router's firewall and the server's Prometheus and
+  Alloy as well.
 - `default.nix`: root's `authorized_keys`, the admin's FIDO2 keys from
   `nixos/ssh-keys.nix`, so every login takes a YubiKey touch.
   Built as `.#lgtv`.
@@ -15,10 +16,9 @@ NixOS, so this directory builds what the repository manages on them and
 - `settings.js`: merges the Glasshouse settings `default.nix` manages and
   the token into its `config.json`, on the TV with Glasshouse's node, and
   leaves every other key alone. A changed setting restarts Glasshouse.
-- `deploy`: builds and applies over SSH as root. The TVs ship no logs, so
-  it sends each deploy's provenance to Loki itself, under
-  `{unit="deploy"}`, and a finished one is announced in the Discord ops
-  channel; see lib/deploy.sh.
+- `deploy`: builds and applies over SSH as root. It sends each deploy's
+  provenance to Loki itself, under `{unit="deploy"}`, and a finished one is
+  announced in the Discord ops channel; see lib/deploy.sh.
 - `secrets.yaml`: the one Glasshouse token, which `deploy` writes into
   each TV's `config.json` as `token` and the server's json exporter sends
   as a bearer token to each. It decrypts with the admin's key, the
@@ -34,7 +34,10 @@ lgtv/deploy
 ```
 
 The TVs are on their own restricted VLAN (see `nixos/inventory/`): they
-reach the internet and the router's DNS and NTP, nothing on another LAN.
+reach the internet, the router's DNS and NTP, and the server's syslog
+listener, nothing else on another LAN. Glasshouse forwards the TV's system
+and kernel logs and its own there, unredacted, as `{job="syslog", host="<tv>"}` in Loki
+with `source` (the log) and `app` (the TV process) labels.
 The router admits SSH, the Homebrew Channel's telnet, Glasshouse's port
 and developer mode's SSH and key server on them from the development
 container alone, so `deploy` runs from there.

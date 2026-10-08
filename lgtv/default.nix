@@ -8,9 +8,13 @@
   sshKeys,
   # Each TV's fully qualified name, from the inventory.
   fqdn,
+  # Loki's service name, from the inventory.
+  syslogServer,
 }:
 
 let
+  hosts = import ./hosts.nix;
+
   files = name: [
     # The admin's FIDO2 keys alone, so every login, a deploy from the
     # development container included, needs a physical YubiKey touch.
@@ -42,6 +46,20 @@ let
       # The server's Prometheus scrapes /api/prometheus/metrics, which
       # Glasshouse serves only while this is on.
       prometheus.enabled = true;
+      # Glasshouse forwards the system, kernel and its own logs, unredacted,
+      # to the syslog listener beside Loki (nixos/servnerr-4/loki.nix),
+      # naming the TV by its inventory host name.
+      syslog = {
+        server = syslogServer;
+        port = hosts.syslogPort;
+        hostname = name;
+        sources = [
+          "system"
+          "kernel"
+          "glasshouse"
+        ];
+        redact = false;
+      };
     };
 
   tree =

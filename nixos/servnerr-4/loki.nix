@@ -43,6 +43,9 @@ let
 
   exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
 
+  # The LG TVs' Glasshouse servers forward their logs here (lgtv/hosts.nix).
+  lgtv = import ../../lgtv/hosts.nix;
+
   # consrv, the serial consoles on the KVM (see pikvm/), logs a line per key
   # a client offers, "<addr>: accepted|rejected public key authentication
   # for ...", and one per session, naming the console in quotes: "<addr>:
@@ -202,6 +205,46 @@ in
         }
         relabel_rules = loki.relabel.syslog.rules
         forward_to    = [loki.write.server.receiver]
+      }
+
+      // The LG TVs' logs, forwarded by Glasshouse as RFC 5424 (see lgtv/).
+      // Each names itself in the hostname field. Over IPv4 and IPv6, as the
+      // TVs resolve this machine to either.
+      loki.source.syslog "lgtv" {
+        listener {
+          address       = "[::]:${toString lgtv.syslogPort}"
+          protocol      = "udp"
+          syslog_format = "rfc5424"
+          labels        = {job = "syslog", site = "${config.homelab.site}"}
+          // Glasshouse stamps each line with when the TV wrote it, so the
+          // backlog it sends at startup keeps its own times.
+          use_incoming_timestamp = true
+        }
+        relabel_rules = loki.relabel.lgtv.rules
+        forward_to    = [loki.write.server.receiver]
+      }
+
+      // The host label from the hostname field, as journal streams carry
+      // the machine's. The message ID names the TV log a line came from
+      // (system, glasshouse or kernel), and the app name the TV process
+      // that wrote it, which the message itself does not repeat.
+      loki.relabel "lgtv" {
+        forward_to = []
+
+        rule {
+          source_labels = ["__syslog_message_hostname"]
+          target_label  = "host"
+        }
+
+        rule {
+          source_labels = ["__syslog_message_msg_id"]
+          target_label  = "source"
+        }
+
+        rule {
+          source_labels = ["__syslog_message_app_name"]
+          target_label  = "app"
+        }
       }
 
       // Label messages with a host name by sender address, mirroring the
