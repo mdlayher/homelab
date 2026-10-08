@@ -221,7 +221,20 @@ in
           use_incoming_timestamp = true
         }
         relabel_rules = loki.relabel.lgtv.rules
-        forward_to    = [loki.write.server.receiver]
+        forward_to    = [loki.process.lgtv.receiver]
+      }
+
+      // The TVs' kernel logs repeat a few lines every few seconds: LG's
+      // screen capture service, the ATSC tuner with no antenna, and an
+      // unplugged Ethernet port. Those are dropped here, and every other
+      // kernel line and the other sources pass whole.
+      loki.process "lgtv" {
+        forward_to = [loki.write.server.receiver]
+
+        stage.match {
+          selector = "{job=\"syslog\", source=\"kernel\"} |~ \"HAL_GAL_(CaptureFrameBuffer|CreateSurface)|captureservice-captureservice::(open|close)::ok|MCU report: VSB not locked|Sunplus Fast Ethernet Transceiver .* ADJ_ADC: (schedule|no link)\""
+          action   = "drop"
+        }
       }
 
       // The host label from the hostname field, as journal streams carry
