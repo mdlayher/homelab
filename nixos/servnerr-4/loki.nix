@@ -46,6 +46,9 @@ let
   # The LG TVs' Glasshouse servers forward their logs here (lgtv/hosts.nix).
   lgtv = import ../../lgtv/hosts.nix;
 
+  # The OpenWrt machines' logd forwards theirs here (openwrt/syslog.nix).
+  openwrtSyslog = import ../../openwrt/syslog.nix;
+
   # consrv, the serial consoles on the KVM (see pikvm/), logs a line per key
   # a client offers, "<addr>: accepted|rejected public key authentication
   # for ...", and one per session, naming the console in quotes: "<addr>:
@@ -252,6 +255,36 @@ in
         rule {
           source_labels = ["__syslog_message_msg_id"]
           target_label  = "source"
+        }
+
+        rule {
+          source_labels = ["__syslog_message_app_name"]
+          target_label  = "app"
+        }
+      }
+
+      // The OpenWrt machines' logs, forwarded by logd as RFC 3164 with the
+      // machine's hostname. logd sends each line as it is written and
+      // nothing from before its sender started.
+      loki.source.syslog "openwrt" {
+        listener {
+          address       = "[::]:${toString openwrtSyslog.port}"
+          protocol      = "udp"
+          syslog_format = "rfc3164"
+          labels        = {job = "syslog", site = "${config.homelab.site}"}
+        }
+        relabel_rules = loki.relabel.openwrt.rules
+        forward_to    = [loki.write.server.receiver]
+      }
+
+      // The host label from the hostname field, and the app from the tag
+      // naming the process that wrote the line.
+      loki.relabel "openwrt" {
+        forward_to = []
+
+        rule {
+          source_labels = ["__syslog_message_hostname"]
+          target_label  = "host"
         }
 
         rule {

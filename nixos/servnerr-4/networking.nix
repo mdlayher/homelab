@@ -84,9 +84,10 @@ in
       ];
       allowedUDPPorts = [
         # Syslog from devices that cannot run alloy: the CyberPower cards,
-        # and the LG TVs (see loki.nix).
+        # the LG TVs and the OpenWrt machines (see loki.nix).
         5514
         (import ../../lgtv/hosts.nix).syslogPort
+        (import ../../openwrt/syslog.nix).port
         53
       ];
     };
