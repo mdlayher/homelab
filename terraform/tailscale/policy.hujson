@@ -15,6 +15,8 @@
 		"tag:infra": ["autogroup:admin"],
 		// IP KVM for the server, a PiKVM appliance.
 		"tag:kvm": ["autogroup:admin"],
+		// Out-of-band router on its own LTE uplink, running OpenWrt.
+		"tag:oob": ["autogroup:admin"],
 		// The router (superset of tag:infra): exit node.
 		"tag:router": ["autogroup:admin"],
 		// Windows PCs, reached over SSH from the development container.
@@ -34,6 +36,7 @@
 				"tag:hass:*",
 				"tag:infra:*",
 				"tag:kvm:*",
+				"tag:oob:*",
 				"tag:windows:*",
 			],
 		},
@@ -233,6 +236,16 @@
 			"src":    ["autogroup:member"],
 			"dst":    ["tag:edge"],
 			"users":  ["mdlayher"],
+		},
+
+		// Personal devices into the out-of-band router as root, the only
+		// user OpenWrt has: the way in when the router is down. Requires
+		// --ssh on the machine.
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:oob"],
+			"users":  ["root"],
 		},
 	],
 }

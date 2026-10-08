@@ -1,8 +1,9 @@
 # The serial consoles each machine can open, derived from the console lines
 # in ./physical.nix, keyed by that machine and then by console name.
 #
-# A console is named for the role its machine holds, or for the machine
-# when it holds none, so a hardware swap keeps the name. A port on a card
+# A console is named for the machine's `consoleName` in ./physical.nix,
+# else for the role its machine holds, else for the machine, so a hardware
+# swap keeps the name. A port on a card
 # belongs to the machine the card is fitted in. A line ending on a
 # multi-port adapter belongs to the machine on the adapter's upstream port
 # and selects the port by the chip serving its label and the interface
@@ -25,9 +26,10 @@ let
 
   nameOf =
     machine:
-    lib.findFirst (role: lib.elem machine inventory.roles.${role}) machine (
-      lib.attrNames inventory.roles
-    );
+    devices.${machine}.consoleName
+      or (lib.findFirst (role: lib.elem machine inventory.roles.${role}) machine (
+        lib.attrNames inventory.roles
+      ));
 
   # The machine at the far end of the cable on a device's port.
   peerOf =

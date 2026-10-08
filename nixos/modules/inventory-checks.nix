@@ -329,5 +329,13 @@ in
       assertion = lib.all (c: c.console ? baud) (lib.filter (c: c ? console) cables);
       message = "inventory console lines must set console.baud";
     }
+    {
+      assertion =
+        let
+          names = lib.concatMap (d: lib.optional (d ? consoleName) d.consoleName) (lib.attrValues devices);
+        in
+        isUnique (names ++ lib.attrNames inventory.roles);
+      message = "inventory consoleNames must be unique and must not be a role name";
+    }
   ];
 }

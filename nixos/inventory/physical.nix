@@ -8,6 +8,9 @@
 # its port through an adapter or extension lists those in `via`. A device's
 # `reserved` holds ports for gear not cabled yet, by port.
 #
+# A machine's entry may set `consoleName`, the name its serial consoles take
+# in place of its role or hostname (see ./consoles.nix).
+#
 # A device may declare `slots`, and a card names the device and slot it
 # sits in with `fittedIn`. A card's ports belong to the machine it is
 # fitted in, and a port with an operating system device is named for it.
@@ -149,6 +152,16 @@ in
       ) (range 4);
       reserved.host1-atx = "servnerr-4 atx";
     };
+
+    # The OpenWrt router for the out-of-band VLAN; not a network host yet.
+    # It holds no inventory role, which would put it in the development
+    # container's agent-forwarding SSH config, so its console is named
+    # here.
+    jumpnerr-1 = {
+      model = "PC Engines apu4d4";
+      consoleName = "jump";
+      ports = [ "console" ];
+    };
   };
 
   cables = {
@@ -188,6 +201,18 @@ in
         };
         dst = {
           device = "routnerr-3";
+          port = "console";
+        };
+      }
+      {
+        type = "DB9 null-modem";
+        console.baud = 115200;
+        src = {
+          device = "serial-8port";
+          port = "4";
+        };
+        dst = {
+          device = "jumpnerr-1";
           port = "console";
         };
       }
