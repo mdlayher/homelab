@@ -1,7 +1,7 @@
 # lgtv
 
 The LG TVs listed in `hosts.nix`, rooted with the Homebrew Channel and
-running [Glasshouse](https://github.com/rorygallagher2024/lg-webos-dashboard),
+running [Glasshouse](https://github.com/rorygallagher2024/glasshouse),
 whose stats the server's Prometheus scrapes. They run webOS rather than
 NixOS, so this directory builds what the repository manages on them and
 `deploy` applies it over SSH. Nothing applies it nightly.
