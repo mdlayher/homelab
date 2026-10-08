@@ -1403,6 +1403,11 @@ in
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
                 shortName = n: lib.head (lib.splitString "." n);
+                # The jumpbox by its short and its tailnet name, as ssh
+                # matches Host against the name given on its command line.
+                jumps = lib.concatMapStringsSep " " (
+                  j: "${j} ${j}.${inventory.tailnetDomain}"
+                ) inventory.roles.jump;
                 # The LG TVs lgtv/deploy manages, by their inventory names.
                 tvs = (import ../../lgtv/hosts.nix).hosts;
                 # The Windows PCs windows/deploy manages, by their tailnet names.
@@ -1411,11 +1416,12 @@ in
               # Root on the KVM controls the server's console and power, and
               # consrv's serial consoles can be left logged in, so each
               # connection to either costs its own touch, none outlives its
-              # command, and the agent stays here: neither runs sudo. ssh
-              # takes the first value for each option, so this precedes the
+              # command, and the agent stays here: neither runs sudo. The
+              # jumpbox is reached as root and runs no sudo either. ssh takes
+              # the first value for each option, so this precedes the
               # tailnet-wide block.
               ''
-                Host pikvm.${inventory.tailnetDomain} consrv.${inventory.tailnetDomain}
+                Host pikvm.${inventory.tailnetDomain} consrv.${inventory.tailnetDomain} ${jumps}
                   ControlMaster no
                   ControlPath none
                   ForwardAgent no

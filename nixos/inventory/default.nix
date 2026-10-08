@@ -262,6 +262,8 @@
       "edge-pdx"
       "edge-iad"
     ];
+    # The OpenWrt router for the out-of-band VLAN.
+    jump = [ "jumpnerr-1" ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
   };
@@ -325,6 +327,7 @@
           ap-livingroom = { };
           gamnerr-1.ipv6 = "eui64";
           hass.ipv6 = "prefixstable";
+          jumpnerr-1.ipv6 = "eui64";
           nerr-4.ipv6 = "eui64";
           pdu01 = { };
           pikvm.ipv6 = "eui64";
