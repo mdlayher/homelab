@@ -244,10 +244,11 @@
     }
   ];
 
-  # Stable role names for machines whose hostnames carry a generation number.
-  # Configuration on other machines references roles rather than hostnames,
-  # so replacing hardware only touches this file, the new machine's own
-  # directory, and flake.nix.
+  # Stable role names for the machines other configuration addresses
+  # individually. Configuration on other machines references roles rather
+  # than hostnames, so replacing hardware only touches this file, the new
+  # machine's own directory, and flake.nix. A role is an identity; what
+  # kind of device a host is goes in its tags (see hostTags).
   #
   # Each role lists its holders in precedence order: the first entry is the
   # primary, and during a generation swap the new machine is appended, so
@@ -262,24 +263,52 @@
       "edge-pdx"
       "edge-iad"
     ];
-    # The Wi-Fi access points, cloud-managed.
-    ap = [
-      "ap-basement"
-      "ap-laundry"
-      "ap-livingroom"
-    ];
     # The OpenWrt router for the out-of-band VLAN.
     jump = [ "jumpnerr-1" ];
     # The IP KVM for the server, a PiKVM appliance.
     kvm = [ "pikvm" ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
-    # The network switches, cloud-managed.
-    switch = [
-      "switch-core"
-      "switch-livingroom"
-    ];
   };
+
+  # The tags a host on a segment may carry in its tags list, each saying
+  # what the host is. A host may hold any number of them, and a role
+  # besides; consumers select hosts by tag through the inventory module's
+  # tagged. A tag says what a host is, its kind or its make, never what a
+  # consumer does with it.
+  hostTags = [
+    # A Wi-Fi access point.
+    "ap"
+    # A Brother device. Nothing in this repository configures it.
+    "brother"
+    # A CyberPower network management card, in a UPS or a PDU.
+    "cyberpower"
+    # A Home Assistant OS machine.
+    "homeassistant"
+    # A Philips Hue bridge.
+    "hue"
+    # An HPE Aruba Instant On device, cloud-managed.
+    "instanton"
+    # An LG TV running Glasshouse, built by lgtv/.
+    "lgtv"
+    # A myQ hub.
+    "myq"
+    # A machine running OpenWrt, built by openwrt/.
+    "openwrt"
+    # A person's own computer or phone. Nothing in this repository
+    # configures it.
+    "personal"
+    # A PiKVM, built by pikvm/.
+    "pikvm"
+    # A printer, paper or 3D.
+    "printer"
+    # A Prusa device. Nothing in this repository configures it.
+    "prusa"
+    # A network switch.
+    "switch"
+    # A Windows PC, built by windows/.
+    "windows"
+  ];
 
   # Stable service names, published in internal DNS as <service>.svc.<domain>
   # resolving to the primary holder of the named role. Devices which cannot
@@ -335,19 +364,58 @@
         # means, and renumbering the topology then renames nothing.
         role = "mgmt";
         hosts = {
-          ap-basement = { };
-          ap-laundry = { };
-          ap-livingroom = { };
-          gamnerr-1.ipv6 = "eui64";
-          hass.ipv6 = "prefixstable";
-          jumpnerr-1.ipv6 = "eui64";
-          nerr-4.ipv6 = "eui64";
-          pdu01 = { };
-          pikvm.ipv6 = "eui64";
+          ap-basement.tags = [
+            "ap"
+            "instanton"
+          ];
+          ap-laundry.tags = [
+            "ap"
+            "instanton"
+          ];
+          ap-livingroom.tags = [
+            "ap"
+            "instanton"
+          ];
+          gamnerr-1 = {
+            ipv6 = "eui64";
+            tags = [
+              "personal"
+              "windows"
+            ];
+          };
+          hass = {
+            ipv6 = "prefixstable";
+            tags = [ "homeassistant" ];
+          };
+          jumpnerr-1 = {
+            ipv6 = "eui64";
+            tags = [ "openwrt" ];
+          };
+          nerr-4 = {
+            ipv6 = "eui64";
+            tags = [ "personal" ];
+          };
+          pdu01.tags = [ "cyberpower" ];
+          pikvm = {
+            ipv6 = "eui64";
+            tags = [ "pikvm" ];
+          };
           servnerr-4.ipv6 = "token";
-          switch-core.ipv6 = "eui64";
-          switch-livingroom.ipv6 = "eui64";
-          ups01 = { };
+          switch-core = {
+            ipv6 = "eui64";
+            tags = [
+              "instanton"
+              "switch"
+            ];
+          };
+          switch-livingroom = {
+            ipv6 = "eui64";
+            tags = [
+              "instanton"
+              "switch"
+            ];
+          };
+          ups01.tags = [ "cyberpower" ];
         };
       };
 
@@ -357,8 +425,17 @@
         trusted = true;
         role = "lan";
         hosts = {
-          psframework.ipv6 = "eui64";
-          theatnerr-2.ipv6 = "eui64";
+          psframework = {
+            ipv6 = "eui64";
+            tags = [ "personal" ];
+          };
+          theatnerr-2 = {
+            ipv6 = "eui64";
+            tags = [
+              "personal"
+              "windows"
+            ];
+          };
         };
       };
 
@@ -394,10 +471,22 @@
         trusted = false;
         role = "iot";
         hosts = {
-          living-room-hue-hub.ipv6 = "eui64";
-          living-room-myq-hub = { };
-          office-printer = { };
-          prusa-core-one.ipv6 = "eui64";
+          living-room-hue-hub = {
+            ipv6 = "eui64";
+            tags = [ "hue" ];
+          };
+          living-room-myq-hub.tags = [ "myq" ];
+          office-printer.tags = [
+            "brother"
+            "printer"
+          ];
+          prusa-core-one = {
+            ipv6 = "eui64";
+            tags = [
+              "printer"
+              "prusa"
+            ];
+          };
         };
       };
 
@@ -409,8 +498,14 @@
         trusted = false;
         role = "iot";
         hosts = {
-          living-room-lgcx.ipv6 = "eui64";
-          office-lgc4.ipv6 = "eui64";
+          living-room-lgcx = {
+            ipv6 = "eui64";
+            tags = [ "lgtv" ];
+          };
+          office-lgc4 = {
+            ipv6 = "eui64";
+            tags = [ "lgtv" ];
+          };
         };
       };
     };

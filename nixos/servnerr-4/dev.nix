@@ -1398,14 +1398,11 @@ in
             # search domain.
             programs.ssh.extraConfig =
               let
-                # The role holders on the tailnet; the appliances' roles
-                # are not.
-                machines = lib.concatMap (r: inventory.roles.${r}) [
-                  "edge"
-                  "jump"
-                  "router"
-                  "server"
-                ];
+                # Every role holder is on the tailnet. The KVM is left out:
+                # its block below names it by tailnet name alone, and its
+                # short name here would match the block which multiplexes
+                # and forwards the agent.
+                machines = lib.concatLists (lib.attrValues (removeAttrs inventory.roles [ "kvm" ]));
                 # dev0 neighbors from the inventory, reached over the dev
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);

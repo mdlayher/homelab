@@ -72,6 +72,8 @@ let
       ipv4 = placeholder "hosts/${name}/ipv4";
       # False for a host the router denies the internet.
       wan = host.wan or true;
+      # What the host is, from the inventory's hostTags.
+      tags = host.tags or [ ];
       ula =
         if mode == "prefixstable" then
           "${ifi.ulaPrefix}:${iid "iid_ula"}"
@@ -121,6 +123,10 @@ let
     ifi;
 
   interfaces = lib.mapAttrs mkInterface subnets;
+
+  hosts = lib.listToAttrs (
+    lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)
+  );
 
   # A router loopback, keyed by the machine's name. Plain data throughout,
   # unlike everything above: a loopback is named and read across sites, and a
@@ -225,8 +231,9 @@ in
       placeholder), their role and searchDomain, plus their hosts. Hosts
       carry mac, ipv4, ula and iid (both null when the host has no known
       IPv6 address, and iid also where the identifier differs per prefix),
-      dnsName, the name DNS publishes, and wan, false where the host is
-      denied the internet.
+      dnsName, the name DNS publishes, wan, false where the host is
+      denied the internet, and tags, what the host is. tagged takes a list
+      of tags and returns this site's hosts holding any of them.
 
       Loopbacks are keyed by machine name and are plain data, since they are
       read across sites: each carries addr, siteFqdn (null except on the
@@ -314,9 +321,9 @@ in
         anycast4
         isis
         ;
-      hosts = lib.listToAttrs (
-        lib.concatMap (ifi: map (h: lib.nameValuePair h.name h) ifi.hosts) (lib.attrValues interfaces)
-      );
+      inherit hosts;
+      # The hosts at this site holding any of the given tags, in name order.
+      tagged = tags: lib.filter (h: lib.any (t: lib.elem t h.tags) tags) (lib.attrValues hosts);
     };
 
     sops.secrets = lib.listToAttrs (
