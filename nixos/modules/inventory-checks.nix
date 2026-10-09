@@ -220,6 +220,11 @@ in
       message = "every inventory service must name a role";
     }
     {
+      assertion =
+        lib.intersectLists (lib.attrNames inventory.services) (lib.attrNames inventory.anycast6) == [ ];
+      message = "an inventory service name is held by a role or by anycast, never both";
+    }
+    {
       assertion = lib.all (f: lib.elem f.host hostNames) inventory.tailscaleForwards;
       message = "every inventory tailscaleForwards host must be a host on a segment";
     }

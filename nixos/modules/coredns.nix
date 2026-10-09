@@ -80,6 +80,20 @@ let
     + lib.optionalString (host.ula != null) (lib.concatMapStrings (n: "${host.ula} ${n}\n") svcNames)
   ) (lib.attrsToList inventory.services);
 
+  # The anycast services under the same label, resolving to the anycast
+  # address rather than to a holder: whichever node is nearest answers, and
+  # a node withdraws the address with the service behind it (see
+  # modules/anycast.nix). A name is held by a role or by anycast, never
+  # both, which inventory-checks.nix asserts.
+  anycastFile = lib.concatMapStrings (
+    service:
+    let
+      n = "${service.name}.svc.${inventory.zone}";
+      addr4 = inventory.anycast4.${service.name} or null;
+    in
+    lib.optionalString (addr4 != null) "${addr4} ${n}\n" + "${service.value} ${n}\n"
+  ) (lib.attrsToList inventory.anycast6);
+
   # A loopback answers the fixed site name where it is the one the site is
   # reached at, and its own name where the machine is published at it. One
   # with neither is reached by address alone.
@@ -187,7 +201,7 @@ in
 
   sops.templates = {
     "coredns-hosts" = {
-      content = hostsFile + routerFile + servicesFile + localLoopbackFile;
+      content = hostsFile + routerFile + servicesFile + anycastFile + localLoopbackFile;
       restartUnits = [ "coredns.service" ];
     };
     "coredns-ptr" = {
@@ -290,10 +304,14 @@ in
         forward . 100.100.100.100
       }
 
-      # LG TV firmware updates, answered NXDOMAIN, so the TVs stay on the
-      # firmware they have. The hosts are those the Homebrew Channel blocks
-      # on the TV itself. Logged, so a TV checking for an
-      # update shows in the journal.
+      # LG's servers, answered NXDOMAIN. The update hosts, those the
+      # Homebrew Channel blocks on the TV itself, keep the TVs on the
+      # firmware they have. The platform hosts, those Glasshouse blocks on
+      # the TV once its clock is set, are where webOS sets its clock, the
+      # Content Store and the content CDN; blocked here from the first
+      # second of boot, so the clock is Glasshouse's to set from the
+      # homelab's NTP (see lgtv/) and nothing installs from LG. Logged, so
+      # a TV reaching for any of them shows in the journal.
       snu.lge.com su.lge.com su-ssl.lge.com su-dev.lge.com nextlgsdp.com lgtvsdp.com ngfts.lge.com aic-ngfts.lge.com {
         log . {
           class denial
