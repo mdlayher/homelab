@@ -15,6 +15,18 @@ if [ "${1:-}" = --check ]; then
   check=yes
 fi
 
+# The packages the settings configure are installed by hand; see
+# openwrt/README.md.
+missing=""
+while read -r p; do
+  [ -n "$p" ] || continue
+  apk info -e "$p" >/dev/null 2>&1 || missing="$missing $p"
+done <packages
+if [ -n "$missing" ]; then
+  echo "error: packages not installed:$missing; see openwrt/README.md" >&2
+  exit 1
+fi
+
 # What the differences found need doing, each named once.
 todo=" "
 need() {
@@ -146,6 +158,10 @@ for t in $todo; do
   firewall)
     uci commit firewall
     /etc/init.d/firewall reload
+    ;;
+  prometheus-node-exporter-lua)
+    uci commit prometheus-node-exporter-lua
+    /etc/init.d/prometheus-node-exporter-lua restart
     ;;
   network)
     uci commit network

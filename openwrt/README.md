@@ -34,6 +34,16 @@ A deploy may restart dropbear and tailscaled or reload the network (a few
 seconds off the tailnet, after the deploy has finished), and restart
 dnsmasq and logd.
 
+## Packages
+
+The packages the machines need beyond the OpenWrt image are installed by
+hand, and the deploy refuses to change anything while one is missing. The
+list is `packages` in `default.nix`; on the machine:
+
+```sh
+apk update && apk add <package>...
+```
+
 ## Not managed here
 
 Set on the machine, and never copied off it:

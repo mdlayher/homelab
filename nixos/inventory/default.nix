@@ -262,10 +262,23 @@
       "edge-pdx"
       "edge-iad"
     ];
+    # The Wi-Fi access points, cloud-managed.
+    ap = [
+      "ap-basement"
+      "ap-laundry"
+      "ap-livingroom"
+    ];
     # The OpenWrt router for the out-of-band VLAN.
     jump = [ "jumpnerr-1" ];
+    # The IP KVM for the server, a PiKVM appliance.
+    kvm = [ "pikvm" ];
     router = [ "routnerr-3" ];
     server = [ "servnerr-4" ];
+    # The network switches, cloud-managed.
+    switch = [
+      "switch-core"
+      "switch-livingroom"
+    ];
   };
 
   # Stable service names, published in internal DNS as <service>.svc.<domain>

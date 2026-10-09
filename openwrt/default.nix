@@ -6,6 +6,7 @@
   lib,
   pkgs,
   inventory,
+  siteInventory,
   sshKeys,
 }:
 
@@ -15,6 +16,27 @@ let
   # dropbear's port for openwrt/deploy, over the tailnet. tailscaled's own
   # SSH server answers port 22 there, for personal devices only.
   sshPort = 2022;
+
+  # The segment the server scrapes the machines from.
+  mgmt = siteInventory.interfaces.mgmt0;
+  nodeExporterPort = 9100;
+
+  # Packages the machines need beyond the OpenWrt image, for the managed
+  # settings, the LTE modem and working on them by hand, installed by hand
+  # (see README.md); apply.sh refuses to change anything while one is
+  # missing.
+  packages = [
+    "kmod-usb-net-cdc-mbim"
+    "kmod-usb-serial-qualcomm"
+    "mbim-utils"
+    "modemmanager"
+    "picocom"
+    "prometheus-node-exporter-lua"
+    "prometheus-node-exporter-lua-modemmanager"
+    "prometheus-node-exporter-lua-netstat"
+    "prometheus-node-exporter-lua-openwrt"
+    "tailscale"
+  ];
 
   # Each managed uci setting, in order: a section before its options. A
   # section names its type, an option its value, and a list its values,
@@ -94,6 +116,48 @@ let
       option = "dropbear.deploy.RootPasswordAuth";
       value = "off";
     }
+    # prometheus-node-exporter-lua, scraped by the server; see
+    # nixos/servnerr-4/prometheus.nix. It listens on every interface, and
+    # the firewall admits mgmt alone.
+    {
+      option = "prometheus-node-exporter-lua.main.listen_interface";
+      value = "*";
+    }
+    {
+      option = "prometheus-node-exporter-lua.main.listen_port";
+      value = toString nodeExporterPort;
+    }
+    {
+      section = "firewall.node_exporter";
+      type = "rule";
+    }
+    {
+      option = "firewall.node_exporter.name";
+      value = "Allow-node-exporter";
+    }
+    {
+      option = "firewall.node_exporter.src";
+      value = "wan";
+    }
+    {
+      option = "firewall.node_exporter.proto";
+      value = "tcp";
+    }
+    {
+      option = "firewall.node_exporter.dest_port";
+      value = toString nodeExporterPort;
+    }
+    {
+      list = "firewall.node_exporter.src_ip";
+      values = [
+        "${mgmt.ipv4Prefix}.0/24"
+        "${mgmt.ulaPrefix}::/64"
+      ];
+    }
+    {
+      option = "firewall.node_exporter.target";
+      value = "ACCEPT";
+    }
     # The factory LAN: the bridge of the other ports at 192.168.1.1, its
     # DHCP server, firewall zone, forwarding and rules, the ULA prefix
     # generated at first boot for it, and the LED showing its activity.
@@ -165,6 +229,7 @@ let
         install -m 0755 ${./apply.sh} $out/apply.sh
         echo ${lib.escapeShellArg (lib.concatLines (map renderSetting (settings name)))} > $out/settings
         echo ${toString sshPort} > $out/port
+        echo ${lib.escapeShellArg (lib.concatLines packages)} > $out/packages
         touch $out/manifest
       ''
       + lib.concatMapStrings (f: ''

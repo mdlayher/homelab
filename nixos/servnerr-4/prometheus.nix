@@ -212,18 +212,21 @@ let
   })
   # The KVM runs consrv for the serial consoles; see pikvm/. Its sshd is
   # probed as the machines' are, since pikvm/deploy edits its configuration.
-  // {
-    pikvm = {
-      jobs = {
-        alloy.port = 12345;
-        consrv.port = 9288;
-        node.port = 9100;
-      };
-      ssh = true;
-      readOnlyRoot = true;
-      logs = true;
+  // lib.genAttrs roles.kvm (_: {
+    jobs = {
+      alloy.port = 12345;
+      consrv.port = 9288;
+      node.port = 9100;
     };
-  }
+    ssh = true;
+    readOnlyRoot = true;
+    logs = true;
+  })
+  # The OpenWrt machines, whose node job is prometheus-node-exporter-lua;
+  # see openwrt/.
+  // lib.genAttrs roles.jump (_: {
+    jobs.node.port = 9100;
+  })
   # nftables_exporter runs on every IGP node, the router, edge and server
   # role holders; see nixos/modules/nftables-exporter.nix. The exporter
   # mirrors nftables faithfully, so the homelab naming conventions are
@@ -330,8 +333,9 @@ let
     ]
     # Liveness for the cloud-managed switches and APs in the management LAN
     # inventory, which expose no SNMP or local API; ping is the only local
-    # signal that they are alive. The KVM is pinged as well, which tells the
-    # device being unreachable apart from its scrape below failing.
+    # signal that they are alive. The KVM and the OpenWrt machines are
+    # pinged as well, which tells a device being unreachable apart from its
+    # scrape below failing.
     #
     # Fully qualified, as are the SNMP targets below: a relative name with a
     # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
@@ -342,7 +346,7 @@ let
     # truthful for them.
     ++ map (h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))) (
       lib.filter (
-        h: lib.hasPrefix "switch-" h.name || lib.hasPrefix "ap-" h.name || h.name == "pikvm"
+        h: lib.elem h.name (roles.switch ++ roles.ap ++ roles.kvm ++ roles.jump)
       ) config.homelab.inventory.interfaces.mgmt0.hosts
     );
 

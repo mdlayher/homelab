@@ -90,6 +90,9 @@
         # openwrt/deploy.
         openwrt = import ./openwrt {
           inherit inventory;
+          # The segments as the server's inventory computes them.
+          siteInventory =
+            self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.homelab.inventory;
           inherit (nixpkgs) lib;
           pkgs = nixpkgs.legacyPackages.${system};
           sshKeys = import ./nixos/ssh-keys.nix;

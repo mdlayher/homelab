@@ -1398,7 +1398,14 @@ in
             # search domain.
             programs.ssh.extraConfig =
               let
-                machines = lib.flatten (lib.attrValues inventory.roles);
+                # The role holders on the tailnet; the appliances' roles
+                # are not.
+                machines = lib.concatMap (r: inventory.roles.${r}) [
+                  "edge"
+                  "jump"
+                  "router"
+                  "server"
+                ];
                 # dev0 neighbors from the inventory, reached over the dev
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
