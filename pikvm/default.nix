@@ -64,6 +64,10 @@ let
   ) null (lib.attrNames inventory.sites);
   tailscalePort = (lib.findFirst (f: f.host == "pikvm") null inventory.tailscaleForwards).port;
 
+  # Where node_exporter's textfile collector reads, in /run since the root
+  # filesystem is read-only.
+  textfileDir = "/run/prometheus-node-exporter/textfile";
+
   # Packages the KVM needs beyond PiKVM OS, for the managed files and for
   # working on it by hand, installed by hand (see README.md); apply.sh
   # refuses to change anything while one is missing.
@@ -183,7 +187,59 @@ let
       mode = "644";
       action = "node-exporter";
       text = ''
-        NODE_EXPORTER_ARGS="--collector.systemd --collector.systemd.enable-restarts-metrics --collector.systemd.enable-start-time-metrics --no-collector.rapl"
+        NODE_EXPORTER_ARGS="--collector.systemd --collector.systemd.enable-restarts-metrics --collector.systemd.enable-start-time-metrics --no-collector.rapl --collector.textfile.directory=${textfileDir}"
+      '';
+    }
+    {
+      path = "/usr/local/bin/modemmanager-metrics";
+      mode = "755";
+      action = "modemmanager-metrics";
+      text = builtins.readFile ./modemmanager-metrics;
+    }
+    {
+      path = "/etc/systemd/system/modemmanager-metrics.service";
+      mode = "644";
+      action = "modemmanager-metrics";
+      text = ''
+        [Unit]
+        Description=ModemManager metrics for node_exporter
+        After=ModemManager.service
+
+        [Service]
+        Type=oneshot
+        RuntimeDirectory=${lib.removePrefix "/run/" textfileDir}
+        RuntimeDirectoryPreserve=yes
+        ExecStart=/usr/local/bin/modemmanager-metrics
+      '';
+    }
+    {
+      # OpenWrt's collector reads at every scrape; this keeps the file about
+      # as fresh as a scrape.
+      path = "/etc/systemd/system/modemmanager-metrics.timer";
+      mode = "644";
+      action = "modemmanager-metrics";
+      text = ''
+        [Timer]
+        OnBootSec=1min
+        OnUnitActiveSec=30s
+        AccuracySec=1s
+
+        [Install]
+        WantedBy=timers.target
+      '';
+    }
+    {
+      # The modem's signal refresh rate, set as the LTE connection comes up,
+      # where OpenWrt's modemmanager proto sets its signalrate option. The
+      # rate is the poll's, so the detailed readings are no older than it.
+      path = "/etc/NetworkManager/dispatcher.d/90-signal-rate";
+      mode = "755";
+      action = "none";
+      text = ''
+        #!/usr/bin/env bash
+        if [[ $2 == up && $CONNECTION_ID == pikvm-lte ]]; then
+          mmcli -m any --signal-setup=30
+        fi
       '';
     }
     {
@@ -361,10 +417,21 @@ let
 
   '';
 
+  # The header follows a script's interpreter line, which must stay first.
+  withHeader =
+    f:
+    let
+      lines = lib.splitString "\n" f.text;
+    in
+    if lib.hasPrefix "#!" f.text then
+      lib.head lines + "\n" + header (f.comment or "#") + lib.concatStringsSep "\n" (lib.tail lines)
+    else
+      header (f.comment or "#") + f.text;
+
   sourceOf =
     f:
     f.binary or (pkgs.writeText (lib.replaceStrings [ "/" ] [ "-" ] (lib.removePrefix "/" f.path)) (
-      header (f.comment or "#") + f.text
+      withHeader f
     ));
 in
 pkgs.runCommand "pikvm-config" { } (

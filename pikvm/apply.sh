@@ -79,7 +79,15 @@ if ! systemctl -q is-enabled kvmd-otg-getty@ttyGS0.service; then
   echo "disabled: kvmd-otg-getty@ttyGS0.service"
 fi
 
-if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok ]]; then
+# NetworkManager runs the scripts in dispatcher.d through its dispatcher
+# service, which Arch leaves disabled.
+dispatcher=ok
+if ! systemctl -q is-enabled NetworkManager-dispatcher.service; then
+  dispatcher=disabled
+  echo "disabled: NetworkManager-dispatcher.service"
+fi
+
+if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok && $dispatcher == ok ]]; then
   echo "up to date"
   exit 0
 fi
@@ -130,6 +138,14 @@ fi
 if [[ -n ${todo[node-exporter]:-} ]]; then
   systemctl enable prometheus-node-exporter
   systemctl restart prometheus-node-exporter
+fi
+if [[ -n ${todo[modemmanager-metrics]:-} ]]; then
+  systemctl daemon-reload
+  systemctl enable modemmanager-metrics.timer
+  systemctl restart modemmanager-metrics.timer
+fi
+if [[ $dispatcher == disabled ]]; then
+  systemctl enable NetworkManager-dispatcher.service
 fi
 # kvmd-otg builds the USB gadget from the override when it starts, and kvmd
 # holds the gadget's devices, so kvmd is stopped while it is rebuilt. The
