@@ -113,6 +113,7 @@
             sshKeys = import ./nixos/ssh-keys.nix;
             fqdn = nixpkgs.lib.genAttrs (import ./lgtv/hosts.nix).hosts qualify;
             syslogServer = "loki.svc.${inv.zone}";
+            ntpServer = inv.anycast6.ntp;
           };
 
         # The Windows PCs' configuration, built here and applied by

@@ -10,6 +10,8 @@
   fqdn,
   # Loki's service name, from the inventory.
   syslogServer,
+  # The NTP server Glasshouse sets a TV's clock from, from the inventory.
+  ntpServer,
 }:
 
 let
@@ -59,6 +61,14 @@ let
           "glasshouse"
         ];
         redact = false;
+      };
+      # webOS sets its clock from LG's servers alone. Glasshouse's SNTP
+      # client sets it from the homelab's anycast NTP instead, which the
+      # router admits from the restricted LANs on UDP 123. Read at
+      # Glasshouse's start, so the setting takes effect at its next restart.
+      ntp = {
+        server = ntpServer;
+        port = 123;
       };
     };
 

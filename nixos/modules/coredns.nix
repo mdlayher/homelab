@@ -294,7 +294,7 @@ in
       # firmware they have. The hosts are those the Homebrew Channel blocks
       # on the TV itself. Logged, so a TV checking for an
       # update shows in the journal.
-      snu.lge.com su.lge.com su-ssl.lge.com su-dev.lge.com {
+      snu.lge.com su.lge.com su-ssl.lge.com su-dev.lge.com nextlgsdp.com lgtvsdp.com ngfts.lge.com aic-ngfts.lge.com {
         log . {
           class denial
         }
