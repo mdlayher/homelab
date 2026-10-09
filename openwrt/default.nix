@@ -46,6 +46,13 @@ let
       list = "dhcp.@dnsmasq[0].rebind_domain";
       values = [ inventory.zone ];
     }
+    # The factory's local domain, answered by dnsmasq alone.
+    {
+      unset = "dhcp.@dnsmasq[0].local";
+    }
+    {
+      unset = "dhcp.@dnsmasq[0].domain";
+    }
     {
       section = "firewall.tailscale";
       type = "zone";
@@ -88,8 +95,8 @@ let
       value = "off";
     }
     # The factory LAN: the bridge of the other ports at 192.168.1.1, its
-    # DHCP server, firewall zone, forwarding and rules, and the ULA prefix
-    # generated at first boot for it.
+    # DHCP server, firewall zone, forwarding and rules, the ULA prefix
+    # generated at first boot for it, and the LED showing its activity.
     {
       absent = "network.interface";
       where = "device=br-lan";
@@ -116,6 +123,10 @@ let
     {
       absent = "firewall.rule";
       where = "dest=lan";
+    }
+    {
+      absent = "system.led";
+      where = "dev=br-lan";
     }
   ];
 

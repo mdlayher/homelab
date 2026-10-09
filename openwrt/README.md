@@ -30,8 +30,9 @@ Each deploy logs its provenance through logd, which reaches Loki under
 `{unit="deploy"}`, and a finished one is announced in the Discord ops
 channel; see lib/deploy.sh.
 
-A deploy may restart dropbear and tailscaled (a few seconds off the
-tailnet, after the deploy has finished), dnsmasq, and logd.
+A deploy may restart dropbear and tailscaled or reload the network (a few
+seconds off the tailnet, after the deploy has finished), and restart
+dnsmasq and logd.
 
 ## Not managed here
 
