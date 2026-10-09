@@ -24,8 +24,38 @@ need() {
   esac
 }
 
+# Deletes each section of a config's type whose option holds a value: "absent
+# firewall.zone name=lan". Sections are found by uci's stable IDs, so
+# deleting one does not renumber the rest.
+absent() {
+  cfg=${1%%.*}
+  type=${1#*.}
+  opt=${2%%=*}
+  val=${2#*=}
+  for s in $(uci -X show "$cfg" | sed -n "s/^$cfg\.\([^.=]*\)=$type\$/\1/p"); do
+    [ "$(uci -q get "$cfg.$s.$opt" || true)" = "$val" ] || continue
+    echo "uci: $cfg.$s: $type with $opt '$val' -> deleted"
+    need "$cfg"
+    [ $check = yes ] || uci delete "$cfg.$s"
+  done
+}
+
 while read -r kind key value; do
   [ -n "$kind" ] || continue
+  case $kind in
+  absent)
+    absent "$key" "$value"
+    continue
+    ;;
+  unset)
+    current=$(uci -q get "$key" || true)
+    [ -n "$current" ] || continue
+    echo "uci: $key: '$current' -> unset"
+    need "${key%%.*}"
+    [ $check = yes ] || uci delete "$key"
+    continue
+    ;;
+  esac
   current=$(uci -q get "$key" || true)
   [ "$current" = "$value" ] && continue
   echo "uci: $key: '$current' -> '$value'"
@@ -111,10 +141,15 @@ for t in $todo; do
   dhcp)
     uci commit dhcp
     /etc/init.d/dnsmasq restart
+    /etc/init.d/odhcpd reload
     ;;
   firewall)
     uci commit firewall
     /etc/init.d/firewall reload
+    ;;
+  network)
+    uci commit network
+    later="$later network"
     ;;
   dropbear)
     uci commit dropbear
@@ -125,16 +160,20 @@ for t in $todo; do
 done
 
 # Restarting dropbear or tailscaled drops the connection this deploy
-# arrived on, so they restart once it has finished, detached from it.
+# arrived on, and reloading the network can reconfigure its interface, so
+# they run once it has finished, detached from it.
 if [ -n "$later" ]; then
   (
     trap '' HUP
     sleep 5
     for s in $later; do
-      "/etc/init.d/$s" restart
+      case $s in
+      network) /etc/init.d/network reload ;;
+      *) "/etc/init.d/$s" restart ;;
+      esac
     done
   ) </dev/null >/dev/null 2>&1 &
-  echo "restarting in 5 seconds:$later"
+  echo "reloading or restarting in 5 seconds:$later"
 fi
 
 echo "applied"

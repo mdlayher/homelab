@@ -18,7 +18,9 @@ let
 
   # Each managed uci setting, in order: a section before its options. A
   # section names its type, an option its value, and a list its values,
-  # replacing whatever list the machine holds.
+  # replacing whatever list the machine holds. An unset option is deleted,
+  # as is every section of an absent type whose option holds the value in
+  # where.
   settings = name: [
     {
       option = "system.@system[0].hostname";
@@ -85,11 +87,45 @@ let
       option = "dropbear.deploy.RootPasswordAuth";
       value = "off";
     }
+    # The factory LAN: the bridge of the other ports at 192.168.1.1, its
+    # DHCP server, firewall zone, forwarding and rules, and the ULA prefix
+    # generated at first boot for it.
+    {
+      absent = "network.interface";
+      where = "device=br-lan";
+    }
+    {
+      absent = "network.device";
+      where = "name=br-lan";
+    }
+    {
+      unset = "network.globals.ula_prefix";
+    }
+    {
+      absent = "dhcp.dhcp";
+      where = "interface=lan";
+    }
+    {
+      absent = "firewall.zone";
+      where = "name=lan";
+    }
+    {
+      absent = "firewall.forwarding";
+      where = "src=lan";
+    }
+    {
+      absent = "firewall.rule";
+      where = "dest=lan";
+    }
   ];
 
   renderSetting =
     s:
-    if s ? section then
+    if s ? absent then
+      "absent ${s.absent} ${s.where}"
+    else if s ? unset then
+      "unset ${s.unset}"
+    else if s ? section then
       "section ${s.section} ${s.type}"
     else if s ? list then
       "list ${s.list} ${lib.concatStringsSep " " s.values}"
