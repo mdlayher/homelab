@@ -79,6 +79,15 @@
 			"dst":    ["tag:kvm:22", "tag:kvm:2222"],
 		},
 
+		// openwrt/deploy from the development container, to the dropbear
+		// instance on the out-of-band router that accepts only the admin's
+		// FIDO2 keys. Port 22 there is Tailscale SSH, for personal devices.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:oob:2022"],
+		},
+
 		// The Windows PCs accept the tailnet's DNS settings, whose split DNS
 		// sends the internal zones to the router's CoreDNS at its tailnet
 		// address (see dns.tf).

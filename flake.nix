@@ -86,6 +86,15 @@
             self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
 
+        # The OpenWrt machines' configuration, built here and applied by
+        # openwrt/deploy.
+        openwrt = import ./openwrt {
+          inherit inventory;
+          inherit (nixpkgs) lib;
+          pkgs = nixpkgs.legacyPackages.${system};
+          sshKeys = import ./nixos/ssh-keys.nix;
+        };
+
         # The LG TVs' configuration, built here and applied by lgtv/deploy.
         # Each TV's name, and Loki's service name, as the server's inventory
         # publishes them.

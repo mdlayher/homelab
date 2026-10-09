@@ -291,6 +291,15 @@ in
           source_labels = ["__syslog_message_app_name"]
           target_label  = "app"
         }
+
+        // openwrt/deploy's provenance lines, so {unit="deploy"} finds them
+        // as it does the machines'.
+        rule {
+          source_labels = ["__syslog_message_app_name"]
+          regex         = "deploy"
+          replacement   = "deploy"
+          target_label  = "unit"
+        }
       }
 
       // Label messages with a host name by sender address, mirroring the

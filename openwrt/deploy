@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Builds the OpenWrt machines' configuration from this flake and applies it
+# over SSH.
+#
+# Usage: openwrt/deploy [--check] <host>|--all
+#
+# --check prints how a machine differs from the build and changes nothing,
+# exiting 1 if any does. host is a jump role holder in the inventory,
+# reached at its tailnet name on dropbear's deploy port; --all is every one
+# of them, and with a single machine host may be left out. Logins accept
+# only the admin's FIDO2 keys, and each machine is one connection, so a
+# deploy is one touch per machine.
+set -euo pipefail
+
+check=()
+if [[ ${1:-} == --check ]]; then
+  check=(--check)
+  shift
+fi
+
+# Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
+export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}experimental-features = nix-command flakes"
+
+cd "$(dirname "$0")/.."
+out=$(nix build --no-link --print-out-paths .#openwrt)
+mapfile -t all < <(ls "$out")
+if [[ $# -eq 0 && ${#all[@]} -eq 1 ]]; then
+  set -- --all
+fi
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 [--check] <host>|--all" >&2
+  exit 2
+fi
+if [[ $1 == --all ]]; then
+  hosts=("${all[@]}")
+else
+  hosts=("$1")
+fi
+
+# Provenance for the machine's log (see lib/deploy.sh), which logd sends to
+# Loki, where the server's Alloy files it under {unit="deploy"}, and a
+# finished deploy announced in the Discord ops channel. A check changes
+# nothing, and logs and announces nothing.
+source lib/deploy.sh
+logs=(: : :)
+if [[ ${#check[@]} -eq 0 ]]; then
+  logs=(
+    "logger -t deploy -- \"$(deploy_line apply starting)\""
+    "logger -t deploy -- \"$(deploy_line apply finished)\""
+    "logger -t deploy -- \"$(deploy_line apply failed) status=\$status\""
+  )
+fi
+
+failed=0
+for host in "${hosts[@]}"; do
+  if [[ ! -d $out/$host ]]; then
+    echo "$host: not a jump role holder in the inventory" >&2
+    failed=1
+    continue
+  fi
+  echo "== $host"
+  # One connection uploads and applies, so a deploy is one touch with no
+  # control socket left behind. /tmp is a tmpfs on OpenWrt.
+  status=0
+  tar -C "$out/$host" -chf - . | ssh -o ControlMaster=no -o ControlPath=none -p "$(<"$out/$host/port")" "root@$host.taild07ab.ts.net" "
+    ${logs[0]}
+    status=0
+    { rm -rf /tmp/openwrt-deploy && mkdir -m 0700 /tmp/openwrt-deploy && tar -C /tmp/openwrt-deploy -xf - &&
+      sh /tmp/openwrt-deploy/apply.sh ${check[*]:-}; } || status=\$?
+    if [ \$status -eq 0 ]; then ${logs[1]}; else ${logs[2]}; fi
+    exit \$status" || status=$?
+  if [[ $status -eq 0 ]]; then
+    [[ ${#check[@]} -gt 0 ]] || deploy_notify "$host" "openwrt/"
+  else
+    failed=1
+  fi
+done
+exit "$failed"

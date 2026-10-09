@@ -35,6 +35,9 @@ Guidance for agents working in this repository.
 - The Windows PCs are likewise outside the nightly upgrade:
   `windows/deploy <host>` applies what `windows/` builds, and
   `windows/deploy --check <host>` reports drift. See windows/README.md.
+- The OpenWrt machines (the jump role) are likewise outside it:
+  `openwrt/deploy` applies what `openwrt/` builds, and
+  `openwrt/deploy --check` reports drift. See openwrt/README.md.
 - Every deploy script takes `[--check] <host>|--all`, the host optional
   where the script has a single target (the KVM), and logs provenance
   under `{unit="deploy"}` in Loki (lib/deploy.sh). NixOS machines announce
