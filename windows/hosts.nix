@@ -1,11 +1,9 @@
-# The Windows PCs and the exporters each of them runs, read by the server's
-# Prometheus (nixos/servnerr-4/prometheus.nix) for its scrape jobs and by
+# The Windows PCs, the inventory hosts tagged windows, and the exporters
+# each of them runs, read by the server's Prometheus
+# (nixos/servnerr-4/prometheus.nix) for its scrape jobs and by
 # windows/default.nix for what windows/deploy installs.
 {
-  hosts = [
-    "gamnerr-1"
-    "theatnerr-2"
-  ];
+  hosts = import ../nixos/inventory/tagged.nix "windows";
 
   # Prometheus job names and their ports.
   exporters = {

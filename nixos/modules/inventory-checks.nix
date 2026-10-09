@@ -30,6 +30,11 @@ let
 
   roleHolders = lib.concatLists (lib.attrValues inventory.roles);
 
+  # Host tags outside the declared vocabulary.
+  unknownTags = lib.subtractLists inventory.hostTags (
+    lib.concatMap (h: lib.toList (h.value.tags or [ ])) hosts
+  );
+
   # Every cable end, and the ends landing on a device that declares its
   # ports.
   inherit (inventory.physical) devices;
@@ -206,6 +211,14 @@ in
     {
       assertion = lib.all (h: lib.isBool (h.value.wan or true)) hosts;
       message = "inventory host wan must be a boolean";
+    }
+    {
+      assertion = lib.all (h: lib.isList (h.value.tags or [ ])) hosts;
+      message = "inventory host tags must be a list";
+    }
+    {
+      assertion = unknownTags == [ ];
+      message = "inventory host tags missing from hostTags: ${toString unknownTags}";
     }
     {
       assertion = unknown roleHolders == [ ];

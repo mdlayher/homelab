@@ -48,12 +48,21 @@ YubiKey touch (`sops-gate`, see `servnerr-4/dev.nix`).
 
 `inventory/default.nix` declares the network's structure: subnets (VLAN ID,
 trust level) and the hosts on them, with each host's IPv6 addressing mode.
-Its top-level `roles` map lists the machines holding each role (`edge`,
-`router`, `server`) in precedence order: configuration on other machines
-references `inventory.roles.<role>`, so a hardware swap only touches the
-inventory, the new machine's own directory, and `flake.nix`. During a
-generation swap, append the new machine to the role: consumers which fan out
-over every holder cover both machines until the old one is removed.
+Its top-level `roles` map lists the machines holding each role, the ones
+other configuration addresses individually, in precedence order:
+configuration on other machines references `inventory.roles.<role>`, so a
+hardware swap only touches the inventory, the new machine's own directory,
+and `flake.nix`. During a generation swap, append the new machine to the
+role: consumers which fan out over every holder cover both machines until
+the old one is removed. A role is an identity; what kind of device a host
+is goes in its `tags`, a list on the host's entry drawn from the top-level
+`hostTags` vocabulary (the inventory checks reject any other tag). A host
+may hold any number of tags and a role besides. Consumers select hosts by
+tag rather than by name or by role union: NixOS modules through
+`config.homelab.inventory.tagged`, which returns the site's host records,
+and the deploy scripts' `hosts.nix` files through `inventory/tagged.nix`,
+which needs no nixpkgs and returns names. A tag says what a host is, never
+what a consumer does with it.
 Untrusted subnets (`guest0`, `iot0`, `iot1`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed, and

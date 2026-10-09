@@ -178,15 +178,12 @@ let
     ) (lib.attrValues inputs.self.nixosConfigurations)
   );
 
+  # The Home Assistant machines, by name.
+  homeAssistants = map (h: h.name) (config.homelab.inventory.tagged [ "homeassistant" ]);
+
   # Machines not managed by this flake (alerts = false for PCs which are often
   # off), plus jobs which discover cannot find on managed machines.
   otherHosts = {
-    hass = {
-      jobs = {
-        alloy.port = 12345;
-        node.port = 9100;
-      };
-    };
     nerr-4 = {
       jobs = {
         node.port = 9100;
@@ -194,6 +191,13 @@ let
       alerts = false;
     };
   }
+  # The Home Assistant machines' Alloy and node_exporter.
+  // lib.genAttrs homeAssistants (_: {
+    jobs = {
+      alloy.port = 12345;
+      node.port = 9100;
+    };
+  })
   # The Windows PCs and their exporters; see windows/hosts.nix. None is on
   # around the clock, so none of them alerts. HWiNFO's PresentMon sensor
   # names itself after the foreground app, so each app switch mints a new
@@ -227,14 +231,14 @@ let
   // lib.genAttrs roles.jump (_: {
     jobs.node.port = 9100;
   })
-  # nftables_exporter runs on every IGP node, the router, edge and server
-  # role holders; see nixos/modules/nftables-exporter.nix. The exporter
+  # nftables_exporter runs on every IGP node, the machines holding an IS-IS
+  # system ID; see nixos/modules/nftables-exporter.nix. The exporter
   # mirrors nftables faithfully, so the homelab naming conventions are
   # split into labels here: accounting counters named <lan>_wan_<dir> gain
   # device and direction, and per-host set elements keyed "<ifname> . <addr>"
   # gain device and address. An edge has neither and its counters pass
   # through.
-  // lib.genAttrs (roles.router ++ roles.edge ++ roles.server) (_: {
+  // lib.genAttrs (lib.attrNames config.homelab.inventory.isis.systemIds) (_: {
     jobs.nftables = {
       port = 9630;
       metric_relabel_configs =
@@ -331,11 +335,11 @@ let
       "8.8.8.8"
       "2001:4860:4860::8888"
     ]
-    # Liveness for the cloud-managed switches and APs in the management LAN
-    # inventory, which expose no SNMP or local API; ping is the only local
-    # signal that they are alive. The KVM and the OpenWrt machines are
-    # pinged as well, which tells a device being unreachable apart from its
-    # scrape below failing.
+    # Liveness for the cloud-managed switches and APs, which expose no SNMP
+    # or local API; ping is the only local signal that they are alive. The
+    # KVM and the OpenWrt machines are pinged as well, which tells a device
+    # being unreachable apart from its scrape below failing. Each kind is
+    # selected by its inventory tag.
     #
     # Fully qualified, as are the SNMP targets below: a relative name with a
     # dot in it is tried as absolute first, so "ipv4.<host>" cost an NXDOMAIN
@@ -345,9 +349,12 @@ let
     # are pinned to IPv4 by name, which also keeps the family label below
     # truthful for them.
     ++ map (h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))) (
-      lib.filter (
-        h: lib.elem h.name (roles.switch ++ roles.ap ++ roles.kvm ++ roles.jump)
-      ) config.homelab.inventory.interfaces.mgmt0.hosts
+      config.homelab.inventory.tagged [
+        "ap"
+        "openwrt"
+        "pikvm"
+        "switch"
+      ]
     );
 
   # Blackbox DNS probe targets: CoreDNS on every router role holder,
@@ -374,10 +381,9 @@ let
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
-  snmpCyberpower = map (h: at h (qualify h)) [
-    "pdu01"
-    "ups01"
-  ];
+  snmpCyberpower = map (h: at h.name (qualify h.name)) (
+    config.homelab.inventory.tagged [ "cyberpower" ]
+  );
 
   # The SNMP targets with an environment sensor attached. pdu01's card has
   # none and reports zeros.
@@ -918,7 +924,7 @@ in
         job_name = "homeassistant";
         metrics_path = "/api/prometheus";
         authorization.credentials_file = config.sops.secrets."prometheus/homeassistant_token".path;
-        static_configs = siteConfigs [ (at "hass" "${qualify "hass"}:8123") ];
+        static_configs = siteConfigs (map (h: at h "${qualify h}:8123") homeAssistants);
       }
 
       # The KVM's metrics, exempted from kvmd's authentication on the device
