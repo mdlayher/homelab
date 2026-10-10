@@ -1188,6 +1188,29 @@ in
           '';
         };
 
+    # Our own space, site and dn42 alike, arriving from a peer is forged:
+    # every node's iBGP accept trusts a loopback source on a circuit, and
+    # the transit accept would carry such a packet from a peer onto one.
+    # Dropped before routing, so ahead of every accept in either hook, and
+    # counted for the exporter. A table of its own rather than an
+    # extraInputRules entry, since the firewall accepts its allowed ports
+    # ahead of those and conntrack runs before either. The router carries
+    # the equivalent in its own ruleset.
+    networking.nftables.tables.dn42-sources =
+      lib.mkIf (cfg.peers != { } && config.networking.firewall.enable)
+        {
+          family = "inet";
+          content = ''
+            counter dn42_source_drop {}
+
+            chain prerouting {
+              type filter hook prerouting priority raw; policy accept;
+              iifname "dn42e-*" ip saddr { ${inventory.privatePrefix4}, ${inventory.dn42.net4} } counter name dn42_source_drop drop comment "our own source from dn42"
+              iifname "dn42e-*" ip6 saddr { ${inventory.ulaPrefix6}, ${inventory.dn42.net6} } counter name dn42_source_drop drop comment "our own source from dn42"
+            }
+          '';
+        };
+
     # Latency to each external peer across its tunnel, for the
     # DN42PeerLatencyHigh alert, plus a full-size echo at the tunnel's MTU
     # (the mtu option above) for DN42PeerMTUBlackhole, since a path that

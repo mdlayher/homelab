@@ -71,6 +71,17 @@
         servnerr-4 = mkSystem "servnerr-4";
       };
 
+      # The router's firewall, exercised in network namespaces inside the
+      # build sandbox; see nixos/tests/router-firewall.
+      checks = forAllSystems (system: {
+        router-firewall = import ./nixos/tests/router-firewall {
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit (nixpkgs) lib;
+          inherit inventory;
+          inherit (self) nixosConfigurations;
+        };
+      });
+
       # The KVM's configuration, built here and applied by pikvm/deploy; the
       # device runs PiKVM OS rather than NixOS.
       packages = forAllSystems (system: {

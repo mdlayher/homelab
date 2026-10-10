@@ -12,7 +12,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
-      # Evaluates every nixosConfiguration and the other flake outputs.
+      # Ubuntu 23.10 and later restrict unprivileged user namespaces through
+      # AppArmor, and the router firewall check creates them inside the
+      # build sandbox for its network namespaces.
+      # Skipped on a runner image without the setting.
+      - run: |
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+      # Evaluates every nixosConfiguration and the other flake outputs, and
+      # runs the checks.
       - run: nix flake check
       - run: nix fmt -- --ci
 

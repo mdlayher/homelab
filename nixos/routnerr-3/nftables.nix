@@ -128,6 +128,16 @@ let
   dn42 = config.homelab.dn42;
   dn42Ports = lib.mapAttrsToList (_: peer: toString peer.port) dn42.peers;
 
+  # Our own space, site and dn42 alike, only ever originates here, so a
+  # packet from an external peer carrying it as its source is forged: a
+  # peer could otherwise reach what trusts those sources, such as another
+  # node's iBGP session across a circuit. Dropped on every arrival from a
+  # peer, ahead of anything that accepts, under the hook's counter.
+  dn42eOwnSources = counter: ''
+    iifname "dn42e-*" ip saddr { $site4, $dn42_net4 } counter name ${counter} drop comment "our own source from dn42"
+    iifname "dn42e-*" ip6 saddr { $site6, $dn42_net6 } counter name ${counter} drop comment "our own source from dn42"
+  '';
+
   # Site interconnects (see modules/interconnect.nix). Unlike every other
   # interface here these carry two trust classes on one wire -- our own ULA
   # and dn42 registry space -- so the rules below classify them by address
@@ -311,6 +321,9 @@ in
       # dn42's whole space, for dn42 traffic passing between circuits.
       define dn42_v4 = ${inventory.dn42.prefix4}
       define dn42_v6 = ${inventory.dn42.prefix6}
+      # Our allocation within it.
+      define dn42_net4 = ${inventory.dn42.net4}
+      define dn42_net6 = ${inventory.dn42.net6}
       define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr6}
 
       # The service addresses this router answers at along with every other
@@ -349,6 +362,7 @@ in
         counter input_reject {}
         counter wan_input_drop {}
         counter restricted_crossvlan_drop {}
+        counter restricted_multicast_drop {}
         counter restricted_input_drop {}
         counter restricted_forward_drop {}
         counter wan_denied_drop {}
@@ -445,8 +459,10 @@ in
         }
 
         # ICMP allowed from LANs: pings, errors, and neighbor discovery.
+        # Matched on the transport protocol rather than the next header, so
+        # a message behind an extension header still matches.
         chain icmp_lan {
-          ip6 nexthdr icmpv6 icmpv6 type {
+          meta l4proto ipv6-icmp icmpv6 type {
             echo-request,
             echo-reply,
             destination-unreachable,
@@ -469,7 +485,7 @@ in
         # ICMP allowed from WANs: only errors needed for working PMTU and
         # connectivity, no pings. Replies to our own pings are established.
         chain icmp_wan {
-          ip6 nexthdr icmpv6 icmpv6 type {
+          meta l4proto ipv6-icmp icmpv6 type {
             destination-unreachable,
             packet-too-big,
             time-exceeded,
@@ -488,6 +504,7 @@ in
           type filter hook input priority 0
           policy drop
 
+          ${dn42eOwnSources "dn42_input_drop"}
           ct state {established, related} counter accept
           ct state invalid counter drop
 
@@ -703,6 +720,13 @@ in
           udp dport $dhcp4_server udp sport $dhcp4_client counter accept comment "router restricted DHCPv4"
           iifname iot0 udp dport $mdns udp sport $mdns counter accept comment "router iot0 mDNS reflection"
 
+          # Multicast beyond the accepts above, such as listener reports,
+          # SSDP and mDNS outside iot0, is dropped quietly under its own
+          # counter, so the cross-VLAN counter below counts only traffic
+          # addressed past the VLAN.
+          ip6 daddr ff02::/16 counter name restricted_multicast_drop drop comment "restricted LAN multicast"
+          ip daddr 224.0.0.0/4 counter name restricted_multicast_drop drop comment "restricted LAN multicast"
+
           # The router's public services are public from here too: a
           # packet for any of the router's own addresses, its WAN ones
           # included, may reach what the internet may. The WAN addresses
@@ -743,6 +767,7 @@ in
           type filter hook forward priority 0
           policy drop
 
+          ${dn42eOwnSources "dn42_forward_drop"}
           # Clamp TCP MSS to the dn42 tunnel MTU in both directions, before
           # the established shortcut so inbound SYN/ACKs are also clamped.
           oifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
@@ -772,11 +797,18 @@ in
 
             # Transit between a peer and a circuit, for the same reason. Our
             # own space is never its destination: a site with a loopback on
-            # the circuit would otherwise be reachable from dn42 here.
+            # the circuit would otherwise be reachable from dn42 here. Nor is
+            # it the source toward a peer: our own space is never dn42's to
+            # carry, and site6 sits inside dn42_v6. Otherwise the source
+            # must be dn42 space, as for transit between peers.
             iifname "dn42e-*" oifname "icl-*" ip daddr $site4 counter name dn42_forward_drop drop comment "dn42 to another site"
             iifname "dn42e-*" oifname "icl-*" ip6 daddr $site6 counter name dn42_forward_drop drop comment "dn42 to another site"
-            iifname "icl-*" oifname "dn42e-*" counter accept comment "dn42 transit via interconnect"
-            iifname "dn42e-*" oifname "icl-*" counter accept comment "dn42 transit to interconnect"
+            iifname "icl-*" oifname "dn42e-*" ip saddr $site4 counter name dn42_forward_drop drop comment "another site to dn42"
+            iifname "icl-*" oifname "dn42e-*" ip6 saddr $site6 counter name dn42_forward_drop drop comment "another site to dn42"
+            iifname "icl-*" oifname "dn42e-*" ip saddr $dn42_v4 counter accept comment "dn42 transit via interconnect"
+            iifname "icl-*" oifname "dn42e-*" ip6 saddr $dn42_v6 counter accept comment "dn42 transit via interconnect"
+            iifname "dn42e-*" oifname "icl-*" ip saddr $dn42_v4 counter accept comment "dn42 transit to interconnect"
+            iifname "dn42e-*" oifname "icl-*" ip6 saddr $dn42_v6 counter accept comment "dn42 transit to interconnect"
           ''}
           ct state invalid counter drop
 

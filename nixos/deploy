@@ -108,6 +108,18 @@ log() {
   ssh "${sshopts[@]}" "$user@$addr" logger -t deploy -- "$@"
 }
 
+# The flake checks a machine's deploy must pass, built here before anything
+# is copied to it. The router's firewall test (nixos/tests/router-firewall)
+# is not part of its system closure, so without this a deploy could load a
+# ruleset the test has never seen; a failing case stops the deploy with
+# the case table in the build log. Nix caches the check while nothing it
+# reads has changed, so a deploy that touches no rule pays nothing.
+checks_for() {
+  case $1 in
+    routnerr-3) echo router-firewall ;;
+  esac
+}
+
 # Build on the machine, then activate under a single sudo. The build is
 # what nixos-rebuild does with a build host: evaluate here, copy the
 # derivation closure (sources included) over, and realise it there as the
@@ -122,12 +134,18 @@ log() {
 # mounts, networking, tun) still need a manual restart, which kills
 # sessions.
 deploy() {
-  local host=$1 action=$2 addr=${DEPLOY_ADDRESS:-$1} drv path before count steps script
+  local host=$1 action=$2 addr=${DEPLOY_ADDRESS:-$1} drv path before count steps script system check
   shift 2
 
   # Global, read by the caller's finished line; reset so a failure here
   # cannot report the previous host's count under --all.
   closure="?"
+
+  system="$(nix eval --raw --impure --expr builtins.currentSystem)"
+  for check in $(checks_for "$host"); do
+    echo "deploy: check $check" >&2
+    nix build ".#checks.$system.$check" --no-link
+  done
 
   drv="$(nix eval --raw ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" "$@")"
 

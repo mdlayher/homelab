@@ -125,7 +125,9 @@ nix flake update
 # Deploy from any machine with this checkout: evaluates locally, then builds
 # and activates over SSH as mdlayher with a sudo prompt. Prefer `test` before
 # `switch` on the router: it activates without a boot entry, so a reboot
-# reverts it.
+# reverts it. The router's deploy first builds its firewall check
+# (tests/router-firewall, also run by `nix flake check`), so a ruleset the
+# check fails is never loaded.
 nixos/deploy <host>
 nixos/deploy <host> test
 nixos/deploy <host> switch
