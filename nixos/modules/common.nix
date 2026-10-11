@@ -52,8 +52,12 @@ let
   #
   # ssh-add exits 2 only when nothing answers on the other end. Having no
   # live socket at all is normal (no SSH session around) and exits 0 so the
-  # unit doesn't report failure; socat reserves nonzero exits for real relay
-  # errors.
+  # unit doesn't report failure. A peer that hangs up mid-exchange, such as
+  # a client abandoning an agent request or the forwarded channel closing
+  # with its SSH session, makes socat report a reset or a broken pipe and
+  # exit nonzero; that is the connection ending, not a relay fault, so it
+  # exits 0 too. Every other socat error fails the unit, with its message
+  # in the journal.
   agentRelay = pkgs.writeShellScript "ssh-agent-relay" ''
     uid=$(${pkgs.coreutils}/bin/id -u)
     for sock in $(${pkgs.coreutils}/bin/ls -t \
@@ -61,7 +65,14 @@ let
       [ "$(${pkgs.coreutils}/bin/stat -c %u "$sock")" = "$uid" ] || continue
       SSH_AUTH_SOCK=$sock ${pkgs.openssh}/bin/ssh-add -l >/dev/null 2>&1
       if [ $? -ne 2 ]; then
-        exec ${pkgs.socat}/bin/socat STDIO "UNIX-CONNECT:$sock"
+        # stdout stays the connection; only stderr is captured.
+        { err=$(${pkgs.socat}/bin/socat STDIO "UNIX-CONNECT:$sock" 2>&1 1>&3); } 3>&1
+        status=$?
+        rest=$(printf '%s\n' "$err" |
+          ${pkgs.gnugrep}/bin/grep -v -e 'Connection reset by peer' -e 'Broken pipe' || true)
+        [ -z "$rest" ] && exit 0
+        printf '%s\n' "$rest" >&2
+        exit $status
       fi
     done
     echo "no live agent socket, dropping connection" >&2
