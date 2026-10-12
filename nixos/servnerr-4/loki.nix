@@ -228,14 +228,16 @@ in
       }
 
       // The TVs' kernel logs repeat a few lines every few seconds: LG's
-      // screen capture service, the ATSC tuner with no antenna, and an
-      // unplugged Ethernet port. Those are dropped here, and every other
-      // kernel line and the other sources pass whole.
+      // screen capture service, the ATSC tuner with no antenna, an
+      // unplugged Ethernet port, the Wi-Fi driver's periodic USB receive
+      // state dump, and the power management hotplugging a CPU core on and
+      // off. Those are dropped here, and every other kernel line and the
+      // other sources pass whole.
       loki.process "lgtv" {
         forward_to = [loki.write.server.receiver]
 
         stage.match {
-          selector = "{job=\"syslog\", source=\"kernel\"} |~ \"HAL_GAL_(CaptureFrameBuffer|CreateSurface)|captureservice-captureservice::(open|close)::ok|MCU report: VSB not locked|Sunplus Fast Ethernet Transceiver .* ADJ_ADC: (schedule|no link)\""
+          selector = "{job=\"syslog\", source=\"kernel\"} |~ \"HAL_GAL_(CaptureFrameBuffer|CreateSurface)|captureservice-captureservice::(open|close)::ok|MCU report: VSB not locked|Sunplus Fast Ethernet Transceiver .* ADJ_ADC: (schedule|no link)|halRxMonitor:|^CPU[0-9]+: (shutdown|Booted secondary processor)|^Detected [VP]IPT I-cache on CPU[0-9]+\""
           action   = "drop"
         }
       }
