@@ -1398,44 +1398,60 @@ in
             # search domain.
             programs.ssh.extraConfig =
               let
-                # Every role holder is on the tailnet. The KVM is left out:
-                # its block below names it by tailnet name alone, and its
-                # short name here would match the block which multiplexes
-                # and forwards the agent.
-                machines = lib.concatLists (lib.attrValues (removeAttrs inventory.roles [ "kvm" ]));
+                # Every tailnet host by both names ssh may be given on its
+                # command line, since Host patterns match that name and not
+                # the HostName an alias resolves to.
+                tailnet = n: "${n} ${n}.${inventory.tailnetDomain}";
+                tailnetAlias = n: ''
+                  Host ${n}
+                    HostName ${n}.${inventory.tailnetDomain}
+                '';
+                # Tailnet hosts where a login is root, or a console that stays
+                # logged in: each connection costs its own touch, none outlives
+                # its command, and the agent stays here, since nothing there
+                # runs sudo. The TVs join them below by their LAN names.
+                unshared = [
+                  "consrv"
+                  "hass"
+                ]
+                ++ inventory.roles.kvm
+                ++ inventory.roles.jump;
+                # Every other role holder multiplexes.
+                machines = lib.filter (m: !(lib.elem m unshared)) (
+                  lib.concatLists (lib.attrValues inventory.roles)
+                );
                 # dev0 neighbors from the inventory, reached over the dev
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
                 shortName = n: lib.head (lib.splitString "." n);
-                # The jumpbox by its short and its tailnet name, as ssh
-                # matches Host against the name given on its command line.
-                jumps = lib.concatMapStringsSep " " (
-                  j: "${j} ${j}.${inventory.tailnetDomain}"
-                ) inventory.roles.jump;
-                # The LG TVs lgtv/deploy manages, by their inventory names.
+                # The LG TVs lgtv/deploy manages, by both names ssh may be
+                # given: the inventory name and the LAN name it resolves to.
                 tvs = (import ../../lgtv/hosts.nix).hosts;
-                # The Windows PCs windows/deploy manages, by their tailnet names.
-                pcs = map (pc: "${pc}.${inventory.tailnetDomain}") (import ../../windows/hosts.nix).hosts;
+                tvNames = tv: "${tv} ${inventory.hosts.${tv}.dnsName}.${inventory.domain}";
+                # The Windows PCs windows/deploy manages.
+                pcs = (import ../../windows/hosts.nix).hosts;
               in
-              # Root on the KVM controls the server's console and power, and
-              # consrv's serial consoles can be left logged in, so each
-              # connection to either costs its own touch, none outlives its
-              # command, and the agent stays here: neither runs sudo. The
-              # jumpbox is reached as root and runs no sudo either. ssh takes
-              # the first value for each option, so this precedes the
-              # tailnet-wide block.
+              # ssh takes the first value for each option, so the unshared
+              # hosts precede the tailnet-wide block.
               ''
-                Host pikvm.${inventory.tailnetDomain} consrv.${inventory.tailnetDomain} ${jumps}
+                Host ${lib.concatMapStringsSep " " tailnet unshared} ${
+                  lib.concatMapStringsSep " " tvNames tvs
+                } *.iot.${inventory.domain}
                   ControlMaster no
                   ControlPath none
                   ForwardAgent no
 
+                # Home Assistant's Terminal & SSH add-on (see
+                # nixos/ssh-keys.nix for the keys it accepts).
+                Host ${tailnet "hass"}
+                  User root
+
                 # The Windows build of OpenSSH offers no post-quantum key
                 # exchange, so ssh's warning about it is noise.
-                Host ${lib.concatStringsSep " " pcs}
+                Host ${lib.concatMapStringsSep " " tailnet pcs}
                   WarnWeakCrypto no-pq-kex
 
-                Host ${lib.concatStringsSep " " machines} *.${inventory.tailnetDomain}
+                Host ${lib.concatStringsSep " " (machines ++ pcs)} *.${inventory.tailnetDomain}
                   ControlMaster auto
                   ControlPath ~/.ssh/cm-%r@%h:%p
                   ControlPersist 1h
@@ -1443,24 +1459,17 @@ in
                   # FIDO2 keys in place of a password.
                   ForwardAgent yes
               ''
-              + lib.concatMapStrings (m: ''
-                Host ${m}
-                  HostName ${m}.${inventory.tailnetDomain}
-              '') machines
+              + lib.concatMapStrings tailnetAlias (unshared ++ machines ++ pcs)
               # The TVs are root over dropbear with the FIDO2 keys alone (see
-              # lgtv/README.md): a touch per connection, nothing shared or
-              # forwarded, as with the KVM. Their dropbear has no post-quantum
-              # key exchange, so ssh's warning about it is noise.
+              # lgtv/README.md). Their dropbear has no post-quantum key
+              # exchange, so ssh's warning about it is noise.
               + lib.concatMapStrings (tv: ''
                 Host ${tv}
                   HostName ${inventory.hosts.${tv}.dnsName}.${inventory.domain}
               '') tvs
               + ''
-                Host ${lib.concatStringsSep " " tvs} *.iot.${inventory.domain}
+                Host ${lib.concatMapStringsSep " " tvNames tvs} *.iot.${inventory.domain}
                   User root
-                  ControlMaster no
-                  ControlPath none
-                  ForwardAgent no
                   WarnWeakCrypto no
               ''
               # dev0 neighbors authenticate with the dedicated dev0 key (see

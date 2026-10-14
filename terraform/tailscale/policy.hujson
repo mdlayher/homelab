@@ -57,6 +57,17 @@
 			"dst":    ["tag:hass:8123"],
 		},
 
+		// SSH to Home Assistant's Terminal & SSH add-on from the development
+		// container. The add-on authenticates only SSH keys, and the
+		// container holds none of its own: the admin's FIDO2 keys reach it
+		// through his forwarded agent, so each login needs a physical touch,
+		// as on the machines.
+		{
+			"action": "accept",
+			"src":    ["tag:dev"],
+			"dst":    ["tag:hass:22"],
+		},
+
 		// Deploys run from the development container's interactive panes:
 		// SSH to the machines rides the tailnet, since dev0 cannot reach the
 		// LAN. Network access alone grants nothing here — the machines
