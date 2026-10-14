@@ -23,6 +23,7 @@
     ./nix-cache.nix
     ./loki.nix
     ./prometheus.nix
+    ./zigbee-snapshot.nix
   ];
 
   # This machine is at the home site; see nixos/inventory/.

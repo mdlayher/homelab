@@ -148,16 +148,15 @@ in
         target_label  = "unit"
       }
 
-      // The router's network snapshot is huge JSON carrying neighbor
-      // states like FAILED, so it matches any broad (?i)error|fail sweep
-      // of the journal and buries what the sweep was for. Its own job
-      // label takes it out of {job="systemd-journal"} structurally. The
-      // sources' static labels merge in before these rules run, which is
-      // what lets a rule override job. The IS-IS snapshot on every IGP node
-      // (nixos/modules/isis-snapshot.nix) gets its own job the same way.
+      // Each *-snapshot unit logs state as JSON whose values include words
+      // like FAILED, so it matches any broad (?i)error|fail sweep of the
+      // journal and buries what the sweep was for. A job label of its own
+      // takes it out of {job="systemd-journal"} structurally. The sources'
+      // static labels merge in before these rules run, which is what lets a
+      // rule override job.
       rule {
         source_labels = ["__journal__systemd_unit"]
-        regex         = "(network|isis)-snapshot\\.service"
+        regex         = "(network|isis|zigbee)-snapshot\\.service"
         replacement   = "$1-snapshot"
         target_label  = "job"
       }

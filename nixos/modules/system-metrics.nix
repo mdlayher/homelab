@@ -23,7 +23,7 @@ let
   revision = toString config.system.configurationRevision;
   dirty = if builtins.match "[0-9a-f]+" revision != null then 0 else 1;
 
-  inherit (config.homelab) textfileDir;
+  inherit (config.homelab) textfileDir textfileGroup;
 in
 {
   # Other modules write their own *.prom files here; see the router's
@@ -38,14 +38,26 @@ in
     '';
   };
 
+  options.homelab.textfileGroup = lib.mkOption {
+    type = lib.types.str;
+    readOnly = true;
+    default = "textfile";
+    description = ''
+      Group which may write into textfileDir, for writers which need not
+      run as root.
+    '';
+  };
+
   config = lib.mkIf isHost {
     services.prometheus.exporters.node.extraFlags = [
       "--collector.textfile.directory=${textfileDir}"
       "--collector.netdev.address-info"
     ];
 
+    users.groups.${textfileGroup} = { };
+
     systemd = {
-      tmpfiles.rules = [ "d ${textfileDir} 0755 root root -" ];
+      tmpfiles.rules = [ "d ${textfileDir} 0775 root ${textfileGroup} -" ];
 
       # Three symlinks describe the machine's state: the system profile is
       # what the bootloader and the nightly upgrade track, /run/current-system
