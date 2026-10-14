@@ -1,5 +1,7 @@
 # Network services: the WAN link, router advertisements (CoreRAD), DNS
-# (CoreDNS), time (chrony), the blackbox probes, and TLS certificates.
+# (CoreDNS), time (chrony, the kernel's view on the timesyncd hosts, w32time
+# on the Windows PCs, Glasshouse on the TVs), the blackbox probes, and TLS
+# certificates.
 {
   raw,
   internalInterfaces,
@@ -68,6 +70,55 @@
       expr = "count by (instance) (chrony_sources_reachability_success == 1) / count by (instance) (chrony_sources_reachability_success) < 0.7";
       for = "30m";
       annotations.summary = "Only {{ $value | humanizePercentage }} of chrony's time sources on {{ $labels.instance }} are answering.";
+    }
+    # The hosts on systemd-timesyncd have no chrony metrics; node_exporter
+    # reports the kernel's own view instead. The kernel grows its error
+    # bound at 500 ppm between successful syncs and caps it at 16 s once it
+    # declares the clock unsynchronised, so 8 s is several hours without a
+    # sync. chronyd keeps the bound under a second on its hosts, so the rule
+    # holds across both. The offset bar matches ChronyOffsetHigh; chrony
+    # hosts report zero here because chronyd steers the clock itself.
+    {
+      alert = "NodeClockUnsynchronised";
+      expr = "node_timex_maxerror_seconds{instance!~${excludedInstances}} > 8";
+      for = "15m";
+      annotations.summary = "The kernel clock on {{ $labels.instance }} carries an error bound of {{ $value | humanizeDuration }}: no successful time sync for hours.";
+    }
+    {
+      alert = "NodeClockOffsetHigh";
+      expr = "abs(node_timex_offset_seconds{instance!~${excludedInstances}}) > 0.05";
+      for = "15m";
+      annotations.summary = "The kernel clock on {{ $labels.instance }} is {{ $value | humanizeDuration }} away from its time source.";
+    }
+    # w32time on the Windows PCs polls hourly and steers coarsely, so tens
+    # of milliseconds is its steady state; a second is not. The PCs sit
+    # outside the down alerts, but a clock rule only fires while a PC is up
+    # and scraped, so it needs no exclusion. The sync source series is one
+    # per source type, and NTP is the only type that is a real time source.
+    {
+      alert = "WindowsClockUnsynchronised";
+      expr = ''windows_time_clock_sync_source{type="NTP"} == 0'';
+      for = "15m";
+      annotations.summary = "w32time on {{ $labels.instance }} is not taking time from NTP.";
+    }
+    {
+      alert = "WindowsClockOffsetHigh";
+      expr = "abs(windows_time_computed_time_offset_seconds) > 1";
+      for = "15m";
+      annotations.summary = "w32time on {{ $labels.instance }} is {{ $value | humanizeDuration }} away from its time source.";
+    }
+    # The TVs take time from Glasshouse's SNTP client alone, since LG's time
+    # service is blocked; it polls hourly and steps the clock past a second
+    # of error. A TV resuming from its overnight suspend reports the answer
+    # it had before sleeping until the next hourly poll, so the age climbs
+    # past the length of the suspend every morning; the bar sits above a
+    # night of that. The series exists only while a TV is scraped, and the
+    # job label routes the alert through the TVs' overnight mute.
+    {
+      alert = "GlasshouseClockStale";
+      expr = "time() - glasshouse_ntp_last_answer_timestamp_seconds > 8 * 3600";
+      for = "15m";
+      annotations.summary = "Glasshouse on {{ $labels.instance }} has had no NTP answer for {{ $value | humanizeDuration }}, so the TV's clock is free running.";
     }
     # The dns_lan probe resolves a name CoreDNS answers from local data,
     # so a broken upstream forwarder passes that probe while every real

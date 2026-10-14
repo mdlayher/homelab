@@ -509,7 +509,10 @@ let
   };
 
   # The LG TVs are offline overnight on a schedule set on each TV, 02:00 to
-  # 07:00 local; the mute runs a little past it while a TV comes back.
+  # 07:00 local, and a TV that reboots in standby powers off four hours
+  # later, which can land before the schedule. The mute opens early enough
+  # to cover an evening reboot and runs a little past 07:00 while a TV
+  # comes back.
   lgtvOffline = "lgtv-offline";
 
   alerts = import ./alerts {
@@ -767,9 +770,14 @@ in
             name = lgtvOffline;
             time_intervals = [
               {
+                # A range cannot cross midnight, so the window is two.
                 times = [
                   {
-                    start_time = "02:00";
+                    start_time = "22:00";
+                    end_time = "24:00";
+                  }
+                  {
+                    start_time = "00:00";
                     end_time = "07:15";
                   }
                 ];
