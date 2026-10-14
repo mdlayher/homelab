@@ -393,10 +393,14 @@ let
   lgtv = import ../../lgtv/hosts.nix;
   glasshouseTargets = map (host: at host "${qualify host}:${toString lgtv.port}") lgtv.hosts;
 
+  # Glasshouse on the LG TVs. The TVs leave the network on their own
+  # timers: a nightly schedule, and a power-off four hours after a reboot
+  # in standby, which can land at any hour. Both jobs stay out of the five
+  # minute down alerts; a TV dead for a whole day still raises
+  # PrometheusInstanceDownLong.
+  glasshouseJob = "glasshouse";
   # The same TVs pinged beside their scrapes, by the same names: a stall in
-  # both at once is the network, a slow scrape alone is Glasshouse. A job of
-  # its own, kept out of the ICMP alerts, since the TVs leave the network
-  # overnight.
+  # both at once is the network, a slow scrape alone is Glasshouse.
   lgtvPingJob = "blackbox_icmp_lgtv";
   lgtvPings = map (host: at host (qualify host)) lgtv.hosts;
 
@@ -519,11 +523,12 @@ let
     inherit lib anycastServices isisRouterCounts;
     exploreURL = import ./explore-url.nix { inherit lib tailnetDomain; };
     excludedHosts = map qualify (hostsWhere (h: !(h.alerts or true)));
-    # The anycast probe has its own rule with a shorter hold; the TV pings
-    # have none.
+    # The anycast probe has its own rule with a shorter hold; the TV jobs
+    # are explained beside glasshouseJob.
     excludedJobs = [
       snmpCyberpowerJob
       anycastProbeJob
+      glasshouseJob
       lgtvPingJob
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
@@ -798,7 +803,7 @@ in
             # Glasshouse on the LG TVs, routed as everything else is but
             # muted while the TVs are offline.
             {
-              matchers = [ "job = glasshouse" ];
+              matchers = [ "job = ${glasshouseJob}" ];
               routes = map (r: r // { mute_time_intervals = [ lgtvOffline ]; }) [
                 triageRoute
                 { receiver = "default"; }
@@ -951,7 +956,7 @@ in
       # Each scrape makes Glasshouse collect its stats afresh on the TV, so
       # its maintainer recommends an interval of 15 s or more.
       {
-        job_name = "glasshouse";
+        job_name = glasshouseJob;
         scrape_interval = "15s";
         metrics_path = "/api/prometheus/metrics";
         authorization.credentials_file = config.sops.secrets.glasshouse_token.path;
