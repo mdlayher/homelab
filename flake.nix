@@ -127,6 +127,18 @@
             ntpServer = "ntp.svc.${inv.zone}";
           };
 
+        # The Home Assistant appliance's configuration, built here and
+        # applied by hass/deploy; the appliance runs Home Assistant OS
+        # rather than NixOS.
+        hass = import ./hass {
+          inherit inventory;
+          inherit (nixpkgs) lib;
+          pkgs = nixpkgs.legacyPackages.${system};
+          sshKeys = import ./nixos/ssh-keys.nix;
+          lokiPort =
+            self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
+        };
+
         # The Windows PCs' configuration, built here and applied by
         # windows/deploy.
         windows = import ./windows {

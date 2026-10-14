@@ -35,6 +35,9 @@ Guidance for agents working in this repository.
 - The Windows PCs are likewise outside the nightly upgrade:
   `windows/deploy <host>` applies what `windows/` builds, and
   `windows/deploy --check <host>` reports drift. See windows/README.md.
+- The Home Assistant appliance is likewise outside it: `hass/deploy`
+  applies what `hass/` builds, and `hass/deploy --check` reports drift.
+  See hass/README.md.
 - The OpenWrt machines (the jump role) are likewise outside it:
   `openwrt/deploy` applies what `openwrt/` builds, and
   `openwrt/deploy --check` reports drift. See openwrt/README.md.

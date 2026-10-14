@@ -1,0 +1,67 @@
+// Grafana Alloy on the Home Assistant appliance: ship the HAOS journal to
+// Loki on the server, labeled as nixos/modules/alloy.nix labels the
+// machines' journals. Journal entries are labeled with the machine and
+// originating unit; keep the label set small, high-cardinality detail stays
+// in the log lines. hass/default.nix fills in the Loki URL.
+
+logging {
+	level = "info"
+}
+
+loki.relabel "journal" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__hostname"]
+		target_label  = "host"
+	}
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "unit"
+	}
+
+	// Nearly everything on HAOS runs as a Docker container sharing
+	// unit=docker.service, so the container name is this machine's analogue
+	// of the unit label: a couple dozen stable values, empty for host units.
+	rule {
+		source_labels = ["__journal_container_name"]
+		target_label  = "container_name"
+	}
+
+	// Collapse logind's numbered session scopes so each login does not mint
+	// a new stream.
+	rule {
+		source_labels = ["unit"]
+		regex         = "session-.+\\.scope"
+		replacement   = "session.scope"
+		target_label  = "unit"
+	}
+}
+
+loki.source.journal "journal" {
+	path          = "/var/log/journal"
+	forward_to    = [loki.process.journal.receiver]
+	relabel_rules = loki.relabel.journal.rules
+}
+
+// The journal source stamps its component path as the job label, overriding
+// anything set in its labels argument; force the fleet-wide job here, after
+// the source, where nothing can override it.
+loki.process "journal" {
+	stage.static_labels {
+		values = {
+			job = "systemd-journal",
+		}
+	}
+
+	forward_to = [loki.write.server.receiver]
+}
+
+// Push to Loki on the server, via the role-stable service name; see
+// nixos/routnerr-3/coredns.nix.
+loki.write "server" {
+	endpoint {
+		url = "@lokiUrl@"
+	}
+}
