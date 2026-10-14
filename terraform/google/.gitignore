@@ -1,0 +1,7 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State stays local: the resources are Pub/Sub objects whose definitions
+# are the files beside this one.
+terraform.tfstate
+terraform.tfstate.backup
