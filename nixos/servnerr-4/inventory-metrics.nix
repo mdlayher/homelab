@@ -29,7 +29,7 @@ let
 
   # Where node_exporter reads *.prom files from; declared in
   # nixos/modules/system-metrics.nix.
-  inherit (config.homelab) textfileDir;
+  inherit (config.homelab) textfileDir textfileWriter;
 
   # The interface each host sits on, by host name: hosts carry their
   # interface name, and the interface carries the VLAN and trust level the
@@ -140,13 +140,15 @@ in
     description = "Network inventory device metrics for node_exporter";
     after = [ "sops-install-secrets.service" ];
     wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
+    serviceConfig = textfileWriter // {
       Type = "oneshot";
       RemainAfterExit = true;
+      # systemd reads the root-owned template on the unit's behalf.
+      LoadCredential = [ "inventory.tsv:${config.sops.templates."inventory-metrics.tsv".path}" ];
     };
     script = ''
       out=${textfileDir}/homelab-inventory.prom
-      ${render} ${config.sops.templates."inventory-metrics.tsv".path} "$out"
+      ${render} "$CREDENTIALS_DIRECTORY/inventory.tsv" "$out"
       chmod 0444 "$out.tmp"
       mv "$out.tmp" "$out"
     '';

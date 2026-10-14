@@ -52,7 +52,9 @@ in
 
     services.neighbor-metrics = {
       description = "Neighbor table metrics for node_exporter";
-      serviceConfig.Type = "oneshot";
+      serviceConfig = config.homelab.textfileWriter // {
+        Type = "oneshot";
+      };
 
       # Renamed into place so a scrape never sees half a file, and a
       # failed run leaves the last good one: .prom.tmp is outside the glob.

@@ -23,7 +23,10 @@ let
   revision = toString config.system.configurationRevision;
   dirty = if builtins.match "[0-9a-f]+" revision != null then 0 else 1;
 
-  inherit (config.homelab) textfileDir textfileGroup;
+  inherit (config.homelab) textfileDir textfileWriter;
+
+  # Owns textfileDir, so writers need not run as root.
+  textfileGroup = "textfile";
 in
 {
   # Other modules write their own *.prom files here; see the router's
@@ -38,13 +41,18 @@ in
     '';
   };
 
-  options.homelab.textfileGroup = lib.mkOption {
-    type = lib.types.str;
+  options.homelab.textfileWriter = lib.mkOption {
+    type = lib.types.attrs;
     readOnly = true;
-    default = "textfile";
+    default = {
+      DynamicUser = true;
+      SupplementaryGroups = [ textfileGroup ];
+      ReadWritePaths = [ textfileDir ];
+    };
     description = ''
-      Group which may write into textfileDir, for writers which need not
-      run as root.
+      serviceConfig for a writer which needs no root: an unprivileged user
+      in the group which owns textfileDir. DynamicUser leaves the rest of
+      the filesystem read-only.
     '';
   };
 
@@ -74,7 +82,9 @@ in
       };
       services.nixos-system-metrics = {
         description = "NixOS system generation metrics for node_exporter";
-        serviceConfig.Type = "oneshot";
+        serviceConfig = textfileWriter // {
+          Type = "oneshot";
+        };
         script = ''
           profile="$(readlink -f /nix/var/nix/profiles/system)"
           current="$(readlink -f /run/current-system)"

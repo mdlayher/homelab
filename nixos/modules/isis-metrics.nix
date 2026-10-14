@@ -24,6 +24,7 @@
 
 let
   cfg = config.homelab.interconnect;
+  inherit (config.homelab) textfileWriter;
 
   vtysh = "${pkgs.frr}/bin/vtysh";
   jq = "${pkgs.jq}/bin/jq";
@@ -88,13 +89,11 @@ lib.mkIf cfg.isis.enable {
     services.isis-metrics = {
       description = "IS-IS metrics for node_exporter";
 
-      serviceConfig = {
+      serviceConfig = textfileWriter // {
         Type = "oneshot";
 
-        # vtysh reads FRR's sockets, which are owned by frr:frrvty. This
-        # runs as root, which the textfile directory requires, so the
-        # membership is what keeps it working if it ever stops doing so.
-        SupplementaryGroups = [ "frrvty" ];
+        # vtysh reads FRR's sockets, which are owned by frr:frrvty.
+        SupplementaryGroups = textfileWriter.SupplementaryGroups ++ [ "frrvty" ];
       };
 
       # Renamed into place so a scrape never sees half a file. Unlike the

@@ -25,7 +25,7 @@ let
   # websocket API as well as the REST one. systemd reads it on the unit's
   # behalf, so the secret keeps its owner.
   token = config.sops.secrets."prometheus/homeassistant_token".path;
-  inherit (config.homelab) textfileDir textfileGroup;
+  inherit (config.homelab) textfileDir textfileWriter;
 
   snapshot = pkgs.writers.writePython3Bin "zigbee-snapshot" { } (
     builtins.readFile ./zigbee-snapshot.py
@@ -49,12 +49,9 @@ in
     # nixos/modules/alloy.nix gives them job="zigbee-snapshot".
     services.zigbee-snapshot = {
       description = "Zigbee mesh snapshot";
-      serviceConfig = {
+      serviceConfig = textfileWriter // {
         Type = "oneshot";
         SyslogIdentifier = "zigbeesnap";
-        DynamicUser = true;
-        SupplementaryGroups = [ textfileGroup ];
-        ReadWritePaths = [ textfileDir ];
         LoadCredential = [ "token:${token}" ];
         ExecStart = "${lib.getExe snapshot} ${url} %d/token ${textfileDir}/zigbee.prom";
       };
