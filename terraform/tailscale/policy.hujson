@@ -143,6 +143,7 @@
 				"svc:grafana",
 				"svc:loki",
 				"svc:prometheus",
+				"svc:unifi",
 			],
 			"ip": ["*"],
 		},
@@ -171,6 +172,14 @@
 				"svc:prometheus",
 			],
 			"ip": ["tcp:443"],
+		},
+
+		// The UniFi controller's API from the development container, for
+		// terraform/unifi and its bootstrap. The API still requires a login.
+		{
+			"src": ["tag:dev"],
+			"dst": ["svc:unifi"],
+			"ip":  ["tcp:8443"],
 		},
 
 		// The serial consoles from the development container. consrv still
@@ -221,6 +230,7 @@
 			"svc:grafana":      ["tag:infra"],
 			"svc:loki":         ["tag:infra"],
 			"svc:prometheus":   ["tag:infra"],
+			"svc:unifi":        ["tag:infra"],
 		},
 	},
 

@@ -35,6 +35,15 @@ resource "tailscale_service" "web" {
   tags    = ["tag:infra"]
 }
 
+# The UniFi controller's web UI and API on the server, TLS and all; see
+# nixos/servnerr-4/unifi.nix.
+resource "tailscale_service" "unifi" {
+  name    = "svc:unifi"
+  comment = local.comment
+  ports   = ["tcp:8443"]
+  tags    = ["tag:infra"]
+}
+
 # Serial console SSH server on the KVM, served by its tailscaled.
 resource "tailscale_service" "consrv" {
   name    = "svc:consrv"

@@ -23,6 +23,7 @@
     ./nix-cache.nix
     ./loki.nix
     ./prometheus.nix
+    ./unifi.nix
     ./zigbee-snapshot.nix
   ];
 

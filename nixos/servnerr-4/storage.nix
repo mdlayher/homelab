@@ -168,8 +168,10 @@ in
     config.allowUnfreePredicate =
       pkg:
       builtins.elem (lib.getName pkg) [
+        "mongodb-ce"
         "storcli"
         "tarsnap"
+        "unifi-controller"
       ];
   };
 

@@ -1,0 +1,7 @@
+# Provider plugins and module cache.
+.terraform/
+
+# State lives in the gate's directory (see versions.tf); a local run must
+# never leave one here, since it carries the management subnet.
+*.tfstate
+*.tfstate.*

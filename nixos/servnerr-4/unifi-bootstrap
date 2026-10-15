@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Finishes a fresh UniFi controller's setup wizard (see unifi.nix): creates
+# the local admin, names the controller, sets the country and marks setup
+# complete. The wizard's endpoints accept unauthenticated calls until then,
+# and refuse them after, so this runs once per controller. Then creates
+# UnPoller's read-only account and prints the id of the built-in Default
+# network, which terraform/unifi adopts as mgmt0.
+#
+# Run through the gate, which supplies UNIFI_API, UNIFI_USERNAME and
+# UNIFI_PASSWORD from secrets/unifi.yaml, and whose key also decrypts the
+# server's secrets, where UnPoller's password lives:
+#
+#   sops-gate exec-env secrets/unifi.yaml -- nixos/servnerr-4/unifi-bootstrap <name>
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+	echo "usage: $0 <controller name>" >&2
+	exit 2
+fi
+name=$1
+
+: "${UNIFI_API:?}" "${UNIFI_USERNAME:?}" "${UNIFI_PASSWORD:?}"
+
+jar=$(mktemp)
+trap 'rm -f "$jar"' EXIT
+
+# The controller serves a self-signed certificate, and reports why it
+# refused a call in the body.
+api() {
+	local path=$1 body=$2 reply
+	reply=$(curl -sSk -b "$jar" -c "$jar" -H 'Content-Type: application/json' \
+		--data-binary @- "$UNIFI_API$path" <<<"$body")
+	if [[ $(jq -r .meta.rc <<<"$reply") != ok ]]; then
+		echo "$0: $path: $(jq -r .meta.msg <<<"$reply")" >&2
+		exit 1
+	fi
+}
+
+# Until the application is up, every path answers with a starting page.
+echo "waiting for the controller at $UNIFI_API" >&2
+for ((i = 0; ; i++)); do
+	curl -fsSk "$UNIFI_API/status" 2>/dev/null | jq -e .meta.up >/dev/null 2>&1 && break
+	if ((i == 120)); then
+		echo "$0: the controller did not come up" >&2
+		exit 1
+	fi
+	sleep 5
+done
+
+api /api/cmd/sitemgr "$(jq -n --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" \
+	'{cmd: "add-default-admin", name: $u, email: "", x_password: $p}')"
+api /api/set/setting/super_identity "$(jq -n --arg n "$name" '{name: $n}')"
+# ISO 3166-1 numeric: the United States, as terraform/unifi sets it.
+api /api/set/setting/country '{"code": "840"}'
+api /api/cmd/system '{"cmd": "set-installed"}'
+
+api /api/login "$(jq -n --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" \
+	'{username: $u, password: $p}')"
+api /api/s/default/cmd/sitemgr "$(jq -n \
+	--arg p "$(sops decrypt --extract '["unifi"]["unpoller_password"]' nixos/servnerr-4/secrets.yaml)" \
+	'{cmd: "create-admin", name: "unpoller", email: "", x_password: $p, role: "readonly", permissions: []}')"
+
+curl -fsSk -b "$jar" "$UNIFI_API/api/s/default/rest/networkconf" |
+	jq -r '.data[] | select(.attr_hidden_id == "LAN") | "Default network: \(._id)"'

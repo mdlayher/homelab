@@ -90,6 +90,25 @@ in
         (import ../../openwrt/syslog.nix).port
         53
       ];
+
+      # The UniFi controller (see unifi.nix), for the switches and access
+      # points, which it manages over the management LAN alone.
+      interfaces.mgmt0 = {
+        allowedTCPPorts = [
+          # Device inform: adopted devices report in and take their
+          # configuration here.
+          8080
+          # The web UI and API, for the admin and terraform/unifi.
+          8443
+        ];
+        allowedUDPPorts = [
+          # STUN, which devices use so the controller can reach them
+          # between informs.
+          3478
+          # Device discovery, which finds devices to adopt.
+          10001
+        ];
+      };
     };
 
     # What may start a flow toward this machine on two of its interfaces,
