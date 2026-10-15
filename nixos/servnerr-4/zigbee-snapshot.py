@@ -3,10 +3,12 @@
 usage: zigbee-snapshot <url> <token file> <prom file>
 
 One zha/devices call over Home Assistant's websocket, which reads ZHA's
-cached device, neighbor and route tables and sends nothing over the radio.
+cached device, neighbor and route tables and sends nothing over the radio,
+then one attribute read per smart plug for its relay, which does.
 Prints one JSON line per device, link and route for Loki, and writes the
-device and link metrics for node_exporter's textfile collector. With
-<url> "-", reads a saved zha/devices result from <token file> instead.
+device, link and relay metrics for node_exporter's textfile collector.
+With <url> "-", reads a saved zha/devices result from <token file> instead
+and skips the relay reads.
 """
 
 import base64
@@ -18,8 +20,9 @@ import sys
 from urllib.parse import urlparse
 
 
-def zha_devices(url, token):
-    """Returns the result of one zha/devices websocket command."""
+def connect(url, token):
+    """Opens an authenticated websocket session to Home Assistant and
+    returns a function that sends one command and returns its reply."""
     u = urlparse(url)
     s = socket.create_connection((u.hostname, u.port or 80), timeout=30)
     key = base64.b64encode(os.urandom(16)).decode()
@@ -66,12 +69,31 @@ def zha_devices(url, token):
     r = recv()
     if r.get("type") != "auth_ok":
         sys.exit(f"auth failed: {r.get('message', r.get('type'))}")
-    send({"id": 1, "type": "zha/devices"})
-    r = recv()
+
+    ids = iter(range(1, 1 << 30))
+
+    def call(msg):
+        send({"id": next(ids), **msg})
+        return recv()
+
+    return call
+
+
+def relay_on(call, ieee):
+    """Reads a plug's relay over the air: the OnOff cluster's OnOff
+    attribute on its first endpoint. None when the plug did not answer."""
+    r = call({
+        "type": "zha/devices/clusters/attributes/value",
+        "ieee": ieee,
+        "endpoint_id": 1,
+        "cluster_id": 6,
+        "cluster_type": "in",
+        "attribute": 0,
+    })
     if not r.get("success"):
-        sys.exit(f"zha/devices failed: {r.get('error')}")
-    s.close()
-    return r["result"]
+        return None
+    # ZHA renders the attribute as its enum name, "Bool.true".
+    return str(r["result"]).lower().endswith("true")
 
 
 def nwk(v):
@@ -94,9 +116,14 @@ def escape(v):
 def main():
     url, token_file, prom = sys.argv[1:]
     if url == "-":
+        call = None
         devices = json.load(open(token_file))
     else:
-        devices = zha_devices(url, open(token_file).read().strip())
+        call = connect(url, open(token_file).read().strip())
+        r = call({"type": "zha/devices"})
+        if not r.get("success"):
+            sys.exit(f"zha/devices failed: {r.get('error')}")
+        devices = r["result"]
     if not devices:
         sys.exit("zha/devices returned no devices")
 
@@ -135,10 +162,19 @@ def main():
     def line(kind, obj):
         print(f"kind={kind} {json.dumps(obj, separators=(',', ':'))}")
 
-    info, links = {}, {}
+    info, avail, links, relays = {}, {}, {}, {}
     for d in devices:
         dev = names[d["ieee"]]
         parent = parents.get(d["ieee"], "")
+        avail[(dev, d["ieee"])] = int(d["available"])
+
+        # The smart plugs are routers for the mesh and metered outlets,
+        # so their relays stay on; the plug's own button is the only
+        # thing left that can switch one off.
+        if call and d["model"].startswith("lumi.plug"):
+            on = relay_on(call, d["ieee"])
+            if on is not None:
+                relays[(dev, d["ieee"])] = int(on)
         line("zigbee-device", {
             "name": dev,
             "ieee": d["ieee"],
@@ -187,6 +223,10 @@ def main():
             ["device", "ieee", "type", "parent"],
             info,
         ),
+        "# HELP homelab_zigbee_device_available Whether ZHA has heard "
+        "from the device within its availability timeout.",
+        "# TYPE homelab_zigbee_device_available gauge",
+        *series("homelab_zigbee_device_available", ["device", "ieee"], avail),
         "# HELP homelab_zigbee_link_lqi Link quality of a neighbor in a "
         "Zigbee router's neighbor table, as that router reports it.",
         "# TYPE homelab_zigbee_link_lqi gauge",
@@ -195,6 +235,10 @@ def main():
             ["device", "neighbor", "relationship"],
             links,
         ),
+        "# HELP homelab_zigbee_plug_on Whether a smart plug's relay is "
+        "on, read from the plug.",
+        "# TYPE homelab_zigbee_plug_on gauge",
+        *series("homelab_zigbee_plug_on", ["device", "ieee"], relays),
     ]
 
     # Renamed into place so a scrape never sees half a file, and a failed

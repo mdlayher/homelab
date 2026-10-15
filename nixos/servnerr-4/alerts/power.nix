@@ -30,6 +30,25 @@
       for = "1h";
       annotations.summary = "Home Assistant sensor {{ $labels.friendly_name }} ({{ $labels.area }}) battery is at {{ $value }}%.";
     }
+    # The Zigbee smart plugs are routers for the mesh and metered outlets,
+    # never switched loads: their switch entities are disabled in Home
+    # Assistant, and the server's zigbee snapshot reads each relay from
+    # the plug every 15 minutes. A relay off is the plug's own button or
+    # a power-on default, and takes the mesh hop and the metering with it.
+    {
+      alert = "ZigbeePlugOff";
+      expr = "homelab_zigbee_plug_on == 0";
+      annotations.summary = "Zigbee plug {{ $labels.device }} has its relay switched off.";
+    }
+    # ZHA's own verdict on a device, after its per-class timeout (hours
+    # for battery devices, less for mains). A plug gone this way takes
+    # its mesh hop with it, and a dead leak sensor reports no leaks.
+    {
+      alert = "ZigbeeDeviceUnavailable";
+      expr = "homelab_zigbee_device_available == 0";
+      for = "30m";
+      annotations.summary = "Zigbee device {{ $labels.device }} is unavailable to ZHA.";
+    }
     # The KVM's fan, as kvmd's fan controller reports it.
     # A PDU bank past the near-overload threshold configured on the PDU
     # itself (3 is nearOverload, 4 overload).
