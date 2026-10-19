@@ -1,7 +1,7 @@
 # Network services: the WAN link, router advertisements (CoreRAD), DNS
 # (CoreDNS), time (chrony, the kernel's view on the timesyncd hosts, w32time
-# on the Windows PCs, Glasshouse on the TVs), the blackbox probes, and TLS
-# certificates.
+# on the Windows PCs, Glasshouse on the TVs), DHCP leases, the blackbox
+# probes, and TLS certificates.
 {
   raw,
   internalInterfaces,
@@ -222,6 +222,24 @@
       alert = "CoreRADMonitorNoUpstreamRouterAdvertisements";
       expr = ''changes(corerad_monitor_messages_received_total{message="router advertisement"}[30m]) == 0'';
       annotations.summary = "CoreRAD ({{ $labels.instance }}) interface {{ $labels.interface }} has not received a router advertisement from {{ $labels.host }} in more than 30 minutes.";
+    }
+    # An unknown management LAN host still takes a lease (see the
+    # router's network-snapshot.nix). A mistyped inventory MAC
+    # shows here too.
+    {
+      alert = "DHCPUnknownLease";
+      expr = "homelab_dhcp_unknown_leases > 0";
+      labels.notify = "ops";
+      annotations.summary = "{{ $value }} DHCP lease(s) on {{ $labels.interface }} at {{ $labels.instance }} held by hardware the inventory does not name there.";
+    }
+    # Traffic from a management LAN host neither admitted nor in
+    # mgmt_known, dropped or only counted per homelab.mgmtLockdown.enforce.
+    # The journal's "nft mgmt unknown" lines name the MAC.
+    {
+      alert = "MgmtUnknownHost";
+      expr = ''increase(nftables_counter_packets_total{name="mgmt_unknown"}[10m]) > 0'';
+      labels.notify = "ops";
+      annotations.summary = "{{ $labels.instance }} saw traffic on the management LAN from hardware the inventory does not name there.";
     }
     # Every HTTPS probe target's certificate, whoever issues it: Tailscale
     # renews its Services certificates itself, and the acme module

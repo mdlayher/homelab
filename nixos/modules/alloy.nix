@@ -210,7 +210,7 @@ in
       }
 
       stage.match {
-        selector = "{job=\"systemd-journal\"} |~ \"nft .+ (drop|reject): \""
+        selector = "{job=\"systemd-journal\"} |~ \"nft .+ (drop|reject|warn): \""
 
         // One stage per field group rather than a single expression, so a
         // line missing a group still yields the others: a drop on a dn42
@@ -218,7 +218,7 @@ in
         // ports. A stage whose regex does not match extracts nothing and
         // the pipeline continues.
         stage.regex {
-          expression = "nft (?P<nft_rule>.+) (?P<nft_verdict>drop|reject): "
+          expression = "nft (?P<nft_rule>.+) (?P<nft_verdict>drop|reject|warn): "
         }
 
         stage.regex {

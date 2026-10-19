@@ -1,7 +1,8 @@
 # Evaluation-time checks on the plain data in nixos/inventory/default.nix.
 # Every machine imports the inventory, so every deploy and nightly upgrade
 # runs them. Addresses and MACs are sops placeholders at evaluation time and
-# cannot be checked here.
+# cannot be checked here; sops-nix fails the build on any key missing from
+# secrets.yaml, so no host's MAC drops out of a set silently.
 { inventory, lib, ... }:
 
 let
@@ -211,6 +212,14 @@ in
     {
       assertion = lib.all (h: lib.isBool (h.value.wan or true)) hosts;
       message = "inventory host wan must be a boolean";
+    }
+    {
+      assertion = lib.all (
+        h:
+        (h.value.admitMac or null) == null
+        || builtins.match "([0-9a-f]{2}:){5}[0-9a-f]{2}" h.value.admitMac != null
+      ) hosts;
+      message = "inventory host admitMac must be a lowercase MAC";
     }
     {
       assertion = lib.all (h: lib.isList (h.value.tags or [ ])) hosts;

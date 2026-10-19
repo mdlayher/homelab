@@ -1,8 +1,9 @@
 # The router firewall cases, run in order by run.sh. Each sends one probe
 # from namespace `from` toward `dst`, and `to` names the namespace where an
 # accepted probe arrives: a segment by its router interface, or router,
-# internet, tailnet, remote, dn42peer, dn42host, far or unclassified (see
-# the plan in default.nix).
+# internet, tailnet, remote, dn42peer, dn42host, far, unclassified, or a
+# device on the management LAN: stranger (unknown MAC), serverlink (the
+# server's real MAC) or admitted (the KVM's admitMac); see default.nix.
 #
 # A probe is `tcp` or `udp` with a port, or `probe` naming ping, echo-hbh,
 # mld or dhcp-discover (see packet.py). The verdict is `accept`, with the
@@ -451,6 +452,77 @@ assert lib.assertMsg
     dst = f.net.wan0.peer4;
     probe = "ping";
     drop = "wan_denied_drop";
+  })
+
+  # The management LAN.
+
+  # input: "localhost and trusted LANs to router", past the MAC test
+  (case "mgmt inventory MAC to router" {
+    from = f.stranger.ifname;
+    to = "router";
+    dst = r.${f.stranger.ifname}.ipv4;
+    tcp = 22;
+    accept = "localhost and trusted LANs to router";
+  })
+  # input and forward: "unknown host on mgmt"
+  (case "mgmt unknown MAC to router v4" {
+    from = "stranger";
+    to = "router";
+    dst = r.${f.stranger.ifname}.ipv4;
+    tcp = 22;
+    drop = "mgmt_unknown";
+  })
+  (case "mgmt unknown MAC to router v6" {
+    from = "stranger";
+    to = "router";
+    dst = r.${f.stranger.ifname}.ula;
+    tcp = 22;
+    drop = "mgmt_unknown";
+  })
+  (case "mgmt unknown MAC to WAN" {
+    from = "stranger";
+    to = "internet";
+    dst = f.net.wan0.peer4;
+    tcp = 443;
+    drop = "mgmt_unknown";
+  })
+  (case "mgmt unknown MAC to LAN" {
+    from = "stranger";
+    to = "lan0";
+    dst = client6 "lan0";
+    tcp = 22;
+    drop = "mgmt_unknown";
+  })
+  # input: "router mgmt DHCPv4", ahead of the MAC test
+  (case "mgmt unknown MAC DHCPv4 discover" {
+    from = "stranger";
+    to = "router";
+    dst = "255.255.255.255";
+    probe = "dhcp-discover";
+    port = 67;
+    accept = "router mgmt DHCPv4";
+  })
+  # input and forward: plain-text MACs skip the MAC test
+  (case "mgmt server's real MAC to router" {
+    from = "serverlink";
+    to = "router";
+    dst = r.${f.stranger.ifname}.ipv4;
+    tcp = 22;
+    accept = "localhost and trusted LANs to router";
+  })
+  (case "mgmt server's real MAC to WAN" {
+    from = "serverlink";
+    to = "internet";
+    dst = f.net.wan0.peer4;
+    tcp = 443;
+    accept = "trusted LANs to all WANs";
+  })
+  (case "mgmt admitMac to router" {
+    from = "admitted";
+    to = "router";
+    dst = r.${f.stranger.ifname}.ipv4;
+    tcp = 22;
+    accept = "localhost and trusted LANs to router";
   })
 
   # Trusted LANs and the tailnet.

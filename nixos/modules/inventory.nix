@@ -72,6 +72,15 @@ let
       ipv4 = placeholder "hosts/${name}/ipv4";
       # False for a host the router denies the internet.
       wan = host.wan or true;
+      # A plain MAC the management LAN admits whatever the secrets say.
+      # Declared but unset fails evaluation.
+      admitMac =
+        if !(host ? admitMac) then
+          null
+        else if host.admitMac == null then
+          throw "inventory: ${name}.admitMac in nixos/inventory/default.nix is unset; fill in the host's plain MAC"
+        else
+          host.admitMac;
       # What the host is, from the inventory's hostTags.
       tags = host.tags or [ ];
       ula =
@@ -232,7 +241,8 @@ in
       carry mac, ipv4, ula and iid (both null when the host has no known
       IPv6 address, and iid also where the identifier differs per prefix),
       dnsName, the name DNS publishes, wan, false where the host is
-      denied the internet, and tags, what the host is. tagged takes a list
+      denied the internet, admitMac, a plain MAC the management LAN
+      admits ahead of its set, and tags, what the host is. tagged takes a list
       of tags and returns this site's hosts holding any of them.
 
       Loopbacks are keyed by machine name and are plain data, since they are

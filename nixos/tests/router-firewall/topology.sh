@@ -161,6 +161,22 @@ mac() {
 	in_ns "$1" ip link set eth0 address "$2"
 }
 
+# Another device on segment $2's wire: a macvlan on the segment client's
+# link, moved to namespace $1 with MAC $3.
+#
+#   onlink NS SEGMENT MAC "ADDRS"
+onlink() {
+	local name=$1 seg=$2 mac=$3 addrs
+	read -ra addrs <<<"$4"
+	ns_new "$name"
+	in_ns "$seg" ip link add onlink0 link eth0 address "$mac" type macvlan mode bridge
+	in_ns "$seg" ip link set onlink0 netns "${NS_PID[$name]}"
+	in_ns "$name" ip link set onlink0 name eth0
+	ROUTER_MAC[$name]=${ROUTER_MAC[$seg]}
+	addr "$name" eth0 "${addrs[@]}"
+	up "$name" eth0
+}
+
 # Joins multicast groups on the router's interface $1, the way a listener
 # on the router does, so traffic to them reaches its input hook.
 join() {

@@ -399,6 +399,8 @@
           pikvm = {
             ipv6 = "eui64";
             tags = [ "pikvm" ];
+            # Admitted on the management LAN by this MAC, whatever its secret.
+            admitMac = "88:a2:9e:42:8b:c1";
           };
           servnerr-4.ipv6 = "token";
           switch-core = {

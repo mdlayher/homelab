@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   ...
 }:
@@ -36,12 +37,41 @@ let
   icl = siteLink.${config.networking.hostName}.interface;
   routerCarrier = siteLink.${lib.head inventory.roles.router}.carrier;
 
+  # The management LAN allowlist, as on the router (see its nftables.nix),
+  # for host-to-host traffic it never sees. The router's MAC and admitMac
+  # hosts (the KVM) are admitted in plain text.
+  mgmt = inventory.interfaces.mgmt0;
+  routerLinks =
+    inputs.self.nixosConfigurations.${lib.head inventory.roles.router}.config.systemd.network.links;
+  routerMgmtMac =
+    (lib.findFirst (
+      link: link.linkConfig.Name or null == mgmt.name
+    ) (throw "the router has no ${mgmt.name} link") (lib.attrValues routerLinks))
+    .matchConfig.MACAddress;
+  mgmtAdmit = [ routerMgmtMac ] ++ lib.filter (mac: mac != null) (map (h: h.admitMac) mgmt.hosts);
+  mgmtEnforce = config.homelab.mgmtLockdown.enforce;
+
   # lasthop's system ID as the hex its hellos carry.
   lasthopSystemId = lib.replaceStrings [ "." ] [ "" ] inventory.isis.lab.systemIds.lasthop;
 in
 {
-  # A machine with a dn42 interface trusts the dn42 CA; see dn42 above.
-  imports = [ ../modules/dn42-ca.nix ];
+  imports = [
+    # A machine with a dn42 interface trusts the dn42 CA; see dn42 above.
+    ../modules/dn42-ca.nix
+    # The MACs of mgmt_known below are inventory secrets.
+    ../modules/nftables-inventory.nix
+  ];
+
+  homelab.nftablesInventory = ''
+    flush set inet input-guard mgmt_known
+    flush chain inet input-guard mgmt_inventory
+    add element inet input-guard mgmt_known { ${lib.concatMapStringsSep ", " (h: h.mac) mgmt.hosts} }
+    add rule inet input-guard mgmt_inventory ether saddr != @mgmt_known limit rate 10/minute burst 20 packets log prefix "nft mgmt unknown ${
+      if mgmtEnforce then "drop" else "warn"
+    }: "
+    add rule inet input-guard mgmt_inventory ether saddr != @mgmt_known counter name mgmt_unknown ${lib.optionalString mgmtEnforce "drop "}comment "unknown host on mgmt"
+  '';
+  homelab.mgmtLockdown.enforce = false;
 
   networking = {
     # Host name and ID.
@@ -111,7 +141,7 @@ in
       };
     };
 
-    # What may start a flow toward this machine on two of its interfaces,
+    # What may start a flow toward this machine on several of its interfaces,
     # decided ahead of the firewall: its chain accepts the ports above on
     # every interface before any rule of ours, so a drop has to come
     # earlier. A drop here is final; an accept only ends this chain, and
@@ -131,11 +161,26 @@ in
     # MTU discovery and traces need, and so does the resolver, since a
     # client whose nearest node is elsewhere is answered here. The link is
     # addressed v6 only.
+    #
+    # The management LAN: hosts neither admitted nor in mgmt_known reach
+    # nothing here once homelab.mgmtLockdown.enforce is set. mgmt_inventory
+    # fails open, as on the router.
     nftables.tables.input-guard = {
       family = "inet";
       content = ''
+        counter mgmt_unknown {}
+
+        set mgmt_known {
+          type ether_addr
+        }
+
+        chain mgmt_inventory {
+        }
+
         chain input {
           type filter hook input priority filter - 1; policy accept;
+
+          iifname "mgmt0" ether saddr != { ${lib.concatStringsSep ", " mgmtAdmit} } jump mgmt_inventory
 
           iifname "br-dn42i-dev0" ct state { new, invalid } drop comment "nothing new from the dn42 VLAN"
 

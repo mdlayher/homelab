@@ -2,7 +2,6 @@
   config,
   inputs,
   lib,
-  pkgs,
   ...
 }:
 
@@ -25,6 +24,23 @@ let
   trusted = lansWhere (ifi: ifi.trusted) ++ [ { name = "ts0"; } ];
   restricted = lansWhere (ifi: !ifi.trusted);
   debugLans = lansWhere (ifi: ifi.debug);
+
+  # The management LAN admits only inventory MACs (see mgmt_inventory).
+  mgmt = inventory.interfaces.mgmt0;
+
+  # MACs admitted in plain text, so a wrong secret never cuts off the
+  # server or a host with admitMac (the KVM).
+  linkMac =
+    machine: ifname:
+    (lib.findFirst (link: link.linkConfig.Name or null == ifname)
+      (throw "${machine} has no ${ifname} link")
+      (lib.attrValues inputs.self.nixosConfigurations.${machine}.config.systemd.network.links)
+    ).matchConfig.MACAddress;
+  mgmtAdmit = [
+    (linkMac (lib.head inventory.roles.server) mgmt.name)
+  ]
+  ++ lib.filter (mac: mac != null) (map (h: h.admitMac) mgmt.hosts);
+  mgmtEnforce = config.homelab.mgmtLockdown.enforce;
 
   # Produces an nftables set of interface names.
   ifnames = ifis: "{ ${lib.concatMapStringsSep ", " (ifi: ifi.name or ifi) ifis} }";
@@ -49,13 +65,7 @@ let
   };
 
   # Addresses are secrets from the inventory, so rules reference named sets
-  # which are populated at activation time from this rendered file. Empty sets
-  # fail closed.
-  #
-  # Each set is flushed before it is filled: an address that changed must
-  # replace the element holding its old value, and a map keyed on port rejects
-  # a second element for a key it already holds. nft applies the file as one
-  # transaction, so no set is observably empty.
+  # filled from this rendered file; see modules/nftables-inventory.nix.
   elements =
     let
       routers = ifi: lib.concatMapStringsSep ", " (addr: "${ifi.name} . ${addr}");
@@ -66,6 +76,8 @@ let
       flush set inet filter router_v4
       flush set inet filter router_v6
       flush set inet filter wan_denied
+      flush set inet filter mgmt_known
+      flush chain inet filter mgmt_inventory
       flush set inet filter tailscale_v4
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
@@ -91,6 +103,13 @@ let
       ${lib.optionalString (wanDenied != [ ])
         "add element inet filter wan_denied { ${lib.concatMapStringsSep ", " (h: h.mac) wanDenied} }"
       }
+      ${lib.optionalString (mgmt.hosts != [ ])
+        "add element inet filter mgmt_known { ${lib.concatMapStringsSep ", " (h: h.mac) mgmt.hosts} }"
+      }
+      add rule inet filter mgmt_inventory ether saddr != @mgmt_known limit rate 10/minute burst 20 packets log prefix "nft mgmt unknown ${
+        if mgmtEnforce then "drop" else "warn"
+      }: "
+      add rule inet filter mgmt_inventory ether saddr != @mgmt_known counter name mgmt_unknown ${lib.optionalString mgmtEnforce "drop "}comment "unknown host on mgmt"
       add element inet filter tailscale_v4 { ${forwards (ts: "${ts.host.ipv4} . ${toString ts.port}")} }
       add element inet filter tailscale_v6 { ${forwards (ts: "::${ts.host.iid} . ${toString ts.port}")} }
       ${lib.optionalString (icl && iclServices != [ ])
@@ -113,9 +132,6 @@ let
       ''}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
-
-  nft = "${pkgs.nftables}/bin/nft";
-  elementsFile = config.sops.templates."nftables-inventory.conf".path;
 
   # dn42 peering (see dn42.nix): interfaces are dn42e-<peer> for the tunnels
   # to other networks and dn42i-<name> for our own dn42-addressed VLANs.
@@ -259,7 +275,12 @@ let
 in
 {
   # The exporter for the named counters below; see the module.
-  imports = [ ../modules/nftables-exporter.nix ];
+  imports = [
+    ../modules/nftables-exporter.nix
+    ../modules/nftables-inventory.nix
+  ];
+
+  homelab.mgmtLockdown.enforce = false;
 
   # A forward is matched by interface identifier, so a host whose identifier
   # changes with the prefix cannot be one: its element would name an address
@@ -271,33 +292,7 @@ in
     }
   ];
 
-  sops.templates."nftables-inventory.conf".content = elements;
-
-  # Load inventory set elements after the ruleset is (re)loaded, since loading
-  # the ruleset flushes all sets, and after the secrets are installed: sops
-  # restarts a template's restartUnits before it swaps /run/secrets to the
-  # newly rendered files, so a unit restarted that way reads the previous
-  # contents and reports success. Binding to the installer's unit runs this
-  # once the new file is in place, and only when a rendered file changed.
-  systemd.services.nftables-inventory = {
-    description = "nftables inventory set elements";
-    after = [
-      "nftables.service"
-      "sops-install-secrets.service"
-    ];
-    requires = [ "nftables.service" ];
-    partOf = [
-      "nftables.service"
-      "sops-install-secrets.service"
-    ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${nft} -f ${elementsFile}";
-    };
-  };
-  systemd.services.nftables.serviceConfig.ExecReload = lib.mkAfter [ "${nft} -f ${elementsFile}" ];
+  homelab.nftablesInventory = elements;
 
   # Advertise this machine as a tailnet peer relay on the port opened above.
   services.tailscale.extraSetFlags = [ "--relay-server-port=${toString tailscale.relay}" ];
@@ -324,6 +319,7 @@ in
       # Our allocation within it.
       define dn42_net4 = ${inventory.dn42.net4}
       define dn42_net6 = ${inventory.dn42.net6}
+      define mgmt_admit = { ${lib.concatStringsSep ", " mgmtAdmit} }
       define loopback6 = ${inventory.loopbacks.${config.networking.hostName}.addr6}
 
       # The service addresses this router answers at along with every other
@@ -366,6 +362,7 @@ in
         counter restricted_input_drop {}
         counter restricted_forward_drop {}
         counter wan_denied_drop {}
+        counter mgmt_unknown {}
         counter forward_reject {}
         counter wan_forward_drop {}
         counter dn42_input_drop {}
@@ -391,6 +388,18 @@ in
         # MACs of LAN hosts the inventory denies the internet.
         set wan_denied {
           type ether_addr
+        }
+
+        # Inventory MACs on the management LAN.
+        set mgmt_known {
+          type ether_addr
+        }
+
+        # Drops management LAN hosts not in mgmt_known, or only logs and
+        # counts them unless homelab.mgmtLockdown.enforce. The elements file
+        # fills it with its set, so if that never loads the LAN stays open.
+        # Never accepts.
+        chain mgmt_inventory {
         }
 
         # LAN hosts which accept inbound Tailscale traffic from the WAN.
@@ -505,6 +514,14 @@ in
           policy drop
 
           ${dn42eOwnSources "dn42_input_drop"}
+
+          # Unknown management LAN hosts reach nothing here. DHCP first:
+          # their lease is the sensor. Admitted MACs skip the test, not
+          # accepted. Ahead of the established accept, so a removed host
+          # loses its open flows.
+          iifname ${mgmt.name} udp dport $dhcp4_server udp sport $dhcp4_client counter accept comment "router mgmt DHCPv4"
+          iifname ${mgmt.name} ether saddr != $mgmt_admit jump mgmt_inventory
+
           ct state {established, related} counter accept
           ct state invalid counter drop
 
@@ -772,6 +789,9 @@ in
           # the established shortcut so inbound SYN/ACKs are also clamped.
           oifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
           iifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp in"
+
+          # Unknown management LAN hosts, as in input.
+          iifname ${mgmt.name} ether saddr != $mgmt_admit jump mgmt_inventory
 
           ct state {established, related} counter accept
 

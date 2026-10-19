@@ -16,6 +16,7 @@
 # drop lines, which is a biased sample of hosts that tripped a rule.
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -31,8 +32,29 @@ let
   # unit="network-snapshot.service". The identifier just names them in
   # journalctl.
   identifier = "netsnap";
+
+  # Unknown hosts on the management LAN are dropped or logged (see
+  # nftables.nix) but still take a lease, which is what makes them visible.
+  mgmt = config.homelab.inventory.interfaces.mgmt0;
+  knownMacs = config.sops.templates."mgmt-known-macs.json".path;
+
+  # A lease's MAC is HardwareAddress, else a type 1 client identifier; a
+  # lease with neither counts as unknown.
+  unknownLeases = ''
+    def hex: map(. as $b | "0123456789abcdef" | .[($b / 16 | floor):($b / 16 | floor) + 1] + .[($b % 16):($b % 16) + 1]) | join(":");
+    def mac:
+      if .HardwareAddressLength == 6 then .HardwareAddress[0:6] | hex
+      elif (.ClientId | length) == 7 and .ClientId[0] == 1 then .ClientId[1:7] | hex
+      else null end;
+    ($known[0] | map(ascii_downcase)) as $k
+    | .[] | select(.Name == "${mgmt.name}")
+    | [(.DHCPServer.Leases // [])[] | mac | select(. == null or (IN($k[]) | not))] | length
+    | "homelab_dhcp_unknown_leases{interface=\"${mgmt.name}\"} \(.)"
+  '';
 in
 {
+  sops.templates."mgmt-known-macs.json".content = builtins.toJSON (map (h: h.mac) mgmt.hosts);
+
   systemd = {
     timers.network-snapshot = {
       description = "Sample router network state for Loki";
@@ -121,9 +143,20 @@ in
         # reports live server state rather than whatever was last persisted.
         # The filter is by presence of the DHCPServer object rather than by
         # its shape, so it keeps working if systemd renames a field inside.
-        ${networkctl} --json=short status 2>/dev/null |
-          ${jq} -c '[.Interfaces[] | select(.DHCPServer) | {Name, DHCPServer}]' |
-          snap leases
+        leases="$(${networkctl} --json=short status 2>/dev/null |
+          ${jq} -c '[.Interfaces[] | select(.DHCPServer) | {Name, DHCPServer}]')"
+        printf '%s' "$leases" | snap leases
+
+        # Renamed into place so a scrape never sees half a file.
+        out=${config.homelab.textfileDir}/dhcp-leases.prom
+
+        {
+          echo "# HELP homelab_dhcp_unknown_leases DHCP leases on an interface held by a hardware address the inventory does not name there."
+          echo "# TYPE homelab_dhcp_unknown_leases gauge"
+          printf '%s' "$leases" | ${jq} -r --slurpfile known ${knownMacs} ${lib.escapeShellArg unknownLeases}
+        } > "$out.tmp"
+
+        mv "$out.tmp" "$out"
       '';
     };
   };

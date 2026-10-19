@@ -16,7 +16,12 @@
 }:
 
 let
-  router = nixosConfigurations.${lib.head inventory.roles.router}.config;
+  # The management LAN lockdown is tested enforcing, whatever the router
+  # sets.
+  router =
+    (nixosConfigurations.${lib.head inventory.roles.router}.extendModules {
+      modules = [ { homelab.mgmtLockdown.enforce = lib.mkForce true; } ];
+    }).config;
   server = nixosConfigurations.${lib.head inventory.roles.server}.config;
   inv = router.homelab.inventory;
   routerName = router.networking.hostName;
@@ -71,6 +76,43 @@ let
     mac = "02:00:00:00:de:01";
     ipv4 = "${inv.interfaces.${ifname}.ipv4Prefix}.10";
   };
+
+  # Management LAN devices. The segment's client uses the server's made-up
+  # MAC, which the template admits; the others share its wire with MACs
+  # outside the template: an unknown one, the server's real one and the
+  # KVM's admitMac.
+  mgmt = inv.interfaces.mgmt0;
+  mgmtHost = hosts.${lib.head inv.roles.server};
+  onlink =
+    lib.mapAttrs
+      (_: d: {
+        ifname = mgmt.name;
+        inherit (d) mac;
+        ipv4 = "${mgmt.ipv4Prefix}.${toString d.n}";
+        ula = "${mgmt.ulaPrefix}::${toString d.n}";
+      })
+      {
+        stranger = {
+          mac = "02:00:00:00:ee:01";
+          n = 20;
+        };
+        serverlink = {
+          mac =
+            (lib.findFirst (link: link.linkConfig.Name or null == mgmt.name)
+              (throw "router-firewall: the server has no ${mgmt.name} link")
+              (lib.attrValues server.systemd.network.links)
+            ).matchConfig.MACAddress;
+          n = 21;
+        };
+        admitted = {
+          mac =
+            (lib.findFirst (
+              h: h.admitMac != null
+            ) (throw "router-firewall: no host carries admitMac") mgmt.hosts).admitMac;
+          n = 22;
+        };
+      };
+  inherit (onlink) stranger;
 
   elements = pkgs.writeText "router-firewall-elements.nft" (
     assert lib.assertMsg (
@@ -224,6 +266,8 @@ let
       inv
       hosts
       denied
+      onlink
+      stranger
       net
       peer
       dn42Host
@@ -256,6 +300,12 @@ let
           v4 = net.ts0.peer4;
           v6 = net.ts0.peer6;
         };
+      }
+      // lib.mapAttrs (_: d: {
+        v4 = d.ipv4;
+        v6 = d.ula;
+      }) onlink
+      // {
         remote.v6 = device.address;
         dn42peer = {
           v4 = peer.ipv4;
@@ -292,39 +342,47 @@ let
     ++ lib.concatMap (h: [ h.ipv4 ] ++ lib.optional (h.ula != null) h.ula) (
       map (h: hosts.${h.name}) ifi.hosts
     );
-  held = lib.mapAttrs (_: segmentAddrs) inv.interfaces // {
-    dn42peer = [
-      peer.ipv4
-      peer.ipv6
-    ];
-    far = [
-      far.peer6
-      far.peer4
-      far.lo6
-      far.lo4
-      far.dn42v6
-      far.dn42v4
-      far.host6
-      far.host4
-    ];
-    internet = [
-      net.wan0.peer4
-      net.wan0.peer6
-    ];
-    tailnet = [
-      net.ts0.peer4
-      net.ts0.peer6
-    ];
-    remote = [ device.address ];
-    dn42host = [
-      dn42Host.ipv4
-      dn42Host.ipv6
-    ];
-    unclassified = [
-      net.unclassified.peer4
-      net.unclassified.peer6
-    ];
-  };
+  held =
+    lib.mapAttrs (_: segmentAddrs) inv.interfaces
+    // {
+      dn42peer = [
+        peer.ipv4
+        peer.ipv6
+      ];
+      far = [
+        far.peer6
+        far.peer4
+        far.lo6
+        far.lo4
+        far.dn42v6
+        far.dn42v4
+        far.host6
+        far.host4
+      ];
+      internet = [
+        net.wan0.peer4
+        net.wan0.peer6
+      ];
+      tailnet = [
+        net.ts0.peer4
+        net.ts0.peer6
+      ];
+      remote = [ device.address ];
+    }
+    // lib.mapAttrs (_: d: [
+      d.ipv4
+      d.ula
+    ]) onlink
+    // {
+      dn42host = [
+        dn42Host.ipv4
+        dn42Host.ipv6
+      ];
+      unclassified = [
+        net.unclassified.peer4
+        net.unclassified.peer6
+      ];
+    };
   sources = lib.unique (
     map (c: { inherit (c) from src; }) (
       lib.filter (c: c.src != null && !(lib.elem c.src held.${c.from})) cases
@@ -376,6 +434,17 @@ let
         ${lib.optionalString (!ifi.trusted) "join ${ifi.name} ${sh groups}"}
       '') (lib.attrValues inv.interfaces)}
       mac ${denied.ifname} ${denied.mac}
+      mac ${mgmt.name} ${mgmtHost.mac}
+      ${lib.concatStrings (
+        lib.mapAttrsToList (name: d: ''
+          onlink ${name} ${d.ifname} ${d.mac} ${sh [ "${d.ipv4}/24 ${d.ula}/64" ]}
+          route ${name} ${mgmt.ipv4} eth0 default4
+          route ${name} ${mgmt.lla} eth0 default6
+          # Pin the router's on-link ULA too, or the device's solicitations
+          # land in a later case's counters.
+          route ${name} ${mgmt.ula} eth0
+        '') onlink
+      )}
 
       link ts0 tailnet ${
         sh [
