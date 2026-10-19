@@ -41,8 +41,13 @@ let
   # the bird protocol prefix, dn42i- the interface prefix. What is on the
   # other end is an implementation under development rather than a service,
   # so it is expected to be down, and to be broken on purpose while someone
-  # works on it. The external dn42e_ peers still alert normally.
+  # works on it.
   internalProtocols = raw "dn42i_.*";
+
+  # The external dn42 peers (dn42e_<peer>): hobby routers on the far end
+  # of a tunnel, which reboot and flap without notice. One of them down
+  # is a notice; all of them down is the router's own fault.
+  externalProtocols = raw "dn42e_.*";
 
   # The iBGP sessions between the dn42 nodes' loopbacks (ibgp_<machine>,
   # see modules/dn42.nix): a site without peers of its own exports nothing
@@ -161,6 +166,7 @@ let
       anyOf
       hostsRegex
       internalProtocols
+      externalProtocols
       interconnectProtocols
       internalInterfaces
       isisTextfile

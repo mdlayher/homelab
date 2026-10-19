@@ -7,6 +7,7 @@
   routers,
   raw,
   internalProtocols,
+  externalProtocols,
   interconnectProtocols,
   internalInterfaces,
   isisTextfile,
@@ -60,9 +61,14 @@
     # bird reports a BGP protocol as up only once the session reaches
     # Established, and one series exists per protocol and address
     # family, so a peer whose IPv4 channel fails while IPv6 holds still
-    # alerts. dn42 peers are hobby routers that reboot without notice;
-    # 10 minutes skips the ordinary flap and still catches a tunnel
-    # that is really gone.
+    # alerts. 10 minutes skips the ordinary flap and still catches a
+    # session that is really gone.
+    #
+    # The external dn42 peers are split out below: their sessions fail
+    # at the far end far more often than at this one, and nothing here
+    # fixes a peer's reboot, so a single peer down is a notice after an
+    # hour rather than an alert. The aggregate rule after it is the
+    # loud one, since every external peer down at once is this router.
     #
     # Internal sessions are named dn42i_* on purpose: the exporter
     # passes bird's protocol name through as the name label, so the
@@ -81,9 +87,33 @@
     # the different shape there.
     {
       alert = "BIRDBGPSessionDown";
-      expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name!~${internalProtocols}}) == 0'';
+      expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name!~${internalProtocols},name!~${externalProtocols}}) == 0'';
       for = "10m";
       annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is not Established.";
+    }
+    {
+      alert = "DN42PeerSessionDown";
+      expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name=~${externalProtocols}}) == 0'';
+      for = "1h";
+      labels.notify = "ops";
+      annotations.summary = "dn42 peer session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} has not been Established for an hour.";
+    }
+    # Peers fail independently of each other, so most of a router's
+    # external peers down at once is this end: the tunnel endpoint, the
+    # WAN or bird itself, none of which a peer's operator can fix. Fewer
+    # than half Established is the line, measured against the peers the
+    # router has rather than a fixed number, so a site with a single
+    # peer alerts when it is down and a site with many tolerates a few.
+    # Summed over the per-peer maxima so a router with every peer down
+    # reads zero rather than vanishing.
+    {
+      alert = "DN42PeersDown";
+      expr = ''
+        sum by (instance) (max by (instance, name) (bird_protocol_up{proto="BGP",name=~${externalProtocols}}))
+          < 0.5 * count by (instance) (max by (instance, name) (bird_protocol_up{proto="BGP",name=~${externalProtocols}}))
+      '';
+      for = "10m";
+      annotations.summary = "{{ $labels.instance }} has only {{ $value }} external dn42 peer sessions Established, fewer than half of its peers, so the fault is at this end.";
     }
     # Every other BIRD alert here is silent while the exporter is,
     # because a failed birdc socket query drops the protocol metrics
@@ -266,17 +296,23 @@
     # that is the permissible round trip to any peer, and 80ms leaves
     # margin to act. The metric is the ICMP round trip to a peer's
     # link-local address across its own tunnel, probed by the router's
-    # dn42_peer_exporter (see its dn42.nix). A 15 minute average rather
-    # than a `for`, since a path hovering around the line would keep
-    # resetting a timer. A failed probe publishes no round trip at all,
-    # so it neither lowers the average nor fires this; a dead tunnel is
-    # the WireGuard and BIRD rules' to report. External peers only: the
+    # dn42_peer_exporter (see its dn42.nix). The median over an hour
+    # rather than a mean or a `for`: a handful of multi-second probes
+    # during a peer's flap pulls a mean over the line while the path is
+    # unchanged, a path hovering around the line would keep resetting a
+    # timer, and a median only moves once most of the hour is slow. A
+    # failed probe publishes no round trip at all, so it neither lowers
+    # the median nor fires this; a dead tunnel is the WireGuard and BIRD
+    # rules' to report. A notice rather than an alert: the path is the
+    # peer's and the internet's, and a session dropped over it is
+    # DN42PeerSessionDown's to report. External peers only: the
     # exporter's peers are the router's dn42 peer set, which has no
     # dn42i-* entries.
     {
       alert = "DN42PeerLatencyHigh";
-      expr = "avg_over_time(dn42_peer_rtt_seconds[15m]) > 0.080";
-      annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) has averaged a {{ $value | humanizeDuration }} round trip over 15 minutes, above the 80ms warning line for a 100ms limit.";
+      expr = "quantile_over_time(0.5, dn42_peer_rtt_seconds[1h]) > 0.080";
+      labels.notify = "ops";
+      annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) has a median {{ $value | humanizeDuration }} round trip over the last hour, above the 80ms warning line for a 100ms limit.";
     }
     # A tunnel that carries small packets but drops full-size ones is
     # the quiet dn42 failure: the session stays up while large updates
