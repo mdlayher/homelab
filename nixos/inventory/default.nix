@@ -473,10 +473,6 @@
         trusted = false;
         role = "iot";
         hosts = {
-          living-room-hue-hub = {
-            ipv6 = "eui64";
-            tags = [ "hue" ];
-          };
           living-room-myq-hub.tags = [ "myq" ];
           office-printer.tags = [
             "brother"
@@ -488,6 +484,10 @@
               "printer"
               "prusa"
             ];
+          };
+          server-rack-hue-hub = {
+            ipv6 = "eui64";
+            tags = [ "hue" ];
           };
         };
       };
