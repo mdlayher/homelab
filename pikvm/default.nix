@@ -49,6 +49,28 @@ let
     doCheck = false;
   };
 
+  # Grafana's release build of Alloy. The Arch package (1.20.1-1) runs go
+  # build without its tags, so its loki.source.journal is a stub that reads
+  # nothing; the release binary carries journal support. The hash is the
+  # release's published SHA256SUMS entry. An arm64 binary unpacked on the
+  # build machine, so its fixup stays off it.
+  alloy =
+    pkgs.runCommand "alloy-1.20.1-linux-arm64"
+      {
+        src = pkgs.fetchurl {
+          url = "https://github.com/grafana/alloy/releases/download/v1.20.1/alloy-linux-arm64.zip";
+          hash = "sha256-OWgn1YFY8YHJjVd2yQg0izi0CZ8dGKHnVU8v2g/LkgM=";
+        };
+        nativeBuildInputs = [ pkgs.unzip ];
+        dontFixup = true;
+      }
+      ''
+        mkdir -p $out/bin
+        unzip -q $src alloy-linux-arm64 -d $out/bin
+        mv $out/bin/alloy-linux-arm64 $out/bin/alloy
+        chmod 755 $out/bin/alloy
+      '';
+
   # The serial consoles consrv serves, from the cabling in the inventory.
   consoles = (import ../nixos/inventory/consoles.nix { inherit lib inventory; }).pikvm;
 
@@ -265,7 +287,7 @@ let
         RuntimeDirectoryPreserve=yes
         WorkingDirectory=/run/grafana-alloy
         ExecStart=
-        ExecStart=/usr/bin/grafana-alloy run $CUSTOM_ARGS --storage.path=/run/grafana-alloy/data $CONFIG_FILE
+        ExecStart=/usr/local/bin/alloy run $CUSTOM_ARGS --storage.path=/run/grafana-alloy/data $CONFIG_FILE
       '';
     }
     {
@@ -405,6 +427,12 @@ let
       mode = "755";
       action = "consrv";
       binary = "${consrv}/bin/consrv";
+    }
+    {
+      path = "/usr/local/bin/alloy";
+      mode = "755";
+      action = "alloy";
+      binary = "${alloy}/bin/alloy";
     }
   ];
 
