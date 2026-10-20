@@ -52,7 +52,12 @@
     # The controller, its JDK and its MongoDB come from the unstable
     # channel. MongoDB is its own binary build: the module's default builds
     # MongoDB from source, and no binary cache carries it.
-    unifiPackage = pkgs.unstable.unifi;
+    # 10.6.106 ships a WebRTC JNI library that links libstdc++, which the
+    # package's autoPatchelf cannot find without the C++ runtime in its
+    # build inputs. nixpkgs 36009cdc adds it the same way.
+    unifiPackage = pkgs.unstable.unifi.overrideAttrs (old: {
+      buildInputs = old.buildInputs ++ [ pkgs.unstable.stdenv.cc.cc.lib ];
+    });
     jrePackage = config.services.unifi.unifiPackage.passthru.jrePackage;
     mongodbPackage = pkgs.unstable.mongodb-ce;
   };
