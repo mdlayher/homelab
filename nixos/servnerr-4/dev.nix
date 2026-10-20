@@ -1023,7 +1023,12 @@ in
   # tests inside the guest need no firewall change. Traffic between the
   # guest and linuxdev would need `ip protocol 146` accepted on both ends,
   # which is not done here.
-  microvm.vms.homadev =
+  #
+  # Not built: HomaModule at the pinned revision does not compile against
+  # kernel 6.18.57, whose proto_ops.bind takes a struct sockaddr_unsized.
+  # Upstream adapted in 173d32417b; moving homaSrc past it, and retiring
+  # the recvmsg patch if that revision carries it, brings the guest back.
+  microvm.vms.homadev = lib.mkIf false (
     devVM "homadev" "13" "02:00:00:00:00:13" "04a5bd69-5acd-45a1-8586-a65f8e9dea2e"
       [
         (
@@ -1053,7 +1058,8 @@ in
         # switch starts it. `systemctl start microvm@homadev` runs it
         # when it is wanted.
         autostart = false;
-      };
+      }
+  );
 
   # Fails the build when grom cannot import a dashboard cleanly, such as a
   # panel type it renders as a placeholder.
