@@ -12,8 +12,21 @@ in
   services.corerad = {
     enable = true;
 
-    # Enable as necessary to get development builds of CoreRAD.
-    package = pkgs.unstable.corerad;
+    # CoreRAD v1.4.0, which limits the automatic route block to loopback
+    # routes covering one of the advertising interface's own addresses.
+    # The ldflags in the package's preBuild take this version.
+    package = pkgs.unstable.corerad.overrideAttrs (
+      finalAttrs: _: {
+        version = "1.4.0";
+        src = pkgs.fetchFromGitHub {
+          owner = "mdlayher";
+          repo = "corerad";
+          rev = "v${finalAttrs.version}";
+          hash = "sha256-Hd8SaO/4jMZAxX7GqVxTbdDvBAP/FqGT29dHGH9Uwgg=";
+        };
+        vendorHash = "sha256-4m/wifWE+/IXg0W8LlmJl8miOCVHPdrmjI4nzhzjmmQ=";
+      }
+    );
 
     settings = with inventory.interfaces; {
       # Base non-interface configuration.
@@ -63,15 +76,12 @@ in
             rdnss = [ { servers = [ inventory.anycast6.dns ]; } ];
 
             # Route information, tuned per RFC 8978 (Reaction of IPv6 SLAAC
-            # to Flash-Renumbering Events). Trusted LANs get every prefix
-            # the router owns, the routes on loopback: the site ULA and
-            # delegated GUA aggregates. Restricted LANs get the site ULA
-            # alone, and explicitly: the loopback routes also include
-            # bird's unreachable dn42 aggregate, and a dev0 host on the
-            # internal dn42 VLAN would then reach our own dn42 space
-            # through dev0 instead of that VLAN. The site ULA it still
-            # needs, since the dn42 VLAN's fd00::/8 route would otherwise
-            # capture the site's ULA traffic too.
+            # to Flash-Renumbering Events). Trusted LANs get the loopback
+            # routes covering an address on the interface: the site ULA
+            # and delegated GUA aggregates. Restricted LANs get an explicit
+            # site ULA route alone. dev0 needs it, since the dn42 VLAN's
+            # fd00::/8 route would otherwise capture the site's ULA
+            # traffic too.
             route = [
               (
                 {
