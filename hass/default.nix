@@ -13,6 +13,74 @@
 }:
 
 let
+  # Loads that run for seconds at a time, which a scrape at any interval
+  # misses: a template binary sensor turns each plug's power reading into
+  # running or not, and an automation counts every start into a counter,
+  # which the prometheus integration exports as homeassistant_counter_value.
+  # The key is the plug's entity stem; event names the counter. delayOff
+  # holds the sensor on across the pauses within one event.
+  pulses = {
+    kitchen_coffee_grinder = {
+      name = "Kitchen Coffee Grinder";
+      event = "Runs";
+    };
+    storage_sump_pump = {
+      name = "Storage Sump Pump";
+      event = "Runs";
+    };
+    # A regeneration is a series of backwash, brine and rinse stages with
+    # the motor idle between them.
+    storage_water_softener = {
+      name = "Storage Water Softener";
+      event = "Regenerations";
+      delayOff = "00:10:00";
+    };
+  };
+
+  # Shifts a rendered block right by n columns, since an indented string
+  # drops the common leading whitespace that places it in the file.
+  indent =
+    n: s:
+    lib.concatStringsSep "\n" (
+      map (l: if l == "" then l else lib.strings.replicate n " " + l) (lib.splitString "\n" s)
+    );
+
+  pulseSensors = lib.concatStrings (
+    lib.mapAttrsToList (
+      stem: p:
+      ''
+        - name: "${p.name} Running"
+          unique_id: ${stem}_running
+          state: "{{ states('sensor.${stem}_plug_power') | float(0) > 5 }}"
+      ''
+      + lib.optionalString (p ? delayOff) "  delay_off: \"${p.delayOff}\"\n"
+    ) pulses
+  );
+
+  pulseCounters = lib.concatStrings (
+    lib.mapAttrsToList (stem: p: ''
+      ${stem}_${lib.toLower p.event}:
+        name: "${p.name} ${p.event}"
+        step: 1
+    '') pulses
+  );
+
+  pulseAutomations = lib.concatStrings (
+    lib.mapAttrsToList (stem: p: ''
+      - id: ${stem}_${lib.toLower p.event}
+        alias: "${p.name} ${p.event}"
+        triggers:
+          - trigger: state
+            entity_id: binary_sensor.${stem}_running
+            from: "off"
+            to: "on"
+        actions:
+          - action: counter.increment
+            target:
+              entity_id: counter.${stem}_${lib.toLower p.event}
+    '') pulses
+  );
+
   configuration = ''
 
     # Configure a default setup of Home Assistant (frontend, api, etc)
@@ -28,7 +96,14 @@ let
     scene: !include scenes.yaml
 
     prometheus:
-  '';
+
+    template:
+      - binary_sensor:
+    ${indent 6 pulseSensors}
+    counter:
+    ${indent 2 pulseCounters}
+    automation managed:
+    ${indent 2 pulseAutomations}'';
 
   # Each managed add-on's options, posted to the Supervisor, which keeps the
   # add-on's defaults for any left out; only the options declared here are
