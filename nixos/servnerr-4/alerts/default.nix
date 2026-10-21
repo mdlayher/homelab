@@ -193,6 +193,7 @@ in
     ./hardware.nix
     ./storage.nix
     ./power.nix
+    ./house.nix
     ./systems.nix
     ./windows.nix
     ./pikvm.nix
