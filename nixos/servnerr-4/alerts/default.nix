@@ -194,6 +194,7 @@ in
     ./storage.nix
     ./power.nix
     ./house.nix
+    ./appliances.nix
     ./systems.nix
     ./windows.nix
     ./pikvm.nix
