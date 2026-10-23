@@ -26,6 +26,31 @@ let
 
   users = lib.filter (u: u.isNormalUser) (lib.attrValues config.users.users);
 
+  # atuin v18.24.2 from upstream. buildRustPackage takes cargoHash from
+  # its call arguments rather than from the derivation, so the override
+  # vendors the dependencies itself.
+  atuin = pkgs.unstable.atuin.overrideAttrs (
+    finalAttrs: prev: {
+      version = "18.24.2";
+      src = pkgs.fetchFromGitHub {
+        owner = "atuinsh";
+        repo = "atuin";
+        tag = "v${finalAttrs.version}";
+        hash = "sha256-b6Uj3cPAu731lhrN8fOv4d0CpehT3bv7IOBmkbYrqfI=";
+      };
+      cargoDeps = pkgs.unstable.rustPlatform.fetchCargoVendor {
+        inherit (finalAttrs) pname version src;
+        hash = "sha256-HkYI2+Yvjnw9pKeRsteyZeLhHHErTa1mvJL16NQVF3g=";
+      };
+      checkFlags = prev.checkFlags ++ [
+        # needs a running Postgres server
+        "--skip=postgres_authenticates_with_the_password_file"
+        # timing-dependent: fails when the index reload is too fast to measure
+        "--skip=end_history_is_not_starved_by_an_index_reload"
+      ];
+    }
+  );
+
   # The admin user's home, on machines and in containers alike.
   home = config.users.users.${user}.home;
 
@@ -273,7 +298,7 @@ in
           set -g fish_greeting
 
           # Shell history via atuin, with the up arrow left to fish.
-          ${pkgs.atuin}/bin/atuin init fish --disable-up-arrow | source
+          ${atuin}/bin/atuin init fish --disable-up-arrow | source
         '';
       };
       bash = {
