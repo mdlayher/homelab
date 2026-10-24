@@ -9,34 +9,40 @@
 # port 1 up; runs to the rest of the house and the uplinks to other
 # switches fill them from port 22 down, so the two groups meet in the
 # free middle. The SFP+ cages hold the router, the server and the Aruba.
+locals {
+  # Management LAN ports locked to one host each, by port index: the
+  # port's label and the inventory host whose hardware address alone may
+  # use it.
+  locked = {
+    1 = { name = "kvm", host = "pikvm" }
+    3 = { name = "jump", host = "jumpnerr-1" }
+  }
+}
+
 resource "unifi_device" "switch_core" {
   name = "switch-core"
 
-  # Locked to the KVM's own hardware address: any other device on the
-  # port is dropped. A port with a profile takes every setting from it
-  # and the controller discards the port's own, a MAC filter included,
-  # so a locked port carries no profile and states the mgmt0 profile's
-  # settings itself: mgmt0 untagged, tagged frames blocked.
-  port_override {
-    index                     = 1
-    name                      = "kvm"
-    setting_preference        = "manual"
-    native_networkconf_id     = unifi_network.mgmt0.id
-    tagged_vlan_mgmt          = "block_all"
-    forward                   = "native"
-    port_security_enabled     = true
-    port_security_mac_address = [local.mac["pikvm"]]
+  # A port with a profile takes every setting from it and the controller
+  # discards the port's own, a MAC filter included, so a locked port
+  # carries no profile and states the mgmt0 profile's settings itself:
+  # mgmt0 untagged, tagged frames blocked.
+  dynamic "port_override" {
+    for_each = local.locked
+    content {
+      index                     = tonumber(port_override.key)
+      name                      = port_override.value.name
+      setting_preference        = "manual"
+      native_networkconf_id     = unifi_network.mgmt0.id
+      tagged_vlan_mgmt          = "block_all"
+      forward                   = "native"
+      port_security_enabled     = true
+      port_security_mac_address = [local.mac[port_override.value.host]]
+    }
   }
 
   port_override {
     index           = 2
     name            = "server 1g"
-    port_profile_id = unifi_port_profile.mgmt0.id
-  }
-
-  port_override {
-    index           = 3
-    name            = "jump"
     port_profile_id = unifi_port_profile.mgmt0.id
   }
 
