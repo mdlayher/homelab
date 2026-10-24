@@ -1,9 +1,8 @@
 # The switches and access points. The controller adopts a device in the
 # UI; it then enters the state through an import by its MAC
 # (sops-gate tofu-import unifi unifi_device.<name> <mac>), so no MAC is
-# written here. A port a device lists takes the named profile; every
-# other port keeps the controller's default, the built-in All profile,
-# which carries every network with mgmt0 untagged.
+# written here. A port a device lists takes the named profile or states
+# its settings itself; a port with nothing cabled to it is disabled.
 
 # The rack's core switch. Devices in the rack fill the copper ports from
 # port 1 up; runs to the rest of the house and the uplinks to other
@@ -26,6 +25,9 @@ locals {
     # untagged with every VLAN tagged.
     25 = { name = "router", host = "routnerr-3", network = "mgmt0", trunk = true }
   }
+
+  # Ports with nothing cabled to them, by index.
+  disabled = concat(range(8, 19), [23, 24, 26, 28])
 
   # Network name to controller id, for the locked ports.
   network_id = merge(
@@ -55,6 +57,16 @@ resource "unifi_device" "switch_core" {
   }
 
   # The living room switch's uplink.
+  dynamic "port_override" {
+    for_each = toset(local.disabled)
+    content {
+      index              = port_override.value
+      name               = "unused"
+      setting_preference = "manual"
+      forward            = "disabled"
+    }
+  }
+
   port_override {
     index           = 19
     name            = "switch-livingroom"
