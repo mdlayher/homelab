@@ -5,9 +5,80 @@
 # other port keeps the controller's default, the built-in All profile,
 # which carries every network with mgmt0 untagged.
 
-# The rack's core switch.
+# The rack's core switch. Devices in the rack fill the copper ports from
+# port 1 up; runs to the rest of the house and the uplinks to other
+# switches fill them from port 22 down, so the two groups meet in the
+# free middle. The SFP+ cages hold the router, the server and the Aruba.
 resource "unifi_device" "switch_core" {
   name = "switch-core"
+
+  # Locked to the KVM's own hardware address: any other device on the
+  # port is dropped.
+  port_override {
+    index           = 1
+    name            = "kvm"
+    port_profile_id = unifi_port_profile.mgmt0.id
+    port_security = {
+      enabled     = true
+      mac_address = [local.mac["pikvm"]]
+    }
+  }
+
+  port_override {
+    index           = 2
+    name            = "server 1g"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
+
+  port_override {
+    index           = 3
+    name            = "jump"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
+
+  port_override {
+    index           = 4
+    name            = "hass"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
+
+  port_override {
+    index           = 5
+    name            = "pdu01"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
+
+  port_override {
+    index           = 6
+    name            = "ups01"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
+
+  # The living room switch's uplink.
+  port_override {
+    index           = 19
+    name            = "switch-livingroom"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  port_override {
+    index           = 20
+    name            = "ap-basement"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  port_override {
+    index           = 21
+    name            = "ap-laundry"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  # The run to the office, with the workstation on its far end.
+  port_override {
+    index           = 22
+    name            = "office run"
+    port_profile_id = unifi_port_profile.mgmt0.id
+  }
 
   # The router's trunk: mgmt0 untagged with every VLAN tagged, as the
   # router's networking.nix expects on its LAN port.
@@ -15,6 +86,13 @@ resource "unifi_device" "switch_core" {
     index           = 25
     name            = "router"
     port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  # The server's 10G port; see the server profile.
+  port_override {
+    index           = 27
+    name            = "server 10g"
+    port_profile_id = unifi_port_profile.server.id
   }
 
   # Uplink to the Aruba 1930, the other rack switch.

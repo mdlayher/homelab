@@ -27,6 +27,11 @@ terraform {
       source  = "ubiquiti-community/unifi"
       version = ">= 0.59.0"
     }
+    # Reads the inventory's secrets (see inventory.tf).
+    sops = {
+      source  = "carlpett/sops"
+      version = ">= 1.0.0"
+    }
     time = {
       source  = "hashicorp/time"
       version = ">= 0.13.0"
