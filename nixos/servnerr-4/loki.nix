@@ -192,8 +192,10 @@ in
   # stability level.
   services.alloy.extraFlags = [ "--stability.level=experimental" ];
 
-  # Syslog from devices that cannot run alloy. Rendered through sops at
-  # activation because the relabeling below matches inventory addresses.
+  # Syslog from devices that cannot run alloy: the CyberPower cards and the
+  # UniFi devices (terraform/unifi/settings.tf points them here). Rendered
+  # through sops at activation because the relabeling below matches
+  # inventory addresses.
   sops.templates."alloy-syslog.alloy" = {
     content = ''
       loki.source.syslog "lan" {
@@ -307,22 +309,19 @@ in
       // Label messages with a host name by sender address, mirroring the
       // host label on journal streams. Raw mode parses nothing, and the
       // cards' self-reported identities are unusable anyway.
+      // A sender is named by its inventory address, so a datagram from a
+      // host the inventory does not know carries no host label.
       loki.relabel "syslog" {
         forward_to = []
+      ${lib.concatMapStrings (host: ''
 
         rule {
           source_labels = ["__syslog_connection_ip_address"]
-          regex         = "${hosts.ups01.ipv4}"
-          replacement   = "ups01"
+          regex         = "${host.ipv4}"
+          replacement   = "${host.name}"
           target_label  = "host"
         }
-
-        rule {
-          source_labels = ["__syslog_connection_ip_address"]
-          regex         = "${hosts.pdu01.ipv4}"
-          replacement   = "pdu01"
-          target_label  = "host"
-        }
+      '') (lib.attrValues hosts)}
       }
     '';
     mode = "0444";
