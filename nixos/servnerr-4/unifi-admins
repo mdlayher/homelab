@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Creates the controller's read-only accounts that do not exist yet:
+# UnPoller's, whose password is the server's secret unifi/unpoller_password
+# (see unifi.nix), and the agents', from secrets/agent.yaml, which the
+# development container's unifiq logs in with. An account already present
+# is left as it is, password included.
+#
+# Run through the gate, which supplies UNIFI_API, UNIFI_USERNAME and
+# UNIFI_PASSWORD from secrets/unifi.yaml, and whose key decrypts both files
+# the passwords come from:
+#
+#   sops-gate exec-env secrets/unifi.yaml -- nixos/servnerr-4/unifi-admins
+set -euo pipefail
+
+: "${UNIFI_API:?}" "${UNIFI_USERNAME:?}" "${UNIFI_PASSWORD:?}"
+
+jar=$(mktemp)
+trap 'rm -f "$jar"' EXIT
+
+# The controller serves a self-signed certificate, and reports why it
+# refused a call in the body.
+api() {
+	local path=$1 body=$2 reply
+	reply=$(curl -sSk -b "$jar" -c "$jar" -H 'Content-Type: application/json' \
+		--data-binary @- "$UNIFI_API$path" <<<"$body")
+	if [[ $(jq -r .meta.rc <<<"$reply") != ok ]]; then
+		echo "$0: $path: $(jq -r .meta.msg <<<"$reply")" >&2
+		exit 1
+	fi
+	printf '%s\n' "$reply"
+}
+
+api /api/login "$(jq -n --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" \
+	'{username: $u, password: $p}')" >/dev/null
+existing=$(api /api/s/default/cmd/sitemgr '{"cmd": "get-admins"}' | jq -r '.data[].name')
+
+# ensure <name> <password>: creates the read-only account unless one by
+# that name exists.
+ensure() {
+	local name=$1 password=$2
+	if grep -qxF "$name" <<<"$existing"; then
+		echo "$name: present" >&2
+		return
+	fi
+	api /api/s/default/cmd/sitemgr "$(jq -n --arg n "$name" --arg p "$password" \
+		'{cmd: "create-admin", name: $n, email: "", x_password: $p, role: "readonly", permissions: []}')" >/dev/null
+	echo "$name: created" >&2
+}
+
+ensure unpoller "$(sops decrypt --extract '["unifi"]["unpoller_password"]' nixos/servnerr-4/secrets.yaml)"
+ensure "$(sops decrypt --extract '["UNIFI_USERNAME"]' secrets/agent.yaml)" \
+	"$(sops decrypt --extract '["UNIFI_PASSWORD"]' secrets/agent.yaml)"

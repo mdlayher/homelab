@@ -81,6 +81,15 @@ creation_rules:
           - *mdlayher
           - *linuxdev-gate
           - *linuxdev-agent
+  # Read-only accounts the agents in the development container log in
+  # with, without the gate; the gate reads them too, to create the
+  # accounts (nixos/servnerr-4/unifi-admins). No machine decrypts these.
+  - path_regex: ^secrets/agent\.yaml$
+    key_groups:
+      - age:
+          - *mdlayher
+          - *linuxdev-gate
+          - *linuxdev-agent
   # Credentials the admin uses from the development container through the
   # secrets gate (API tokens for tofu and gh); no machine decrypts these.
   - path_regex: ^secrets/[^/]+\.yaml$

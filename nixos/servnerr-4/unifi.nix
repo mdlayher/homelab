@@ -94,7 +94,7 @@
     loki.url = "http://loki.svc.${config.homelab.inventory.zone}:${toString config.services.loki.configuration.server.http_listen_port}";
   };
 
-  # The read-only account's password, which unifi-bootstrap also reads to
+  # The read-only account's password, which unifi-admins also reads to
   # create the account.
   sops.secrets."unifi/unpoller_password" = {
     owner = config.services.prometheus.exporters.unpoller.user;

@@ -3,12 +3,12 @@
 # the local admin, names the controller, sets the country and marks setup
 # complete. The wizard's endpoints accept unauthenticated calls until then,
 # and refuse them after, so this runs once per controller. Then creates
-# UnPoller's read-only account and prints the id of the built-in Default
-# network, which terraform/unifi adopts as mgmt0.
+# the read-only accounts (unifi-admins, beside this script) and prints the
+# id of the built-in Default network, which terraform/unifi adopts as mgmt0.
 #
 # Run through the gate, which supplies UNIFI_API, UNIFI_USERNAME and
 # UNIFI_PASSWORD from secrets/unifi.yaml, and whose key also decrypts the
-# server's secrets, where UnPoller's password lives:
+# files the read-only passwords live in:
 #
 #   sops-gate exec-env secrets/unifi.yaml -- nixos/servnerr-4/unifi-bootstrap <name>
 set -euo pipefail
@@ -54,11 +54,9 @@ api /api/set/setting/super_identity "$(jq -n --arg n "$name" '{name: $n}')"
 api /api/set/setting/country '{"code": "840"}'
 api /api/cmd/system '{"cmd": "set-installed"}'
 
+"$(dirname "$(readlink -f "$0")")/unifi-admins"
+
 api /api/login "$(jq -n --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" \
 	'{username: $u, password: $p}')"
-api /api/s/default/cmd/sitemgr "$(jq -n \
-	--arg p "$(sops decrypt --extract '["unifi"]["unpoller_password"]' nixos/servnerr-4/secrets.yaml)" \
-	'{cmd: "create-admin", name: "unpoller", email: "", x_password: $p, role: "readonly", permissions: []}')"
-
 curl -fsSk -b "$jar" "$UNIFI_API/api/s/default/rest/networkconf" |
 	jq -r '.data[] | select(.attr_hidden_id == "LAN") | "Default network: \(._id)"'
