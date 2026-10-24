@@ -16,6 +16,9 @@ locals {
   locked = {
     1 = { name = "kvm", host = "pikvm" }
     3 = { name = "jump", host = "jumpnerr-1" }
+    4 = { name = "hass", host = "hass" }
+    5 = { name = "pdu01", host = "pdu01" }
+    6 = { name = "ups01", host = "ups01" }
   }
 }
 
@@ -43,24 +46,6 @@ resource "unifi_device" "switch_core" {
   port_override {
     index           = 2
     name            = "server 1g"
-    port_profile_id = unifi_port_profile.mgmt0.id
-  }
-
-  port_override {
-    index           = 4
-    name            = "hass"
-    port_profile_id = unifi_port_profile.mgmt0.id
-  }
-
-  port_override {
-    index           = 5
-    name            = "pdu01"
-    port_profile_id = unifi_port_profile.mgmt0.id
-  }
-
-  port_override {
-    index           = 6
-    name            = "ups01"
     port_profile_id = unifi_port_profile.mgmt0.id
   }
 
