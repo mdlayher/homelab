@@ -366,10 +366,13 @@
         # means, and renumbering the topology then renames nothing.
         role = "mgmt";
         hosts = {
-          ap-basement.tags = [
-            "ap"
-            "instanton"
-          ];
+          ap-basement = {
+            ipv6 = "eui64";
+            tags = [
+              "ap"
+              "unifi"
+            ];
+          };
           ap-laundry.tags = [
             "ap"
             "instanton"

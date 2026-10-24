@@ -99,3 +99,8 @@ resource "unifi_device" "switch_core" {
     port_profile_id = unifi_port_profile.server.id
   }
 }
+
+# The basement access point. Its trunk is core port 20, above.
+resource "unifi_device" "ap_basement" {
+  name = "ap-basement"
+}
