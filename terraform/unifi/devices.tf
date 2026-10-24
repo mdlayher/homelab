@@ -98,9 +98,4 @@ resource "unifi_device" "switch_core" {
   }
 
   # Uplink to the Aruba 1930, the other rack switch.
-  port_override {
-    index           = 28
-    name            = "aruba 1930"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
 }

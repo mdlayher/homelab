@@ -306,6 +306,8 @@
     "prusa"
     # A network switch.
     "switch"
+    # A Ubiquiti UniFi device, adopted by the controller on the server.
+    "unifi"
     # A Windows PC, built by windows/.
     "windows"
   ];
@@ -406,8 +408,8 @@
           switch-core = {
             ipv6 = "eui64";
             tags = [
-              "instanton"
               "switch"
+              "unifi"
             ];
           };
           switch-livingroom = {
