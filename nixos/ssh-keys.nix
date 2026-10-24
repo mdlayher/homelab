@@ -1,8 +1,9 @@
 # The admin's SSH public keys, read by the machines (modules/common.nix) and
 # by the KVM's configuration (pikvm/), which is built outside NixOS.
 {
-  # The admin's regular key.
-  admin = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5i5d0mRKAf02m+ju+I1KrAYw3Ny2IHXy88mgyragBN Matt Layher (mdlayher@gmail.com)";
+  # The admin's regular key, in a file of its own so the UniFi controller's
+  # settings (terraform/unifi/settings.tf) read the same key.
+  admin = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ./ssh-keys/admin.pub);
 
   # The admin's FIDO2 keys, the only ones accepted for SSH from the
   # development container: each signature requires a physical touch on the

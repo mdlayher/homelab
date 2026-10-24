@@ -2,7 +2,8 @@
 # UI; it then enters the state through an import by its MAC
 # (sops-gate tofu-import unifi unifi_device.<name> <mac>), so no MAC is
 # written here. A port a device lists takes the named profile or states
-# its settings itself; a port with nothing cabled to it is disabled.
+# its settings itself; a port with nothing cabled to it takes the disabled
+# profile.
 
 # The rack's core switch. Devices in the rack fill the copper ports from
 # port 1 up; runs to the rest of the house and the uplinks to other
@@ -60,10 +61,9 @@ resource "unifi_device" "switch_core" {
   dynamic "port_override" {
     for_each = toset(local.disabled)
     content {
-      index              = port_override.value
-      name               = "unused"
-      setting_preference = "manual"
-      forward            = "disabled"
+      index           = port_override.value
+      name            = "unused"
+      port_profile_id = unifi_port_profile.disabled.id
     }
   }
 

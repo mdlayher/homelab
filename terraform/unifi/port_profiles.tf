@@ -13,6 +13,17 @@ resource "unifi_port_profile" "trunk" {
   tagged_vlan_mgmt      = "auto"
 }
 
+# No host at all. The controller's disabled port state is a MAC filter
+# admitting no address; forwarding set to disabled on its own leaves the
+# port active. The controller clears the native network of such a profile.
+resource "unifi_port_profile" "disabled" {
+  name                      = "disabled"
+  native_networkconf_id     = ""
+  forward                   = "disabled"
+  port_security_enabled     = true
+  port_security_mac_address = []
+}
+
 # The management LAN alone, for the rack devices that manage over it.
 resource "unifi_port_profile" "mgmt0" {
   name                  = "mgmt0"
