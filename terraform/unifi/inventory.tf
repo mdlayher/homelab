@@ -12,9 +12,15 @@ locals {
   # once one carries a sensitive address, -show-sensitive notwithstanding.
   # A plan prints on the admin's own terminal, so the addresses are
   # unmarked here.
-  mac = nonsensitive({
-    for key, value in data.sops_file.inventory.data :
-    regex("^hosts\\.([^.]+)\\.mac$", key)[0] => value
-    if can(regex("^hosts\\.[^.]+\\.mac$", key))
-  })
+  mac = merge(
+    nonsensitive({
+      for key, value in data.sops_file.inventory.data :
+      regex("^hosts\\.([^.]+)\\.mac$", key)[0] => value
+      if can(regex("^hosts\\.[^.]+\\.mac$", key))
+    }),
+    # The router is no inventory host. Its management LAN link carries the
+    # address its networking.nix matches (links."15-mgmt0"), and every
+    # VLAN on that link shares it.
+    { routnerr-3 = "f4:90:ea:00:c7:90" },
+  )
 }
