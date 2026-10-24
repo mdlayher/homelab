@@ -158,11 +158,13 @@ let
           -backend-config="path=$tofu_state/terraform.tfstate" >/dev/null
       }
 
+      # A plan prints on the admin's own terminal, so values marked
+      # sensitive are shown rather than redacted.
       tofu_plan() {
         local module=$1
         tofu_init "$module"
         with_env "secrets/$module.yaml" tofu -chdir="$tofu_dir" plan -input=false \
-          -out="$tofu_state/plan.tfplan"
+          -show-sensitive -out="$tofu_state/plan.tfplan"
       }
 
       # Adopt an object that already exists, so the next plan diffs against
@@ -185,7 +187,7 @@ let
           exit 1
         fi
         with_env "secrets/$module.yaml" tofu -chdir="$tofu_dir" apply -input=false \
-          "$tofu_state/plan.tfplan"
+          -show-sensitive "$tofu_state/plan.tfplan"
       }
 
       verb=''${1:-}

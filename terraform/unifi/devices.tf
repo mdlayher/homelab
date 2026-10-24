@@ -10,16 +10,23 @@
 # switches fill them from port 22 down, so the two groups meet in the
 # free middle. The SFP+ cages hold the router, the server and the Aruba.
 locals {
-  # Management LAN ports locked to one host each, by port index: the
-  # port's label and the inventory host whose hardware address alone may
-  # use it.
+  # Ports locked to one host each, by port index: the port's label, the
+  # inventory host whose hardware address alone may use it, and the one
+  # network the port carries, untagged.
   locked = {
-    1 = { name = "kvm", host = "pikvm" }
-    3 = { name = "jump", host = "jumpnerr-1" }
-    4 = { name = "hass", host = "hass" }
-    5 = { name = "pdu01", host = "pdu01" }
-    6 = { name = "ups01", host = "ups01" }
+    1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
+    3 = { name = "jump", host = "jumpnerr-1", network = "mgmt0" }
+    4 = { name = "hass", host = "hass", network = "mgmt0" }
+    5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
+    6 = { name = "ups01", host = "ups01", network = "mgmt0" }
+    7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
   }
+
+  # Network name to controller id, for the locked ports.
+  network_id = merge(
+    { mgmt0 = unifi_network.mgmt0.id },
+    { for name, network in unifi_network.vlan : name => network.id },
+  )
 }
 
 resource "unifi_device" "switch_core" {
@@ -27,15 +34,15 @@ resource "unifi_device" "switch_core" {
 
   # A port with a profile takes every setting from it and the controller
   # discards the port's own, a MAC filter included, so a locked port
-  # carries no profile and states the mgmt0 profile's settings itself:
-  # mgmt0 untagged, tagged frames blocked.
+  # carries no profile and states its settings itself: its one network
+  # untagged, tagged frames blocked.
   dynamic "port_override" {
     for_each = local.locked
     content {
       index                     = tonumber(port_override.key)
       name                      = port_override.value.name
       setting_preference        = "manual"
-      native_networkconf_id     = unifi_network.mgmt0.id
+      native_networkconf_id     = local.network_id[port_override.value.network]
       tagged_vlan_mgmt          = "block_all"
       forward                   = "native"
       port_security_enabled     = true
