@@ -13,15 +13,19 @@ resource "unifi_device" "switch_core" {
   name = "switch-core"
 
   # Locked to the KVM's own hardware address: any other device on the
-  # port is dropped.
+  # port is dropped. A port with a profile takes every setting from it
+  # and the controller discards the port's own, a MAC filter included,
+  # so a locked port carries no profile and states the mgmt0 profile's
+  # settings itself: mgmt0 untagged, tagged frames blocked.
   port_override {
-    index           = 1
-    name            = "kvm"
-    port_profile_id = unifi_port_profile.mgmt0.id
-    port_security = {
-      enabled     = true
-      mac_address = [local.mac["pikvm"]]
-    }
+    index                     = 1
+    name                      = "kvm"
+    setting_preference        = "manual"
+    native_networkconf_id     = unifi_network.mgmt0.id
+    tagged_vlan_mgmt          = "block_all"
+    forward                   = "native"
+    port_security_enabled     = true
+    port_security_mac_address = [local.mac["pikvm"]]
   }
 
   port_override {
