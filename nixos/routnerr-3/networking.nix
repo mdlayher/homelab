@@ -316,9 +316,10 @@ in
       routingPolicyRules = markRule wan1;
     };
 
-    # Physical management LAN. For physical LANs, we have to make sure to match
-    # on both Type and MACAddress since VLANs would share the same MAC.
-    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:8e";
+    # Physical management LAN: the trunk to the core switch, on the SFP+
+    # port. For physical LANs, we have to make sure to match on both Type
+    # and MACAddress since VLANs would share the same MAC.
+    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:90";
     networks."15-mgmt0" = lanNetwork inventory.interfaces.mgmt0 // {
       # VLANs associated with this physical interface. dn42i-dev0 is the
       # internal dn42 VLAN; it is defined in dn42.nix with the rest of the
@@ -345,9 +346,9 @@ in
       ];
     };
 
-    # Unused Ethernet and SFP+ links.
+    # Unused Ethernet links.
+    links."15-eth1" = ethLink "eth1" "f4:90:ea:00:c7:8e";
     links."15-eth2" = ethLink "eth2" "f4:90:ea:00:c7:8f";
-    links."15-sfp0" = ethLink "sfp0" "f4:90:ea:00:c7:90";
 
     # Home VLAN.
     netdevs."20-lan0" = vlanNetdev "lan0" inventory.interfaces.lan0.vlan;
