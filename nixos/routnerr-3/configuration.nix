@@ -28,6 +28,11 @@ in
   # This machine is at the home site; see nixos/inventory/.
   homelab.site = "azo";
 
+  # The server builds this machine's system first and serves it, so a
+  # deploy downloads what the channels do not carry rather than compiling
+  # it here.
+  homelab.nixCache.client = true;
+
   system.stateVersion = "23.05";
 
   # TODO: https://github.com/NixOS/nixos-hardware/pull/673
