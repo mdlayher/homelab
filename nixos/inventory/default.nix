@@ -323,6 +323,7 @@
     nix-cache = "server";
     prometheus = "server";
     rtr = "server";
+    unifi = "server";
   };
 
   # The sites this network spans, each answering <name>.<zone>. A machine

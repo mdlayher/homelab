@@ -10,18 +10,40 @@ resource "unifi_setting" "site" {
     code = 840
   }
 
+  # Every access point is wired, so no radio is held back for a mesh
+  # backhaul and each band carries the controller's full SSID count. The
+  # controller fills in the rest of the block, so it is written out here
+  # as the controller holds it.
+  connectivity = {
+    enabled          = false
+    mlo_mesh_enabled = false
+    uplink_type      = "gateway"
+  }
+
   # Device firmware upgrades itself at the hour the NixOS machines run
-  # their nightly upgrade. SSH onto a device takes the admin's key.
+  # their nightly upgrade. SSH onto a device takes the admin's key alone.
   mgmt = {
-    auto_upgrade      = true
-    auto_upgrade_hour = 4
-    ssh_enabled       = true
+    auto_upgrade              = true
+    auto_upgrade_hour         = 4
+    ssh_enabled               = true
+    ssh_auth_password_enabled = false
     ssh_keys = [{
       name    = "admin"
       type    = local.admin_key[0]
       key     = local.admin_key[1]
       comment = join(" ", slice(local.admin_key, 2, length(local.admin_key)))
     }]
+  }
+
+  # Switches run RSTP toward one another and report any DHCP server they
+  # see. Every segment carries the standard MTU, so no jumbo frames. No
+  # 802.1X and no switch ACLs: the router keeps the segments apart.
+  global_switch = {
+    stp_version            = "rstp"
+    dhcp_snoop             = true
+    jumboframe_enabled     = false
+    dot1x_portctrl_enabled = false
+    acl_device_isolation   = []
   }
 
   # Time from the anycast NTP address (nixos/inventory/default.nix,
