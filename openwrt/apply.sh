@@ -172,6 +172,11 @@ for t in $todo; do
     later="$later dropbear"
     ;;
   tailscale) later="$later tailscale" ;;
+  # The hook runs as the management interface's ifup would run it.
+  netconsole)
+    ACTION=ifup INTERFACE=wan DEVICE=$(uci -q get network.wan.device) \
+      sh /etc/hotplug.d/iface/30-netconsole
+    ;;
   esac
 done
 

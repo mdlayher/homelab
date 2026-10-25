@@ -21,11 +21,15 @@ let
   mgmt = siteInventory.interfaces.mgmt0;
   nodeExporterPort = 9100;
 
+  # The server's name on that segment, which the machines share with it.
+  server = "${lib.head inventory.roles.server}.${mgmt.searchDomain}";
+
   # Packages the machines need beyond the OpenWrt image, for the managed
   # settings, the LTE modem and working on them by hand, installed by hand
   # (see README.md); apply.sh refuses to change anything while one is
   # missing.
   packages = [
+    "kmod-netconsole"
     "kmod-usb-net-cdc-mbim"
     "kmod-usb-serial-qualcomm"
     "mbim-utils"
@@ -218,6 +222,33 @@ let
       mode = "600";
       action = "none";
       text = lib.concatLines sshKeys.fido;
+    }
+    {
+      # Kernel netconsole to the server over the management LAN, which
+      # carries what logd cannot ship, a panic among it. OpenWrt's module
+      # has no configfs interface, so the target is a module parameter,
+      # set again each time the management interface comes up: the kernel
+      # builds the frames itself, so the server's hardware address comes
+      # from the neighbor table once a ping has filled it. OpenWrt's
+      # modprobe takes no parameters, so the load is insmod's. Like any
+      # console it receives the messages below the console log level,
+      # here the kernel's default.
+      path = "/etc/hotplug.d/iface/30-netconsole";
+      mode = "644";
+      action = "netconsole";
+      text = ''
+        #!/bin/sh
+        [ "$ACTION" = ifup ] && [ "$INTERFACE" = wan ] || exit 0
+        addr=$(nslookup ${server} 2>/dev/null | awk '$1 == "Address:" && $2 ~ /^[0-9.]+$/ { print $2; exit }')
+        if [ -z "$addr" ]; then
+          logger -t netconsole "cannot resolve ${server}"
+          exit 1
+        fi
+        ping -c 1 -W 5 "$addr" >/dev/null
+        lladdr=$(ip neigh show to "$addr" dev "$DEVICE" | awk '{ for (i = 1; i < NF; i++) if ($i == "lladdr") print $(i + 1) }')
+        rmmod netconsole 2>/dev/null
+        insmod netconsole netconsole="@/$DEVICE,6666@$addr/$lladdr"
+      '';
     }
   ];
 
