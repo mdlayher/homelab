@@ -14,39 +14,51 @@ data "unifi_client_qos_rate" "default" {
   name = "Default"
 }
 
+# The lowest 2.4 GHz rate the SSIDs carry, which sets the rate of their
+# beacons and management frames. The band is busy with the neighbours'
+# networks, and the legacy rates below 6 Mbps serve 802.11b devices alone.
+locals {
+  min_rate_2g_kbps = 6000
+}
+
 # The LAN's SSID: WPA3 alone, with management frame protection required.
 resource "unifi_wlan" "lan" {
-  name            = "Black Note Stout"
-  security        = "wpapsk"
-  passphrase      = var.wlan_lan_passphrase
-  wpa3_support    = true
-  wpa3_transition = false
-  pmf_mode        = "required"
-  network_id      = unifi_network.vlan["lan0"].id
-  ap_group_ids    = [data.unifi_ap_group.default.id]
-  user_group_id   = data.unifi_client_qos_rate.default.id
+  name                       = "Black Note Stout"
+  security                   = "wpapsk"
+  passphrase                 = var.wlan_lan_passphrase
+  wpa3_support               = true
+  wpa3_transition            = false
+  pmf_mode                   = "required"
+  minrate_setting_preference = "manual"
+  minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  network_id                 = unifi_network.vlan["lan0"].id
+  ap_group_ids               = [data.unifi_ap_group.default.id]
+  user_group_id              = data.unifi_client_qos_rate.default.id
 }
 
 # The guest network's SSID: WPA3 with WPA2 alongside for the devices that
 # speak only that, and stations kept from reaching one another over the
 # air.
 resource "unifi_wlan" "guest" {
-  name            = "Raspberry Wild One"
-  security        = "wpapsk"
-  passphrase      = var.wlan_guest_passphrase
-  wpa3_support    = true
-  wpa3_transition = true
-  pmf_mode        = "optional"
-  l2_isolation    = true
-  network_id      = unifi_network.vlan["guest0"].id
-  ap_group_ids    = [data.unifi_ap_group.default.id]
-  user_group_id   = data.unifi_client_qos_rate.default.id
+  name                       = "Raspberry Wild One"
+  security                   = "wpapsk"
+  passphrase                 = var.wlan_guest_passphrase
+  wpa3_support               = true
+  wpa3_transition            = true
+  pmf_mode                   = "optional"
+  l2_isolation               = true
+  minrate_setting_preference = "manual"
+  minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  network_id                 = unifi_network.vlan["guest0"].id
+  ap_group_ids               = [data.unifi_ap_group.default.id]
+  user_group_id              = data.unifi_client_qos_rate.default.id
 }
 
 # The IoT SSIDs: WPA2 alongside WPA3, since most of the devices speak only
 # WPA2, and on iot0 a second SSID with WPA2 alone, management frame
-# protection off and the controller's IoT tuning, for devices that refuse
-# an SSID with WPA3 in its beacon. A WPA2 SSID cannot be offered on 6 GHz.
+# protection off, the controller's IoT tuning and its default rates, for
+# devices that refuse an SSID with WPA3 in its beacon. A WPA2 SSID cannot
+# be offered on 6 GHz.
 locals {
   iot_wlans = {
     iot  = { name = "MDL IoT", network = "iot0", passphrase = var.wlan_iot_passphrase, wpa3 = true, wpa2 = true }
@@ -58,15 +70,17 @@ locals {
 resource "unifi_wlan" "iot" {
   for_each = local.iot_wlans
 
-  name            = each.value.name
-  security        = "wpapsk"
-  passphrase      = each.value.passphrase
-  wpa3_support    = each.value.wpa3
-  wpa3_transition = each.value.wpa3 && each.value.wpa2
-  pmf_mode        = !each.value.wpa3 ? "disabled" : each.value.wpa2 ? "optional" : "required"
-  enhanced_iot    = !each.value.wpa3
-  wlan_bands      = each.value.wpa3 ? null : ["2g", "5g"]
-  network_id      = unifi_network.vlan[each.value.network].id
-  ap_group_ids    = [data.unifi_ap_group.default.id]
-  user_group_id   = data.unifi_client_qos_rate.default.id
+  name                       = each.value.name
+  security                   = "wpapsk"
+  passphrase                 = each.value.passphrase
+  wpa3_support               = each.value.wpa3
+  wpa3_transition            = each.value.wpa3 && each.value.wpa2
+  pmf_mode                   = !each.value.wpa3 ? "disabled" : each.value.wpa2 ? "optional" : "required"
+  enhanced_iot               = !each.value.wpa3
+  wlan_bands                 = each.value.wpa3 ? null : ["2g", "5g"]
+  minrate_setting_preference = each.value.wpa3 ? "manual" : "auto"
+  minimum_data_rate_2g_kbps  = each.value.wpa3 ? local.min_rate_2g_kbps : null
+  network_id                 = unifi_network.vlan[each.value.network].id
+  ap_group_ids               = [data.unifi_ap_group.default.id]
+  user_group_id              = data.unifi_client_qos_rate.default.id
 }
