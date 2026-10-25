@@ -10,8 +10,8 @@
 # switches fill them from port 22 down, so the two groups meet in the
 # free middle. The SFP+ cages hold the router and the server.
 locals {
-  # Ports locked to one host each, by port index: the port's label, the
-  # host whose hardware address alone may use it, and the network the
+  # Core ports locked to one host each, by port index: the port's label,
+  # the host whose hardware address alone may use it, and the network the
   # port carries untagged. A trunk carries every other network tagged as
   # well; any other port blocks tagged frames.
   locked = {
@@ -27,8 +27,20 @@ locals {
     25 = { name = "router", host = "routnerr-3", network = "mgmt0", trunk = true }
   }
 
-  # Ports with nothing cabled to them, by index.
-  disabled = concat(range(8, 19), [23, 24, 26, 28])
+  # Office ports, by index: the port's label and the network it carries
+  # untagged, blocking tagged frames. The office switch cannot restrict a
+  # port by hardware address (its specifications list no such feature, and
+  # a port set that way passed another host), so no host is named.
+  office = {
+    1 = { name = "workstation", network = "mgmt0" }
+    2 = { name = "gaming pc", network = "lan0" }
+  }
+
+  # Ports with nothing cabled to them, per switch and by index.
+  disabled = {
+    core   = concat(range(8, 19), [23, 24, 26, 28])
+    office = concat(range(3, 9), [10])
+  }
 
   # Network name to controller id, for the locked ports.
   network_id = merge(
@@ -59,7 +71,7 @@ resource "unifi_device" "switch_core" {
 
   # The living room switch's uplink.
   dynamic "port_override" {
-    for_each = toset(local.disabled)
+    for_each = toset(local.disabled.core)
     content {
       index           = port_override.value
       name            = "unused"
@@ -85,11 +97,10 @@ resource "unifi_device" "switch_core" {
     port_profile_id = unifi_port_profile.trunk.id
   }
 
-  # The run to the office, with the workstation on its far end.
   port_override {
     index           = 22
-    name            = "office run"
-    port_profile_id = unifi_port_profile.mgmt0.id
+    name            = "switch-office"
+    port_profile_id = unifi_port_profile.trunk.id
   }
 
   # The server's 10G port; see the server profile.
@@ -103,4 +114,38 @@ resource "unifi_device" "switch_core" {
 # The basement access point. Its trunk is core port 20, above.
 resource "unifi_device" "ap_basement" {
   name = "ap-basement"
+}
+
+# The office switch, on the run from core port 22 into its 10GBASE-T port.
+# Both ends of the run are trunks, so a port here can carry any network.
+# Disabled ports as on the core, above.
+resource "unifi_device" "switch_office" {
+  name = "switch-office"
+
+  port_override {
+    index           = 9
+    name            = "switch-core"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  dynamic "port_override" {
+    for_each = local.office
+    content {
+      index                 = tonumber(port_override.key)
+      name                  = port_override.value.name
+      setting_preference    = "manual"
+      native_networkconf_id = local.network_id[port_override.value.network]
+      tagged_vlan_mgmt      = "block_all"
+      forward               = "native"
+    }
+  }
+
+  dynamic "port_override" {
+    for_each = toset(local.disabled.office)
+    content {
+      index           = port_override.value
+      name            = "unused"
+      port_profile_id = unifi_port_profile.disabled.id
+    }
+  }
 }

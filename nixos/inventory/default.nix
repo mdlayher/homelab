@@ -382,13 +382,6 @@
             "ap"
             "instanton"
           ];
-          gamnerr-1 = {
-            ipv6 = "eui64";
-            tags = [
-              "personal"
-              "windows"
-            ];
-          };
           hass = {
             ipv6 = "prefixstable";
             tags = [ "homeassistant" ];
@@ -423,6 +416,13 @@
               "switch"
             ];
           };
+          switch-office = {
+            ipv6 = "eui64";
+            tags = [
+              "switch"
+              "unifi"
+            ];
+          };
           ups01.tags = [ "cyberpower" ];
         };
       };
@@ -433,6 +433,13 @@
         trusted = true;
         role = "lan";
         hosts = {
+          gamnerr-1 = {
+            ipv6 = "eui64";
+            tags = [
+              "personal"
+              "windows"
+            ];
+          };
           psframework = {
             ipv6 = "eui64";
             tags = [ "personal" ];
