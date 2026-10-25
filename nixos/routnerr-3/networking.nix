@@ -80,18 +80,14 @@ let
       DefaultLeaseTimeSec = 86400;
       MaxLeaseTimeSec = 86400;
       PoolOffset = 50;
-      # The anycast resolver first, held by whichever node is nearest and
-      # withdrawn with its service (see modules/anycast.nix), then this
-      # interface's own router address, answered by the same process here
-      # and kept as the address a client falls back to.
+      # The anycast addresses alone, as the RAs advertise them (see
+      # corerad.nix): this interface's own address is answered by the same
+      # processes, so it is no second chance, and a client trying it first
+      # would wait out a timeout.
       EmitDNS = true;
-      DNS = "${inventory.anycast4.dns} _server_address";
-
-      # NTP on the same terms (see chrony.nix). _server_address is per
-      # interface, so each LAN is told its own gateway: the only router
-      # address a restricted LAN may talk to.
+      DNS = inventory.anycast4.dns;
       EmitNTP = true;
-      NTP = "${inventory.anycast4.ntp} _server_address";
+      NTP = inventory.anycast4.ntp;
     }
     # DNS search, as DHCP option 15: one domain, where the search list of
     # option 119 would need hand-encoding. So a client here learns its own

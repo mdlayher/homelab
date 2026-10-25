@@ -92,11 +92,11 @@ in
             ];
           }
           # DNS search: this segment's own namespace, and on a trusted LAN
-          # the other trusted namespaces and the site domain after it, so a
-          # bare name resolves across the LANs a host may actually reach. A
-          # restricted LAN gets its own alone, since it cannot reach the
-          # others. A segment the inventory names no host on has nothing to
-          # search for and is told nothing.
+          # the other trusted namespaces, the site domain and the service
+          # zone after it. A host whose other resolver claims every name
+          # routes these zones here by them. A restricted LAN gets its own
+          # alone, since it cannot reach the others. A segment the inventory
+          # names no host on is told nothing.
           // lib.optionalAttrs (ifi.hosts != [ ]) {
             dnssl = [
               {
@@ -107,7 +107,10 @@ in
                   (map (i: i.searchDomain) (
                     lib.filter (i: i.trusted && i.name != ifi.name) (lib.attrValues inventory.interfaces)
                   ))
-                  ++ [ inventory.domain ]
+                  ++ [
+                    inventory.domain
+                    "svc.${inventory.zone}"
+                  ]
                 );
               }
             ];
