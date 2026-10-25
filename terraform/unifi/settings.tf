@@ -21,12 +21,15 @@ resource "unifi_setting" "site" {
   }
 
   # Device firmware upgrades itself at the hour the NixOS machines run
-  # their nightly upgrade. SSH onto a device takes the admin's key alone.
+  # their nightly upgrade. SSH onto a device takes the admin's key.
+  # Password logins stay enabled: with them off, the switch firmware
+  # starts dropbear with the no-password flag joined onto its port
+  # argument ("-p eth0:22-s"), and it listens on nothing.
   mgmt = {
     auto_upgrade              = true
     auto_upgrade_hour         = 4
     ssh_enabled               = true
-    ssh_auth_password_enabled = false
+    ssh_auth_password_enabled = true
     ssh_keys = [{
       name    = "admin"
       type    = local.admin_key[0]
