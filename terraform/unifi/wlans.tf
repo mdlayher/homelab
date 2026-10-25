@@ -14,17 +14,47 @@ data "unifi_client_qos_rate" "default" {
   name = "Default"
 }
 
-# The guest network's SSID: WPA3 alone, with stations kept from reaching
-# one another over the air.
+# The guest network's SSID: WPA3 with WPA2 alongside for the devices that
+# speak only that, and stations kept from reaching one another over the
+# air.
 resource "unifi_wlan" "guest" {
   name            = "Raspberry Wild One"
   security        = "wpapsk"
   passphrase      = var.wlan_guest_passphrase
   wpa3_support    = true
-  wpa3_transition = false
-  pmf_mode        = "required"
+  wpa3_transition = true
+  pmf_mode        = "optional"
   l2_isolation    = true
   network_id      = unifi_network.vlan["guest0"].id
+  ap_group_ids    = [data.unifi_ap_group.default.id]
+  user_group_id   = data.unifi_client_qos_rate.default.id
+}
+
+# The IoT SSIDs: two on iot0, one of them WPA2 alone with management frame
+# protection off and the controller's IoT tuning, for devices that refuse
+# an SSID with WPA3 in its beacon, and one on iot1 with WPA2 alongside WPA3
+# for the TVs, which speak only WPA2. A WPA2 SSID cannot be offered on
+# 6 GHz.
+locals {
+  iot_wlans = {
+    iot  = { name = "MDL IoT", network = "iot0", passphrase = var.wlan_iot_passphrase, wpa3 = true, wpa2 = false }
+    iot1 = { name = "MDL IoT1", network = "iot1", passphrase = var.wlan_iot1_passphrase, wpa3 = true, wpa2 = true }
+    iot2 = { name = "MDL IoT2", network = "iot0", passphrase = var.wlan_iot2_passphrase, wpa3 = false, wpa2 = true }
+  }
+}
+
+resource "unifi_wlan" "iot" {
+  for_each = local.iot_wlans
+
+  name            = each.value.name
+  security        = "wpapsk"
+  passphrase      = each.value.passphrase
+  wpa3_support    = each.value.wpa3
+  wpa3_transition = each.value.wpa3 && each.value.wpa2
+  pmf_mode        = !each.value.wpa3 ? "disabled" : each.value.wpa2 ? "optional" : "required"
+  enhanced_iot    = !each.value.wpa3
+  wlan_bands      = each.value.wpa3 ? null : ["2g", "5g"]
+  network_id      = unifi_network.vlan[each.value.network].id
   ap_group_ids    = [data.unifi_ap_group.default.id]
   user_group_id   = data.unifi_client_qos_rate.default.id
 }

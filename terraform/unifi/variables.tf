@@ -19,3 +19,21 @@ variable "wlan_guest_passphrase" {
   type      = string
   sensitive = true
 }
+
+# The IoT SSIDs' passphrases (see wlans.tf), from secrets/unifi.yaml as
+# TF_VAR_wlan_iot_passphrase, TF_VAR_wlan_iot1_passphrase and
+# TF_VAR_wlan_iot2_passphrase.
+variable "wlan_iot_passphrase" {
+  type      = string
+  sensitive = true
+}
+
+variable "wlan_iot1_passphrase" {
+  type      = string
+  sensitive = true
+}
+
+variable "wlan_iot2_passphrase" {
+  type      = string
+  sensitive = true
+}
