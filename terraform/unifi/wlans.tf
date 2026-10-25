@@ -14,6 +14,19 @@ data "unifi_client_qos_rate" "default" {
   name = "Default"
 }
 
+# The LAN's SSID: WPA3 alone, with management frame protection required.
+resource "unifi_wlan" "lan" {
+  name            = "Black Note Stout"
+  security        = "wpapsk"
+  passphrase      = var.wlan_lan_passphrase
+  wpa3_support    = true
+  wpa3_transition = false
+  pmf_mode        = "required"
+  network_id      = unifi_network.vlan["lan0"].id
+  ap_group_ids    = [data.unifi_ap_group.default.id]
+  user_group_id   = data.unifi_client_qos_rate.default.id
+}
+
 # The guest network's SSID: WPA3 with WPA2 alongside for the devices that
 # speak only that, and stations kept from reaching one another over the
 # air.

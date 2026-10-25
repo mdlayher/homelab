@@ -13,6 +13,13 @@ variable "mgmt0_gateway4" {
   }
 }
 
+# The LAN SSID's passphrase (see wlans.tf), from secrets/unifi.yaml as
+# TF_VAR_wlan_lan_passphrase.
+variable "wlan_lan_passphrase" {
+  type      = string
+  sensitive = true
+}
+
 # The guest SSID's passphrase (see wlans.tf), from secrets/unifi.yaml as
 # TF_VAR_wlan_guest_passphrase.
 variable "wlan_guest_passphrase" {
