@@ -12,3 +12,10 @@ variable "mgmt0_gateway4" {
     error_message = "mgmt0_gateway4 must be the gateway's address with the prefix length, not the network address."
   }
 }
+
+# The guest SSID's passphrase (see wlans.tf), from secrets/unifi.yaml as
+# TF_VAR_wlan_guest_passphrase.
+variable "wlan_guest_passphrase" {
+  type      = string
+  sensitive = true
+}
