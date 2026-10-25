@@ -23,8 +23,10 @@ openwrt/deploy
 
 The deploy logs in over the tailnet to a dropbear instance on its own port
 (`sshPort` in `default.nix`), which accepts only the admin's FIDO2 keys, so
-a deploy is one touch. Port 22 on the tailnet is Tailscale SSH, in check
-mode for personal devices.
+a deploy is one touch. Tailscale SSH is off on the machine (`tailscale set
+--ssh=false`): root there takes a key, as it does everywhere else. The
+tailnet policy keeps its rule for the tag, so turning the server back on is
+the one command.
 
 Each deploy logs its provenance through logd, which reaches Loki under
 `{unit="deploy"}`, and a finished one is announced in the Discord ops
@@ -55,8 +57,9 @@ Set on the machine, and never copied off it:
 ## First deploy
 
 The deploy reaches the machine through what it installs, so the first one
-runs from a personal device over Tailscale SSH on port 22, from a checkout
-of this repository:
+runs from a personal device with Tailscale SSH turned on for the occasion
+(`tailscale set --ssh` on the machine, from its serial console on the KVM),
+from a checkout of this repository:
 
 ```sh
 nix build .#openwrt
@@ -65,4 +68,5 @@ tar -C result/jumpnerr-1 -chf - . | ssh root@jumpnerr-1 '
   tar -C /tmp/openwrt-deploy -xf - && sh /tmp/openwrt-deploy/apply.sh'
 ```
 
-After that, `openwrt/deploy` from the development container.
+After that, turn Tailscale SSH back off and use `openwrt/deploy` from the
+development container.

@@ -1111,14 +1111,15 @@ in
                 lib.attrValues inventory.sites.${config.homelab.site}.loopbacks
               )).siteFqdn;
 
-            # Tailscale SSH takes over port 22 for tailnet peers: logins are
-            # authenticated by tailnet identity under the policy's ssh rules
-            # (terraform/tailscale/policy.hujson), with no key on the client.
-            # This is the break-glass path from a device that is not on the
-            # tailnet, via the admin console's SSH Console in any browser.
-            # sshd still serves dev0. Toggling the flag hangs connections
-            # open to the container's tailnet address.
-            services.tailscale.extraSetFlags = [ "--ssh" ];
+            # Tailscale SSH is off. On, it answers port 22 for tailnet peers
+            # under the policy's ssh rules (terraform/tailscale/policy.hujson),
+            # keyless: the break-glass path via the admin console's SSH
+            # Console. Its unix socket forwarding lets a session have the
+            # root daemon open or replace root-owned sockets, root here with
+            # no YubiKey touch. Back on once a release closes that; the policy
+            # rule stays. sshd still serves dev0. Toggling the flag hangs
+            # connections open to the container's tailnet address.
+            services.tailscale.extraSetFlags = [ "--ssh=false" ];
 
             # Tailscale SSH claims 22 on the tailnet address only, and its
             # identity-based auth never checks a key. Moshi's phone client

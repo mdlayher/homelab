@@ -239,7 +239,7 @@
 	"ssh": [
 		{
 			"action": "check",
-			"src":    ["autogroup:member"],
+			"src":    ["mdlayher@gmail.com"],
 			"dst":    ["autogroup:self"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
@@ -252,7 +252,7 @@
 		// check gates new connections only; open sessions outlive it.
 		{
 			"action": "check",
-			"src":    ["autogroup:member"],
+			"src":    ["mdlayher@gmail.com"],
 			"dst":    ["tag:dev"],
 			"users":  ["mdlayher"],
 		},
@@ -263,7 +263,7 @@
 		// but the coordination server. Requires --ssh on the machine.
 		{
 			"action": "check",
-			"src":    ["autogroup:member"],
+			"src":    ["mdlayher@gmail.com"],
 			"dst":    ["tag:edge"],
 			"users":  ["mdlayher"],
 		},
@@ -273,7 +273,7 @@
 		// --ssh on the machine.
 		{
 			"action": "check",
-			"src":    ["autogroup:member"],
+			"src":    ["mdlayher@gmail.com"],
 			"dst":    ["tag:oob"],
 			"users":  ["root"],
 		},

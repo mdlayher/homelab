@@ -15,6 +15,7 @@
 
     # Service configuration.
     ./agent-triage.nix
+    ./audit.nix
     ../modules/coredns.nix
     ./asus-ec-sensors.nix
     ./dev.nix

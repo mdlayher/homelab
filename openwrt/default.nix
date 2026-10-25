@@ -13,8 +13,8 @@
 let
   syslog = import ./syslog.nix;
 
-  # dropbear's port for openwrt/deploy, over the tailnet. tailscaled's own
-  # SSH server answers port 22 there, for personal devices only.
+  # dropbear's port for openwrt/deploy, over the tailnet. Port 22 is left
+  # to tailscaled's SSH server, which is off (see README.md).
   sshPort = 2022;
 
   # The segment the server scrapes the machines from.

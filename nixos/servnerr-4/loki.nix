@@ -146,6 +146,29 @@ let
               logs_url = exploreURL ''{host="__host__", job="systemd-journal", unit="init.scope"} |= `Scheduled restart job`'';
             };
           }
+          # Audit records from audit.nix, matched on the record type journald
+          # prefixes them with, so the ruler's own log of the query never
+          # matches.
+          {
+            # Root binding a socket where a Tailscale SSH session may forward
+            # one. The daemon does not do that unasked.
+            alert = "TailscaleSocketTamper";
+            expr = ''sum by (host) (count_over_time({job="systemd-journal"} |~ `^SYSCALL .*key="tailscale-socket"` [10m])) > 0'';
+            annotations = {
+              summary = "{{ $labels.host }} audited root binding a socket on a path Tailscale SSH can forward to.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal"} |~ `^SYSCALL .*key="tailscale-socket"`'';
+            };
+          }
+          {
+            # The race for those paths is a directory renamed in a tight
+            # loop, far beyond anything a build or editor does.
+            alert = "TailscaleSocketRenameStorm";
+            expr = ''sum by (host) (count_over_time({job="systemd-journal"} |~ `^SYSCALL .*key="tailscale-socket-rename"` [5m])) > 10000'';
+            annotations = {
+              summary = "{{ $labels.host }} audited {{ $value }} renames in 5 minutes on paths Tailscale SSH can forward to.";
+              logs_url = exploreURL ''{host="__host__", job="systemd-journal"} |~ `^SYSCALL .*key="tailscale-socket-rename"`'';
+            };
+          }
           {
             record = "host:log_lines:count1h";
             expr = ''sum by (host) (count_over_time({job="systemd-journal"}[1h]))'';
