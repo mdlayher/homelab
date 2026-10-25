@@ -1405,6 +1405,10 @@ in
             # an hour of work. Short machine names come from the inventory
             # roles and resolve to tailnet names, so panes need no MagicDNS
             # search domain.
+            # systemd's SSH proxy into local containers and VMs has no target
+            # here, and its Host patterns would only pad completion.
+            programs.ssh.systemd-ssh-proxy.enable = false;
+
             programs.ssh.extraConfig =
               let
                 # Every tailnet host by both names ssh may be given on its
