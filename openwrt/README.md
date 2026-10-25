@@ -22,8 +22,9 @@ openwrt/deploy
 ```
 
 The deploy logs in over the tailnet to a dropbear instance on its own port
-(`sshPort` in `default.nix`), which accepts only the admin's FIDO2 keys, so
-a deploy is one touch. Tailscale SSH is off on the machine (`tailscale set
+(`dropbear.nix`), which accepts only the admin's FIDO2 keys, so a deploy is
+one touch. The stock instance on port 22 takes the same keys and no
+password. Tailscale SSH is off on the machine (`tailscale set
 --ssh=false`): root there takes a key, as it does everywhere else. The
 tailnet policy keeps its rule for the tag, so turning the server back on is
 the one command.

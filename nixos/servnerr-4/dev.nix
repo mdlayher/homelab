@@ -1411,10 +1411,13 @@ in
                 # command line, since Host patterns match that name and not
                 # the HostName an alias resolves to.
                 tailnet = n: "${n} ${n}.${inventory.tailnetDomain}";
-                tailnetAlias = n: ''
-                  Host ${n}
-                    HostName ${n}.${inventory.tailnetDomain}
-                '';
+                tailnetAlias =
+                  n:
+                  ''
+                    Host ${n}
+                      HostName ${n}.${inventory.tailnetDomain}
+                  ''
+                  + login n;
                 # Tailnet hosts where a login is root, or a console that stays
                 # logged in: each connection costs its own touch, none outlives
                 # its command, and the agent stays here, since nothing there
@@ -1429,6 +1432,26 @@ in
                 machines = lib.filter (m: !(lib.elem m unshared)) (
                   lib.concatLists (lib.attrValues inventory.roles)
                 );
+                # What the daemon on a host wants beyond the name: root on
+                # the appliances, and on the jump role's machines the port of
+                # the dropbear instance kept for keys (openwrt/default.nix).
+                login =
+                  host:
+                  lib.optionalString (lib.elem host (inventory.roles.kvm ++ inventory.roles.jump)) "  User root\n"
+                  + lib.optionalString (lib.elem host inventory.roles.jump) "  Port ${toString (import ../../openwrt/dropbear.nix).port}\n";
+                # The serial consoles the KVM's consrv serves, each opened by
+                # logging in as its name (pikvm/default.nix).
+                consoles =
+                  lib.attrNames
+                    (import ../inventory/consoles.nix {
+                      inherit lib;
+                      inventory = import ../inventory;
+                    }).pikvm;
+                consoleAlias = c: ''
+                  Host console-${c}
+                    HostName consrv.${inventory.tailnetDomain}
+                    User ${c}
+                '';
                 # dev0 neighbors from the inventory, reached over the dev
                 # VLAN by their LAN names, minus this container itself.
                 neighbors = lib.filter (n: n != "linuxdev") (map (h: h.name) dev0.hosts);
@@ -1443,7 +1466,7 @@ in
               # ssh takes the first value for each option, so the unshared
               # hosts precede the tailnet-wide block.
               ''
-                Host ${lib.concatMapStringsSep " " tailnet unshared} ${
+                Host ${lib.concatMapStringsSep " " tailnet unshared} console-* ${
                   lib.concatMapStringsSep " " tvNames tvs
                 } *.iot.${inventory.domain}
                   ControlMaster no
@@ -1469,6 +1492,7 @@ in
                   ForwardAgent yes
               ''
               + lib.concatMapStrings tailnetAlias (unshared ++ machines ++ pcs)
+              + lib.concatMapStrings consoleAlias consoles
               # The TVs are root over dropbear with the FIDO2 keys alone (see
               # lgtv/README.md). Their dropbear has no post-quantum key
               # exchange, so ssh's warning about it is noise.

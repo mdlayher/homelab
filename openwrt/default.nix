@@ -15,7 +15,7 @@ let
 
   # dropbear's port for openwrt/deploy, over the tailnet. Port 22 is left
   # to tailscaled's SSH server, which is off (see README.md).
-  sshPort = 2022;
+  sshPort = (import ./dropbear.nix).port;
 
   # The segment the server scrapes the machines from.
   mgmt = siteInventory.interfaces.mgmt0;
@@ -103,6 +103,16 @@ let
     {
       option = "firewall.tailscale.forward";
       value = "REJECT";
+    }
+    # The stock dropbear instance on port 22 takes keys alone, as every
+    # SSH server here does.
+    {
+      option = "dropbear.main.PasswordAuth";
+      value = "off";
+    }
+    {
+      option = "dropbear.main.RootPasswordAuth";
+      value = "off";
     }
     # The dropbear instance openwrt/deploy logs in to, keys only.
     {
