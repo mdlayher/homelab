@@ -374,6 +374,13 @@
               "unifi"
             ];
           };
+          ap-living-room = {
+            ipv6 = "eui64";
+            tags = [
+              "ap"
+              "unifi"
+            ];
+          };
           ap-laundry.tags = [
             "ap"
             "instanton"

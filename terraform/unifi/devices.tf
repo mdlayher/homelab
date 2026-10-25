@@ -116,6 +116,11 @@ resource "unifi_device" "ap_basement" {
   name = "ap-basement"
 }
 
+# The living room access point, behind the living room switch.
+resource "unifi_device" "ap_living_room" {
+  name = "ap-living-room"
+}
+
 # The office switch, on the run from core port 22 into its 10GBASE-T port.
 # Both ends of the run are trunks, so a port here can carry any network.
 # Disabled ports as on the core, above.
