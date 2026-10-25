@@ -388,10 +388,6 @@
               "unifi"
             ];
           };
-          ap-livingroom.tags = [
-            "ap"
-            "instanton"
-          ];
           hass = {
             ipv6 = "prefixstable";
             tags = [ "homeassistant" ];
