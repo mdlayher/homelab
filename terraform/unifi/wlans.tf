@@ -30,14 +30,13 @@ resource "unifi_wlan" "guest" {
   user_group_id   = data.unifi_client_qos_rate.default.id
 }
 
-# The IoT SSIDs: two on iot0, one of them WPA2 alone with management frame
+# The IoT SSIDs: WPA2 alongside WPA3, since most of the devices speak only
+# WPA2, and on iot0 a second SSID with WPA2 alone, management frame
 # protection off and the controller's IoT tuning, for devices that refuse
-# an SSID with WPA3 in its beacon, and one on iot1 with WPA2 alongside WPA3
-# for the TVs, which speak only WPA2. A WPA2 SSID cannot be offered on
-# 6 GHz.
+# an SSID with WPA3 in its beacon. A WPA2 SSID cannot be offered on 6 GHz.
 locals {
   iot_wlans = {
-    iot  = { name = "MDL IoT", network = "iot0", passphrase = var.wlan_iot_passphrase, wpa3 = true, wpa2 = false }
+    iot  = { name = "MDL IoT", network = "iot0", passphrase = var.wlan_iot_passphrase, wpa3 = true, wpa2 = true }
     iot1 = { name = "MDL IoT1", network = "iot1", passphrase = var.wlan_iot1_passphrase, wpa3 = true, wpa2 = true }
     iot2 = { name = "MDL IoT2", network = "iot0", passphrase = var.wlan_iot2_passphrase, wpa3 = false, wpa2 = true }
   }
