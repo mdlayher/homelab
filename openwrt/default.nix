@@ -21,8 +21,9 @@ let
   mgmt = siteInventory.interfaces.mgmt0;
   nodeExporterPort = 9100;
 
-  # The server's name on that segment, which the machines share with it.
-  server = "${lib.head inventory.roles.server}.${mgmt.searchDomain}";
+  # Loki by its service name, which follows the role serving it. It
+  # answers with the host's management LAN address.
+  loki = "loki.svc.${inventory.zone}";
 
   # Packages the machines need beyond the OpenWrt image, for the managed
   # settings, the LTE modem and working on them by hand, installed by hand
@@ -224,11 +225,11 @@ let
       text = lib.concatLines sshKeys.fido;
     }
     {
-      # Kernel netconsole to the server over the management LAN, which
+      # Kernel netconsole to the loki host over the management LAN, which
       # carries what logd cannot ship, a panic among it. OpenWrt's module
       # has no configfs interface, so the target is a module parameter,
       # set again each time the management interface comes up: the kernel
-      # builds the frames itself, so the server's hardware address comes
+      # builds the frames itself, so the host's hardware address comes
       # from the neighbor table once a ping has filled it. OpenWrt's
       # modprobe takes no parameters, so the load is insmod's. Like any
       # console it receives the messages below the console log level,
@@ -239,9 +240,9 @@ let
       text = ''
         #!/bin/sh
         [ "$ACTION" = ifup ] && [ "$INTERFACE" = wan ] || exit 0
-        addr=$(nslookup ${server} 2>/dev/null | awk '$1 == "Address:" && $2 ~ /^[0-9.]+$/ { print $2; exit }')
+        addr=$(nslookup ${loki} 2>/dev/null | awk '$1 == "Address:" && $2 ~ /^[0-9.]+$/ { print $2; exit }')
         if [ -z "$addr" ]; then
-          logger -t netconsole "cannot resolve ${server}"
+          logger -t netconsole "cannot resolve ${loki}"
           exit 1
         fi
         ping -c 1 -W 5 "$addr" >/dev/null

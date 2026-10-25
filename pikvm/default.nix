@@ -86,9 +86,9 @@ let
   ) null (lib.attrNames inventory.sites);
   tailscalePort = (lib.findFirst (f: f.host == "pikvm") null inventory.tailscaleForwards).port;
 
-  # The server's name on the management LAN, which the KVM shares with it.
-  server = lib.head inventory.roles.server;
-  mgmtDomain = "${inventory.sites.${site}.subnets.mgmt0.role}.${site}.${inventory.zone}";
+  # Loki by its service name, which follows the role serving it. It
+  # answers with the host's management LAN address, which the KVM shares.
+  loki = "loki.svc.${inventory.zone}";
 
   # Where node_exporter's textfile collector reads, in /run since the root
   # filesystem is read-only.
@@ -255,12 +255,12 @@ let
       '';
     }
     {
-      # Kernel netconsole to the server over the management LAN, which
+      # Kernel netconsole to the loki host over the management LAN, which
       # carries what the journal cannot ship, a panic among it. This
       # kernel's netconsole has no configfs interface, so the target is a
       # module parameter, and the kernel builds the frames itself, so the
-      # server's hardware address comes from the neighbor table once a
-      # ping has filled it. Like any console it receives the messages below
+      # host's hardware address comes from the neighbor table once a ping
+      # has filled it. Like any console it receives the messages below
       # the console log level, here the kernel's default.
       path = "/usr/local/bin/netconsole-up";
       mode = "755";
@@ -268,7 +268,7 @@ let
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
-        addr=$(getent ahostsv4 ${server}.${mgmtDomain} | awk 'NR == 1 { print $1 }')
+        addr=$(getent ahostsv4 ${loki} | awk 'NR == 1 { print $1 }')
         ping -c 1 -W 5 "$addr" >/dev/null
         lladdr=$(ip -4 neigh show to "$addr" dev eth0 | awk '$2 == "lladdr" { print $3 }')
         modprobe netconsole netconsole="@/eth0,6666@$addr/$lladdr"
@@ -280,7 +280,7 @@ let
       action = "netconsole";
       text = ''
         [Unit]
-        Description=Kernel netconsole to the server
+        Description=Kernel netconsole to the loki host
         After=network-online.target
         Wants=network-online.target
 
