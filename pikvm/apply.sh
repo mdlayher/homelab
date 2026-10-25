@@ -147,6 +147,11 @@ fi
 if [[ $dispatcher == disabled ]]; then
   systemctl enable NetworkManager-dispatcher.service
 fi
+if [[ -n ${todo[netconsole]:-} ]]; then
+  systemctl daemon-reload
+  systemctl enable netconsole
+  systemctl restart netconsole
+fi
 # kvmd-otg builds the USB gadget from the override when it starts, and kvmd
 # holds the gadget's devices, so kvmd is stopped while it is rebuilt. The
 # host on the OTG port sees its USB devices disconnect and return.
