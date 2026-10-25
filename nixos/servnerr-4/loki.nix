@@ -11,7 +11,12 @@
 
 let
   inherit (config.services.loki) dataDir;
-  inherit (config.homelab.inventory) hosts tailnetDomain;
+  inherit (config.homelab.inventory)
+    hosts
+    interfaces
+    roles
+    tailnetDomain
+    ;
 
   # Journal streams which can carry authentication failures: sshd, sudo in a
   # (collapsed) session scope, and unitless audit messages.
@@ -215,10 +220,10 @@ in
   # stability level.
   services.alloy.extraFlags = [ "--stability.level=experimental" ];
 
-  # Syslog from devices that cannot run alloy: the CyberPower cards and the
-  # UniFi devices (terraform/unifi/settings.tf points them here). Rendered
-  # through sops at activation because the relabeling below matches
-  # inventory addresses.
+  # Syslog and kernel netconsole from devices that cannot run alloy: the
+  # CyberPower cards and the UniFi devices (terraform/unifi/settings.tf
+  # points them here). Rendered through sops at activation because the
+  # relabeling below matches inventory addresses.
   sops.templates."alloy-syslog.alloy" = {
     content = ''
       loki.source.syslog "lan" {
@@ -230,6 +235,19 @@ in
           // verbatim rather than parsing it.
           syslog_format = "raw"
           labels        = {job = "syslog", site = "${config.homelab.site}"}
+        }
+        relabel_rules = loki.relabel.syslog.rules
+        forward_to    = [loki.write.server.receiver]
+      }
+
+      // Kernel netconsole: a device's kernel log lines as UDP datagrams,
+      // one line each, which is the only record a kernel panic leaves.
+      loki.source.syslog "netconsole" {
+        listener {
+          address       = "0.0.0.0:6666"
+          protocol      = "udp"
+          syslog_format = "raw"
+          labels        = {job = "netconsole", site = "${config.homelab.site}"}
         }
         relabel_rules = loki.relabel.syslog.rules
         forward_to    = [loki.write.server.receiver]
@@ -345,6 +363,13 @@ in
           target_label  = "host"
         }
       '') (lib.attrValues hosts)}
+        // The router is no inventory host; its management address names it.
+        rule {
+          source_labels = ["__syslog_connection_ip_address"]
+          regex         = "${interfaces.mgmt0.ipv4}"
+          replacement   = "${lib.head roles.router}"
+          target_label  = "host"
+        }
       }
     '';
     mode = "0444";

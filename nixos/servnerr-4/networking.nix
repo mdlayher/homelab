@@ -113,8 +113,10 @@ in
         53
       ];
       allowedUDPPorts = [
-        # Syslog from devices that cannot run alloy (see loki.nix).
+        # Syslog and kernel netconsole from devices that cannot run alloy
+        # (see loki.nix).
         5514
+        6666
         (import ../../lgtv/hosts.nix).syslogPort
         (import ../../openwrt/syslog.nix).port
         53

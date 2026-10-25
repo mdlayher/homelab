@@ -59,15 +59,20 @@ resource "unifi_setting" "site" {
     ntp_server_1       = "ntp.svc.mdlayher.net"
   }
 
-  # Device logs to the raw syslog listener of the machine holding the loki
-  # service (nixos/inventory/default.nix, services), which labels each
-  # sender by its inventory address (nixos/servnerr-4/loki.nix). The
-  # controller's own log reaches Loki from its journal already.
+  # Device logs and kernel netconsole to the raw listeners of the machine
+  # holding the loki service (nixos/inventory/default.nix, services), which
+  # labels each sender by its inventory address (nixos/servnerr-4/loki.nix).
+  # The controller's own log reaches Loki from its journal already. The
+  # netconsole entry reaches every device's configuration, but no current
+  # firmware here carries the driver, so none sends until one does.
   syslog = {
-    enabled          = true
-    ip               = "loki.svc.mdlayher.net"
-    port             = 5514
-    log_all_contents = true
-    this_controller  = false
+    enabled            = true
+    ip                 = "loki.svc.mdlayher.net"
+    port               = 5514
+    log_all_contents   = true
+    this_controller    = false
+    netconsole_enabled = true
+    netconsole_host    = "loki.svc.mdlayher.net"
+    netconsole_port    = 6666
   }
 }
