@@ -381,10 +381,13 @@
               "unifi"
             ];
           };
-          ap-laundry.tags = [
-            "ap"
-            "instanton"
-          ];
+          ap-laundry-room = {
+            ipv6 = "eui64";
+            tags = [
+              "ap"
+              "unifi"
+            ];
+          };
           ap-livingroom.tags = [
             "ap"
             "instanton"

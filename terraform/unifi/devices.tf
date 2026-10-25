@@ -93,7 +93,7 @@ resource "unifi_device" "switch_core" {
 
   port_override {
     index           = 21
-    name            = "ap-laundry"
+    name            = "ap-laundry-room"
     port_profile_id = unifi_port_profile.trunk.id
   }
 
@@ -119,6 +119,11 @@ resource "unifi_device" "ap_basement" {
 # The living room access point, behind the living room switch.
 resource "unifi_device" "ap_living_room" {
   name = "ap-living-room"
+}
+
+# The laundry room access point. Its trunk is core port 21, above.
+resource "unifi_device" "ap_laundry_room" {
+  name = "ap-laundry-room"
 }
 
 # The office switch, on the run from core port 22 into its 10GBASE-T port.
