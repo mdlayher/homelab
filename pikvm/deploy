@@ -52,17 +52,56 @@ if [[ ${#check[@]} -eq 0 ]]; then
   )
 fi
 
-# One connection uploads and applies, so a deploy is one touch with no
-# control socket left behind. /tmp is a tmpfs on PiKVM OS, so unpacking
-# there needs no rw; apply.sh reads nothing from stdin.
+# One connection carries the deploy, so it is one touch with no control
+# socket left behind. The device first names the manifest's files it lacks
+# or holds with another checksum or mode (apply.sh --wanted), and only
+# those cross the tailnet, so a deploy moves kilobytes until a binary's
+# version changes. Each archive is sent behind its byte count, which is
+# how far the device reads before the next step. /tmp is a tmpfs on PiKVM
+# OS, so unpacking there needs no rw.
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
 status=0
-tar -C "$out" -chf - . | ssh -o ControlMaster=no -o ControlPath=none "root@$host" "
+coproc remote { ssh -o ControlMaster=no -o ControlPath=none "root@$host" "
   ${logs[0]}
   status=0
-  { rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && tar -C /tmp/pikvm-deploy -xf - &&
-    bash /tmp/pikvm-deploy/apply.sh ${check[*]:-}; } || status=\$?
+  { rm -rf /tmp/pikvm-deploy && mkdir -m 0700 /tmp/pikvm-deploy && cd /tmp/pikvm-deploy &&
+    read -r n && head -c \"\$n\" | tar -xf - && bash apply.sh --wanted &&
+    read -r n && head -c \"\$n\" | tar -xf - && bash apply.sh ${check[*]:-}; } || status=\$?
   if [ \$status -eq 0 ]; then ${logs[1]}; else ${logs[2]}; fi
-  exit \$status" || status=$?
+  exit \$status"; }
+pid=$remote_PID
+exec {in}>&"${remote[1]}" {out_fd}<&"${remote[0]}"
+send() {
+  wc -c <"$1" >&"$in"
+  cat "$1" >&"$in"
+}
+
+tar -C "$out" -chf "$tmp/build.tar" apply.sh manifest packages sums
+send "$tmp/build.tar"
+
+# The device's answer, each line "wanted <path>", closed by "wanted end".
+# Anything else it prints passes through. The manifest rides along so the
+# archive is never empty.
+: >"$tmp/wanted"
+answered=no
+while read -r line <&"$out_fd"; do
+  case $line in
+  "wanted end")
+    answered=yes
+    break
+    ;;
+  "wanted "*) echo "tree${line#wanted }" >>"$tmp/wanted" ;;
+  *) echo "$line" ;;
+  esac
+done
+if [[ $answered == yes ]]; then
+  tar -C "$out" -chf "$tmp/files.tar" -T "$tmp/wanted" manifest
+  send "$tmp/files.tar"
+fi
+exec {in}>&-
+cat <&"$out_fd"
+wait "$pid" || status=$?
 if [[ $status -eq 0 && ${#check[@]} -eq 0 ]]; then
   deploy_notify "$name" "pikvm/"
 fi

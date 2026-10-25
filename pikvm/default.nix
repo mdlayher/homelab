@@ -1,7 +1,7 @@
 # The KVM's configuration: every file this repository manages on the PiKVM,
-# built as a tree with a manifest for pikvm/deploy to apply. The device runs
-# PiKVM OS rather than NixOS, so the files are rendered here from the same
-# data the machines read and copied into place over SSH.
+# built as a tree with a manifest and checksums for pikvm/deploy to apply.
+# The device runs PiKVM OS rather than NixOS, so the files are rendered here
+# from the same data the machines read and copied into place over SSH.
 {
   lib,
   pkgs,
@@ -515,5 +515,6 @@ pkgs.runCommand "pikvm-config" { } (
   + lib.concatMapStrings (f: ''
     install -D -m ${f.mode} ${sourceOf f} $out/tree${f.path}
     echo "${f.mode} ${f.path} ${f.action}" >> $out/manifest
+    echo "$(sha256sum ${sourceOf f} | cut -d ' ' -f 1)  ${f.path}" >> $out/sums
   '') files
 )

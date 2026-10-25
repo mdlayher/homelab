@@ -11,6 +11,24 @@ set -euo pipefail
 
 dir=$(cd "$(dirname "$0")" && pwd)
 cd "$dir"
+
+# --wanted, run first with the manifest and the build's checksums (sums)
+# alone: names each file the device lacks or holds with another checksum
+# or mode, which pikvm/deploy then sends. The rest stay as they are and
+# the apply skips them.
+if [[ ${1:-} == --wanted ]]; then
+  {
+    while read -r mode path action; do
+      if [[ ! -f $path || $(stat -c %a "$path") != "$mode" ]]; then
+        echo "$path"
+      fi
+    done <manifest
+    sha256sum -c --quiet sums 2>/dev/null | sed -n 's/: FAILED.*//p' || true
+  } | sort -u | sed 's/^/wanted /'
+  echo "wanted end"
+  exit 0
+fi
+
 trap 'rm -rf "$dir"' EXIT
 
 check=no
@@ -31,6 +49,10 @@ fi
 changed=()
 while read -r mode path action; do
   src=tree$path
+  # A file the device holds as built was not sent (see --wanted).
+  if [[ ! -f $src ]]; then
+    continue
+  fi
   if [[ -f $path ]] && cmp -s "$src" "$path" && [[ $(stat -c %a "$path") == "$mode" ]]; then
     continue
   fi

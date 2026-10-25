@@ -13,7 +13,10 @@ and `deploy` copies them into place.
   comment saying it is managed by `pikvm/deploy`.
 - `apply.sh`: runs on the device; installs what differs and restarts or
   reloads what the changed files belong to.
-- `deploy`: builds and applies over SSH as root.
+- `deploy`: builds and applies over SSH as root, in one connection. The
+  device first names the files it lacks or holds with another checksum
+  or mode, and only those are sent, so a deploy moves kilobytes unless a
+  binary's version changed.
 
 ```sh
 # Show how the device differs from this checkout; changes nothing.
