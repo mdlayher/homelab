@@ -20,6 +20,7 @@ in
     ./dn42.nix
     ./interconnect.nix
     ./neighbor-metrics.nix
+    ./netconsole.nix
     ./network-snapshot.nix
     ./peerfinder.nix
     ./remote-access.nix
