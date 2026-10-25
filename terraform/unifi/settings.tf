@@ -49,13 +49,14 @@ resource "unifi_setting" "site" {
     acl_device_isolation   = []
   }
 
-  # Time from the anycast NTP address (nixos/inventory/default.nix,
-  # anycast4), the server DHCP hands every LAN client. The provider leaves
-  # an empty server slot out of its write, so a slot the controller already
-  # holds is cleared in the UI, never from here.
+  # Time from the anycast NTP service by its name (nixos/inventory/
+  # default.nix, anycast6; modules/coredns.nix publishes it), the address
+  # DHCP hands every LAN client. The provider leaves an empty server slot
+  # out of its write, so a slot the controller already holds is cleared in
+  # the UI, never from here.
   ntp = {
     setting_preference = "manual"
-    ntp_server_1       = "10.0.0.123"
+    ntp_server_1       = "ntp.svc.mdlayher.net"
   }
 
   # Device logs to the raw syslog listener of the machine holding the loki
