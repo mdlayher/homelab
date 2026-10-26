@@ -125,15 +125,6 @@ while read -r mode path action; do
   chmod "$mode" "$path"
 done <manifest
 
-# OpenWrt's tailscale package sets TS_NO_LOGS_NO_SUPPORT in its init
-# script, and this tailnet refuses a node that uploads no logs. A package
-# upgrade puts the line back.
-if grep -q TS_NO_LOGS_NO_SUPPORT /etc/init.d/tailscale; then
-  echo "differs: /etc/init.d/tailscale sets TS_NO_LOGS_NO_SUPPORT"
-  need tailscale
-  [ $check = yes ] || sed -i '/TS_NO_LOGS_NO_SUPPORT/d' /etc/init.d/tailscale
-fi
-
 if [ "$todo" = " " ]; then
   echo "up to date"
   exit 0
@@ -171,7 +162,6 @@ for t in $todo; do
     uci commit dropbear
     later="$later dropbear"
     ;;
-  tailscale) later="$later tailscale" ;;
   # The hook runs as the management interface's ifup would run it.
   netconsole)
     ACTION=ifup INTERFACE=wan DEVICE=$(uci -q get network.wan.device) \
@@ -180,9 +170,9 @@ for t in $todo; do
   esac
 done
 
-# Restarting dropbear or tailscaled drops the connection this deploy
-# arrived on, and reloading the network can reconfigure its interface, so
-# they run once it has finished, detached from it.
+# Restarting dropbear drops the connection this deploy arrived on, and
+# reloading the network can reconfigure its interface, so they run once it
+# has finished, detached from it.
 if [ -n "$later" ]; then
   (
     trap '' HUP
