@@ -27,9 +27,9 @@ locals {
     theatnerr-2 = ["tag:windows"]
   }
 
-  # The oldest client release allowed on any device, as its minor version.
-  # Raised when a release carries a fix the tailnet must not run without.
-  min_client_minor = 104
+  # The oldest client release allowed on any device, as its minor version,
+  # read from the policy's posture so the floor is set in one place.
+  min_client_minor = tonumber(regex("node:tsVersion >= '1\\.(\\d+)'", file("${path.module}/policy.hujson"))[0])
 
   devices  = data.tailscale_devices.all.devices
   tagged   = [for d in local.devices : d if length(d.tags) > 0]

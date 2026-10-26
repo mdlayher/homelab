@@ -29,6 +29,21 @@
 		"tag:windows": ["autogroup:admin"],
 	},
 
+	// A current client, required of a personal device where its reach is
+	// not otherwise authenticated: the routed segments, the services and
+	// the exit node. The attributes are the client's own report, so this
+	// keeps legitimate devices patched and defends against nothing hostile.
+	// checks.tf reads the floor from here.
+	"postures": {
+		"posture:currentClient": {
+			"assertions": ["node:tsVersion >= '1.104'"],
+			"onFailure": {
+				"showAlerts":     ["warn-in-client"],
+				"endUserMessage": "Update Tailscale to regain access.",
+			},
+		},
+	},
+
 	"acls": [
 		// Personal devices (phone and other untagged logins) reach every
 		// device on the tailnet.
@@ -50,9 +65,10 @@
 		// Only personal devices route through the exit node offered by the
 		// router; tagged machines have their own internet paths.
 		{
-			"action": "accept",
-			"src":    ["group:admin"],
-			"dst":    ["autogroup:internet:*"],
+			"action":     "accept",
+			"src":        ["group:admin"],
+			"srcPosture": ["posture:currentClient"],
+			"dst":        ["autogroup:internet:*"],
 		},
 
 		// The development container reaches the Home Assistant API, which
@@ -142,7 +158,8 @@
 
 		// Personal devices reach every service.
 		{
-			"src": ["group:admin"],
+			"src":        ["group:admin"],
+			"srcPosture": ["posture:currentClient"],
 			"dst": [
 				"svc:alertmanager",
 				"svc:consrv",
@@ -162,7 +179,8 @@
 		// authentication. Tagged machines get no grant here: those at the
 		// house reach these networks on the LAN.
 		{
-			"src": ["group:admin"],
+			"src":        ["group:admin"],
+			"srcPosture": ["posture:currentClient"],
 			"dst": [
 				"10.0.0.0/24",
 				"10.1.9.0/24",
@@ -306,10 +324,11 @@
 	// carries only the tag it names, so a machine with several tags is
 	// tested under the tag its rule grants.
 	"tests": [
-		// Personal devices: every machine, every service, the exit node, and
-		// the routed segments other than management.
+		// Personal devices on a current client: every machine, every service,
+		// the exit node, and the routed segments other than management.
 		{
-			"src": "group:admin",
+			"src":             "group:admin",
+			"srcPostureAttrs": {"node:tsVersion": "1.104.2"},
 			"accept": [
 				"group:admin:22",
 				"tag:dev:22",
@@ -347,6 +366,15 @@
 				"10.2.0.1:22",
 				"192.168.1.1:80",
 			],
+		},
+		// A personal device on an old client keeps the machines, which
+		// authenticate on their own, and loses the services, the segments
+		// and the exit node.
+		{
+			"src":             "group:admin",
+			"srcPostureAttrs": {"node:tsVersion": "1.102.4"},
+			"accept":          ["group:admin:22", "tag:dev:22", "tag:infra:22"],
+			"deny":            ["svc:grafana:443", "10.1.66.254:80", "1.1.1.1:443"],
 		},
 		// The development container: SSH to the machines and the KVM, the
 		// Home Assistant API, the read-only services, nothing else: no other
