@@ -493,10 +493,13 @@
         role = "iot";
         hosts = {
           living-room-myq-hub.tags = [ "myq" ];
-          office-printer.tags = [
-            "brother"
-            "printer"
-          ];
+          office-printer = {
+            ipv6 = "eui64";
+            tags = [
+              "brother"
+              "printer"
+            ];
+          };
           prusa-core-one = {
             ipv6 = "eui64";
             tags = [
