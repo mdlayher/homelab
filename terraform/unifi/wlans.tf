@@ -22,6 +22,9 @@ locals {
 }
 
 # The LAN's SSID: WPA3 alone, with management frame protection required.
+# Every SSID but the legacy one tells a roaming client about the
+# neighbouring access points. 802.11r and multi-link stay off: pushing
+# them hung the access points' management agents on firmware 8.7.11.
 resource "unifi_wlan" "lan" {
   name                       = "Black Note Stout"
   security                   = "wpapsk"
@@ -31,6 +34,7 @@ resource "unifi_wlan" "lan" {
   pmf_mode                   = "required"
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  bss_transition             = true
   network_id                 = unifi_network.vlan["lan0"].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id
@@ -49,6 +53,7 @@ resource "unifi_wlan" "guest" {
   l2_isolation               = true
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  bss_transition             = true
   network_id                 = unifi_network.vlan["guest0"].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id
@@ -80,6 +85,7 @@ resource "unifi_wlan" "iot" {
   wlan_bands                 = each.value.wpa3 ? null : ["2g", "5g"]
   minrate_setting_preference = each.value.wpa3 ? "manual" : "auto"
   minimum_data_rate_2g_kbps  = each.value.wpa3 ? local.min_rate_2g_kbps : null
+  bss_transition             = each.value.wpa3
   network_id                 = unifi_network.vlan[each.value.network].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id

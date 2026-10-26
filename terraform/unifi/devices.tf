@@ -34,12 +34,28 @@ locals {
   office = {
     1 = { name = "workstation", network = "mgmt0" }
     2 = { name = "gaming pc", network = "lan0" }
+    3 = { name = "office printer", network = "iot0" }
+  }
+
+  # Each access point's 5 GHz channel: its own 40 MHz block, outside the
+  # radar channels. The other bands are the controller's choice.
+  ap_channel_5g = {
+    ap_living_room  = 36
+    ap_basement     = 44
+    ap_laundry_room = 149
+  }
+  radios = {
+    for name, channel in local.ap_channel_5g : name => [
+      { radio = "ng", channel = "auto", ht = 20, tx_power_mode = "auto" },
+      { radio = "na", channel = tostring(channel), ht = 40, tx_power_mode = "auto" },
+      { radio = "6e", channel = "auto", ht = 160, tx_power_mode = "auto" },
+    ]
   }
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
     core   = concat(range(8, 19), [23, 24, 26, 28])
-    office = concat(range(3, 9), [10])
+    office = concat(range(4, 9), [10])
   }
 
   # Network name to controller id, for the locked ports.
@@ -113,17 +129,20 @@ resource "unifi_device" "switch_core" {
 
 # The basement access point. Its trunk is core port 20, above.
 resource "unifi_device" "ap_basement" {
-  name = "ap-basement"
+  name        = "ap-basement"
+  radio_table = local.radios.ap_basement
 }
 
 # The living room access point, behind the living room switch.
 resource "unifi_device" "ap_living_room" {
-  name = "ap-living-room"
+  name        = "ap-living-room"
+  radio_table = local.radios.ap_living_room
 }
 
 # The laundry room access point. Its trunk is core port 21, above.
 resource "unifi_device" "ap_laundry_room" {
-  name = "ap-laundry-room"
+  name        = "ap-laundry-room"
+  radio_table = local.radios.ap_laundry_room
 }
 
 # The office switch, on the run from core port 22 into its 10GBASE-T port.
