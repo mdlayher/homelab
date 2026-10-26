@@ -37,17 +37,19 @@ locals {
     3 = { name = "office printer", network = "iot0" }
   }
 
-  # Each access point's 5 GHz channel: its own 40 MHz block, outside the
-  # radar channels. The other bands are the controller's choice.
-  ap_channel_5g = {
-    ap_living_room  = 36
-    ap_basement     = 44
-    ap_laundry_room = 149
+  # Each access point's fixed channels. On 2.4 GHz, access points that
+  # hear each other never share a channel. On 5 GHz each has its own
+  # 40 MHz block outside the radar channels. 6 GHz is the controller's
+  # choice.
+  ap_channels = {
+    ap_living_room  = { ng = 1, na = 36 }
+    ap_basement     = { ng = 6, na = 44 }
+    ap_laundry_room = { ng = 11, na = 149 }
   }
   radios = {
-    for name, channel in local.ap_channel_5g : name => [
-      { radio = "ng", channel = "auto", ht = 20, tx_power_mode = "auto" },
-      { radio = "na", channel = tostring(channel), ht = 40, tx_power_mode = "auto" },
+    for name, ch in local.ap_channels : name => [
+      { radio = "ng", channel = tostring(ch.ng), ht = 20, tx_power_mode = "auto" },
+      { radio = "na", channel = tostring(ch.na), ht = 40, tx_power_mode = "auto" },
       { radio = "6e", channel = "auto", ht = 160, tx_power_mode = "auto" },
     ]
   }
