@@ -148,16 +148,16 @@ in
         target_label  = "unit"
       }
 
-      // Each *-snapshot unit logs state as JSON whose values include words
-      // like FAILED, so it matches any broad (?i)error|fail sweep of the
-      // journal and buries what the sweep was for. A job label of its own
-      // takes it out of {job="systemd-journal"} structurally. The sources'
-      // static labels merge in before these rules run, which is what lets a
-      // rule override job.
+      // The *-snapshot units and the tailnet audit log write JSON whose
+      // values include words like FAILED, so they match any broad
+      // (?i)error|fail sweep of the journal and bury what the sweep was for.
+      // A job label of its own takes each out of {job="systemd-journal"}
+      // structurally. The sources' static labels merge in before these rules
+      // run, which is what lets a rule override job.
       rule {
         source_labels = ["__journal__systemd_unit"]
-        regex         = "(network|isis|zigbee)-snapshot\\.service"
-        replacement   = "$1-snapshot"
+        regex         = "((network|isis|zigbee)-snapshot|tailnet-audit)\\.service"
+        replacement   = "$1"
         target_label  = "job"
       }
     }

@@ -140,6 +140,21 @@ let
             };
           }
           {
+            # Every change to the tailnet's configuration, as Tailscale's own
+            # audit log records it (tailnet-audit.nix): who did what to which
+            # object, and from where. A notice rather than an alert, since
+            # the changes applied through tofu arrive here too. The log also
+            # records every API token minted, the audit pull's own included,
+            # which changes nothing and is left out.
+            alert = "TailnetConfigChanged";
+            expr = ''sum by (actor_type, actor_displayName, origin, action, target_type, target_name, target_property) (count_over_time({job="tailnet-audit"} | json | target_type != `OAUTH_ACCESS_TOKEN` [10m]))'';
+            labels.notify = "ops";
+            annotations = {
+              summary = "{{ $labels.actor_displayName }} ({{ $labels.actor_type }} via {{ $labels.origin }}): {{ $labels.action }} {{ $labels.target_type }} {{ $labels.target_name }} {{ $labels.target_property }}";
+              logs_url = exploreURL ''{job="tailnet-audit"}'';
+            };
+          }
+          {
             # Restart= loops do not fail the unit, so SystemdUnitFailed never
             # sees them; the scheduled-restart message names the unit in the
             # log line. It is extracted as "service" because "unit" is the
