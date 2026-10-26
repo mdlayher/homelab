@@ -3,6 +3,9 @@
 #
 # Every block_all profile sets forward = "native" explicitly: left to the
 # controller, the create fails with an inconsistent result.
+#
+# Every profile runs STP on its ports. Left unset, the profiles landed on
+# the controller with it off, so the switch uplinks ran no STP at all.
 
 # Every network: mgmt0 untagged, everything else tagged. For the router's
 # trunk, the room switches' uplinks and the access points.
@@ -11,6 +14,7 @@ resource "unifi_port_profile" "trunk" {
   native_networkconf_id = unifi_network.mgmt0.id
   forward               = "all"
   tagged_vlan_mgmt      = "auto"
+  stp_port_mode         = true
 }
 
 # No host at all. The controller's disabled port state is a MAC filter
@@ -22,6 +26,7 @@ resource "unifi_port_profile" "disabled" {
   forward                   = "disabled"
   port_security_enabled     = true
   port_security_mac_address = []
+  stp_port_mode             = true
 }
 
 # The management LAN alone, for the rack devices that manage over it.
@@ -30,6 +35,7 @@ resource "unifi_port_profile" "mgmt0" {
   native_networkconf_id = unifi_network.mgmt0.id
   forward               = "native"
   tagged_vlan_mgmt      = "block_all"
+  stp_port_mode         = true
 }
 
 # The server's 10G port: its bridge carries the container VLANs tagged and
@@ -61,6 +67,7 @@ resource "unifi_port_profile" "server" {
     for name, n in unifi_network.vlan : n.id
     if !contains(["dev0", "dn42", "lasthop-isis"], name)
   ])
+  stp_port_mode = true
 }
 
 # The IS-IS lab link to lasthop alone, untagged, for a port given over to
@@ -70,4 +77,5 @@ resource "unifi_port_profile" "lasthop_isis" {
   native_networkconf_id = unifi_network.vlan["lasthop-isis"].id
   forward               = "native"
   tagged_vlan_mgmt      = "block_all"
+  stp_port_mode         = true
 }
