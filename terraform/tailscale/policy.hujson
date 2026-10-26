@@ -296,4 +296,319 @@
 			"users":  ["root"],
 		},
 	],
+
+	// Assertions the control plane checks on every apply; a failing one
+	// rejects the policy. Every source class states what it must and must
+	// not reach: each machine class, each service, the routed segments and
+	// the exit node, so a rule edit cannot widen access unnoticed. Subnet
+	// routes are tested by one address inside each segment, since a prefix
+	// cannot be named here; the addresses are not hosts. A test target
+	// carries only the tag it names, so a machine with several tags is
+	// tested under the tag its rule grants.
+	"tests": [
+		// Personal devices: every machine, every service, the exit node, and
+		// the routed segments other than management.
+		{
+			"src": "group:admin",
+			"accept": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:edge:22",
+				"tag:hass:8123",
+				"tag:infra:22",
+				"tag:kvm:443",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:alertmanager:443",
+				"svc:consrv:22",
+				"svc:grafana:443",
+				"svc:loki:443",
+				"svc:prometheus:443",
+				"svc:unifi:8443",
+				"1.1.1.1:443",
+				"[2606:4700:4700::1111]:443",
+				"10.0.0.53:53",
+				"10.0.0.123:123",
+				"10.1.9.254:80",
+				"10.1.10.254:80",
+				"10.1.20.254:80",
+				"10.1.66.254:80",
+				"10.1.67.254:80",
+				"[fd9e:1a04:f01d:1::53]:53",
+				"[fd9e:1a04:f01d:109::1]:80",
+				"[fd9e:1a04:f01d:110::1]:80",
+				"[fd9e:1a04:f01d:120::1]:80",
+				"[fd9e:1a04:f01d:166::1]:80",
+				"[fd9e:1a04:f01d:167::1]:80",
+			],
+			"deny": [
+				"10.1.0.254:22",
+				"[fd9e:1a04:f01d:100::1]:22",
+				"10.2.0.1:22",
+				"192.168.1.1:80",
+			],
+		},
+		// The development container: SSH to the machines and the KVM, the
+		// Home Assistant API, the read-only services, nothing else: no other
+		// port, no Grafana, no routed segment, no exit node, no personal
+		// device.
+		{
+			"src": "tag:dev",
+			"accept": [
+				"tag:hass:8123",
+				"tag:hass:22",
+				"tag:infra:22",
+				"tag:edge:22",
+				"tag:kvm:22",
+				"tag:kvm:2222",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:alertmanager:443",
+				"svc:loki:443",
+				"svc:prometheus:443",
+				"svc:unifi:8443",
+				"svc:consrv:22",
+			],
+			"deny": [
+				"group:admin:22",
+				"tag:oob:22",
+				"tag:hass:80",
+				"tag:hass:443",
+				"tag:infra:443",
+				"tag:infra:9090",
+				"tag:router:53",
+				"tag:kvm:443",
+				"tag:edge:443",
+				"tag:windows:3389",
+				"svc:grafana:443",
+				"svc:unifi:443",
+				"svc:prometheus:8443",
+				"10.0.0.53:53",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		// Infrastructure machines: their own services and nothing else.
+		{
+			"src": "tag:infra",
+			"accept": [
+				"svc:alertmanager:443",
+				"svc:grafana:443",
+				"svc:loki:443",
+				"svc:prometheus:443",
+				"svc:consrv:22",
+			],
+			"deny": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:edge:22",
+				"tag:hass:8123",
+				"tag:kvm:22",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:unifi:8443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		// The Windows PCs: the router's resolver and nothing else.
+		{
+			"src":    "tag:windows",
+			"accept": ["tag:router:53"],
+			"deny": [
+				"group:admin:22",
+				"tag:router:22",
+				"tag:infra:22",
+				"tag:dev:22",
+				"tag:kvm:443",
+				"svc:grafana:443",
+				"svc:unifi:8443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		// The out-of-band router, the KVM, Home Assistant and the edges
+		// reach nothing on their own: not a machine, not a service, not a
+		// segment, not the exit node, not a personal device.
+		{
+			"src": "tag:oob",
+			"deny": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:edge:22",
+				"tag:hass:8123",
+				"tag:infra:22",
+				"tag:kvm:22",
+				"tag:windows:22",
+				"svc:consrv:22",
+				"svc:grafana:443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		{
+			"src": "tag:kvm",
+			"deny": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:edge:22",
+				"tag:hass:8123",
+				"tag:infra:22",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:consrv:22",
+				"svc:grafana:443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		{
+			"src": "tag:hass",
+			"deny": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:edge:22",
+				"tag:infra:22",
+				"tag:kvm:22",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:grafana:443",
+				"svc:unifi:8443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+		{
+			"src": "tag:edge",
+			"deny": [
+				"group:admin:22",
+				"tag:dev:22",
+				"tag:hass:8123",
+				"tag:infra:22",
+				"tag:kvm:22",
+				"tag:oob:2022",
+				"tag:windows:22",
+				"svc:prometheus:443",
+				"svc:grafana:443",
+				"10.1.66.254:80",
+				"1.1.1.1:443",
+			],
+		},
+	],
+
+	// Tailscale SSH: personal devices get a checked session as the admin
+	// user on the container and the edges and as root on the out-of-band
+	// router, and nowhere else; no machine gets one anywhere. The source
+	// is the login itself: the SSH test evaluator resolves a user, not a
+	// group (tailscale/tailscale#11790).
+	"sshTests": [
+		{
+			"src":   "mdlayher@gmail.com",
+			"dst":   ["tag:dev", "tag:edge"],
+			"check": ["mdlayher"],
+			"deny":  ["root"],
+		},
+		{
+			"src":   "mdlayher@gmail.com",
+			"dst":   ["tag:oob"],
+			"check": ["root"],
+			"deny":  ["mdlayher"],
+		},
+		{
+			"src":  "mdlayher@gmail.com",
+			"dst":  ["tag:infra", "tag:router", "tag:kvm", "tag:hass", "tag:windows"],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:dev",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:infra",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:oob",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:kvm",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:hass",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:edge",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+		{
+			"src": "tag:windows",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:oob",
+				"tag:infra",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
+			"deny": ["mdlayher", "root"],
+		},
+	],
 }

@@ -14,7 +14,8 @@ resource "tailscale_tailnet_settings" "tailnet" {
   posture_identity_collection_on = true
   https_enabled                  = true
   regional_routing_on            = false
-  # The policy file is applied from this module, but the console may still
-  # edit it.
-  acls_externally_managed_on = false
+  # The policy file is written from this module alone; the console refuses
+  # edits and points at the file.
+  acls_externally_managed_on = true
+  acls_external_link         = "https://github.com/mdlayher/homelab/blob/main/terraform/tailscale/policy.hujson"
 }
