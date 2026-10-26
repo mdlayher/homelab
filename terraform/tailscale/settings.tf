@@ -10,7 +10,7 @@ resource "tailscale_tailnet_settings" "tailnet" {
   users_role_allowed_to_join_external_tailnet = "admin"
   # Key expiry applies to personal devices; tagged machines never expire.
   devices_key_duration_days      = 180
-  devices_auto_updates_on        = false
+  devices_auto_updates_on        = true
   posture_identity_collection_on = true
   https_enabled                  = true
   regional_routing_on            = false
