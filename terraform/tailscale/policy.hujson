@@ -148,16 +148,28 @@
 			"ip": ["*"],
 		},
 
-		// Personal devices reach the house's networks and the anycast
-		// services through the router's subnet routes. Tagged machines get
-		// no grant here: those at the house reach these networks on the LAN.
+		// Personal devices reach the house's segments and the anycast
+		// services through the router's subnet routes. The router advertises
+		// the site's whole prefixes; this grant is what narrows them, and it
+		// leaves the management segment out: its hosts are reached by their
+		// tailnet names and the services above, each with its own
+		// authentication. Tagged machines get no grant here: those at the
+		// house reach these networks on the LAN.
 		{
 			"src": ["autogroup:member"],
 			"dst": [
 				"10.0.0.0/24",
-				"10.1.0.0/16",
+				"10.1.9.0/24",
+				"10.1.10.0/24",
+				"10.1.20.0/24",
+				"10.1.66.0/24",
+				"10.1.67.0/24",
 				"fd9e:1a04:f01d:1::/64",
-				"fd9e:1a04:f01d:100::/56",
+				"fd9e:1a04:f01d:109::/64",
+				"fd9e:1a04:f01d:110::/64",
+				"fd9e:1a04:f01d:120::/64",
+				"fd9e:1a04:f01d:166::/64",
+				"fd9e:1a04:f01d:167::/64",
 			],
 			"ip": ["*"],
 		},
