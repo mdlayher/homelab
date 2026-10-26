@@ -1,9 +1,10 @@
-# Tailnet-wide settings, as the console held them when they were adopted.
-# Device approval is the gate on new nodes until tailnet lock takes that
-# role; the two cannot be enabled together. The lock itself is not a
-# setting: it is enabled once from a signing node (see nixos/README.md).
+# Tailnet-wide settings. Device approval is off because tailnet lock is the
+# gate on new nodes: the two cannot be enabled together, and approval is
+# granted by the same account whose compromise it would need to stop. The
+# lock itself is not a setting: it is enabled once from a signing node (see
+# nixos/README.md).
 resource "tailscale_tailnet_settings" "tailnet" {
-  devices_approval_on = true
+  devices_approval_on = false
   # New users need an admin's approval, and only admins may join another
   # tailnet from this one.
   users_approval_on                           = true
