@@ -1,6 +1,12 @@
 // Tailnet policy, applied with OpenTofu; see main.tf. Rules refer to
 // machines by tag or service name.
 {
+	// The one human. Rules name this group rather than autogroup:member, so
+	// a user added later holds nothing until a rule says so.
+	"groups": {
+		"group:admin": ["mdlayher@gmail.com"],
+	},
+
 	"tagOwners": {
 		// Development containers with unattended agents.
 		"tag:dev": ["autogroup:admin"],
@@ -28,9 +34,9 @@
 		// device on the tailnet.
 		{
 			"action": "accept",
-			"src":    ["autogroup:member"],
+			"src":    ["group:admin"],
 			"dst": [
-				"autogroup:member:*",
+				"group:admin:*",
 				"tag:dev:*",
 				"tag:edge:*",
 				"tag:hass:*",
@@ -45,7 +51,7 @@
 		// router; tagged machines have their own internet paths.
 		{
 			"action": "accept",
-			"src":    ["autogroup:member"],
+			"src":    ["group:admin"],
 			"dst":    ["autogroup:internet:*"],
 		},
 
@@ -136,7 +142,7 @@
 
 		// Personal devices reach every service.
 		{
-			"src": ["autogroup:member"],
+			"src": ["group:admin"],
 			"dst": [
 				"svc:alertmanager",
 				"svc:consrv",
@@ -156,7 +162,7 @@
 		// authentication. Tagged machines get no grant here: those at the
 		// house reach these networks on the LAN.
 		{
-			"src": ["autogroup:member"],
+			"src": ["group:admin"],
 			"dst": [
 				"10.0.0.0/24",
 				"10.1.9.0/24",
@@ -251,7 +257,7 @@
 	"ssh": [
 		{
 			"action": "check",
-			"src":    ["mdlayher@gmail.com"],
+			"src":    ["group:admin"],
 			"dst":    ["autogroup:self"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
@@ -264,7 +270,7 @@
 		// check gates new connections only; open sessions outlive it.
 		{
 			"action": "check",
-			"src":    ["mdlayher@gmail.com"],
+			"src":    ["group:admin"],
 			"dst":    ["tag:dev"],
 			"users":  ["mdlayher"],
 		},
@@ -275,7 +281,7 @@
 		// but the coordination server. Requires --ssh on the machine.
 		{
 			"action": "check",
-			"src":    ["mdlayher@gmail.com"],
+			"src":    ["group:admin"],
 			"dst":    ["tag:edge"],
 			"users":  ["mdlayher"],
 		},
@@ -285,7 +291,7 @@
 		// --ssh on the machine.
 		{
 			"action": "check",
-			"src":    ["mdlayher@gmail.com"],
+			"src":    ["group:admin"],
 			"dst":    ["tag:oob"],
 			"users":  ["root"],
 		},
