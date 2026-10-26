@@ -29,7 +29,13 @@ let
   sunlit = [ "sunroom" ];
 
   roomsExcept = areas: ''homeassistant_entity_info{area!="", area!~${raw "(${anyOf areas})"}}'';
-  humidity = window: "avg_over_time(homeassistant_sensor_humidity_percent[${window}])";
+  # A room's humidity averaged over the past hours, from sensors that have
+  # reported for at least that long. A sensor re-added to Home Assistant
+  # starts a new series, and its first minute is no average of anything.
+  humidity =
+    hours:
+    "(avg_over_time(homeassistant_sensor_humidity_percent[${toString hours}h])"
+    + " and on (entity) present_over_time(homeassistant_sensor_humidity_percent[1h] offset ${toString (hours - 1)}h))";
 
   # Room temperature in °F. Every Zigbee device also reports the
   # temperature of its own die as *_device_temperature, which is not the
@@ -57,19 +63,19 @@ in
   rules = [
     {
       alert = "HouseHumidityHigh";
-      expr = "${humidity "24h"} * on (entity) group_left(area) ${
+      expr = "${humidity 24} * on (entity) group_left(area) ${
         roomsExcept (wetRooms ++ unconditioned)
       } > 60";
       annotations.summary = "{{ $labels.friendly_name }} ({{ $labels.area }}) has averaged {{ $value | printf \"%.0f\" }}% humidity over the past day.";
     }
     {
       alert = "HouseHumidityVeryHigh";
-      expr = "${humidity "3h"} * on (entity) group_left(area) ${roomsExcept unconditioned} > 70";
+      expr = "${humidity 3} * on (entity) group_left(area) ${roomsExcept unconditioned} > 70";
       annotations.summary = "{{ $labels.friendly_name }} ({{ $labels.area }}) has averaged {{ $value | printf \"%.0f\" }}% humidity over the past three hours.";
     }
     {
       alert = "HouseHumidityLow";
-      expr = "${humidity "24h"} * on (entity) group_left(area) ${roomsExcept unconditioned} < 30";
+      expr = "${humidity 24} * on (entity) group_left(area) ${roomsExcept unconditioned} < 30";
       annotations.summary = "{{ $labels.friendly_name }} ({{ $labels.area }}) has averaged {{ $value | printf \"%.0f\" }}% humidity over the past day.";
     }
     {
