@@ -12,21 +12,7 @@ in
   services.corerad = {
     enable = true;
 
-    # CoreRAD v1.4.0, which limits the automatic route block to loopback
-    # routes covering one of the advertising interface's own addresses.
-    # The ldflags in the package's preBuild take this version.
-    package = pkgs.unstable.corerad.overrideAttrs (
-      finalAttrs: _: {
-        version = "1.4.0";
-        src = pkgs.fetchFromGitHub {
-          owner = "mdlayher";
-          repo = "corerad";
-          rev = "v${finalAttrs.version}";
-          hash = "sha256-Hd8SaO/4jMZAxX7GqVxTbdDvBAP/FqGT29dHGH9Uwgg=";
-        };
-        vendorHash = "sha256-4m/wifWE+/IXg0W8LlmJl8miOCVHPdrmjI4nzhzjmmQ=";
-      }
-    );
+    package = pkgs.unstable.corerad;
 
     settings = with inventory.interfaces; {
       # Base non-interface configuration.
