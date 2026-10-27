@@ -335,11 +335,11 @@ let
   # update` cannot rewrite a store path: bump the version here instead.
   moshiHook = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "moshi-hook";
-    version = "0.3.20";
+    version = "0.4.38";
 
     src = pkgs.fetchurl {
       url = "https://cdn.getmoshi.app/hook/v${finalAttrs.version}/moshi-hook_Linux_x86_64.tar.gz";
-      hash = "sha256-v7npl4Nj+ksZabIZuJmHn5V2u/oTCW/UbcGRB90zCWc=";
+      hash = "sha256-bjtGFmwQ+j2rsARB8YBSeU3B2vyDHCu8oo4RutYNd1M=";
     };
 
     sourceRoot = ".";
