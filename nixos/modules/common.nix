@@ -58,8 +58,10 @@ let
   # a client abandoning an agent request or the forwarded channel closing
   # with its SSH session, makes socat report a reset or a broken pipe and
   # exit nonzero; that is the connection ending, not a relay fault, so it
-  # exits 0 too. Every other socat error fails the unit, with its message
-  # in the journal.
+  # exits 0 too. A socket that is gone by the time socat connects belonged
+  # to a session that closed after the probe, so the search moves on to
+  # the next candidate. Every other socat error fails the unit, with its
+  # message in the journal.
   agentRelay = pkgs.writeShellScript "ssh-agent-relay" ''
     uid=$(${pkgs.coreutils}/bin/id -u)
     for sock in $(${pkgs.coreutils}/bin/ls -t \
@@ -73,6 +75,7 @@ let
         rest=$(printf '%s\n' "$err" |
           ${pkgs.gnugrep}/bin/grep -v -e 'Connection reset by peer' -e 'Broken pipe' || true)
         [ -z "$rest" ] && exit 0
+        case $rest in *'No such file or directory'*) continue ;; esac
         printf '%s\n' "$rest" >&2
         exit $status
       fi

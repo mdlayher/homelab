@@ -4,17 +4,22 @@
 # storm of renames, mark a session steering the root daemon into a
 # privileged socket. journald collects the records, which reach Loki like
 # every other journal line; loki.nix alerts on them.
-{ lib, ... }:
+{ config, lib, ... }:
 
 let
   # The container's /run/user is a tmpfs of its own namespace, unreachable
   # from here, so it goes unwatched.
+  containerHome = "/var/lib/nixos-containers/linuxdev/home";
   dirs = [
     "/tmp"
     "/home"
     "/var/lib/nixos-containers/linuxdev/tmp"
-    "/var/lib/nixos-containers/linuxdev/home"
+    containerHome
   ];
+
+  # The container's systemd, which binds the agent relay listener in the
+  # admin user's home at every container start.
+  containerSystemd = config.containers.linuxdev.config.systemd.package;
 
   rule =
     dir: filters: key:
@@ -23,7 +28,12 @@ in
 {
   security.audit = {
     enable = true;
-    rules = lib.concatMap (dir: [
+    # The first matching rule decides, so the exemption for the container's
+    # own listener precedes the watches.
+    rules = [
+      "-a never,exit -F arch=b64 -S bind -F exe=${containerSystemd}/lib/systemd/systemd -F dir=${containerHome}"
+    ]
+    ++ lib.concatMap (dir: [
       (rule dir "-S bind -F uid=0" "tailscale-socket")
       (rule dir "-S rename,renameat,renameat2" "tailscale-socket-rename")
     ]) dirs;
