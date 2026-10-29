@@ -287,8 +287,6 @@
     "homeassistant"
     # A Philips Hue bridge.
     "hue"
-    # An HPE Aruba Instant On device, cloud-managed.
-    "instanton"
     # An LG TV running Glasshouse, built by lgtv/.
     "lgtv"
     # A myQ hub.
@@ -415,11 +413,11 @@
               "unifi"
             ];
           };
-          switch-livingroom = {
+          switch-living-room = {
             ipv6 = "eui64";
             tags = [
-              "instanton"
               "switch"
+              "unifi"
             ];
           };
           switch-office = {

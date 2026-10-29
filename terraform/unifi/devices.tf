@@ -37,6 +37,16 @@ locals {
     3 = { name = "office printer", network = "iot0" }
   }
 
+  # Living room ports, by index, as the office ones. The switch is the PoE
+  # model: the core powers it over its uplink and it powers the living
+  # room access point on port 8.
+  living_room = {
+    1 = { name = "htpc", network = "lan0" }
+    2 = { name = "tv streamer", network = "iot0" }
+    3 = { name = "playstation", network = "guest0" }
+    4 = { name = "switch 2", network = "guest0" }
+  }
+
   # Each access point's fixed channels. On 2.4 GHz, access points that
   # hear each other never share a channel. On 5 GHz each has its own
   # 40 MHz block outside the radar channels. 6 GHz is the controller's
@@ -56,8 +66,9 @@ locals {
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
-    core   = concat(range(8, 19), [23, 24, 26, 28])
-    office = concat(range(4, 9), [10])
+    core        = concat(range(8, 19), [23, 24, 26, 28])
+    office      = concat(range(4, 9), [10])
+    living_room = concat(range(5, 8), [10])
   }
 
   # Network name to controller id, for the locked ports.
@@ -87,7 +98,6 @@ resource "unifi_device" "switch_core" {
     }
   }
 
-  # The living room switch's uplink.
   dynamic "port_override" {
     for_each = toset(local.disabled.core)
     content {
@@ -97,9 +107,10 @@ resource "unifi_device" "switch_core" {
     }
   }
 
+  # The living room switch's uplink, which also powers it.
   port_override {
     index           = 19
-    name            = "switch-livingroom"
+    name            = "switch-living-room"
     port_profile_id = unifi_port_profile.trunk.id
   }
 
@@ -135,7 +146,8 @@ resource "unifi_device" "ap_basement" {
   radio_table = local.radios.ap_basement
 }
 
-# The living room access point, behind the living room switch.
+# The living room access point, on the living room switch's port 8,
+# which powers it.
 resource "unifi_device" "ap_living_room" {
   name        = "ap-living-room"
   radio_table = local.radios.ap_living_room
@@ -173,6 +185,48 @@ resource "unifi_device" "switch_office" {
 
   dynamic "port_override" {
     for_each = toset(local.disabled.office)
+    content {
+      index           = port_override.value
+      name            = "unused"
+      port_profile_id = unifi_port_profile.disabled.id
+    }
+  }
+}
+
+# The living room switch, on the run from core port 19 into its 10GBASE-T
+# port, the one port that takes PoE in: the core powers the switch and the
+# access point behind it over that run. Both ends of the run are trunks,
+# so a port here can carry any network. Disabled ports as on the core,
+# above.
+resource "unifi_device" "switch_living_room" {
+  name = "switch-living-room"
+
+  port_override {
+    index           = 9
+    name            = "switch-core"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  port_override {
+    index           = 8
+    name            = "ap-living-room"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  dynamic "port_override" {
+    for_each = local.living_room
+    content {
+      index                 = tonumber(port_override.key)
+      name                  = port_override.value.name
+      setting_preference    = "manual"
+      native_networkconf_id = local.network_id[port_override.value.network]
+      tagged_vlan_mgmt      = "block_all"
+      forward               = "native"
+    }
+  }
+
+  dynamic "port_override" {
+    for_each = toset(local.disabled.living_room)
     content {
       index           = port_override.value
       name            = "unused"
