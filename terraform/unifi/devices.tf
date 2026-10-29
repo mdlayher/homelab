@@ -45,6 +45,7 @@ locals {
     2 = { name = "tv streamer", network = "iot0" }
     3 = { name = "playstation", network = "guest0" }
     4 = { name = "switch 2", network = "guest0" }
+    5 = { name = "av receiver", network = "iot0" }
   }
 
   # Each access point's fixed channels. On 2.4 GHz, access points that
@@ -68,7 +69,7 @@ locals {
   disabled = {
     core        = concat(range(8, 19), [23, 24, 26, 28])
     office      = concat(range(4, 9), [10])
-    living_room = concat(range(5, 8), [10])
+    living_room = concat(range(6, 8), [10])
   }
 
   # Network name to controller id, for the locked ports.
