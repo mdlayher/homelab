@@ -10,6 +10,8 @@ SSH, as root in the Terminal & SSH add-on. Nothing applies it nightly.
     Alloy add-on runs in place of the one its options would generate, with
     Loki's URL filled in from the inventory and checked with
     `alloy validate`;
+  - the custom integrations under `custom_components/`, each copied from a
+    pinned release of its source and loaded by a restart of core;
   - the options of each managed add-on, `addons/<slug>.json`, posted to
     the Supervisor; options left out keep the add-on's defaults and are not
     compared. The Terminal & SSH add-on takes the admin's FIDO2 keys from

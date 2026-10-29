@@ -209,6 +209,23 @@ let
     };
   };
 
+  # Custom integrations installed under /config/custom_components, each a
+  # directory copied from a pinned source and loaded by a restart of core.
+  # A file the source drops in a later version stays on the appliance.
+  customComponents = {
+    # Open Green Button: utility usage from Green Button Connect My Data
+    # into the Energy dashboard's statistics, through the project's hosted
+    # OAuth proxy. Consumers Energy is among its live utilities.
+    greenbutton = "${
+      pkgs.fetchFromGitHub {
+        owner = "rocketraman";
+        repo = "open-green-button-homeassistant";
+        tag = "0.3.3";
+        hash = "sha256-bwMbjbKZKBlKskJdgDjpemTCV4TLodGNYTEaLfnG3p4=";
+      }
+    }/custom_components/greenbutton";
+  };
+
   # The files under /config this repository manages, and what applying a
   # change to each takes: "core" for Home Assistant's own configuration,
   # checked and then loaded by a restart of core, or the slug of the add-on
@@ -242,6 +259,14 @@ pkgs.runCommand "hass-config" { } (
       install -D -m 0644 ${f.source} $out/tree/${path}
       echo ${lib.escapeShellArg "${path} ${f.action}"} >> $out/files
     '') files
+  )
+  + lib.concatStrings (
+    lib.mapAttrsToList (domain: src: ''
+      mkdir -p $out/tree/custom_components
+      cp -r ${src} $out/tree/custom_components/${domain}
+      chmod -R u+w $out/tree/custom_components/${domain}
+      (cd $out/tree && find custom_components/${domain} -type f | sort | sed 's/$/ core/') >> $out/files
+    '') customComponents
   )
   # Alloy reads its configuration as a string at start, so nothing else
   # checks it before the add-on fails to load it.
