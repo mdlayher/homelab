@@ -42,6 +42,7 @@ locals {
   ]
   foreign_personal = [for d in local.untagged : d.hostname if d.user != local.admin]
   lock_errors      = [for d in local.devices : d.hostname if d.tailnet_lock_error != null && d.tailnet_lock_error != ""]
+  unlocked         = [for d in local.devices : d.hostname if d.tailnet_lock_key == null || d.tailnet_lock_key == ""]
   expiring         = [for d in local.tagged : d.hostname if !d.key_expiry_disabled]
   unauthorized     = [for d in local.devices : d.hostname if !d.authorized || d.is_external]
   old_clients = [
@@ -71,10 +72,16 @@ check "personal_devices" {
   }
 }
 
+# The lock is the gate on new nodes (see settings.tf), so a device without
+# a lock key means the lock is off, or that device is outside it.
 check "tailnet_lock" {
   assert {
     condition     = length(local.lock_errors) == 0
     error_message = "devices with a tailnet lock error: ${join(", ", local.lock_errors)}"
+  }
+  assert {
+    condition     = length(local.unlocked) == 0
+    error_message = "devices without a tailnet lock key: ${join(", ", local.unlocked)}"
   }
 }
 

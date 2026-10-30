@@ -639,10 +639,25 @@ assert lib.assertMsg
   })
   (case "tailnet to LAN" {
     from = "tailnet";
+    to = "lan0";
+    dst = client4 "lan0";
+    tcp = 22;
+    accept = "trusted LANs to all LANs";
+  })
+  # forward: "tailnet to the management LAN"
+  (case "tailnet to mgmt host v4" {
+    from = "tailnet";
     to = s.interface;
     dst = s.ipv4;
     tcp = 22;
-    accept = "trusted LANs to all LANs";
+    drop = "tailnet_mgmt_drop";
+  })
+  (case "tailnet to mgmt host v6" {
+    from = "tailnet";
+    to = s.interface;
+    dst = s.ula;
+    tcp = 443;
+    drop = "tailnet_mgmt_drop";
   })
   # input: "localhost and trusted LANs to router"
   (case "trusted to router SSH" {

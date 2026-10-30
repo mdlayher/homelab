@@ -362,6 +362,7 @@ in
         counter restricted_multicast_drop {}
         counter restricted_input_drop {}
         counter restricted_forward_drop {}
+        counter tailnet_mgmt_drop {}
         counter wan_denied_drop {}
         counter mgmt_unknown {}
         counter forward_reject {}
@@ -936,6 +937,13 @@ in
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.
           iifname $restricted_lans oifname $all_lans counter name restricted_forward_drop drop comment "restricted LANs to LANs"
+
+          # The tailnet policy keeps the management LAN out of the subnet
+          # routes it grants, but its exit node rule admits any public
+          # address, and every LAN holds a delegated GUA. Mgmt hosts are
+          # reached by tailnet name and the server's services by their
+          # service names, so nothing crosses here.
+          iifname ts0 oifname ${mgmt.name} counter name tailnet_mgmt_drop drop comment "tailnet to the management LAN"
 
           # Hosts the inventory denies the internet, by MAC, so the drop
           # holds for every address they take, IPv6 privacy ones included.
