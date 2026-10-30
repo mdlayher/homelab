@@ -2,8 +2,9 @@
 # from namespace `from` toward `dst`, and `to` names the namespace where an
 # accepted probe arrives: a segment by its router interface, or router,
 # internet, tailnet, remote, dn42peer, dn42peer2, dn42host, far, far2,
-# unclassified, or a device on the management LAN: stranger (unknown MAC), serverlink (the
-# server's real MAC) or admitted (the KVM's admitMac); see default.nix.
+# unclassified, or a device on the management LAN: stranger (unknown MAC),
+# serverlink (the server's real MAC) or admitted (the KVM's admitMac); see
+# default.nix.
 #
 # A probe is `tcp` or `udp` with a port, or `probe` naming ping, echo-hbh,
 # mld or dhcp-discover (see packet.py). The verdict is `accept`, with the
@@ -233,7 +234,7 @@ assert lib.assertMsg
     from = "guest0";
     to = "router";
     dst = f.net.wan0.router4;
-    udp = 41641;
+    udp = p.tailscale;
     accept = "router WAN Tailscale";
   })
   (case "restricted to router peer relay" {
@@ -479,7 +480,7 @@ assert lib.assertMsg
     src = other4 "lan0";
     dst = f.net.wan0.router4;
     tcp = 22;
-    drop = "spoofed_drop";
+    drop = "wan_spoofed_drop";
   })
   (case "WAN with a LAN source to router v6" {
     from = "internet";
@@ -487,7 +488,7 @@ assert lib.assertMsg
     src = other6 "lan0";
     dst = f.net.wan0.router6;
     tcp = 22;
-    drop = "spoofed_drop";
+    drop = "wan_spoofed_drop";
   })
   (case "WAN with a far site's source to router" {
     from = "internet";
@@ -495,7 +496,7 @@ assert lib.assertMsg
     src = f.far.lo6;
     dst = f.net.wan0.router6;
     tcp = 179;
-    drop = "spoofed_drop";
+    drop = "wan_spoofed_drop";
   })
   (case "WAN with a LAN source to a LAN host" {
     from = "internet";
@@ -503,7 +504,17 @@ assert lib.assertMsg
     src = other6 "lan0";
     dst = s.ula;
     tcp = 22;
-    drop = "spoofed_drop";
+    drop = "wan_spoofed_drop";
+  })
+  # prerouting: the ICMP errors excused from it, which input then drops
+  # as matching no flow, under no named counter
+  (case "WAN ICMP error from a private hop" {
+    from = "internet";
+    to = "router";
+    src = f.net.hop4;
+    dst = f.net.wan0.router4;
+    probe = "icmp-error";
+    accept = true;
   })
   # prerouting: "blackholed destination"
   (case "trusted to a blackholed destination" {
@@ -672,7 +683,7 @@ assert lib.assertMsg
     from = "internet";
     to = "router";
     dst = f.net.wan0.router4;
-    udp = 41641;
+    udp = p.tailscale;
     accept = "router WAN Tailscale";
   })
   (case "WAN to router peer relay" {
@@ -1114,7 +1125,7 @@ assert lib.assertMsg
     from = "lan0";
     to = "dn42host";
     dst = f.dn42Host.ipv6;
-    udp = 41641;
+    udp = p.tailscale;
     drop = "dn42_tailscale_probe";
   })
   # input_dn42i: the router's services
@@ -1165,7 +1176,7 @@ assert lib.assertMsg
     from = "dn42host";
     to = "router";
     dst = f.dn42.vlan6;
-    udp = 41641;
+    udp = p.tailscale;
     drop = "dn42_tailscale_probe";
   })
   # input_dn42i: the final drop
@@ -1253,8 +1264,8 @@ assert lib.assertMsg
     from = "far";
     to = "router";
     dst = f.routerLo.addr6;
-    udp = 41641;
-    sport = 41641;
+    udp = p.tailscale;
+    sport = p.tailscale;
     drop = "icl_tailscale_probe";
   })
   # input_icl: the final drop
@@ -1271,8 +1282,8 @@ assert lib.assertMsg
     from = "far";
     to = s.interface;
     dst = s.ula;
-    udp = 41641;
-    sport = 41641;
+    udp = p.tailscale;
+    sport = p.tailscale;
     drop = "icl_tailscale_probe";
   })
   # forward: "site transit between circuits"

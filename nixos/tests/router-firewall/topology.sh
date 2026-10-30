@@ -114,13 +114,15 @@ router() {
 	addr router lo "$@"
 }
 
-# Blackholes each prefix in the router's table.
-blackhole() {
-	local p family
+# Adds a route of type $1 (blackhole or unreachable) for each prefix to
+# the router's table.
+discard() {
+	local type=$1 p family
+	shift
 	for p in "$@"; do
 		family=-4
 		[[ $p == *:* ]] && family=-6
-		in_ns router ip "$family" route add blackhole "$p"
+		in_ns router ip "$family" route add "$type" "$p"
 	done
 }
 

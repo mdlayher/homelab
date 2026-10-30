@@ -51,7 +51,7 @@ let
   # for any address they have not learned a port for; the forwarded hosts
   # take the ones after it.
   tailscale = {
-    router = 41641;
+    router = config.services.tailscale.port;
     # Peer relay: tailnet pairs which cannot connect directly - notably a
     # phone on cellular reaching hosts with no WAN port forward - relay
     # through this machine instead of a distant DERP server. Payloads are
@@ -354,6 +354,7 @@ in
         # with 'nft list counters' and exported to Prometheus; see
         # nftables-counters. Multiple rules may share one counter.
         counter spoofed_drop {}
+        counter wan_spoofed_drop {}
         counter anycast_reply_drop {}
         counter input_reject {}
         counter wan_input_drop {}
@@ -462,13 +463,17 @@ in
 
           # Our own sources arriving from the internet, which the
           # established accepts below would otherwise admit into an open
-          # flow. Tested by where the source routes, so the delegated GUA
-          # is covered and a source routed out the other WAN still passes.
-          # No route, or the router's own address, resolves to no
-          # interface and is dropped too. Link-local is the WAN's own
-          # neighbors, excused so NDP and DHCPv6 never depend on this.
-          iifname $wans meta nfproto ipv4 fib saddr oifname != $wans counter name spoofed_drop drop comment "our own source from the internet"
-          iifname $wans ip6 saddr != fe80::/10 fib saddr oifname != $wans counter name spoofed_drop drop comment "our own source from the internet"
+          # flow. Tested by where the source routes: the delegated GUA is
+          # covered, a source routed out the other WAN passes, and no
+          # route or the router's own address drops. Excused: link-local
+          # and unspecified, so NDP and DHCPv6 never depend on this, and
+          # the ICMP errors the WAN chains admit, which conntrack matches
+          # by the packet they carry and which an ISP's hops may send from
+          # private space. Its own counter, so a test deploy can tell it
+          # from the LAN rule.
+          iifname $wans jump icmp_wan
+          iifname $wans meta nfproto ipv4 fib saddr oifname != $wans counter name wan_spoofed_drop drop comment "our own source from the internet"
+          iifname $wans ip6 saddr != { fe80::/10, :: } fib saddr oifname != $wans counter name wan_spoofed_drop drop comment "our own source from the internet"
 
           # Anything the routing table would discard, counted here because
           # a blackholed packet is dropped at the routing decision and

@@ -50,7 +50,8 @@ rule_packets() {
 			| if length == 0 then error("no counted rule has comment \"\($c)\"") else add end'
 }
 
-# Sends a case's probe from namespace $1; the exit status is the probe's.
+# Sends a case's probe from namespace $1; the exit status is the probe's,
+# or 99 for a crafted packet that could not be sent at all.
 probe() {
 	local from=$1 src=$2 dst=$3 kind=$4 port=$5 sport=$6
 	local -a s=() p=()
@@ -77,8 +78,9 @@ probe() {
 		in_ns "$from" ping -n -q -c1 -W1 "${s[@]}" "$dst" >/dev/null
 		;;
 	echo-hbh) in_ns "$from" python3 "$PACKET" echo-hbh "$src" "$dst" ;;
-	mld) in_ns "$from" python3 "$PACKET" mld "$dst" eth0 ;;
-	dhcp-discover) in_ns "$from" python3 "$PACKET" dhcp-discover eth0 ;;
+	mld) in_ns "$from" python3 "$PACKET" mld "$dst" eth0 || return 99 ;;
+	dhcp-discover) in_ns "$from" python3 "$PACKET" dhcp-discover eth0 || return 99 ;;
+	icmp-error) in_ns "$from" python3 "$PACKET" icmp-error "$src" "$dst" || return 99 ;;
 	*) die "unknown probe $kind" ;;
 	esac
 }
@@ -101,9 +103,10 @@ while IFS=$'\t' read -r -u 3 name from to src dst kind port sport verdict what; 
 
 	status=0
 	probe "$from" "$src" "$dst" "$kind" "$port" "$sport" >/dev/null 2>&1 || status=$?
+	((status != 99)) || die "$name: the probe could not be sent"
 
 	# Whether the probe arrived: by the sink for TCP and UDP, by the reply
-	# for an echo, and not observable for a listener report.
+	# for an echo, and not observable for a listener report or an error.
 	case $kind in
 	tcp | udp | dhcp-discover)
 		proto=$kind

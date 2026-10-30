@@ -9,6 +9,8 @@ Run inside a namespace by run.sh:
   packet.py dhcp-discover IFACE
                                DHCPv4 discover from 0.0.0.0 to the limited
                                broadcast address.
+  packet.py icmp-error SRC DST ICMPv4 time exceeded from SRC, which need
+                               not be held, carrying a packet of no flow.
   packet.py join IFACE GROUP...
                                Joins each multicast group on IFACE, then
                                forks a child holding the memberships and
@@ -94,6 +96,24 @@ def dhcp_discover(iface):
     return 0
 
 
+def ipv4_header(src, dst, proto, length):
+    header = struct.pack(
+        "!BBHHHBBH4s4s", 0x45, 0, length, 0, 0, 64, proto, 0,
+        socket.inet_aton(src), socket.inet_aton(dst),
+    )
+    return header[:10] + struct.pack("!H", checksum(header)) + header[12:]
+
+
+def icmp_error(src, dst):
+    s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
+    # The quoted packet: a UDP header from DST toward nowhere in particular.
+    inner = ipv4_header(dst, "203.0.113.1", 17, 28) + struct.pack("!HHHH", 40000, 33434, 8, 0)
+    icmp = struct.pack("!BBHI", 11, 0, 0, 0) + inner
+    icmp = icmp[:2] + struct.pack("!H", checksum(icmp)) + icmp[4:]
+    s.sendto(ipv4_header(src, dst, 1, 20 + len(icmp)) + icmp, (dst, 0))
+    return 0
+
+
 def join(iface, groups):
     index = socket.if_nametoindex(iface)
     held = []
@@ -124,6 +144,8 @@ def main(argv):
             return mld(group, iface)
         case ["dhcp-discover", iface]:
             return dhcp_discover(iface)
+        case ["icmp-error", src, dst]:
+            return icmp_error(src, dst)
         case ["join", iface, *groups] if groups:
             return join(iface, groups)
     print(__doc__, file=sys.stderr)

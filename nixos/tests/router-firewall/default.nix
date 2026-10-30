@@ -183,6 +183,9 @@ let
     # A source outside both our space and dn42's.
     foreign4 = "203.0.113.9";
     foreign6 = "2001:db8:0:9::9";
+    # An ISP hop numbered from private space, under the unreachable
+    # aggregate.
+    hop4 = ipv4Plus (lib.head (lib.splitString "/" inv.labPrefix4)) 1;
   };
 
   # External dn42 peers on their tunnels, each holding dn42 space that is
@@ -256,20 +259,32 @@ let
     far.host4
   ];
 
-  # The router's blackhole routes (see modules/interconnect.nix) and an
-  # address inside the first.
-  blackholes = map (r: r.Destination) (
-    lib.filter (r: (r.Type or null) == "blackhole") router.systemd.network.networks."5-lo".routes
-  );
+  # The routes the router's lo network discards traffic with: the
+  # blackhole (see modules/interconnect.nix) and the unreachable
+  # aggregates (see the router's networking.nix), and an address inside
+  # the first blackhole.
+  discards = lib.filter (
+    r:
+    lib.elem (r.Type or null) [
+      "blackhole"
+      "unreachable"
+    ]
+  ) router.systemd.network.networks."5-lo".routes;
+  blackholes = map (r: r.Destination) (lib.filter (r: r.Type == "blackhole") discards);
   blackholed =
     assert lib.assertMsg (blackholes != [ ]) "router-firewall: the router holds no blackhole route";
     "${lib.head (lib.splitString "/" (lib.head blackholes))}1";
 
-  # Ports the rules open, from the configuration listening on them. The
-  # peer relay port is nftables.nix's own, like the tailscaled port the
-  # cases name.
+  # Ports the rules open, from the configuration listening on them.
   ports = {
-    relay = 41462;
+    tailscale = router.services.tailscale.port;
+    relay = lib.toInt (
+      lib.removePrefix "--relay-server-port=" (
+        lib.findFirst (lib.hasPrefix "--relay-server-port=")
+          (throw "router-firewall: the router advertises no peer relay port")
+          router.services.tailscale.extraSetFlags
+      )
+    );
     bfd = 3784;
     peerfinder = dn42.peerfinder.port;
     remoteAccess = router.homelab.remoteAccess.port;
@@ -469,7 +484,7 @@ let
       }";
     ''
       router ${sh routerLo}
-      blackhole ${sh blackholes}
+      ${lib.concatMapStrings (r: "discard ${r.Type} ${r.Destination}\n") discards}
 
       link wan0 internet ${
         sh [
