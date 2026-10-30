@@ -25,7 +25,9 @@ let
   # range applies to it.
   unconditioned = [ "garage" ];
 
-  # Rooms the sun heats past any cooling setpoint on a clear day.
+  # Rooms the weather reaches: the sun heats them past any cooling
+  # setpoint on a clear day, and humid air lifts them past the sustained
+  # humidity threshold. HouseHumidityVeryHigh still covers them.
   sunlit = [ "sunroom" ];
 
   roomsExcept = areas: ''homeassistant_entity_info{area!="", area!~${raw "(${anyOf areas})"}}'';
@@ -64,7 +66,7 @@ in
     {
       alert = "HouseHumidityHigh";
       expr = "${humidity 24} * on (entity) group_left(area) ${
-        roomsExcept (wetRooms ++ unconditioned)
+        roomsExcept (wetRooms ++ unconditioned ++ sunlit)
       } > 60";
       annotations.summary = "{{ $labels.friendly_name }} ({{ $labels.area }}) has averaged {{ $value | printf \"%.0f\" }}% humidity over the past day.";
     }
