@@ -494,4 +494,13 @@ in
       analytics.reporting_enabled = false;
     };
   };
+
+  # With deletion disabled above, the querier still asks the compactor for
+  # a cache generation number on every query, and the compactor answers
+  # that deletion is not available, which Loki logs as an error and a
+  # warning each time (grafana/loki#9855). journald drops those lines for
+  # this unit before they reach the journal.
+  systemd.services.loki.serviceConfig.LogFilterPatterns = [
+    "~deletion is not available for this tenant"
+  ];
 }
