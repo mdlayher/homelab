@@ -72,8 +72,9 @@ check "personal_devices" {
   }
 }
 
-# The lock is the gate on new nodes (see settings.tf), so a device without
-# a lock key means the lock is off, or that device is outside it.
+# Every node generates a tailnet lock key whether or not the lock is on,
+# so a device without one is a node the lock cannot cover, such as a
+# client from before tailnet lock existed.
 check "tailnet_lock" {
   assert {
     condition     = length(local.lock_errors) == 0
