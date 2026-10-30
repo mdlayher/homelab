@@ -49,13 +49,15 @@ locals {
   }
 
   # Each access point's fixed channels. On 2.4 GHz, access points that
-  # hear each other never share a channel. On 5 GHz each has its own
-  # 40 MHz block outside the radar channels. 6 GHz is the controller's
-  # choice.
+  # hear each other never share a channel; with more access points than
+  # channels, the pair furthest apart shares one. On 5 GHz each has its
+  # own 40 MHz block outside the radar channels. 6 GHz is the
+  # controller's choice.
   ap_channels = {
     ap_living_room  = { ng = 1, na = 36 }
     ap_basement     = { ng = 6, na = 44 }
     ap_laundry_room = { ng = 11, na = 149 }
+    ap_movie_room   = { ng = 11, na = 157 }
   }
   radios = {
     for name, ch in local.ap_channels : name => [
@@ -68,7 +70,7 @@ locals {
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
     core        = concat(range(8, 19), [23, 24, 26, 28])
-    office      = concat(range(4, 9), [10])
+    office      = concat(range(4, 8), [10])
     living_room = concat(range(6, 8), [10])
   }
 
@@ -160,6 +162,12 @@ resource "unifi_device" "ap_laundry_room" {
   radio_table = local.radios.ap_laundry_room
 }
 
+# The movie room access point, on the office switch's port 8, above.
+resource "unifi_device" "ap_movie_room" {
+  name        = "ap-movie-room"
+  radio_table = local.radios.ap_movie_room
+}
+
 # The office switch, on the run from core port 22 into its 10GBASE-T port.
 # Both ends of the run are trunks, so a port here can carry any network.
 # Disabled ports as on the core, above.
@@ -169,6 +177,14 @@ resource "unifi_device" "switch_office" {
   port_override {
     index           = 9
     name            = "switch-core"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  # The movie room access point, powered by its own injector since this
+  # switch has no PoE.
+  port_override {
+    index           = 8
+    name            = "ap-movie-room"
     port_profile_id = unifi_port_profile.trunk.id
   }
 

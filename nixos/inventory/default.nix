@@ -386,6 +386,13 @@
               "unifi"
             ];
           };
+          ap-movie-room = {
+            ipv6 = "eui64";
+            tags = [
+              "ap"
+              "unifi"
+            ];
+          };
           hass = {
             ipv6 = "prefixstable";
             tags = [ "homeassistant" ];
