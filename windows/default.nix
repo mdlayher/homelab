@@ -17,6 +17,25 @@
 let
   windows = import ./hosts.nix;
 
+  # The segment the server scrapes the exporters from, as the prefixes the
+  # inventory module builds for it (nixos/modules/inventory.nix): the one
+  # place the exporter ports answer. The server's name resolves to its ULA
+  # and IPv4 alone, so the scrape is sourced from those.
+  server = lib.head inventory.roles.server;
+  holds = s: lib.any (sub: (sub.hosts or { }) ? ${server}) (lib.attrValues (s.subnets or { }));
+  serverSite = lib.findFirst holds (throw "windows: no site holds ${server}") (
+    lib.attrValues inventory.sites
+  );
+  serverSubnet = lib.findFirst (sub: (sub.hosts or { }) ? ${server}) null (
+    lib.attrValues serverSite.subnets
+  );
+  scrapers = [
+    "${lib.removeSuffix "0.0.0/8" inventory.privatePrefix4}${toString serverSite.index}.${toString serverSubnet.vlan}.0/24"
+    "${lib.removeSuffix "::/48" inventory.ulaPrefix6}:${
+      toString (100 * serverSite.index + serverSubnet.vlan)
+    }::/64"
+  ];
+
   # The Windows event log channels Alloy ships, by the component name each
   # gets in its configuration.
   channels = {
@@ -163,28 +182,32 @@ let
       };
     };
 
-    # Inbound firewall rules by display name: the exporter ports, and ping,
-    # which Windows otherwise drops.
+    # Inbound firewall rules by display name: the exporter ports, from the
+    # server's segment alone, and ping, which Windows otherwise drops.
     firewall = [
       {
         name = "windows_exporter";
         protocol = "TCP";
         port = windows.exporters.windows;
+        remote = scrapers;
       }
       {
         name = "Nvidia GPU Exporter";
         protocol = "TCP";
         port = windows.exporters.nvidia_gpu;
+        remote = scrapers;
       }
       {
         name = "hwinfo_exporter";
         protocol = "TCP";
         port = windows.exporters.hwinfo;
+        remote = scrapers;
       }
       {
         name = "Alloy";
         protocol = "TCP";
         port = windows.exporters.alloy;
+        remote = scrapers;
       }
       {
         name = "ICMPv4 echo";
@@ -220,6 +243,9 @@ let
       ''C:\Program Files\GrafanaLabs\Alloy\config.alloy''
       ''--storage.path=C:\ProgramData\GrafanaLabs\Alloy\data''
       "--server.http.listen-addr=0.0.0.0:${toString windows.exporters.alloy}"
+      # No profiling endpoints or support bundle, as in nixos/modules/alloy.nix.
+      "--server.http.enable-pprof=false"
+      "--server.http.disable-support-bundle"
     ];
 
     # The anycast NTP address, served at every site; see nixos/inventory/.

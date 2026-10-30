@@ -21,8 +21,9 @@ jobs:
           token: ${{ secrets.UPDATE_FLAKE_LOCK_TOKEN }}
           pr-title: "flake.lock: update"
           pr-labels: dependencies
-      # Merge automatically once the required nix checks pass, which is what
-      # rolls new nixpkgs out to machines via system.autoUpgrade.
+      # Merge automatically, which is what rolls new nixpkgs out to machines
+      # via system.autoUpgrade. The nix workflow runs on the PR, but main's
+      # ruleset requires no status check, so the merge does not wait for it.
       - if: steps.update.outputs.pull-request-number != ''
         run: gh pr merge --auto --rebase "${{ steps.update.outputs.pull-request-number }}"
         env:

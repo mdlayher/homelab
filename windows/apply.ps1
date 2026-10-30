@@ -116,20 +116,24 @@ if ($w32.NtpServer -ne $peer -or $w32.Type -ne 'NTP' -or $w32svc.StartMode -ne '
     }
 }
 
-# Inbound firewall rules, on every profile: TCP ports, and ICMP by type.
+# Inbound firewall rules, on every profile: TCP ports, from the remote
+# prefixes a rule names or anywhere, and ICMP by type.
 foreach ($r in $config.firewall) {
     $rule = Get-NetFirewallRule -DisplayName $r.name -ErrorAction SilentlyContinue | Select-Object -First 1
     $filter = if ($rule) { $rule | Get-NetFirewallPortFilter } else { $null }
+    $remote = if ($rule) { @(($rule | Get-NetFirewallAddressFilter).RemoteAddress) | Sort-Object } else { @() }
+    $wanted = if ($r.remote) { @($r.remote) | Sort-Object } else { @('Any') }
     $ok = $rule -and $rule.Enabled -eq 'True' -and $rule.Direction -eq 'Inbound' -and
         $rule.Action -eq 'Allow' -and $rule.Profile -eq 'Any' -and $filter.Protocol -eq $r.protocol -and
+        ($remote -join ',') -eq ($wanted -join ',') -and
         $(if ($r.port) { "$($filter.LocalPort)" -eq "$($r.port)" } else { "$($filter.IcmpType)" -eq $r.icmpType })
     if (-not $ok) {
         $what = if ($r.port) { "$($r.protocol) $($r.port)" } else { "$($r.protocol) type $($r.icmpType)" }
-        Fix "firewall rule $($r.name) on $what" {
+        Fix "firewall rule $($r.name) on $what from $($wanted -join ', ')" {
             Get-NetFirewallRule -DisplayName $r.name -ErrorAction SilentlyContinue | Remove-NetFirewallRule
             $match = if ($r.port) { @{ LocalPort = $r.port } } else { @{ IcmpType = $r.icmpType } }
             New-NetFirewallRule -DisplayName $r.name -Direction Inbound -Action Allow -Protocol $r.protocol `
-                -Profile Any @match | Out-Null
+                -Profile Any -RemoteAddress $wanted @match | Out-Null
         }
     }
 }

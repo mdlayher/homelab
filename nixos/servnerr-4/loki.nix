@@ -472,6 +472,11 @@ in
         # A year of history; disk is plentiful.
         retention_period = "365d";
 
+        # No deletion API: Loki has no authentication and its port is open
+        # to the LANs for pushes, so with the store above it would let any
+        # LAN host erase history, the audit and deploy logs included.
+        deletion_mode = "disabled";
+
         # The router's nginx serves a clearnet page, so its logs hold
         # visitor addresses from outside the homelab (see the router host's
         # dn42-page.nix); thirty days is enough to answer "did they fetch

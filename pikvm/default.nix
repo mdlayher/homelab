@@ -314,7 +314,7 @@ let
       action = "alloy";
       text = ''
         CONFIG_FILE="/etc/grafana-alloy/config.alloy"
-        CUSTOM_ARGS="--server.http.listen-addr=0.0.0.0:12345 --disable-reporting"
+        CUSTOM_ARGS="--server.http.listen-addr=0.0.0.0:12345 --disable-reporting --server.http.enable-pprof=false --server.http.disable-support-bundle"
       '';
     }
     {

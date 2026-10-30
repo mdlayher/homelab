@@ -75,6 +75,11 @@ in
       # discovered from this flag; see nixos/servnerr-4/prometheus.nix.
       "--server.http.listen-addr=0.0.0.0:12345"
       "--disable-reporting"
+      # The same address serves the debug UI. Its profiling endpoints
+      # and support bundle hand out heap dumps and the rendered
+      # configuration; neither is scraped.
+      "--server.http.enable-pprof=false"
+      "--server.http.disable-support-bundle"
     ];
   };
 
