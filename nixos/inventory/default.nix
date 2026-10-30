@@ -504,6 +504,10 @@
             tags = [ "esphome" ];
           };
           living-room-myq-hub.tags = [ "myq" ];
+          movie-room-mini-split = {
+            ipv6 = "eui64";
+            tags = [ "esphome" ];
+          };
           office-printer = {
             ipv6 = "eui64";
             tags = [
