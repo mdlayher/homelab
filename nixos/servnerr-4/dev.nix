@@ -335,11 +335,11 @@ let
   # update` cannot rewrite a store path: bump the version here instead.
   moshiHook = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "moshi-hook";
-    version = "0.4.38";
+    version = "0.4.43";
 
     src = pkgs.fetchurl {
       url = "https://cdn.getmoshi.app/hook/v${finalAttrs.version}/moshi-hook_Linux_x86_64.tar.gz";
-      hash = "sha256-bjtGFmwQ+j2rsARB8YBSeU3B2vyDHCu8oo4RutYNd1M=";
+      hash = "sha256-r8OzaxD1TdXiYR045TDn/ozT6cMKenWsl8LGQwg349Y=";
     };
 
     sourceRoot = ".";
@@ -1345,6 +1345,13 @@ in
                 };
               };
             };
+
+            # Moshi's CDN drops old hook releases, and the closure references
+            # only the unpacked binary, so garbage collection drops the
+            # tarball and the next rebuild cannot fetch it. Holding the
+            # tarball in the closure keeps every rebuild of a pinned version
+            # off the CDN.
+            system.extraDependencies = [ moshiHook.src ];
 
             environment.systemPackages = with pkgs; [
               # Claude Code and its sandbox dependencies come from the
