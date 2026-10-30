@@ -39,8 +39,18 @@
     enable = true;
     # No reverse lookups of the sources on each scrape: a pool server
     # whose reverse zone fails leaves resolved retrying the lookup in a
-    # loop, and the address already identifies the source.
-    extraFlags = [ "--no-collector.dns-lookups" ];
+    # loop, and the address already identifies the source. The lookups
+    # default to on inside the exporter, so they must be switched off
+    # explicitly, and the module renders both lists, so the enabled list
+    # drops them as well or the flag appears twice and the exporter
+    # refuses to start.
+    enabledCollectors = [
+      "tracking"
+      "sources"
+      "sources.with-ntpdata"
+      "serverstats"
+    ];
+    disabledCollectors = [ "dns-lookups" ];
   };
 
   # The command socket exists only once chronyd is up, and it is
