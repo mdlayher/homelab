@@ -283,6 +283,8 @@
     "brother"
     # A CyberPower network management card, in a UPS or a PDU.
     "cyberpower"
+    # A device running ESPHome. Nothing in this repository configures it.
+    "esphome"
     # A Home Assistant OS machine.
     "homeassistant"
     # A Philips Hue bridge.
@@ -497,6 +499,10 @@
         trusted = false;
         role = "iot";
         hosts = {
+          basement-mini-split = {
+            ipv6 = "eui64";
+            tags = [ "esphome" ];
+          };
           living-room-myq-hub.tags = [ "myq" ];
           office-printer = {
             ipv6 = "eui64";
