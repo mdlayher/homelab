@@ -367,6 +367,7 @@ in
         counter wan_forward_drop {}
         counter dn42_input_drop {}
         counter dn42_forward_drop {}
+        counter dn42_tailscale_probe {}
         ${lib.optionalString icl ''
           counter icl_input_drop {}
           counter icl_forward_drop {}
@@ -458,6 +459,16 @@ in
           iifname $physical_lans ip6 saddr { $anycast_dns, $anycast_ntp } fib saddr . iif oif missing counter name anycast_reply_drop drop comment "anycast reply on the wrong LAN"
           iifname $physical_lans ip saddr { $anycast4_dns, $anycast4_ntp } fib saddr . iif oif missing counter name anycast_reply_drop drop comment "anycast reply on the wrong LAN"
           iifname $physical_lans fib saddr . iif oif missing counter name spoofed_drop drop comment "spoofed source"
+
+          # Our own sources arriving from the internet, which the
+          # established accepts below would otherwise admit into an open
+          # flow. Tested by where the source routes, so the delegated GUA
+          # is covered and a source routed out the other WAN still passes.
+          # No route, or the router's own address, resolves to no
+          # interface and is dropped too. Link-local is the WAN's own
+          # neighbors, excused so NDP and DHCPv6 never depend on this.
+          iifname $wans meta nfproto ipv4 fib saddr oifname != $wans counter name spoofed_drop drop comment "our own source from the internet"
+          iifname $wans ip6 saddr != fe80::/10 fib saddr oifname != $wans counter name spoofed_drop drop comment "our own source from the internet"
 
           # Anything the routing table would discard, counted here because
           # a blackholed packet is dropped at the routing decision and
@@ -725,8 +736,9 @@ in
           # candidate endpoint, so the hosts here probe the router's dn42
           # addresses at its tailscaled and peer relay ports. The tailnet
           # never rides dn42, and there is no per-interface opt-out to
-          # give tailscaled; drop the probes without logging them.
-          udp dport { $tailscale_router, $tailscale_relay } counter drop comment "router dn42 internal Tailscale probes"
+          # give tailscaled; drop the probes without logging them, counted
+          # apart so the drop below keeps meaning something unexpected.
+          udp dport { $tailscale_router, $tailscale_relay } counter name dn42_tailscale_probe drop comment "router dn42 internal Tailscale probes"
 
           limit rate 10/minute burst 20 packets log prefix "nft input dn42 drop: "
           counter name dn42_input_drop drop
@@ -764,11 +776,11 @@ in
           iifname . ip daddr != @router_v4 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv4 VLAN"
           iifname . ip6 daddr != @router_v6 counter name restricted_crossvlan_drop drop comment "traffic leaving IPv6 VLAN"
 
-          # Allow only necessary router-provided services.
+          # Allow only necessary router-provided services. The peer relay
+          # is public, admitted by services_wan above.
           tcp dport $dns counter accept comment "router restricted TCP"
           udp dport $dns counter accept comment "router restricted UDP"
           udp dport $ntp counter accept comment "router restricted NTP"
-          udp dport $tailscale_relay counter accept comment "router restricted peer relay"
 
           limit rate 10/minute burst 20 packets log prefix "nft input restricted drop: "
           counter name restricted_input_drop drop
@@ -785,6 +797,13 @@ in
           policy drop
 
           ${dn42eOwnSources "dn42_forward_drop"}
+          # A peer only ever delivers dn42 space, as in input_dn42e. Ahead
+          # of the established and transit accepts, so a forged source
+          # rides neither; forward_dn42i admits ICMP from any source, and a
+          # host answering an echo forged from the internet would reply
+          # out our WAN.
+          iifname "dn42e-*" ip saddr != $dn42_v4 counter name dn42_forward_drop drop comment "non-dn42 source"
+          iifname "dn42e-*" ip6 saddr != $dn42_v6 counter name dn42_forward_drop drop comment "non-dn42 source"
           # Clamp TCP MSS to the dn42 tunnel MTU in both directions, before
           # the established shortcut so inbound SYN/ACKs are also clamped.
           oifname { "dn42e-*", "dn42i-*", "icl-*" } tcp flags syn tcp option maxseg size set rt mtu comment "dn42 MSS clamp out"
@@ -882,6 +901,11 @@ in
             oifname "icl-*" ip saddr $site4 ip daddr $site4 counter accept comment "interconnect site out"
             oifname "icl-*" ip6 saddr $site6 ip6 daddr $site6 counter accept comment "interconnect site out"
 
+            # Our own dn42 hosts reach dn42 through another site's peers,
+            # and nothing of that site's own, as this site's LANs are
+            # denied them below.
+            iifname "dn42i-*" oifname "icl-*" ip daddr $site4 counter name dn42_forward_drop drop comment "dn42 internal to another site"
+            iifname "dn42i-*" oifname "icl-*" ip6 daddr $site6 counter name dn42_forward_drop drop comment "dn42 internal to another site"
             iifname "dn42i-*" oifname "icl-*" counter accept comment "dn42 internal to interconnect"
             iifname "icl-*" oifname "dn42i-*" jump forward_dn42i
           ''}
@@ -893,7 +917,7 @@ in
           # the LANs probes their dn42 addresses as candidate endpoints, as
           # it does the router's (see input_dn42i). Dropped without logging,
           # above the reject that would otherwise count them.
-          oifname "dn42i-*" udp dport { $tailscale_router, $tailscale_relay } counter drop comment "Tailscale probes toward dn42 internal hosts"
+          oifname "dn42i-*" udp dport { $tailscale_router, $tailscale_relay } counter name dn42_tailscale_probe drop comment "Tailscale probes toward dn42 internal hosts"
 
           # A deploy from the development container to a device it manages,
           # above the drop that keeps restricted LANs apart.

@@ -1,8 +1,8 @@
 # The router firewall cases, run in order by run.sh. Each sends one probe
 # from namespace `from` toward `dst`, and `to` names the namespace where an
 # accepted probe arrives: a segment by its router interface, or router,
-# internet, tailnet, remote, dn42peer, dn42host, far, unclassified, or a
-# device on the management LAN: stranger (unknown MAC), serverlink (the
+# internet, tailnet, remote, dn42peer, dn42peer2, dn42host, far, far2,
+# unclassified, or a device on the management LAN: stranger (unknown MAC), serverlink (the
 # server's real MAC) or admitted (the KVM's admitMac); see default.nix.
 #
 # A probe is `tcp` or `udp` with a port, or `probe` naming ping, echo-hbh,
@@ -23,9 +23,13 @@ let
   fwd = lib.head forwards;
   reach = lib.head f.remote.device.reaches;
   reachHost = f.hosts.${reach.target};
+  p = f.ports;
 
   client4 = name: "${r.${name}.ipv4Prefix}.10";
   client6 = name: "${r.${name}.ulaPrefix}::10";
+  # An address on a segment no namespace holds, for another to forge.
+  other4 = name: "${r.${name}.ipv4Prefix}.20";
+  other6 = name: "${r.${name}.ulaPrefix}::20";
 
   case =
     name: a:
@@ -224,13 +228,20 @@ assert lib.assertMsg
     accept = "router restricted anycast NTP";
   })
   # services_wan, through input_restricted's local destination jump:
-  # "router WAN Tailscale"
+  # "router WAN Tailscale", "router WAN peer relay"
   (case "restricted to router WAN Tailscale" {
     from = "guest0";
     to = "router";
     dst = f.net.wan0.router4;
     udp = 41641;
     accept = "router WAN Tailscale";
+  })
+  (case "restricted to router peer relay" {
+    from = "guest0";
+    to = "router";
+    dst = r.guest0.ipv4;
+    udp = p.relay;
+    accept = "router WAN peer relay";
   })
   # forward: "restricted LANs to LANs", the tailnet being trusted
   (case "restricted to tailnet host" {
@@ -444,6 +455,64 @@ assert lib.assertMsg
     tcp = 443;
     drop = "spoofed_drop";
   })
+  # prerouting: "anycast reply on the wrong LAN"
+  (case "trusted LAN with the anycast resolver's source" {
+    from = "lan0";
+    to = "router";
+    src = f.inv.anycast4.dns;
+    dst = r.lan0.ipv4;
+    udp = 53;
+    drop = "anycast_reply_drop";
+  })
+  (case "trusted LAN with the anycast clock's source" {
+    from = "lan0";
+    to = "router";
+    src = f.inv.anycast6.ntp;
+    dst = r.lan0.ula;
+    udp = 123;
+    drop = "anycast_reply_drop";
+  })
+  # prerouting: "our own source from the internet"
+  (case "WAN with a LAN source to router v4" {
+    from = "internet";
+    to = "router";
+    src = other4 "lan0";
+    dst = f.net.wan0.router4;
+    tcp = 22;
+    drop = "spoofed_drop";
+  })
+  (case "WAN with a LAN source to router v6" {
+    from = "internet";
+    to = "router";
+    src = other6 "lan0";
+    dst = f.net.wan0.router6;
+    tcp = 22;
+    drop = "spoofed_drop";
+  })
+  (case "WAN with a far site's source to router" {
+    from = "internet";
+    to = "router";
+    src = f.far.lo6;
+    dst = f.net.wan0.router6;
+    tcp = 179;
+    drop = "spoofed_drop";
+  })
+  (case "WAN with a LAN source to a LAN host" {
+    from = "internet";
+    to = s.interface;
+    src = other6 "lan0";
+    dst = s.ula;
+    tcp = 22;
+    drop = "spoofed_drop";
+  })
+  # prerouting: "blackholed destination"
+  (case "trusted to a blackholed destination" {
+    from = "lan0";
+    to = "internet";
+    dst = f.blackholed;
+    tcp = 22;
+    drop = "blackhole_drop";
+  })
   # forward: "hosts denied the internet"
   (case "denied MAC to WAN" {
     from = f.denied.ifname;
@@ -572,6 +641,14 @@ assert lib.assertMsg
     tcp = 22;
     accept = "localhost and trusted LANs to router";
   })
+  # forward: the final reject
+  (case "trusted to unclassified interface" {
+    from = "lan0";
+    to = "unclassified";
+    dst = f.net.unclassified.peer6;
+    tcp = 22;
+    reject = "forward_reject";
+  })
 
   # The internet.
 
@@ -590,13 +667,55 @@ assert lib.assertMsg
     tcp = 22;
     drop = "wan_input_drop";
   })
-  # services_wan: "router WAN Tailscale"
+  # services_wan
   (case "WAN to router Tailscale" {
     from = "internet";
     to = "router";
     dst = f.net.wan0.router4;
     udp = 41641;
     accept = "router WAN Tailscale";
+  })
+  (case "WAN to router peer relay" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router6;
+    udp = p.relay;
+    accept = "router WAN peer relay";
+  })
+  (case "WAN to router peering page" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router4;
+    tcp = 443;
+    accept = "router WAN peering page";
+  })
+  (case "WAN to router peering page HTTP/3" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router6;
+    udp = 443;
+    accept = "router WAN peering page HTTP/3";
+  })
+  (case "WAN to router peerfinder" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router4;
+    tcp = p.peerfinder;
+    accept = "router WAN peerfinder";
+  })
+  (case "WAN to router remote access WireGuard" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router4;
+    udp = p.remoteAccess;
+    accept = "remote access WireGuard";
+  })
+  (case "WAN to router dn42 WireGuard" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router6;
+    udp = p.dn42Peer;
+    accept = "dn42 WireGuard peers";
   })
   # input_wan: "router WAN ping"
   (case "WAN ping router v4" {
@@ -656,10 +775,20 @@ assert lib.assertMsg
     drop = "wan_forward_drop";
   }
 )
+++ lib.optional (p.carriers != [ ]) (
+  # services_wan: "site interconnect carriers"
+  case "WAN to router interconnect carrier" {
+    from = "internet";
+    to = "router";
+    dst = f.net.wan0.router4;
+    udp = lib.head p.carriers;
+    accept = "site interconnect carriers";
+  }
+)
 ++ [
   # External dn42 peers.
 
-  # input_dn42e: "router dn42 external BGP"
+  # input_dn42e: the router's services
   (case "dn42 peer to router BGP v4" {
     from = "dn42peer";
     to = "router";
@@ -673,6 +802,56 @@ assert lib.assertMsg
     dst = f.dn42.addr6;
     tcp = 179;
     accept = "router dn42 external BGP";
+  })
+  (case "dn42 peer to router BFD" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr4;
+    udp = p.bfd;
+    accept = "router dn42 external BFD";
+  })
+  (case "dn42 peer to router DNS v4" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr4;
+    udp = 53;
+    accept = "router dn42 external DNS";
+  })
+  (case "dn42 peer to router DNS v6" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr6;
+    tcp = 53;
+    accept = "router dn42 external DNS";
+  })
+  (case "dn42 peer to router peering page" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr6;
+    tcp = 443;
+    accept = "router dn42 external peering page";
+  })
+  (case "dn42 peer to router peering page HTTP/3" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr4;
+    udp = 443;
+    accept = "router dn42 external peering page HTTP/3";
+  })
+  (case "dn42 peer to router NTP" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr6;
+    udp = 123;
+    accept = "router dn42 external NTP";
+  })
+  # input_dn42e: the final drop
+  (case "dn42 peer to router SSH" {
+    from = "dn42peer";
+    to = "router";
+    dst = f.dn42.addr4;
+    tcp = 22;
+    drop = "dn42_input_drop";
   })
   # icmp_lan, from input_dn42e
   (case "dn42 peer echo behind hop-by-hop header" {
@@ -723,6 +902,21 @@ assert lib.assertMsg
     dst = client6 "lan0";
     tcp = 22;
     drop = "dn42_forward_drop";
+  })
+  # forward: "dn42 transit"
+  (case "dn42 transit between peers v4" {
+    from = "dn42peer";
+    to = "dn42peer2";
+    dst = f.peer2.ipv4;
+    tcp = 80;
+    accept = "dn42 transit";
+  })
+  (case "dn42 transit between peers v6" {
+    from = "dn42peer";
+    to = "dn42peer2";
+    dst = f.peer2.ipv6;
+    tcp = 80;
+    accept = "dn42 transit";
   })
   # forward: "dn42 to another site"
   (case "dn42 peer to far site v4" {
@@ -865,6 +1059,123 @@ assert lib.assertMsg
     tcp = 22;
     drop = "dn42_inbound_drop";
   })
+  # icmp_lan, from forward_dn42i
+  (case "dn42 peer ping dn42 host" {
+    from = "dn42peer";
+    to = "dn42host";
+    dst = f.dn42Host.ipv6;
+    probe = "ping";
+    accept = true;
+  })
+  # forward: "non-dn42 source", ahead of forward_dn42i
+  (case "dn42 peer with a non-dn42 source ping dn42 host v4" {
+    from = "dn42peer";
+    to = "dn42host";
+    src = f.net.foreign4;
+    dst = f.dn42Host.ipv4;
+    probe = "ping";
+    drop = "dn42_forward_drop";
+  })
+  (case "dn42 peer with a non-dn42 source ping dn42 host v6" {
+    from = "dn42peer";
+    to = "dn42host";
+    src = f.net.foreign6;
+    dst = f.dn42Host.ipv6;
+    probe = "ping";
+    drop = "dn42_forward_drop";
+  })
+  # forward: "dn42 internal to interconnect". IPv6 only: the far dn42
+  # loopbacks sit inside the VLAN's on-link IPv4 range, so a host there
+  # resolves them on the wire rather than through the router.
+  (case "dn42 host to a far dn42 loopback" {
+    from = "dn42host";
+    to = "far";
+    dst = f.far.dn42v6;
+    tcp = 179;
+    accept = "dn42 internal to interconnect";
+  })
+  # forward: "dn42 internal to another site"
+  (case "dn42 host to far site host v4" {
+    from = "dn42host";
+    to = "far";
+    dst = f.far.host4;
+    tcp = 22;
+    drop = "dn42_forward_drop";
+  })
+  (case "dn42 host to far site host v6" {
+    from = "dn42host";
+    to = "far";
+    dst = f.far.host6;
+    tcp = 22;
+    drop = "dn42_forward_drop";
+  })
+  # forward: "Tailscale probes toward dn42 internal hosts"
+  (case "trusted Tailscale probe to dn42 host" {
+    from = "lan0";
+    to = "dn42host";
+    dst = f.dn42Host.ipv6;
+    udp = 41641;
+    drop = "dn42_tailscale_probe";
+  })
+  # input_dn42i: the router's services
+  (case "dn42 host to router BGP" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.vlan6;
+    tcp = 179;
+    accept = "router dn42 internal BGP";
+  })
+  (case "dn42 host to router BFD" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.addr4;
+    udp = p.bfd;
+    accept = "router dn42 internal BFD";
+  })
+  (case "dn42 host to router DNS" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.addr6;
+    udp = 53;
+    accept = "router dn42 internal DNS";
+  })
+  (case "dn42 host to router peering page" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.vlan6;
+    tcp = 443;
+    accept = "router dn42 internal peering page";
+  })
+  (case "dn42 host to router peering page HTTP/3" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.addr4;
+    udp = 443;
+    accept = "router dn42 internal peering page HTTP/3";
+  })
+  (case "dn42 host to router NTP" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.vlan6;
+    udp = 123;
+    accept = "router dn42 internal NTP";
+  })
+  # input_dn42i: "router dn42 internal Tailscale probes"
+  (case "dn42 host Tailscale probe to router" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.vlan6;
+    udp = 41641;
+    drop = "dn42_tailscale_probe";
+  })
+  # input_dn42i: the final drop
+  (case "dn42 host to router SSH" {
+    from = "dn42host";
+    to = "router";
+    dst = f.dn42.addr4;
+    tcp = 22;
+    drop = "dn42_input_drop";
+  })
 
   # The site interconnect.
 
@@ -886,14 +1197,115 @@ assert lib.assertMsg
     tcp = 22;
     drop = "icl_forward_drop";
   })
-  # input_icl: "router interconnect BGP"
+  # input_icl: the router's services
   (case "far site to router BGP" {
     from = "far";
     to = "router";
     src = f.far.lo6;
-    dst = f.inv.loopbacks.${lib.head f.inv.roles.router}.addr6;
+    dst = f.routerLo.addr6;
     tcp = 179;
     accept = "router interconnect BGP";
+  })
+  (case "far site to router BFD" {
+    from = "far";
+    to = "router";
+    dst = f.far.router6;
+    udp = p.bfd;
+    accept = "router interconnect BFD";
+  })
+  (case "far site to router DNS v4" {
+    from = "far";
+    to = "router";
+    dst = f.routerLo.addr4;
+    tcp = 53;
+    accept = "router interconnect DNS";
+  })
+  (case "far site to router DNS v6" {
+    from = "far";
+    to = "router";
+    dst = f.routerLo.addr6;
+    udp = 53;
+    accept = "router interconnect DNS";
+  })
+  (case "far site to anycast NTP v4" {
+    from = "far";
+    to = "router";
+    dst = f.inv.anycast4.ntp;
+    udp = 123;
+    accept = "router interconnect anycast NTP";
+  })
+  (case "far site to anycast NTP v6" {
+    from = "far";
+    to = "router";
+    dst = f.inv.anycast6.ntp;
+    udp = 123;
+    accept = "router interconnect anycast NTP";
+  })
+  (case "far site to router page" {
+    from = "far";
+    to = "router";
+    dst = f.routerLo.addr6;
+    tcp = 80;
+    accept = "router interconnect page";
+  })
+  # input_icl: "tailscale endpoint discovery over the circuit"
+  (case "far site Tailscale probe to router" {
+    from = "far";
+    to = "router";
+    dst = f.routerLo.addr6;
+    udp = 41641;
+    sport = 41641;
+    drop = "icl_tailscale_probe";
+  })
+  # input_icl: the final drop
+  (case "far site to router SSH" {
+    from = "far";
+    to = "router";
+    src = f.far.lo6;
+    dst = f.routerLo.addr6;
+    tcp = 22;
+    drop = "icl_input_drop";
+  })
+  # forward: "tailscale endpoint discovery over the circuit"
+  (case "far site Tailscale probe to a LAN host" {
+    from = "far";
+    to = s.interface;
+    dst = s.ula;
+    udp = 41641;
+    sport = 41641;
+    drop = "icl_tailscale_probe";
+  })
+  # forward: "site transit between circuits"
+  (case "site transit between circuits v4" {
+    from = "far2";
+    to = "far";
+    dst = f.far.host4;
+    tcp = 22;
+    accept = "site transit between circuits";
+  })
+  (case "site transit between circuits v6" {
+    from = "far2";
+    to = "far";
+    dst = f.far.host6;
+    tcp = 22;
+    accept = "site transit between circuits";
+  })
+  # forward: "dn42 transit between circuits"
+  (case "dn42 transit between circuits v4" {
+    from = "far2";
+    to = "far";
+    src = f.far2.dn42v4;
+    dst = f.far.dn42v4;
+    tcp = 179;
+    accept = "dn42 transit between circuits";
+  })
+  (case "dn42 transit between circuits v6" {
+    from = "far2";
+    to = "far";
+    src = f.far2.dn42v6;
+    dst = f.far.dn42v6;
+    tcp = 179;
+    accept = "dn42 transit between circuits";
   })
   # forward: "interconnect site out"
   (case "trusted to far site" {
@@ -937,6 +1349,14 @@ assert lib.assertMsg
     dst = f.inv.anycast6.dns;
     udp = 53;
     accept = "remote access anycast DNS";
+  })
+  # input: the final reject
+  (case "remote device to router SSH" {
+    from = "remote";
+    to = "router";
+    dst = f.remote.router6;
+    tcp = 22;
+    reject = "input_reject";
   })
 
   # Anything else.

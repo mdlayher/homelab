@@ -114,6 +114,16 @@ router() {
 	addr router lo "$@"
 }
 
+# Blackholes each prefix in the router's table.
+blackhole() {
+	local p family
+	for p in "$@"; do
+		family=-4
+		[[ $p == *:* ]] && family=-6
+		in_ns router ip "$family" route add blackhole "$p"
+	done
+}
+
 # Sets interface $2 in namespace $1 to generate no link-local address when
 # one is among the addresses that follow, so that one is the only one it
 # answers at.
@@ -154,6 +164,9 @@ segment() {
 	link "$ifname" "$ifname" "$v4.1/24 $ula::1/64 $lla/64" "$v4.10/24 $ula::10/64"
 	route "$ifname" "$v4.1" eth0 default4
 	route "$ifname" "$lla" eth0 default6
+	# Pin the router's ULA too: a solicitation for it carries the probe's
+	# forged source, is dropped, and retransmits into later cases.
+	in_ns "$ifname" ip neigh replace "$ula::1" lladdr "${ROUTER_MAC[$ifname]}" dev eth0 nud permanent
 }
 
 # Sets the MAC of namespace $1's link to $2.

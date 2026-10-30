@@ -185,17 +185,20 @@ let
     foreign6 = "2001:db8:0:9::9";
   };
 
-  # An external dn42 peer on its tunnel, holding dn42 space that is not
-  # ours, reached over link-local next hops as the tunnels are.
-  peer = {
-    ifname = "dn42e-test";
+  # External dn42 peers on their tunnels, each holding dn42 space that is
+  # not ours, reached over link-local next hops as the tunnels are. The
+  # second is where transit between peers goes.
+  mkPeer = n: lla: {
+    ifname = "dn42e-test${toString n}";
     routerLla = dn42.lla;
-    lla = (lib.head (lib.attrValues dn42.peers)).lla;
-    ipv4 = "172.20.50.1";
-    ipv6 = "fd42:4242:50::1";
-    prefix4 = "172.20.50.0/24";
-    prefix6 = "fd42:4242:50::/48";
+    inherit lla;
+    ipv4 = "172.20.5${toString n}.1";
+    ipv6 = "fd42:4242:5${toString n}::1";
+    prefix4 = "172.20.5${toString n}.0/24";
+    prefix6 = "fd42:4242:5${toString n}::/48";
   };
+  peer = mkPeer 0 (lib.head (lib.attrValues dn42.peers)).lla;
+  peer2 = mkPeer 1 "fe80::7e57:2";
 
   # One of our own dn42 hosts on the first internal VLAN.
   dn42Vlan = lib.head (lib.attrValues dn42.vlans);
@@ -207,27 +210,73 @@ let
     ipv6 = dn42Vlan.neighbor;
   };
 
-  # The first edge's site across a circuit: its loopbacks, our dn42
-  # loopback there, and a host in the site's prefix, on a link addressed
-  # from the circuit prefixes the way the module numbers a pair of sites.
-  edgeName = lib.head inv.roles.edge;
+  # An edge's site across a circuit: its loopbacks, our dn42 loopback
+  # there, and a host in the site's prefix, on a link addressed from the
+  # circuit prefixes the way the module numbers a pair of sites. One per
+  # edge; the second is where transit between circuits goes.
   routerSite = inv.sites.${router.homelab.site};
-  farSite = lib.findFirst (
-    s: s.loopbacks ? ${edgeName}
-  ) (throw "router-firewall: no site holds ${edgeName}") (lib.attrValues inv.sites);
-  pair = "${toString routerSite.index}${toString farSite.index}";
-  far = {
-    ifname = "icl-test0";
-    router6 = "${lib.removeSuffix "00::/56" inv.circuitPrefix6}${pair}::2";
-    peer6 = "${lib.removeSuffix "00::/56" inv.circuitPrefix6}${pair}::3";
-    router4 = "${lib.removeSuffix "0.0/16" inv.circuitPrefix4}${pair}.2";
-    peer4 = "${lib.removeSuffix "0.0/16" inv.circuitPrefix4}${pair}.3";
-    lo6 = farSite.loopbacks.${edgeName}.addr6;
-    lo4 = farSite.loopbacks.${edgeName}.addr4;
-    dn42v6 = inv.dn42.loopbacks.${edgeName}.addr6;
-    dn42v4 = inv.dn42.loopbacks.${edgeName}.addr4;
-    host6 = "${lib.removeSuffix "::/56" farSite.prefix6}::10";
-    host4 = ipv4Plus (lib.head (lib.splitString "/" farSite.prefix4)) 10;
+  mkFar =
+    n: edgeName:
+    let
+      farSite = lib.findFirst (
+        s: s.loopbacks ? ${edgeName}
+      ) (throw "router-firewall: no site holds ${edgeName}") (lib.attrValues inv.sites);
+      pair = "${toString routerSite.index}${toString farSite.index}";
+    in
+    {
+      ns = "far${lib.optionalString (n > 0) (toString (n + 1))}";
+      ifname = "icl-test${toString n}";
+      site = farSite;
+      router6 = "${lib.removeSuffix "00::/56" inv.circuitPrefix6}${pair}::2";
+      peer6 = "${lib.removeSuffix "00::/56" inv.circuitPrefix6}${pair}::3";
+      router4 = "${lib.removeSuffix "0.0/16" inv.circuitPrefix4}${pair}.2";
+      peer4 = "${lib.removeSuffix "0.0/16" inv.circuitPrefix4}${pair}.3";
+      lo6 = farSite.loopbacks.${edgeName}.addr6;
+      lo4 = farSite.loopbacks.${edgeName}.addr4;
+      dn42v6 = inv.dn42.loopbacks.${edgeName}.addr6;
+      dn42v4 = inv.dn42.loopbacks.${edgeName}.addr4;
+      host6 = "${lib.removeSuffix "::/56" farSite.prefix6}::10";
+      host4 = ipv4Plus (lib.head (lib.splitString "/" farSite.prefix4)) 10;
+    };
+  fars = lib.imap0 mkFar inv.roles.edge;
+  far = lib.head fars;
+  far2 =
+    assert lib.assertMsg (
+      lib.length fars > 1
+    ) "router-firewall: transit between circuits needs a second edge in the inventory";
+    lib.elemAt fars 1;
+  farHeld = far: [
+    far.peer6
+    far.peer4
+    far.lo6
+    far.lo4
+    far.dn42v6
+    far.dn42v4
+    far.host6
+    far.host4
+  ];
+
+  # The router's blackhole routes (see modules/interconnect.nix) and an
+  # address inside the first.
+  blackholes = map (r: r.Destination) (
+    lib.filter (r: (r.Type or null) == "blackhole") router.systemd.network.networks."5-lo".routes
+  );
+  blackholed =
+    assert lib.assertMsg (blackholes != [ ]) "router-firewall: the router holds no blackhole route";
+    "${lib.head (lib.splitString "/" (lib.head blackholes))}1";
+
+  # Ports the rules open, from the configuration listening on them. The
+  # peer relay port is nftables.nix's own, like the tailscaled port the
+  # cases name.
+  ports = {
+    relay = 41462;
+    bfd = 3784;
+    peerfinder = dn42.peerfinder.port;
+    remoteAccess = router.homelab.remoteAccess.port;
+    dn42Peer = (lib.head (lib.attrValues dn42.peers)).port;
+    carriers = lib.filter (p: p != null) (
+      lib.mapAttrsToList (_: link: link.port) router.homelab.interconnect.links
+    );
   };
 
   # The first remote access device and the router's end of its tunnel.
@@ -270,15 +319,21 @@ let
       stranger
       net
       peer
+      peer2
       dn42Host
       far
+      far2
       remote
+      blackholed
+      ports
       ;
     dn42 = {
       inherit (dn42) addr4 addr6;
+      vlan6 = dn42Vlan.addr6;
       loopback4 = inv.dn42.loopbacks.${routerName}.addr4;
       loopback6 = inv.dn42.loopbacks.${routerName}.addr6;
     };
+    routerLo = inv.loopbacks.${routerName};
     # An address in our dn42 allocation that no namespace holds, for a
     # peer to forge.
     ourDn42 = {
@@ -311,14 +366,25 @@ let
           v4 = peer.ipv4;
           v6 = peer.ipv6;
         };
+        dn42peer2 = {
+          v4 = peer2.ipv4;
+          v6 = peer2.ipv6;
+        };
         dn42host = {
           v4 = dn42Host.ipv4;
           v6 = dn42Host.ipv6;
         };
-        far = {
-          v4 = far.host4;
-          v6 = far.host6;
-        };
+      }
+      // lib.listToAttrs (
+        map (
+          far:
+          lib.nameValuePair far.ns {
+            v4 = far.host4;
+            v6 = far.host6;
+          }
+        ) fars
+      )
+      // {
         unclassified = {
           v4 = net.unclassified.peer4;
           v6 = net.unclassified.peer6;
@@ -349,15 +415,9 @@ let
         peer.ipv4
         peer.ipv6
       ];
-      far = [
-        far.peer6
-        far.peer4
-        far.lo6
-        far.lo4
-        far.dn42v6
-        far.dn42v4
-        far.host6
-        far.host4
+      dn42peer2 = [
+        peer2.ipv4
+        peer2.ipv6
       ];
       internet = [
         net.wan0.peer4
@@ -373,6 +433,7 @@ let
       d.ipv4
       d.ula
     ]) onlink
+    // lib.listToAttrs (map (far: lib.nameValuePair far.ns (farHeld far)) fars)
     // {
       dn42host = [
         dn42Host.ipv4
@@ -408,6 +469,7 @@ let
       }";
     ''
       router ${sh routerLo}
+      blackhole ${sh blackholes}
 
       link wan0 internet ${
         sh [
@@ -463,14 +525,23 @@ let
       }
       route remote ${remote.router6} eth0 default6
 
-      link ${peer.ifname} dn42peer ${
-        sh [
-          "${peer.routerLla}/64"
-          "${peer.lla}/64 ${peer.ipv4}/32 ${peer.ipv6}/128"
-        ]
-      }
-      route router ${peer.lla} ${peer.ifname} ${peer.prefix4} ${peer.prefix6}
-      route dn42peer ${peer.routerLla} eth0 default4 default6
+      ${lib.concatStrings (
+        lib.mapAttrsToList
+          (ns: peer: ''
+            link ${peer.ifname} ${ns} ${
+              sh [
+                "${peer.routerLla}/64"
+                "${peer.lla}/64 ${peer.ipv4}/32 ${peer.ipv6}/128"
+              ]
+            }
+            route router ${peer.lla} ${peer.ifname} ${peer.prefix4} ${peer.prefix6}
+            route ${ns} ${peer.routerLla} eth0 default4 default6
+          '')
+          {
+            dn42peer = peer;
+            dn42peer2 = peer2;
+          }
+      )}
 
       link ${dn42Host.ifname} dn42host ${
         sh [
@@ -481,16 +552,18 @@ let
       route dn42host ${dn42.addr4} eth0 default4
       route dn42host ${dn42Vlan.addr6} eth0 default6
 
-      link ${far.ifname} far ${
-        sh [
-          "${far.router6}/127 ${far.router4}/31"
-          "${far.peer6}/127 ${far.peer4}/31 ${far.lo6}/128 ${far.lo4}/32 ${far.dn42v6}/128 ${far.dn42v4}/32 ${far.host6}/128 ${far.host4}/32"
-        ]
-      }
-      route router ${far.peer6} ${far.ifname} ${farSite.prefix6} ${far.lo6}/128 ${far.dn42v6}/128
-      route router ${far.peer4} ${far.ifname} ${farSite.prefix4} ${far.lo4}/32 ${far.dn42v4}/32
-      route far ${far.router6} eth0 default6
-      route far ${far.router4} eth0 default4
+      ${lib.concatMapStrings (far: ''
+        link ${far.ifname} ${far.ns} ${
+          sh [
+            "${far.router6}/127 ${far.router4}/31"
+            "${far.peer6}/127 ${far.peer4}/31 ${far.lo6}/128 ${far.lo4}/32 ${far.dn42v6}/128 ${far.dn42v4}/32 ${far.host6}/128 ${far.host4}/32"
+          ]
+        }
+        route router ${far.peer6} ${far.ifname} ${far.site.prefix6} ${far.lo6}/128 ${far.dn42v6}/128
+        route router ${far.peer4} ${far.ifname} ${far.site.prefix4} ${far.lo4}/32 ${far.dn42v4}/32
+        route ${far.ns} ${far.router6} eth0 default6
+        route ${far.ns} ${far.router4} eth0 default4
+      '') fars}
 
       link ${net.unclassified.ifname} unclassified ${
         sh [
