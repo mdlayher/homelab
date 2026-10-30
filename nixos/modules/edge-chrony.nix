@@ -35,7 +35,13 @@
 
   # Scraped without change on the server, which discovers each enabled
   # exporter from this configuration (see nixos/servnerr-4/prometheus.nix).
-  services.prometheus.exporters.chrony.enable = true;
+  services.prometheus.exporters.chrony = {
+    enable = true;
+    # No reverse lookups of the sources on each scrape: a pool server
+    # whose reverse zone fails leaves resolved retrying the lookup in a
+    # loop, and the address already identifies the source.
+    extraFlags = [ "--no-collector.dns-lookups" ];
+  };
 
   # The command socket exists only once chronyd is up, and it is
   # Type=notify. Without this the exporter's Restart=on-failure can hit its
