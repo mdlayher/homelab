@@ -17,8 +17,10 @@ let
   # misses: a template binary sensor turns each plug's power reading into
   # running or not, and an automation counts every start into a counter,
   # which the prometheus integration exports as homeassistant_counter_value.
-  # The key is the plug's entity stem; event names the counter. delayOff
-  # holds the sensor on across the pauses within one event.
+  # The key is the plug's entity stem; event names the counter. threshold
+  # is the power in watts above which the plug counts as running, for a
+  # load whose motor draws less than the default. delayOff holds the
+  # sensor on across the pauses within one event.
   pulses = {
     kitchen_coffee_grinder = {
       name = "Kitchen Coffee Grinder";
@@ -28,11 +30,13 @@ let
       name = "Storage Sump Pump";
       event = "Runs";
     };
-    # A regeneration is a series of backwash, brine and rinse stages with
-    # the motor idle between them.
+    # A regeneration is a series of backwash, brine and rinse stages: the
+    # valve motor draws a few watts for seconds to advance each stage and
+    # the controller about a watt between them.
     storage_water_softener = {
       name = "Storage Water Softener";
       event = "Regenerations";
+      threshold = 2;
       delayOff = "00:10:00";
     };
   };
@@ -51,7 +55,7 @@ let
       ''
         - name: "${p.name} Running"
           unique_id: ${stem}_running
-          state: "{{ states('sensor.${stem}_plug_power') | float(0) > 5 }}"
+          state: "{{ states('sensor.${stem}_plug_power') | float(0) > ${toString (p.threshold or 5)} }}"
       ''
       + lib.optionalString (p ? delayOff) "  delay_off: \"${p.delayOff}\"\n"
     ) pulses
