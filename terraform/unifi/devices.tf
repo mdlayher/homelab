@@ -57,7 +57,7 @@ locals {
     ap_living_room  = { ng = 1, na = 36 }
     ap_basement     = { ng = 6, na = 44 }
     ap_laundry_room = { ng = 11, na = 149 }
-    ap_movie_room   = { ng = 11, na = 157 }
+    ap_movie_room   = { ng = 6, na = 157 }
   }
   radios = {
     for name, ch in local.ap_channels : name => [
