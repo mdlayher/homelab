@@ -122,26 +122,6 @@ in
       '') (lib.attrValues config.homelab.interconnect.links);
   };
 
-  # Internal names resolve at the anycast resolver address, which is this
-  # machine's own CoreDNS while it is serving and another site's while it is
-  # not (see edge-coredns.nix). Routing domains rather than a search list:
-  # an edge writes every name out in full, and nothing here should complete
-  # a bare one. Routing domains rather than a plain DNS= for a second reason
-  # -- eth0's DHCP servers also claim ".", and two unqualified claims on the
-  # root make scope selection a coin toss.
-  #
-  # Everything else stays with the VPC resolver, so the nightly upgrade's
-  # names do not depend on a resolver of ours being up.
-  services.resolved.settings.Resolve = {
-    DNS = [ inventory.anycast6.dns ];
-    Domains = map (site: "~${site.domain}") (lib.attrValues inventory.sites) ++ [
-      "~svc.${inventory.zone}"
-      # dn42 as a whole: the resolver answers for it through the router, and
-      # the VPC's would not.
-      "~dn42"
-    ];
-  };
-
   # This site owns a /56 of the ULA and a /16 of the IPv4 space: a blanket
   # unreachable route for each, which the IGP originates on the site's
   # behalf (see the site's interconnect.nix) and which any more specific

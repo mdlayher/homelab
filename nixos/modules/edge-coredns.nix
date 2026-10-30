@@ -19,8 +19,8 @@
 #
 # Recursion goes to the same clearnet resolvers azo uses rather than to the
 # VPC's, for the same reason: an answer must not depend on which node took
-# the query. This machine's own clearnet names still go to the VPC resolver;
-# resolved routes only the internal domains here (see configuration.nix).
+# the query. This machine's own clearnet names go to the VPC resolver;
+# resolved routes only the zones below here (see the site link at the end).
 
 let
   inventory = config.homelab.inventory;
@@ -59,7 +59,7 @@ let
   # Everything the router answers and the clearnet does not. The reverse
   # zones are the whole ULA and the RFC 1918 space including dn42's, which
   # the router splits between its own inventory and dn42's resolvers.
-  zones = lib.concatStringsSep " " (
+  zoneList =
     lib.mapAttrsToList (_: site: site.domain) inventory.sites
     ++ [
       "svc.${inventory.zone}"
@@ -67,8 +67,8 @@ let
       "d.f.ip6.arpa"
       "10.in-addr.arpa"
     ]
-    ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 31)
-  );
+    ++ map (n: "${toString n}.172.in-addr.arpa") (lib.range 16 31);
+  zones = lib.concatStringsSep " " zoneList;
 in
 {
   homelab.anycast.services.dns.unit = "coredns.service";
@@ -113,5 +113,18 @@ in
         forward . ${resolvers}
       }
     '';
+  };
+
+  # resolved sends the zones above here and nothing else. They ride the site
+  # link as routing domains with the link kept off the default route: a
+  # global DNS= server is always a default route in resolved, so declared
+  # that way this resolver would also take the machine's own clearnet
+  # lookups, in parallel with the VPC's resolver and whichever answers
+  # first. Routing domains rather than a search list: an edge writes every
+  # name out in full, and nothing here should complete a bare one.
+  systemd.network.networks."50-site" = {
+    dns = [ inventory.anycast6.dns ];
+    domains = map (z: "~${z}") zoneList;
+    networkConfig.DNSDefaultRoute = false;
   };
 }
