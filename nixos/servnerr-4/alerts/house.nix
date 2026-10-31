@@ -99,6 +99,28 @@ in
       } > 85";
       annotations.summary = "{{ $labels.friendly_name }} ({{ $labels.area }}) has averaged {{ $value | printf \"%.0f\" }} °F over the past hour.";
     }
+    # A leak sensor on the floor has water across its contacts. The export
+    # carries no device class, so water sensors are matched by what their
+    # entity says they watch.
+    {
+      alert = "HouseWaterDetected";
+      expr = "homeassistant_binary_sensor_state{entity=~${raw "binary_sensor\\..*_water_sensor"}} == 1";
+      annotations.summary = "{{ $labels.friendly_name }} is wet.";
+    }
+    # The sump pit's sensor sits above the primary pump's float, so water
+    # reaching it means the primary has not kept up: a failed pump, a stuck
+    # float, or inflow beyond it, with the battery backup carrying the pit.
+    # A run lasts seconds and the plug's power falls between scrapes; the
+    # counter the pump's runs automation keeps is the record of a run.
+    {
+      alert = "SumpPumpNotKeepingUp";
+      expr = ''
+        homeassistant_binary_sensor_state{entity="binary_sensor.storage_sump_pump_water_sensor"} == 1
+          and on () delta(homeassistant_counter_value{entity="counter.storage_sump_pump_runs"}[10m]) == 0
+      '';
+      for = "5m";
+      annotations.summary = "Water has reached the sump pit sensor and the primary pump has not run in ten minutes.";
+    }
     # A unit that keeps running without closing on its target: a struggling
     # furnace or compressor, a clogged filter, a stuck damper.
     {
