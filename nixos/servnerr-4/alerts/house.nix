@@ -30,7 +30,14 @@ let
   # humidity threshold. HouseHumidityVeryHigh still covers them.
   sunlit = [ "sunroom" ];
 
-  roomsExcept = areas: ''homeassistant_entity_info{area!="", area!~${raw "(${anyOf areas})"}}'';
+  # Each monitored sensor with its room, outside the rooms named. A
+  # sensor in an area on the outside floor measures the weather, such as
+  # a mini split's condenser thermistor, and no indoor rule applies to it;
+  # the export's area info carries each area's floor. The result keeps the
+  # entity's labels and gains floor.
+  roomsExcept = areas: ''
+    (homeassistant_entity_info{area!="", area!~${raw "(${anyOf areas})"}}
+      * on (area) group_left(floor) homeassistant_area_info{floor!="outside"})'';
   # A room's humidity averaged over the past hours, from sensors that have
   # reported for at least that long. A sensor re-added to Home Assistant
   # starts a new series, and its first minute is no average of anything.
@@ -40,12 +47,11 @@ let
     + " and on (entity) present_over_time(homeassistant_sensor_humidity_percent[1h] offset ${toString (hours - 1)}h))";
 
   # Room temperature in °F. Every Zigbee device also reports the
-  # temperature of its own die as *_device_temperature, and a mini split
-  # reports the air at its outdoor unit as *_outdoor_temperature; neither
-  # is the room's.
+  # temperature of its own die as *_device_temperature, which is not the
+  # room's.
   roomTemperature =
     window:
-    "(avg_over_time(homeassistant_sensor_temperature_celsius{entity!~${raw ".*_(device|outdoor)_temperature"}}[${window}]) * 9 / 5 + 32)";
+    "(avg_over_time(homeassistant_sensor_temperature_celsius{entity!~${raw ".*_device_temperature"}}[${window}]) * 9 / 5 + 32)";
 
   # How far a unit's current temperature sits from the target it is
   # working toward, in °F: the low end of a range for a thermostat in
