@@ -65,6 +65,15 @@ let
             job  = "windows-eventlog",
           }
         }
+
+        // Windows logs its last shutdown records at the next boot, behind
+        // the boot's own. Loki refuses entries over an hour behind a
+        // stream's newest, failing the whole batch, so drop them here.
+        // Outage retries wait in loki.write, past this stage.
+        stage.drop {
+          older_than          = "1h"
+          drop_counter_reason = "too_far_behind"
+        }
       }
     ''
     + lib.concatStrings (
