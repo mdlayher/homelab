@@ -53,6 +53,29 @@
       for = "5m";
       annotations.summary = "NVMe drive {{ $labels.chip }} on {{ $labels.instance }} is at {{ $value }} °C, at or above its warning threshold.";
     }
+    # The weekly check of the off-box backup (nixos/servnerr-4/rclone-backup.nix)
+    # runs after a complete copy, so any mismatch is a file the remote
+    # does not hold intact. The value stands until the next check.
+    {
+      alert = "RcloneBackupCheckMismatch";
+      expr = "homelab_rclone_backup_check_mismatches > 0";
+      annotations.summary = "The off-box backup check on {{ $labels.instance }} found {{ $value }} files of kind {{ $labels.kind }} that do not match the remote.";
+    }
+    # The check runs weekly, so a mismatch count older than that is stale.
+    # Until the first check the metric is absent.
+    {
+      alert = "RcloneBackupCheckStale";
+      expr = "time() - homelab_rclone_backup_check_timestamp_seconds > 8 * 24 * 60 * 60";
+      annotations.summary = "The off-box backup on {{ $labels.instance }} was last checked against the remote {{ $value | humanizeDuration }} ago.";
+    }
+    # A run stopped by Drive's daily upload cap does not count as a
+    # success. Until the first success the metric is absent, and
+    # SystemdUnitFailed reports a run that fails outright.
+    {
+      alert = "RcloneBackupStale";
+      expr = "time() - homelab_rclone_backup_last_success_timestamp_seconds > 3 * 24 * 60 * 60";
+      annotations.summary = "The off-box backup on {{ $labels.instance }} last completed {{ $value | humanizeDuration }} ago.";
+    }
     {
       alert = "SMARTCriticalWarning";
       expr = withDrive "smartctl_device_critical_warning > 0";

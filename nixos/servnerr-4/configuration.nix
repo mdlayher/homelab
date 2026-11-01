@@ -24,6 +24,7 @@
     ./nix-cache.nix
     ./loki.nix
     ./prometheus.nix
+    ./rclone-backup.nix
     ./tailnet-audit.nix
     ./unifi.nix
     ./zigbee-snapshot.nix
