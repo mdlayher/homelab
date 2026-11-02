@@ -38,20 +38,23 @@ let
   roomsExcept = areas: ''
     (homeassistant_entity_info{area!="", area!~${raw "(${anyOf areas})"}}
       * on (area) group_left(floor) homeassistant_area_info{floor!="outside"})'';
+  # The sensors that read a room's air: the climate sensor named for its
+  # area, and a thermostat's own reading. Every other temperature or
+  # humidity series is a device's die or a probe inside an appliance.
+  roomSensor = raw ".*_(climate_sensor|thermostat)_.*";
+
   # A room's humidity averaged over the past hours, from sensors that have
   # reported for at least that long. A sensor re-added to Home Assistant
   # starts a new series, and its first minute is no average of anything.
   humidity =
     hours:
-    "(avg_over_time(homeassistant_sensor_humidity_percent[${toString hours}h])"
-    + " and on (entity) present_over_time(homeassistant_sensor_humidity_percent[1h] offset ${toString (hours - 1)}h))";
+    "(avg_over_time(homeassistant_sensor_humidity_percent{entity=~${roomSensor}}[${toString hours}h])"
+    + " and on (entity) present_over_time(homeassistant_sensor_humidity_percent{entity=~${roomSensor}}[1h] offset ${toString (hours - 1)}h))";
 
-  # Room temperature in °F. Every Zigbee device also reports the
-  # temperature of its own die as *_device_temperature, which is not the
-  # room's.
+  # Room temperature in °F.
   roomTemperature =
     window:
-    "(avg_over_time(homeassistant_sensor_temperature_celsius{entity!~${raw ".*_device_temperature"}}[${window}]) * 9 / 5 + 32)";
+    "(avg_over_time(homeassistant_sensor_temperature_celsius{entity=~${roomSensor}}[${window}]) * 9 / 5 + 32)";
 
   # How far a unit's current temperature sits from the target it is
   # working toward, in °F: the low end of a range for a thermostat in
