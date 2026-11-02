@@ -228,6 +228,17 @@ let
         hash = "sha256-bwMbjbKZKBlKskJdgDjpemTCV4TLodGNYTEaLfnG3p4=";
       }
     }/custom_components/greenbutton";
+    # Versatile Thermostat: a virtual thermostat over the basement mini
+    # split heads, regulating on the room's Zigbee sensor instead of each
+    # head's intake. The thermostat itself is configured in the UI.
+    versatile_thermostat = "${
+      pkgs.fetchFromGitHub {
+        owner = "jmcollin78";
+        repo = "versatile_thermostat";
+        tag = "10.6.3";
+        hash = "sha256-aiYlnG8H7UM5z4l0ehOB6xF6RaVkx3JTCWsyuDLaCtw=";
+      }
+    }/custom_components/versatile_thermostat";
   };
 
   # The files under /config this repository manages, and what applying a
