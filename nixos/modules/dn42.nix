@@ -155,12 +155,8 @@ let
       networkConfig = {
         LinkLocalAddressing = "no";
         IPv6AcceptRA = false;
-        # dn42 routing is asymmetric and the tunnels carry IPv4 with IPv6
-        # next hops, so the kernel's default loose rp_filter (from systemd's
-        # 50-default.conf sysctls) would drop replies arriving over a
-        # different peer than the one the FIB prefers. The wiki says to
-        # disable it (https://dn42.dev/howto/wireguard); doing so per tunnel
-        # leaves the LANs' spoof check in nftables.nix untouched.
+        # The tunnels hold no IPv4 address, so any nonzero rp_filter drops
+        # asymmetric inbound traffic. Also set via boot.kernel.sysctl below.
         IPv4ReversePathFilter = "no";
       };
     }
@@ -640,10 +636,14 @@ in
           message = "homelab.dn42.ibgp needs nixos/modules/interconnect.nix imported";
         }
         {
+          # A dot would split the interface's sysctl key.
           assertion = lib.all (
-            peer: lib.hasPrefix "dn42e-" peer.interface && lib.stringLength peer.interface <= 15
+            peer:
+            lib.hasPrefix "dn42e-" peer.interface
+            && lib.stringLength peer.interface <= 15
+            && !lib.hasInfix "." peer.interface
           ) (lib.attrValues cfg.peers);
-          message = "dn42 peer interfaces must be dn42e-<name> and at most 15 characters";
+          message = "dn42 peer interfaces must be dn42e-<name>, at most 15 characters, with no dot";
         }
         {
           assertion = lib.unique ports == ports;
@@ -678,6 +678,12 @@ in
       owner = "systemd-network";
       restartUnits = [ "systemd-networkd.service" ];
     };
+
+    # udev's sysctl pass on a new tunnel can overwrite networkd's setting
+    # with systemd's rp_filter glob; an explicit key is exempt from the glob.
+    boot.kernel.sysctl = lib.mapAttrs' (
+      _: peer: lib.nameValuePair "net.ipv4.conf.${peer.interface}.rp_filter" 0
+    ) cfg.peers;
 
     systemd.network = {
       # A dummy interface holds the router's own dn42 addresses: stable for
