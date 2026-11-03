@@ -166,21 +166,24 @@ resource "unifi_device" "switch_core" {
 
 # The basement access point. Its trunk is core port 20, above.
 resource "unifi_device" "ap_basement" {
-  name        = "ap-basement"
-  radio_table = local.radios.ap_basement
+  name           = "ap-basement"
+  config_network = local.static["ap-basement"]
+  radio_table    = local.radios.ap_basement
 }
 
 # The living room access point, on the living room switch's port 8,
 # which powers it.
 resource "unifi_device" "ap_living_room" {
-  name        = "ap-living-room"
-  radio_table = local.radios.ap_living_room
+  name           = "ap-living-room"
+  config_network = local.static["ap-living-room"]
+  radio_table    = local.radios.ap_living_room
 }
 
 # The laundry room access point. Its trunk is core port 21, above.
 resource "unifi_device" "ap_laundry_room" {
-  name        = "ap-laundry-room"
-  radio_table = local.radios.ap_laundry_room
+  name           = "ap-laundry-room"
+  config_network = local.static["ap-laundry-room"]
+  radio_table    = local.radios.ap_laundry_room
 }
 
 # The movie room access point, on the office switch's port 8, above.
@@ -194,7 +197,8 @@ resource "unifi_device" "ap_movie_room" {
 # Both ends of the run are trunks, so a port here can carry any network.
 # Disabled ports as on the core, above.
 resource "unifi_device" "switch_office" {
-  name = "switch-office"
+  name           = "switch-office"
+  config_network = local.static["switch-office"]
 
   port_override {
     index           = 9
@@ -238,7 +242,8 @@ resource "unifi_device" "switch_office" {
 # so a port here can carry any network. Disabled ports as on the core,
 # above.
 resource "unifi_device" "switch_living_room" {
-  name = "switch-living-room"
+  name           = "switch-living-room"
+  config_network = local.static["switch-living-room"]
 
   port_override {
     index           = 9
