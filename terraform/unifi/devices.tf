@@ -22,6 +22,10 @@ locals {
     5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
     6 = { name = "ups01", host = "ups01", network = "mgmt0" }
     7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
+    # TODO: the second PDU, once it is racked and its address is in the
+    # inventory.
+    # 8 = { name = "pdu02", host = "pdu02", network = "mgmt0" }
+    9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
     # The router's LAN port, as its networking.nix expects it: mgmt0
     # untagged with every VLAN tagged.
     25 = { name = "router", host = "routnerr-3", network = "mgmt0", trunk = true }
@@ -69,7 +73,7 @@ locals {
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
-    core        = concat(range(8, 19), [23, 24, 26, 28])
+    core        = concat([8], range(10, 19), [23, 24, 26, 28])
     office      = concat(range(4, 8), [10])
     living_room = concat(range(6, 8), [10])
   }
