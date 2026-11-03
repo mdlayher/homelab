@@ -41,13 +41,14 @@ let
   # for host-to-host traffic it never sees. The router's MAC and admitMac
   # hosts (the KVM) are admitted in plain text.
   mgmt = inventory.interfaces.mgmt0;
-  routerLinks =
-    inputs.self.nixosConfigurations.${lib.head inventory.roles.router}.config.systemd.network.links;
+  # The router's management LAN interface is a bond carrying its MAC.
+  routerNetdevs =
+    inputs.self.nixosConfigurations.${lib.head inventory.roles.router}.config.systemd.network.netdevs;
   routerMgmtMac =
     (lib.findFirst (
-      link: link.linkConfig.Name or null == mgmt.name
-    ) (throw "the router has no ${mgmt.name} link") (lib.attrValues routerLinks))
-    .matchConfig.MACAddress;
+      netdev: netdev.netdevConfig.Name or null == mgmt.name
+    ) (throw "the router has no ${mgmt.name} netdev") (lib.attrValues routerNetdevs))
+    .netdevConfig.MACAddress;
   mgmtAdmit = [ routerMgmtMac ] ++ lib.filter (mac: mac != null) (map (h: h.admitMac) mgmt.hosts);
   mgmtEnforce = config.homelab.mgmtLockdown.enforce;
 

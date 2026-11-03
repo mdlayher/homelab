@@ -5,17 +5,21 @@
 # its settings itself; a port with nothing cabled to it takes the disabled
 # profile.
 
-# The rack's core switch. Devices in the rack fill the copper ports from
-# port 1 up; runs to the rest of the house and the uplinks to other
-# switches fill them from port 22 down, so the two groups meet in the
-# free middle. The SFP+ cages hold the router and the server.
+# The rack's core switch. Devices in the rack fill the 2.5 Gbit copper
+# ports from port 1 up. The router's standby copper link takes the
+# highest of them, and runs to the rest of the house and the uplinks to
+# other switches fill the rest from below it, so the two groups meet in
+# the free middle. Ports 23 and 24, the 10 Gbit copper ports, are
+# reserved for 10 Gbit copper links. The SFP+ cages hold the router and
+# the server.
 locals {
   # Core ports locked to one host each, by port index: the port's label,
   # the host whose hardware address alone may use it, and the network the
   # port carries untagged. A trunk carries every other network tagged as
   # well; any other port blocks tagged frames. A new host's port opens
   # without a lock, naming no host, so the host can link and take the
-  # lease the inventory records; the lock follows.
+  # lease the inventory records; the lock follows. A port also admits any
+  # extra_macs, for a host that sends from more than one address there.
   locked = {
     1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
     2 = { name = "server 1g", host = "servnerr-4", network = "mgmt0" }
@@ -26,6 +30,15 @@ locals {
     7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
     8 = { name = "pdu02", network = "mgmt0" }
     9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
+    # The router's standby copper port in its management LAN bond, set as
+    # its SFP+ port below. Its LLDP goes out from the copper port's own MAC.
+    22 = {
+      name       = "router standby"
+      host       = "routnerr-3"
+      network    = "mgmt0"
+      trunk      = true
+      extra_macs = ["f4:90:ea:00:c7:8e"]
+    }
     # The router's LAN port, as its networking.nix expects it: mgmt0
     # untagged with every VLAN tagged.
     25 = { name = "router", host = "routnerr-3", network = "mgmt0", trunk = true }
@@ -73,7 +86,7 @@ locals {
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
-    core        = concat(range(10, 19), [23, 24, 26, 28])
+    core        = concat(range(10, 18), [23, 24, 26, 28])
     office      = concat(range(4, 8), [10])
     living_room = concat(range(6, 8), [10])
   }
@@ -117,7 +130,7 @@ resource "unifi_device" "switch_core" {
       tagged_vlan_mgmt          = try(port_override.value.trunk, false) ? "auto" : "block_all"
       forward                   = try(port_override.value.trunk, false) ? "all" : "native"
       port_security_enabled     = can(port_override.value.host)
-      port_security_mac_address = can(port_override.value.host) ? [local.mac[port_override.value.host]] : null
+      port_security_mac_address = can(port_override.value.host) ? concat([local.mac[port_override.value.host]], try(port_override.value.extra_macs, [])) : null
     }
   }
 
@@ -150,7 +163,7 @@ resource "unifi_device" "switch_core" {
   }
 
   port_override {
-    index           = 22
+    index           = 18
     name            = "switch-office"
     port_profile_id = unifi_port_profile.trunk.id
   }
@@ -192,7 +205,7 @@ resource "unifi_device" "ap_movie_room" {
   radio_table    = local.radios.ap_movie_room
 }
 
-# The office switch, on the run from core port 22 into its 10GBASE-T port.
+# The office switch, on the run from core port 18 into its 10GBASE-T port.
 # Both ends of the run are trunks, so a port here can carry any network.
 # Disabled ports as on the core, above.
 resource "unifi_device" "switch_office" {

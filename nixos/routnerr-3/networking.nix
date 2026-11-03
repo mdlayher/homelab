@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inventory = config.homelab.inventory;
@@ -39,12 +44,12 @@ let
   ethLink = name: mac: {
     matchConfig = {
       Type = "ether";
-      MACAddress = mac;
+      PermanentMACAddress = mac;
     };
     linkConfig = {
       Name = name;
 
-      # Hardware tuning. Note that wan0/wan1/mgmt0 all happen to support a max
+      # Hardware tuning. Note that wan0/wan1/sfp0 all happen to support a max
       # of 4096 since the NixOS option won't allow "max".
       RxBufferSize = 4096;
       TxBufferSize = 4096;
@@ -143,6 +148,19 @@ in
     nat.enable = false;
     firewall.enable = false;
   };
+
+  # LLDP on the management LAN bond's slaves goes out from each slave's
+  # own MAC, so the core's port locks see a known address. lldpd's
+  # default derives a locally administered one, which no lock lists.
+  # The management address advertised is the management LAN ULA alone,
+  # never a WAN address.
+  services.lldpd.extraArgs = [
+    "-O"
+    "${pkgs.writeText "lldpd.conf" ''
+      configure system bond-slave-src-mac-type real
+      configure system ip management pattern ${inventory.interfaces.mgmt0.ula}
+    ''}"
+  ];
 
   # A carrier whose mark nothing steers falls back to the main table, which
   # is the exact failure this arrangement exists to prevent and is invisible
@@ -312,12 +330,50 @@ in
       routingPolicyRules = markRule wan1;
     };
 
-    # Physical management LAN: the trunk to the core switch, on the SFP+
-    # port. For physical LANs, we have to make sure to match on both Type
-    # and MACAddress since VLANs would share the same MAC.
-    links."15-mgmt0" = ethLink "mgmt0" "f4:90:ea:00:c7:90";
+    # The management LAN trunks to the core switch over an active-backup
+    # bond: the SFP+ port as primary, a copper port as standby. After a
+    # core switch reboot the SFP+ link once kept flapping and took every
+    # LAN with it until the router was power-cycled. Physical links match
+    # on Type and PermanentMACAddress: VLANs, the bond and its slaves all
+    # carry the bond's MAC.
+    #
+    # A slave without carrier is the case the bond exists for, so the
+    # bond alone decides whether the router is online.
+    links."15-sfp0" = ethLink "sfp0" "f4:90:ea:00:c7:90";
+    links."15-eth1" = ethLink "eth1" "f4:90:ea:00:c7:8e";
+    networks."15-sfp0" = {
+      matchConfig.Name = "sfp0";
+      networkConfig = {
+        Bond = "mgmt0";
+        PrimarySlave = true;
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+    networks."15-eth1" = {
+      matchConfig.Name = "eth1";
+      networkConfig.Bond = "mgmt0";
+      linkConfig.RequiredForOnline = "no";
+    };
+
+    # The bond carries the SFP+ port's MAC, which the core's port locks and
+    # the inventory expect. A returning link is not trusted until it has
+    # held for the up delay, so a flapping primary stays out of service;
+    # once it holds, the bond moves back to it.
+    netdevs."15-mgmt0" = {
+      netdevConfig = {
+        Name = "mgmt0";
+        Kind = "bond";
+        MACAddress = "f4:90:ea:00:c7:90";
+      };
+      bondConfig = {
+        Mode = "active-backup";
+        MIIMonitorSec = "100ms";
+        UpDelaySec = "30s";
+        PrimaryReselectPolicy = "always";
+      };
+    };
     networks."15-mgmt0" = lanNetwork inventory.interfaces.mgmt0 // {
-      # VLANs associated with this physical interface. dn42i-dev0 is the
+      # VLANs associated with this interface. dn42i-dev0 is the
       # internal dn42 VLAN; it is defined in dn42.nix with the rest of the
       # dn42 presence, since its addressing is registry space rather than
       # anything from the inventory.
@@ -342,8 +398,7 @@ in
       ];
     };
 
-    # Unused Ethernet links.
-    links."15-eth1" = ethLink "eth1" "f4:90:ea:00:c7:8e";
+    # Unused Ethernet link.
     links."15-eth2" = ethLink "eth2" "f4:90:ea:00:c7:8f";
 
     # Home VLAN.
