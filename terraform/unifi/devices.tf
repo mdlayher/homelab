@@ -14,8 +14,8 @@ locals {
   # the host whose hardware address alone may use it, and the network the
   # port carries untagged. A trunk carries every other network tagged as
   # well; any other port blocks tagged frames. A new host's port opens
-  # without a lock, so the host can link and take the lease the inventory
-  # records; the lock follows.
+  # without a lock, naming no host, so the host can link and take the
+  # lease the inventory records; the lock follows.
   locked = {
     1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
     2 = { name = "server 1g", host = "servnerr-4", network = "mgmt0" }
@@ -24,9 +24,7 @@ locals {
     5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
     6 = { name = "ups01", host = "ups01", network = "mgmt0" }
     7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
-    # TODO: the second PDU, once it is racked and its address is in the
-    # inventory.
-    # 8 = { name = "pdu02", host = "pdu02", network = "mgmt0" }
+    8 = { name = "pdu02", network = "mgmt0" }
     9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
     # The router's LAN port, as its networking.nix expects it: mgmt0
     # untagged with every VLAN tagged.
@@ -75,7 +73,7 @@ locals {
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
-    core        = concat([8], range(10, 19), [23, 24, 26, 28])
+    core        = concat(range(10, 19), [23, 24, 26, 28])
     office      = concat(range(4, 8), [10])
     living_room = concat(range(6, 8), [10])
   }
@@ -117,8 +115,8 @@ resource "unifi_device" "switch_core" {
       native_networkconf_id     = local.network_id[port_override.value.network]
       tagged_vlan_mgmt          = try(port_override.value.trunk, false) ? "auto" : "block_all"
       forward                   = try(port_override.value.trunk, false) ? "all" : "native"
-      port_security_enabled     = true
-      port_security_mac_address = [local.mac[port_override.value.host]]
+      port_security_enabled     = can(port_override.value.host)
+      port_security_mac_address = can(port_override.value.host) ? [local.mac[port_override.value.host]] : null
     }
   }
 
