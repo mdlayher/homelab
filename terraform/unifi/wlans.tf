@@ -59,13 +59,25 @@ resource "unifi_wlan" "guest" {
   user_group_id              = data.unifi_client_qos_rate.default.id
 }
 
-# The IoT SSIDs: WPA2 alongside WPA3, since most of the devices speak only
-# WPA2, with management frame protection optional for the same reason. A
-# WPA2 SSID cannot be offered on 6 GHz.
+# The IoT SSIDs, with management frame protection optional since most of
+# the devices speak only WPA2. wpa3 offers WPA3 alongside WPA2; the IoT
+# SSID is WPA2 alone because a transition-mode beacon stops some of its
+# devices joining at all. Both stay off 6 GHz, where the controller
+# refuses a WPA2 SSID.
 locals {
   iot_wlans = {
-    iot  = { name = "MDL IoT", network = "iot0", passphrase = var.wlan_iot_passphrase }
-    iot1 = { name = "MDL IoT1", network = "iot1", passphrase = var.wlan_iot1_passphrase }
+    iot = {
+      name       = "MDL IoT"
+      network    = "iot0"
+      passphrase = var.wlan_iot_passphrase
+      wpa3       = false
+    }
+    iot1 = {
+      name       = "MDL IoT1"
+      network    = "iot1"
+      passphrase = var.wlan_iot1_passphrase
+      wpa3       = true
+    }
   }
 }
 
@@ -75,12 +87,13 @@ resource "unifi_wlan" "iot" {
   name                       = each.value.name
   security                   = "wpapsk"
   passphrase                 = each.value.passphrase
-  wpa3_support               = true
-  wpa3_transition            = true
+  wpa3_support               = each.value.wpa3
+  wpa3_transition            = each.value.wpa3
   pmf_mode                   = "optional"
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
   bss_transition             = true
+  wlan_bands                 = ["2g", "5g"]
   network_id                 = unifi_network.vlan[each.value.network].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id
