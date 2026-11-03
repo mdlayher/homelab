@@ -80,6 +80,21 @@ locals {
     living_room = concat(range(6, 8), [10])
   }
 
+  # Each device's static management address, by host name: the address it
+  # holds today, which is the inventory's and its reservation on the
+  # router, so the device, the lease and the inventory agree. The device
+  # keeps it with the router down. The router is the gateway, and the
+  # resolver is the anycast address the router's DHCP server hands out.
+  static = {
+    for host, ip in local.ipv4 : host => {
+      type    = "static"
+      ip      = ip
+      netmask = cidrnetmask(var.mgmt0_gateway4)
+      gateway = split("/", var.mgmt0_gateway4)[0]
+      dns1    = local.dns4
+    }
+  }
+
   # Network name to controller id, for the locked ports.
   network_id = merge(
     { mgmt0 = unifi_network.mgmt0.id },
@@ -170,8 +185,9 @@ resource "unifi_device" "ap_laundry_room" {
 
 # The movie room access point, on the office switch's port 8, above.
 resource "unifi_device" "ap_movie_room" {
-  name        = "ap-movie-room"
-  radio_table = local.radios.ap_movie_room
+  name           = "ap-movie-room"
+  config_network = local.static["ap-movie-room"]
+  radio_table    = local.radios.ap_movie_room
 }
 
 # The office switch, on the run from core port 22 into its 10GBASE-T port.

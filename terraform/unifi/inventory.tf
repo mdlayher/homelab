@@ -23,4 +23,16 @@ locals {
     # VLAN on that link shares it.
     { routnerr-3 = "f4:90:ea:00:c7:90" },
   )
+
+  # Host name to IPv4 address, from the inventory's hosts, unmarked as the
+  # MACs are above.
+  ipv4 = nonsensitive({
+    for key, value in data.sops_file.inventory.data :
+    regex("^hosts\\.([^.]+)\\.ipv4$", key)[0] => value
+    if can(regex("^hosts\\.[^.]+\\.ipv4$", key))
+  })
+
+  # The anycast resolver's IPv4 address, read from the inventory's plain
+  # data (anycast4.dns) so it is written in one place.
+  dns4 = regex("anycast4 = \\{[^}]*dns = \"([0-9.]+)\";", file("${path.module}/../../nixos/inventory/default.nix"))[0]
 }
