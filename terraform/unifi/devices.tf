@@ -101,7 +101,8 @@ locals {
 }
 
 resource "unifi_device" "switch_core" {
-  name = "switch-core"
+  name           = "switch-core"
+  config_network = local.static["switch-core"]
 
   # A port with a profile takes every setting from it and the controller
   # discards the port's own, a MAC filter included, so a locked port
