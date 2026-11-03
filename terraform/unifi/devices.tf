@@ -13,7 +13,9 @@ locals {
   # Core ports locked to one host each, by port index: the port's label,
   # the host whose hardware address alone may use it, and the network the
   # port carries untagged. A trunk carries every other network tagged as
-  # well; any other port blocks tagged frames.
+  # well; any other port blocks tagged frames. A new host's port opens
+  # without a lock, so the host can link and take the lease the inventory
+  # records; the lock follows.
   locked = {
     1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
     2 = { name = "server 1g", host = "servnerr-4", network = "mgmt0" }
