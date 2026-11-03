@@ -86,6 +86,7 @@ let
       flush set inet filter deploy_v6
       flush set inet filter lgtv_syslog_v4
       flush set inet filter lgtv_syslog_v6
+      flush set inet filter prusa_syslog_v4
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -130,6 +131,9 @@ let
           "add element inet filter lgtv_syslog_v6 { ${syslogElements (h: h.ula) lgtvDeploys6} }"
         }
       ''}
+      ${lib.optionalString (
+        prusas != [ ]
+      ) "add element inet filter prusa_syslog_v4 { ${prusaSyslogElements} }"}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 
@@ -242,6 +246,20 @@ let
         server: "${addr tv} . ${addr inventory.hosts.${server}} . ${toString lgtv.syslogPort}"
       ) inventory.roles.server
     ) tvs;
+
+  # A Prusa printer streams its metrics and logs to each server role holder
+  # (see prusa/syslog.nix), over IPv4, the only address the inventory gives
+  # it.
+  prusas = inventory.tagged [ "prusa" ];
+  prusaSyslogElements = lib.concatMapStringsSep ", " (
+    printer:
+    lib.concatMapStringsSep ", " (
+      server:
+      lib.concatMapStringsSep ", " (
+        port: "${printer.ipv4} . ${inventory.hosts.${server}.ipv4} . ${toString port}"
+      ) (lib.attrValues (import ../../prusa/syslog.nix))
+    ) inventory.roles.server
+  ) prusas;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -435,6 +453,13 @@ in
         }
         set lgtv_syslog_v6 {
           type ipv6_addr . ipv6_addr . inet_service
+        }
+
+        # The Prusa printers' metrics and logs to the server, by source
+        # address, destination address and UDP port; see
+        # prusaSyslogElements.
+        set prusa_syslog_v4 {
+          type ipv4_addr . ipv4_addr . inet_service
         }
 
         ${lib.optionalString icl ''
@@ -933,6 +958,10 @@ in
           # The LG TVs' logs to the server, above the same drop.
           ip saddr . ip daddr . udp dport @lgtv_syslog_v4 counter accept comment "LG TV syslog"
           ip6 saddr . ip6 daddr . udp dport @lgtv_syslog_v6 counter accept comment "LG TV syslog"
+
+          # The Prusa printers' metrics and logs to the server, above the
+          # same drop.
+          ip saddr . ip daddr . udp dport @prusa_syslog_v4 counter accept comment "Prusa metrics and logs"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.

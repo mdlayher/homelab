@@ -408,6 +408,7 @@ let
     server = hosts.${lib.head inv.roles.server};
     lokiPort = server.services.loki.configuration.server.http_listen_port;
     lgtv = import ../../../lgtv/hosts.nix;
+    prusa = import ../../../prusa/syslog.nix;
   };
   cases = import ./cases.nix { inherit lib f; };
 

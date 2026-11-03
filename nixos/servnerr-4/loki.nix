@@ -54,6 +54,9 @@ let
   # The OpenWrt machines' logd forwards theirs here (openwrt/syslog.nix).
   openwrtSyslog = import ../../openwrt/syslog.nix;
 
+  # The 3D printer sends its log stream here (prusa/syslog.nix).
+  prusaSyslog = import ../../prusa/syslog.nix;
+
   # consrv, the serial consoles on the KVM (see pikvm/), logs a line per key
   # a client offers, "<addr>: accepted|rejected public key authentication
   # for ...", and one per session, naming the console in quotes: "<addr>:
@@ -263,6 +266,22 @@ in
           protocol      = "udp"
           syslog_format = "raw"
           labels        = {job = "netconsole", site = "${config.homelab.site}"}
+        }
+        relabel_rules = loki.relabel.syslog.rules
+        forward_to    = [loki.write.server.receiver]
+      }
+
+      // The 3D printer's log stream, set on the printer by M334 (see
+      // prusa/syslog.nix). Over IPv4, the only address the inventory
+      // gives it. RFC 5424 with the printer's MAC as hostname and no
+      // timestamp, so the host comes from the sender address and the
+      // time from arrival.
+      loki.source.syslog "prusa" {
+        listener {
+          address       = "0.0.0.0:${toString prusaSyslog.logPort}"
+          protocol      = "udp"
+          syslog_format = "rfc5424"
+          labels        = {job = "syslog", site = "${config.homelab.site}"}
         }
         relabel_rules = loki.relabel.syslog.rules
         forward_to    = [loki.write.server.receiver]

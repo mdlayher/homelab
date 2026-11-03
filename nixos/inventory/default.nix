@@ -516,7 +516,6 @@
             ];
           };
           prusa-core-one = {
-            ipv6 = "eui64";
             tags = [
               "printer"
               "prusa"

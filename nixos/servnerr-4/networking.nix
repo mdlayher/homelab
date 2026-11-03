@@ -119,6 +119,7 @@ in
         6666
         (import ../../lgtv/hosts.nix).syslogPort
         (import ../../openwrt/syslog.nix).port
+        (import ../../prusa/syslog.nix).logPort
         53
       ];
 

@@ -109,6 +109,11 @@ let
         # the option which turns the IGP on is what names the job.
         // lib.optionalAttrs (cfg.homelab.interconnect.isis.enable or false) {
           frr.port = 9342;
+        }
+        # prusa_exporter, which polls the 3D printer; see the server's
+        # prusa.nix. Hand-added as dn42_peer is, and named by its unit.
+        // lib.optionalAttrs (cfg.systemd.services ? prusa-exporter) {
+          prusa.port = 9632;
         };
       ssh = cfg.homelab.sshProbe or false;
       router = cfg.services.corerad.enable;

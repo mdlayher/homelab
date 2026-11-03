@@ -19,6 +19,7 @@ let
   r = f.inv.interfaces;
   s = f.server;
   tv = f.hosts.${lib.head f.lgtv.hosts};
+  printer = f.hosts.${(lib.head (f.inv.tagged [ "prusa" ])).name};
   deployer = f.hosts.linuxdev;
   forwards = map (fw: f.hosts.${fw.host} // { inherit (fw) port; }) f.inv.tailscaleForwards;
   fwd = lib.head forwards;
@@ -360,7 +361,7 @@ assert lib.assertMsg
     drop = "restricted_forward_drop";
   })
 
-  # Deploys and the TVs' syslog.
+  # Deploys, the TVs' syslog and the Prusa printers' streams.
 
   # forward: "deploy"
   (case "deploy SSH v4" {
@@ -418,6 +419,23 @@ assert lib.assertMsg
     dst = s.ula;
     udp = f.lgtv.syslogPort;
     accept = "LG TV syslog";
+  })
+  # forward: "Prusa metrics and logs"
+  (case "Prusa syslog v4" {
+    from = printer.interface;
+    to = s.interface;
+    src = printer.ipv4;
+    dst = s.ipv4;
+    udp = f.prusa.logPort;
+    accept = "Prusa metrics and logs";
+  })
+  (case "Prusa metrics v4" {
+    from = printer.interface;
+    to = s.interface;
+    src = printer.ipv4;
+    dst = s.ipv4;
+    udp = f.prusa.metricsPort;
+    accept = "Prusa metrics and logs";
   })
   # forward: "restricted LANs to LANs"
   (case "TV to server SSH" {
