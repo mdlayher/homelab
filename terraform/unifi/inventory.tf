@@ -24,6 +24,15 @@ locals {
     { routnerr-3 = "f4:90:ea:00:c7:90" },
   )
 
+  # Addresses the inventory does not record, named for the host and the
+  # interface sending from them. systemd derives the dn42 addresses, so
+  # they hold across reboots.
+  extra = {
+    "routnerr-3 1g"   = "f4:90:ea:00:c7:8e"
+    "servnerr-4 dn42" = "f6:e6:4f:4d:d9:ed"
+    "linuxdev dn42"   = "ea:97:cc:a4:ae:c3"
+  }
+
   # Host name to IPv4 address, from the inventory's hosts, unmarked as the
   # MACs are above.
   ipv4 = nonsensitive({

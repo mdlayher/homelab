@@ -30,18 +30,17 @@ locals {
     7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
     8 = { name = "pdu02", network = "mgmt0" }
     9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
-    # The router's standby copper port in its management LAN bond, set as
-    # its SFP+ port below. Its LLDP goes out from the copper port's own MAC.
+    # The router's bond standby. Its LLDP leaves from the port's own MAC.
     22 = {
-      name       = "router standby"
+      name       = "router 1g"
       host       = "routnerr-3"
       network    = "mgmt0"
       trunk      = true
-      extra_macs = ["f4:90:ea:00:c7:8e"]
+      extra_macs = [local.extra["routnerr-3 1g"]]
     }
-    # The router's LAN port, as its networking.nix expects it: mgmt0
-    # untagged with every VLAN tagged.
-    25 = { name = "router", host = "routnerr-3", network = "mgmt0", trunk = true }
+    # The router's bond primary, its SFP+ port: mgmt0 untagged, every
+    # VLAN tagged.
+    25 = { name = "router 10g", host = "routnerr-3", network = "mgmt0", trunk = true }
   }
 
   # Office ports, by index: the port's label and the network it carries
