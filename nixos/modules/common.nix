@@ -330,6 +330,16 @@ in
     # sudo via the rssh module's own env_keep.
     security.sudo.extraConfig = "Defaults timestamp_timeout=0";
 
+    # Wherever audit rules exist, the daemon the kernel hands its records
+    # to. Without one the kernel queues them for a daemon that never
+    # arrives, drops them when the queue fills and prints every overflow on
+    # the console. It writes no log of its own: journald keeps the copy
+    # from the multicast group, which the alerts read.
+    security.auditd = lib.mkIf (config.security.audit.rules != [ ]) {
+      enable = true;
+      settings.write_logs = "no";
+    };
+
     services = {
       # Names resolve through DNS everywhere: the site domain from the
       # router's CoreDNS, the tailnet through MagicDNS, and the development
