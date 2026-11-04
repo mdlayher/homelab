@@ -109,7 +109,15 @@ if ! systemctl -q is-enabled NetworkManager-dispatcher.service; then
   echo "disabled: NetworkManager-dispatcher.service"
 fi
 
-if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok && $dispatcher == ok ]]; then
+# The keyring package's refresh timer writes under /etc, which is on the
+# read-only root, so its service fails every run.
+keyring=ok
+if [[ $(systemctl is-enabled archlinux-keyring-wkd-sync.timer 2>/dev/null) != masked ]]; then
+  keyring=unmasked
+  echo "unmasked: archlinux-keyring-wkd-sync.timer"
+fi
+
+if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok && $dispatcher == ok && $keyring == ok ]]; then
   echo "up to date"
   exit 0
 fi
@@ -168,6 +176,11 @@ if [[ -n ${todo[modemmanager-metrics]:-} ]]; then
 fi
 if [[ $dispatcher == disabled ]]; then
   systemctl enable NetworkManager-dispatcher.service
+fi
+if [[ $keyring == unmasked ]]; then
+  systemctl mask --now archlinux-keyring-wkd-sync.timer
+  systemctl stop archlinux-keyring-wkd-sync.service
+  systemctl reset-failed archlinux-keyring-wkd-sync.service
 fi
 if [[ -n ${todo[netconsole]:-} ]]; then
   systemctl daemon-reload
