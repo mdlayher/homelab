@@ -451,7 +451,10 @@
               "unifi"
             ];
           };
-          ups01.tags = [ "cyberpower" ];
+          ups01 = {
+            ipv6 = "eui64";
+            tags = [ "cyberpower" ];
+          };
         };
       };
 
