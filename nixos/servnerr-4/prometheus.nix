@@ -386,9 +386,11 @@ let
   # SNMP targets queried via the cyberpower module. The devices are not
   # reliable enough to alert on.
   snmpCyberpowerJob = "snmp-cyberpower";
-  snmpCyberpower = map (h: at h.name (qualify h.name)) (
-    config.homelab.inventory.tagged [ "cyberpower" ]
-  );
+  # The cards answer SNMP for the server's IPv4 address alone, so a card
+  # with an IPv6 address is scraped by its IPv4 name.
+  snmpCyberpower = map (
+    h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))
+  ) (config.homelab.inventory.tagged [ "cyberpower" ]);
 
   # The SNMP targets with an environment sensor attached. pdu01's card has
   # none and reports zeros.

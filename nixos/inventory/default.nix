@@ -407,8 +407,14 @@
             ipv6 = "eui64";
             tags = [ "personal" ];
           };
-          pdu01.tags = [ "cyberpower" ];
-          pdu02.tags = [ "cyberpower" ];
+          pdu01 = {
+            ipv6 = "eui64";
+            tags = [ "cyberpower" ];
+          };
+          pdu02 = {
+            ipv6 = "eui64";
+            tags = [ "cyberpower" ];
+          };
           pikvm = {
             ipv6 = "eui64";
             tags = [ "pikvm" ];
