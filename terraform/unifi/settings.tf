@@ -20,14 +20,15 @@ resource "unifi_setting" "site" {
     uplink_type      = "gateway"
   }
 
-  # Device firmware upgrades itself at the hour the NixOS machines run
-  # their nightly upgrade. SSH onto a device takes the admin's key.
+  # Device firmware is upgraded by hand from the controller: a release
+  # is applied while someone is watching the access points, never on a
+  # schedule. UnPoller's unpoller_device_upgradable reports a release
+  # waiting. SSH onto a device takes the admin's key.
   # Password logins stay enabled: with them off, the switch firmware
   # starts dropbear with the no-password flag joined onto its port
   # argument ("-p eth0:22-s"), and it listens on nothing.
   mgmt = {
-    auto_upgrade              = true
-    auto_upgrade_hour         = 4
+    auto_upgrade              = false
     ssh_enabled               = true
     ssh_auth_password_enabled = true
     ssh_keys = [{

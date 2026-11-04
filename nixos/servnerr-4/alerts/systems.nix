@@ -57,6 +57,17 @@
       expr = ''(time() - node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"}) > 26*60*60 and node_systemd_timer_last_trigger_seconds{name="nixos-upgrade.timer"} > 0'';
       annotations.summary = "{{ $labels.instance }} has not run nixos-upgrade.timer in over 26 hours.";
     }
+    # Device firmware is applied by hand, with the controller's automatic
+    # upgrade off (terraform/unifi/settings.tf), so a waiting release is
+    # noticed here or not at all. An hour sits out the flag's flicker
+    # during the controller's own release check.
+    {
+      alert = "UniFiFirmwareAvailable";
+      expr = "unpoller_device_upgradable == 1";
+      for = "1h";
+      labels.notify = "ops";
+      annotations.summary = "{{ $labels.name }} ({{ $labels.type }}) has a firmware release waiting in the controller.";
+    }
     # The case NixOSSystemUnpersisted cannot see: a switch from a tree
     # with uncommitted changes persists to the profile like any other,
     # and the machine then runs configuration that exists nowhere but
