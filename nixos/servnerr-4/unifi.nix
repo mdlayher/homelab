@@ -68,6 +68,19 @@
   # the service forwards TCP.
   homelab.tailscale.services.unifi."tcp:8443" = "tcp://127.0.0.1:8443";
 
+  # UnPoller with the neighbor access point last_seen gauge, the patch
+  # beside this file, proposed upstream as
+  # https://github.com/unpoller/unpoller/pull/1140. The exporter module
+  # runs pkgs.unpoller and takes no package option, so the patch rides
+  # an overlay; drop it once the channel's release carries the change.
+  nixpkgs.overlays = [
+    (final: prev: {
+      unpoller = prev.unpoller.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./unpoller-rogueap-last-seen.patch ];
+      });
+    })
+  ];
+
   # Device, port, radio and client metrics for the switches and access
   # points, from the controller. Prometheus finds the exporter on its own
   # (see prometheus.nix). Every series vanishes while the controller is

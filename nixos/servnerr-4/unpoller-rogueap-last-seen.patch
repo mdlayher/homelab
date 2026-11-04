@@ -1,0 +1,55 @@
+From 3ad2bd2249ef0493e79645266f25f7a24570fe44 Mon Sep 17 00:00:00 2001
+From: Matt Layher <mdlayher@gmail.com>
+Date: Wed, 4 Nov 2026 09:02:00 -0500
+Subject: [PATCH] feat(promunifi): export when each neighbor AP was last seen
+
+The controller keeps a neighbor access point in its table for about a
+day after an AP last heard it, and the age and rssi_age fields it
+reports are relative to that last report rather than to now, so they
+freeze once the neighbor goes quiet. The Prometheus output therefore
+cannot tell a neighbor heard a minute ago from one that left yesterday.
+
+Export the controller's last_seen timestamp as a gauge beside the
+existing neighbor series, so a query such as
+
+    time() - unpoller_rogueap_last_seen < 3600
+
+selects the neighbors heard within the last hour.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01C874JfcUca289KdpvxaUGz
+---
+ pkg/promunifi/uap.go | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/pkg/promunifi/uap.go b/pkg/promunifi/uap.go
+index 22d31f5..34b70d6 100644
+--- a/pkg/promunifi/uap.go
++++ b/pkg/promunifi/uap.go
+@@ -105,6 +105,7 @@ type rogueap struct {
+ 	RSSI       *prometheus.Desc
+ 	RSSIAge    *prometheus.Desc
+ 	Signal     *prometheus.Desc
++	LastSeen   *prometheus.Desc
+ }
+ 
+ func descRogueAP(ns string) *rogueap {
+@@ -122,6 +123,7 @@ func descRogueAP(ns string) *rogueap {
+ 		RSSI:       prometheus.NewDesc(ns+"rssi", "RogueAP RSSI", label, nil),
+ 		RSSIAge:    prometheus.NewDesc(ns+"rssi_age", "RogueAP RSSI Age", label, nil),
+ 		Signal:     prometheus.NewDesc(ns+"signal", "RogueAP Signal", label, nil),
++		LastSeen:   prometheus.NewDesc(ns+"last_seen", "RogueAP Last Seen (Unix timestamp)", label, nil),
+ 	}
+ }
+ 
+@@ -246,6 +248,7 @@ func (u *promUnifi) exportRogueAP(r report, d *unifi.RogueAP) {
+ 		{u.RogueAP.RSSI, gauge, d.Rssi.Val, labels},
+ 		{u.RogueAP.RSSIAge, gauge, d.RssiAge.Val, labels},
+ 		{u.RogueAP.Signal, gauge, d.Signal.Val, labels},
++		{u.RogueAP.LastSeen, gauge, d.LastSeen.Val, labels},
+ 	})
+ }
+ 
+-- 
+2.54.0
+
