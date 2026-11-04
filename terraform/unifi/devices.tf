@@ -130,6 +130,11 @@ resource "unifi_device" "switch_core" {
   name           = "switch-core"
   config_network = local.static["switch-core"]
 
+  # The RSTP root. Every switch uplinks here, so a loop anywhere blocks
+  # a port on the leaf that formed it, never a core uplink. The other
+  # switches keep the default priority.
+  stp_priority = 4096
+
   # A port with a profile takes every setting from it and the controller
   # discards the port's own, a MAC filter included, so a locked port
   # carries no profile and states its settings itself.
