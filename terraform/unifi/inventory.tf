@@ -29,7 +29,6 @@ locals {
   # they hold across reboots.
   extra = {
     "routnerr-3 1g"   = "f4:90:ea:00:c7:8e"
-    "servnerr-4 10g"  = "8c:dc:d4:ac:96:24"
     "servnerr-4 dn42" = "f6:e6:4f:4d:d9:ed"
     "linuxdev dn42"   = "ea:97:cc:a4:ae:c3"
   }

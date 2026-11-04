@@ -47,17 +47,3 @@ resource "unifi_port_profile" "lasthop_isis" {
   tagged_vlan_mgmt      = "block_all"
   stp_port_mode         = true
 }
-
-# Kept through the switch update, since the controller refuses to delete a
-# profile a port still carries; removed in the apply that follows.
-resource "unifi_port_profile" "server" {
-  name                  = "server"
-  native_networkconf_id = ""
-  forward               = "customize"
-  tagged_vlan_mgmt      = "custom"
-  excluded_networkconf_ids = concat([unifi_network.mgmt0.id], [
-    for name, n in unifi_network.vlan : n.id
-    if !contains(["dev0", "dn42", "lasthop-isis"], name)
-  ])
-  stp_port_mode = true
-}
