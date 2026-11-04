@@ -87,6 +87,7 @@ let
       flush set inet filter lgtv_syslog_v4
       flush set inet filter lgtv_syslog_v6
       flush set inet filter prusa_syslog_v4
+      flush set inet filter cyberpower_snmp_v4
       flush map ip nat tailscale_dnat
 
       add element inet filter router_v4 { ${
@@ -134,6 +135,9 @@ let
       ${lib.optionalString (
         prusas != [ ]
       ) "add element inet filter prusa_syslog_v4 { ${prusaSyslogElements} }"}
+      ${lib.optionalString (
+        cyberpowers != [ ]
+      ) "add element inet filter cyberpower_snmp_v4 { ${cyberpowerSnmpElements} }"}
       add element ip nat tailscale_dnat { ${forwards (ts: "${toString ts.port} : ${ts.host.ipv4}")} }
     '';
 
@@ -260,6 +264,14 @@ let
       ) (lib.attrValues (import ../../prusa/syslog.nix))
     ) inventory.roles.server
   ) prusas;
+
+  # SNMP management of the CyberPower cards runs from the development
+  # container, which is on a restricted LAN, over IPv4: the cards serve
+  # SNMP on no other family.
+  cyberpowers = inventory.tagged [ "cyberpower" ];
+  cyberpowerSnmpElements = lib.concatMapStringsSep ", " (
+    card: "${deployFrom.ipv4} . ${card.ipv4} . 161"
+  ) cyberpowers;
 
   # ns1 for our dn42 domain: CoreDNS serves only the authoritative zones on
   # the router's dn42 addresses (see coredns.nix), never recursion, so this
@@ -459,6 +471,13 @@ in
         # address, destination address and UDP port; see
         # prusaSyslogElements.
         set prusa_syslog_v4 {
+          type ipv4_addr . ipv4_addr . inet_service
+        }
+
+        # The CyberPower cards' SNMP agents from the development container,
+        # by source address, destination address and UDP port; see
+        # cyberpowerSnmpElements.
+        set cyberpower_snmp_v4 {
           type ipv4_addr . ipv4_addr . inet_service
         }
 
@@ -962,6 +981,10 @@ in
           # The Prusa printers' metrics and logs to the server, above the
           # same drop.
           ip saddr . ip daddr . udp dport @prusa_syslog_v4 counter accept comment "Prusa metrics and logs"
+
+          # SNMP management of the CyberPower cards from the development
+          # container, above the same drop.
+          ip saddr . ip daddr . udp dport @cyberpower_snmp_v4 counter accept comment "CyberPower SNMP"
 
           # Restricted LANs may only initiate connections to the internet:
           # never to trusted LANs, nor to each other.

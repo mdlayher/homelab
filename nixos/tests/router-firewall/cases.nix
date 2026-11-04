@@ -21,6 +21,7 @@ let
   tv = f.hosts.${lib.head f.lgtv.hosts};
   printer = f.hosts.${(lib.head (f.inv.tagged [ "prusa" ])).name};
   deployer = f.hosts.linuxdev;
+  card = f.hosts.${(lib.head (f.inv.tagged [ "cyberpower" ])).name};
   forwards = map (fw: f.hosts.${fw.host} // { inherit (fw) port; }) f.inv.tailscaleForwards;
   fwd = lib.head forwards;
   reach = lib.head f.remote.device.reaches;
@@ -436,6 +437,32 @@ assert lib.assertMsg
     dst = s.ipv4;
     udp = f.prusa.metricsPort;
     accept = "Prusa metrics and logs";
+  })
+
+  # forward: "CyberPower SNMP"
+  (case "CyberPower SNMP v4" {
+    from = deployer.interface;
+    to = card.interface;
+    src = deployer.ipv4;
+    dst = card.ipv4;
+    udp = 161;
+    accept = "CyberPower SNMP";
+  })
+  # forward: "restricted LANs to LANs"
+  (case "CyberPower SNMP from another address v4" {
+    from = deployer.interface;
+    to = card.interface;
+    dst = card.ipv4;
+    udp = 161;
+    drop = "restricted_forward_drop";
+  })
+  (case "CyberPower SNMP to another management host v4" {
+    from = deployer.interface;
+    to = s.interface;
+    src = deployer.ipv4;
+    dst = s.ipv4;
+    udp = 161;
+    drop = "restricted_forward_drop";
   })
   # forward: "restricted LANs to LANs"
   (case "TV to server SSH" {
