@@ -408,6 +408,7 @@
             tags = [ "personal" ];
           };
           pdu01.tags = [ "cyberpower" ];
+          pdu02.tags = [ "cyberpower" ];
           pikvm = {
             ipv6 = "eui64";
             tags = [ "pikvm" ];

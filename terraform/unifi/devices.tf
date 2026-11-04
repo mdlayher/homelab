@@ -28,7 +28,7 @@ locals {
     5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
     6 = { name = "ups01", host = "ups01", network = "mgmt0" }
     7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
-    8 = { name = "pdu02", network = "mgmt0" }
+    8 = { name = "pdu02", host = "pdu02", network = "mgmt0" }
     9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
     # The router's bond standby. Its LLDP leaves from the port's own MAC.
     22 = {

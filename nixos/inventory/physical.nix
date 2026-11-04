@@ -125,10 +125,7 @@ in
         "usb-b"
         "usb-a"
       ];
-      reserved = {
-        "3" = "pdu02";
-        usb-a = "daisy chain";
-      };
+      reserved.usb-a = "daisy chain";
     };
 
     # Selects which host the PiKVM's video, keyboard and ATX reach.
@@ -180,6 +177,18 @@ in
         };
         dst = {
           device = "pdu01";
+          port = "console";
+        };
+      }
+      {
+        type = "RJ45-DB9, CyberPower pinout";
+        console.baud = 9600;
+        src = {
+          device = "serial-8port";
+          port = "3";
+        };
+        dst = {
+          device = "pdu02";
           port = "console";
         };
       }
