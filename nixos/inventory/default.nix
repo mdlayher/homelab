@@ -295,6 +295,8 @@
     "myq"
     # A machine running OpenWrt, built by openwrt/.
     "openwrt"
+    # A power distribution unit, built by cyberpower/.
+    "pdu"
     # A person's own computer or phone. Nothing in this repository
     # configures it.
     "personal"
@@ -409,11 +411,17 @@
           };
           pdu01 = {
             ipv6 = "eui64";
-            tags = [ "cyberpower" ];
+            tags = [
+              "cyberpower"
+              "pdu"
+            ];
           };
           pdu02 = {
             ipv6 = "eui64";
-            tags = [ "cyberpower" ];
+            tags = [
+              "cyberpower"
+              "pdu"
+            ];
           };
           pikvm = {
             ipv6 = "eui64";

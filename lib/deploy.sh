@@ -1,6 +1,6 @@
-# Provenance shared by the deploy scripts (nixos/deploy, pikvm/deploy,
-# windows/deploy, lgtv/deploy, openwrt/deploy): which tree is being deployed and by whom, written as lines
-# of the same shape by every deploy and found under {unit="deploy"} in Loki.
+# Provenance shared by the deploy scripts: which tree is being deployed and
+# by whom, written as lines of the same shape by every deploy and found
+# under {unit="deploy"} in Loki.
 # A later investigation can then tell a deploy, a dirty one included, from a
 # manual change on the machine. Sourced from the repository root.
 #

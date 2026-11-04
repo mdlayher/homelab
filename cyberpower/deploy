@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Builds the CyberPower PDUs' configuration from this flake and applies it
+# over SNMPv3.
+#
+# Usage: cyberpower/deploy [--check] <host>|--all
+#
+# --check prints how a PDU differs from the build and changes nothing,
+# exiting 1 if any does. host is a PDU in cyberpower/hosts.nix, reached at
+# its inventory IPv4 name; --all is every one of them, and with a single
+# PDU host may be left out. The SNMP work runs through the gate, which
+# holds the SNMPv3 credentials, in one call for every host: a run is one
+# touch. The cards answer reads from the development container for that
+# user alone, so a check takes the same touch as a deploy.
+set -euo pipefail
+
+check=()
+if [[ ${1:-} == --check ]]; then
+  check=(--check)
+  shift
+fi
+
+# Flakes may not be enabled in the local nix.conf (e.g. on a non-NixOS host).
+export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}experimental-features = nix-command flakes"
+
+cd "$(dirname "$0")/.."
+mapfile -t all < <(nix eval --json --file cyberpower/hosts.nix hosts | jq -r '.[]')
+if [[ $# -eq 0 && ${#all[@]} -eq 1 ]]; then
+  set -- --all
+fi
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 [--check] <host>|--all" >&2
+  exit 2
+fi
+if [[ $1 == --all ]]; then
+  hosts=("${all[@]}")
+else
+  hosts=("$1")
+fi
+out=$(nix build --no-link --print-out-paths .#cyberpower)
+for host in "${hosts[@]}"; do
+  if [[ ! -f $out/$host ]]; then
+    echo "$host: not in cyberpower/hosts.nix" >&2
+    exit 1
+  fi
+done
+
+# Provenance (see lib/deploy.sh). The cards' syslog is not the machines'
+# journal, so the lines go to Loki directly, and a finished deploy is
+# announced in the Discord ops channel. A check changes nothing, and logs
+# and announces nothing.
+source lib/deploy.sh
+log() {
+  [[ ${#check[@]} -eq 0 ]] || return 0
+  deploy_loki "$@"
+}
+
+for host in "${hosts[@]}"; do
+  log "$host" "$(deploy_line apply starting)"
+done
+# apply.sh runs as the gate's user, which cannot open this checkout, so it
+# reads only the built tree. Its result lines carry each host's outcome
+# back for the provenance above; a host with none, as when the gate is
+# refused, failed.
+status=0
+output=$(sops-gate exec-env secrets/cyberpower.yaml -- bash "$out/apply.sh" "${check[@]}" "${hosts[@]}") || status=$?
+declare -A result
+while IFS= read -r line; do
+  if [[ $line =~ ^result\ ([^ ]+)\ (ok|failed)$ ]]; then
+    result[${BASH_REMATCH[1]}]=${BASH_REMATCH[2]}
+  elif [[ -n $line ]]; then
+    echo "$line"
+  fi
+done <<<"$output"
+for host in "${hosts[@]}"; do
+  if [[ ${result[$host]:-} == ok ]]; then
+    log "$host" "$(deploy_line apply finished)"
+    [[ ${#check[@]} -gt 0 ]] || deploy_notify "$host" "cyberpower/"
+  else
+    log "$host" "$(deploy_line apply failed) status=$status"
+    [[ $status -ne 0 ]] || status=1
+  fi
+done
+exit "$status"

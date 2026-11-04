@@ -41,6 +41,10 @@ Guidance for agents working in this repository.
 - The OpenWrt machines (the jump role) are likewise outside it:
   `openwrt/deploy` applies what `openwrt/` builds, and
   `openwrt/deploy --check` reports drift. See openwrt/README.md.
+- The CyberPower PDUs are likewise outside it: `cyberpower/deploy`
+  applies what `cyberpower/` builds over SNMPv3, and
+  `cyberpower/deploy --check` reports drift. Both need the credentials
+  from the gate, so Matt runs either. See cyberpower/README.md.
 - Every deploy script takes `[--check] <host>|--all`, the host optional
   where the script has a single target (the KVM), and logs provenance
   under `{unit="deploy"}` in Loki (lib/deploy.sh). NixOS machines announce
