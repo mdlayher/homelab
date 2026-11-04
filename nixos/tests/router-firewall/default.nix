@@ -98,10 +98,10 @@ let
         };
         serverlink = {
           mac =
-            (lib.findFirst (link: link.linkConfig.Name or null == mgmt.name)
-              (throw "router-firewall: the server has no ${mgmt.name} link")
-              (lib.attrValues server.systemd.network.links)
-            ).matchConfig.MACAddress;
+            (lib.findFirst (netdev: netdev.netdevConfig.Name or null == mgmt.name)
+              (throw "router-firewall: the server has no ${mgmt.name} netdev")
+              (lib.attrValues server.systemd.network.netdevs)
+            ).netdevConfig.MACAddress;
           n = 21;
         };
         admitted = {

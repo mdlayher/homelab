@@ -235,10 +235,55 @@ in
   systemd.network = {
     enable = true;
 
-    # 1GbE management LAN.
-    links."10-mgmt0" = {
-      matchConfig.MACAddress = "04:d9:f5:7e:1c:47";
-      linkConfig.Name = "mgmt0";
+    # The management LAN and the container VLANs reach the core switch over
+    # an active-backup bond: the SFP+ port primary, the copper port standby,
+    # both carrying the same networks. Links match on PermanentMACAddress,
+    # since every slave takes the bond's MAC. The bond alone decides whether
+    # the server is online.
+    links."10-sfp0" = {
+      matchConfig = {
+        Type = "ether";
+        PermanentMACAddress = "8c:dc:d4:ac:96:24";
+      };
+      linkConfig.Name = "sfp0";
+    };
+    links."10-eth0" = {
+      matchConfig = {
+        Type = "ether";
+        PermanentMACAddress = "04:d9:f5:7e:1c:47";
+      };
+      linkConfig.Name = "eth0";
+    };
+    networks."10-sfp0" = {
+      matchConfig.Name = "sfp0";
+      networkConfig = {
+        Bond = "mgmt0";
+        PrimarySlave = true;
+      };
+      linkConfig.RequiredForOnline = "no";
+    };
+    networks."10-eth0" = {
+      matchConfig.Name = "eth0";
+      networkConfig.Bond = "mgmt0";
+      linkConfig.RequiredForOnline = "no";
+    };
+
+    # The bond carries the copper port's MAC, the host's identity in the
+    # inventory, its lease, the router's sets and the core's port locks. A
+    # returning primary must hold for the up delay before the bond moves
+    # back to it.
+    netdevs."10-mgmt0" = {
+      netdevConfig = {
+        Name = "mgmt0";
+        Kind = "bond";
+        MACAddress = "04:d9:f5:7e:1c:47";
+      };
+      bondConfig = {
+        Mode = "active-backup";
+        MIIMonitorSec = "100ms";
+        UpDelaySec = "30s";
+        PrimaryReselectPolicy = "always";
+      };
     };
     networks."10-mgmt0" = {
       matchConfig.Name = "mgmt0";
@@ -262,25 +307,11 @@ in
           PreferredLifetime = "0";
         }
       ];
-    };
 
-    # 10GbE bridge carrying the tagged container VLANs below. The host
-    # itself is addressed only on mgmt0 among the site LANs: a second
-    # address on the same LAN makes ingress asymmetric, and the firewall's
-    # reverse path filter drops such traffic. Its dn42 address below is
-    # another realm with routes of its own, so the two never overlap.
-    netdevs."11-br0".netdevConfig = {
-      Name = "br0";
-      Kind = "bridge";
-    };
-    networks."11-br0" = {
-      matchConfig.Name = "br0";
-      networkConfig = {
-        LinkLocalAddressing = "no";
-        IPv6AcceptRA = false;
-      };
-
-      # Tagged VLANs carried over br0 for containers.
+      # The tagged container VLANs. The host is addressed on mgmt0 alone
+      # among the site LANs: a second address on one LAN makes ingress
+      # asymmetric and the reverse path filter drops it. Its dn42 address
+      # is another realm with routes of its own.
       vlan = [
         "dev0"
         "dn42i-dev0"
@@ -469,16 +500,6 @@ in
         ConfigureWithoutCarrier = true;
       };
       linkConfig.RequiredForOnline = "no";
-    };
-
-    # 10GbE NIC tied to bridge.
-    links."11-mgmt1" = {
-      matchConfig.MACAddress = "8c:dc:d4:ac:96:24";
-      linkConfig.Name = "mgmt1";
-    };
-    networks."11-mgmt1" = {
-      matchConfig.Name = "mgmt1";
-      bridge = [ "br0" ];
     };
   };
 }

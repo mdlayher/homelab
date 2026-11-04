@@ -29,15 +29,16 @@ let
   mgmt = inventory.interfaces.mgmt0;
 
   # MACs admitted in plain text, so a wrong secret never cuts off the
-  # server or a host with admitMac (the KVM).
-  linkMac =
+  # server or a host with admitMac (the KVM). The server's management LAN
+  # interface is a bond carrying its MAC.
+  netdevMac =
     machine: ifname:
-    (lib.findFirst (link: link.linkConfig.Name or null == ifname)
-      (throw "${machine} has no ${ifname} link")
-      (lib.attrValues inputs.self.nixosConfigurations.${machine}.config.systemd.network.links)
-    ).matchConfig.MACAddress;
+    (lib.findFirst (netdev: netdev.netdevConfig.Name or null == ifname)
+      (throw "${machine} has no ${ifname} netdev")
+      (lib.attrValues inputs.self.nixosConfigurations.${machine}.config.systemd.network.netdevs)
+    ).netdevConfig.MACAddress;
   mgmtAdmit = [
-    (linkMac (lib.head inventory.roles.server) mgmt.name)
+    (netdevMac (lib.head inventory.roles.server) mgmt.name)
   ]
   ++ lib.filter (mac: mac != null) (map (h: h.admitMac) mgmt.hosts);
   mgmtEnforce = config.homelab.mgmtLockdown.enforce;

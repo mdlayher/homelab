@@ -38,27 +38,19 @@ resource "unifi_port_profile" "mgmt0" {
   stp_port_mode         = true
 }
 
-# The server's 10G port: its bridge carries the container VLANs tagged and
-# nothing untagged (see nixos/servnerr-4/networking.nix), so the profile
-# has no native network. The controller records a custom profile's
-# networks as the ones it excludes, and drops a list of tagged ones, so
-# the exclusions are mgmt0 and every other VLAN in networks.tf.
-#
-# The controller also adds each network it creates to every custom
-# profile's exclusions, a moment after the create returns. A profile
-# written in that window gains a network it was not given, or the same
-# network twice, which then fails every plan; the sleep keeps the profile
-# out of it.
-resource "time_sleep" "networks_created" {
-  create_duration = "15s"
-  triggers = {
-    networks = join(",", sort([for n in unifi_network.vlan : n.id]))
-  }
+# The IS-IS lab link to lasthop alone, untagged, for a port given over to
+# it.
+resource "unifi_port_profile" "lasthop_isis" {
+  name                  = "lasthop-isis"
+  native_networkconf_id = unifi_network.vlan["lasthop-isis"].id
+  forward               = "native"
+  tagged_vlan_mgmt      = "block_all"
+  stp_port_mode         = true
 }
 
+# Kept through the switch update, since the controller refuses to delete a
+# profile a port still carries; removed in the apply that follows.
 resource "unifi_port_profile" "server" {
-  depends_on = [time_sleep.networks_created]
-
   name                  = "server"
   native_networkconf_id = ""
   forward               = "customize"
@@ -68,14 +60,4 @@ resource "unifi_port_profile" "server" {
     if !contains(["dev0", "dn42", "lasthop-isis"], name)
   ])
   stp_port_mode = true
-}
-
-# The IS-IS lab link to lasthop alone, untagged, for a port given over to
-# it.
-resource "unifi_port_profile" "lasthop_isis" {
-  name                  = "lasthop-isis"
-  native_networkconf_id = unifi_network.vlan["lasthop-isis"].id
-  forward               = "native"
-  tagged_vlan_mgmt      = "block_all"
-  stp_port_mode         = true
 }

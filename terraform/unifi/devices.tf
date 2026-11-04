@@ -14,15 +14,22 @@
 # the server.
 locals {
   # Core ports locked to one host each, by port index: the port's label,
-  # the host whose hardware address alone may use it, and the network the
-  # port carries untagged. A trunk carries every other network tagged as
-  # well; any other port blocks tagged frames. A new host's port opens
-  # without a lock, naming no host, so the host can link and take the
-  # lease the inventory records; the lock follows. A port also admits any
-  # extra_macs, for a host that sends from more than one address there.
+  # the host whose hardware address alone may use it, and the network it
+  # carries untagged. trunk carries every other network tagged, tagged
+  # names the networks carried tagged, and otherwise tagged frames are
+  # blocked. A new host's port opens without a lock so the host can take
+  # the lease the inventory records; the lock follows. extra_macs admits a
+  # host's other addresses.
   locked = {
     1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
-    2 = { name = "server 1g", host = "servnerr-4", network = "mgmt0" }
+    # The server's bond standby: mgmt0 untagged, the container VLANs
+    # tagged. No lock: the port carries the bridged containers' addresses
+    # beside the host's.
+    2 = {
+      name    = "server 1g"
+      network = "mgmt0"
+      tagged  = ["dev0", "dn42", "lasthop-isis"]
+    }
     3 = { name = "jump", host = "jumpnerr-1", network = "mgmt0" }
     4 = { name = "hass", host = "hass", network = "mgmt0" }
     5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
@@ -41,6 +48,13 @@ locals {
     # The router's bond primary, its SFP+ port: mgmt0 untagged, every
     # VLAN tagged.
     25 = { name = "router 10g", host = "routnerr-3", network = "mgmt0", trunk = true }
+    # The server's bond primary, its SFP+ port: the same networks as its
+    # standby, and no lock for the same reason.
+    27 = {
+      name    = "server 10g"
+      network = "mgmt0"
+      tagged  = ["dev0", "dn42", "lasthop-isis"]
+    }
   }
 
   # Office ports, by index: the port's label and the network it carries
@@ -122,12 +136,18 @@ resource "unifi_device" "switch_core" {
   dynamic "port_override" {
     for_each = local.locked
     content {
-      index                     = tonumber(port_override.key)
-      name                      = port_override.value.name
-      setting_preference        = "manual"
-      native_networkconf_id     = local.network_id[port_override.value.network]
-      tagged_vlan_mgmt          = try(port_override.value.trunk, false) ? "auto" : "block_all"
-      forward                   = try(port_override.value.trunk, false) ? "all" : "native"
+      index                 = tonumber(port_override.key)
+      name                  = port_override.value.name
+      setting_preference    = "manual"
+      native_networkconf_id = local.network_id[port_override.value.network]
+      tagged_vlan_mgmt      = try(port_override.value.trunk, false) ? "auto" : can(port_override.value.tagged) ? "custom" : "block_all"
+      forward               = try(port_override.value.trunk, false) ? "all" : can(port_override.value.tagged) ? "customize" : "native"
+      # The controller records a port's tagged networks as the ones it
+      # excludes.
+      excluded_networkconf_ids = can(port_override.value.tagged) ? [
+        for name, id in local.network_id : id
+        if name != port_override.value.network && !contains(port_override.value.tagged, name)
+      ] : null
       port_security_enabled     = can(port_override.value.host)
       port_security_mac_address = can(port_override.value.host) ? concat([local.mac[port_override.value.host]], try(port_override.value.extra_macs, [])) : null
     }
@@ -165,13 +185,6 @@ resource "unifi_device" "switch_core" {
     index           = 18
     name            = "switch-office"
     port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  # The server's 10G port; see the server profile.
-  port_override {
-    index           = 27
-    name            = "server 10g"
-    port_profile_id = unifi_port_profile.server.id
   }
 }
 

@@ -32,10 +32,6 @@ terraform {
       source  = "carlpett/sops"
       version = ">= 1.0.0"
     }
-    time = {
-      source  = "hashicorp/time"
-      version = ">= 0.13.0"
-    }
   }
 }
 
