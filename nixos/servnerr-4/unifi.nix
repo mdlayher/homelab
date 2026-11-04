@@ -6,8 +6,9 @@
 }:
 
 {
-  # The module's controller options lack the system log source, which
-  # UnPoller reads as save_syslog.
+  # The module's controller options lack the system log and neighbor
+  # access point sources, which UnPoller reads as save_syslog and
+  # save_rogue.
   imports = [
     {
       options.services.prometheus.exporters.unpoller.controllers = lib.mkOption {
@@ -17,6 +18,11 @@
               type = lib.types.bool;
               default = false;
               description = "Collect the controller's system log for Loki.";
+            };
+            options.save_rogue = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Export the access points' neighbor scans.";
             };
           }
         );
@@ -84,6 +90,10 @@
         # errors, so those stay off.
         save_syslog = true;
         save_anomalies = true;
+
+        # Every foreign access point the radios hear, with its channel,
+        # width and signal, for channel planning.
+        save_rogue = true;
       }
     ];
     loki.url = "http://loki.svc.${config.homelab.inventory.zone}:${toString config.services.loki.configuration.server.http_listen_port}";
