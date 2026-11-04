@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Builds the CyberPower PDUs' configuration from this flake and applies it
+# Builds the CyberPower cards' configuration from this flake and applies it
 # over SNMPv3.
 #
 # Usage: cyberpower/deploy [--check] <host>|--all
 #
-# --check prints how a PDU differs from the build and changes nothing,
-# exiting 1 if any does. host is a PDU in cyberpower/hosts.nix, reached at
-# its inventory IPv4 name; --all is every one of them, and with a single
-# PDU host may be left out. The SNMP work runs through the gate, which
-# holds the SNMPv3 credentials, in one call for every host: a run is one
-# touch. The cards answer reads from the development container for that
-# user alone, so a check takes the same touch as a deploy.
+# --check prints how a card differs from the build and changes nothing,
+# exiting 1 if any does. host is a PDU or UPS in cyberpower/hosts.nix,
+# reached at its inventory IPv4 name; --all is every one of them, and with
+# a single card host may be left out. The SNMP work runs through the
+# gate, which holds the SNMPv3 credentials, in one call for every host: a
+# run is one touch. The cards answer reads from the development container
+# for that user alone, so a check takes the same touch as a deploy.
 set -euo pipefail
 
 check=()

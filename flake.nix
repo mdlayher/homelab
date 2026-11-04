@@ -139,8 +139,8 @@
             self.nixosConfigurations.${nixpkgs.lib.head inventory.roles.server}.config.services.loki.configuration.server.http_listen_port;
         };
 
-        # The CyberPower PDUs' configuration, built here and applied by
-        # cyberpower/deploy over SNMP. Each PDU's name as the server's
+        # The CyberPower cards' configuration, built here and applied by
+        # cyberpower/deploy over SNMP. Each card's name as the server's
         # inventory publishes it.
         cyberpower = import ./cyberpower {
           inherit (nixpkgs) lib;

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Compares the PDUs with the built configuration over SNMPv3 and, without
-# --check, sets what differs. Run by cyberpower/deploy through the gate,
-# as the gate's user, which supplies the SNMPv3 credentials in the
-# environment; it reads nothing of the repository.
+# Compares the CyberPower cards with the built configuration over SNMPv3
+# and, without --check, sets what differs. Run by cyberpower/deploy
+# through the gate, as the gate's user, which supplies the SNMPv3
+# credentials in the environment; it reads nothing of the repository.
 #
 # Usage: apply.sh [--check] <host>...
 #

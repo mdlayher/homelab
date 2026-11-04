@@ -310,6 +310,8 @@
     "switch"
     # A Ubiquiti UniFi device, adopted by the controller on the server.
     "unifi"
+    # An uninterruptible power supply, built by cyberpower/.
+    "ups"
     # A Windows PC, built by windows/.
     "windows"
   ];
@@ -453,7 +455,10 @@
           };
           ups01 = {
             ipv6 = "eui64";
-            tags = [ "cyberpower" ];
+            tags = [
+              "cyberpower"
+              "ups"
+            ];
           };
         };
       };
