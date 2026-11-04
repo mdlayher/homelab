@@ -67,19 +67,19 @@ locals {
   # Each access point's fixed channels. On 2.4 GHz, access points that
   # hear each other never share a channel; with more access points than
   # channels, the pair furthest apart shares one. On 5 GHz each has its
-  # own 40 MHz block outside the radar channels. 6 GHz is the
-  # controller's choice.
+  # own 40 MHz block outside the radar channels. On 6 GHz each has its
+  # own 160 MHz block, named by its preferred scanning channel.
   ap_channels = {
-    ap_living_room  = { ng = 1, na = 36 }
-    ap_basement     = { ng = 6, na = 44 }
-    ap_laundry_room = { ng = 11, na = 149 }
-    ap_movie_room   = { ng = 11, na = 157 }
+    ap_living_room  = { ng = 1, na = 36, "6e" = 69 }
+    ap_basement     = { ng = 6, na = 44, "6e" = 37 }
+    ap_laundry_room = { ng = 11, na = 149, "6e" = 101 }
+    ap_movie_room   = { ng = 11, na = 157, "6e" = 197 }
   }
   radios = {
     for name, ch in local.ap_channels : name => [
       { radio = "ng", channel = tostring(ch.ng), ht = 20, tx_power_mode = "auto" },
       { radio = "na", channel = tostring(ch.na), ht = 40, tx_power_mode = "auto" },
-      { radio = "6e", channel = "auto", ht = 160, tx_power_mode = "auto" },
+      { radio = "6e", channel = tostring(ch["6e"]), ht = 160, tx_power_mode = "auto" },
     ]
   }
 
