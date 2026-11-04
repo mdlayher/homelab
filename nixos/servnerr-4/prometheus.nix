@@ -752,6 +752,26 @@ in
     "discord_ops_webhook_url:${config.sops.secrets."discord/ops_webhook_url".path}"
   ];
 
+  # The SNMP exporter at release 0.31.0. The channel's 0.30.1 generator
+  # crashes parsing MIBs against the net-snmp the channel packages, and
+  # 0.31.0's parses them, which lets the data file below be generated at
+  # build time. The exporter module runs this package. Dropped once the
+  # channel's package reaches 0.31.0.
+  nixpkgs.overlays = [
+    (final: prev: {
+      prometheus-snmp-exporter = prev.prometheus-snmp-exporter.overrideAttrs {
+        version = "0.31.0";
+        src = final.fetchFromGitHub {
+          owner = "prometheus";
+          repo = "snmp_exporter";
+          tag = "v0.31.0";
+          hash = "sha256-vpCBDfG5jzxuNUC6iwLiwnP72jLCVGAWFI9jVYbLNAM=";
+        };
+        vendorHash = "sha256-pt/m/I+cW/JDnfiShYExqcWIb+kBWpxF4c0jAnTVdkY=";
+      };
+    })
+  ];
+
   # Prometheus monitoring server and exporter configuration.
   services.prometheus = {
     enable = true;
@@ -931,14 +951,31 @@ in
         );
       };
 
-      # SNMP exporter with the data file from release 0.30.1, matching the
-      # packaged exporter; the sha256 pins the content regardless of the tag.
+      # SNMP exporter with a data file generated from snmp-generator.yml
+      # by the same release's generator. CyberPower's MIB imports
+      # DisplayString from RFC1213-MIB, where it does not resolve; the sed
+      # is upstream's fix from its generator Makefile, which imports it
+      # from SNMPv2-TC. The generator exits non-zero on a parse error,
+      # failing the build.
       snmp = {
         enable = true;
-        configurationPath = builtins.fetchurl {
-          url = "https://raw.githubusercontent.com/prometheus/snmp_exporter/v0.30.1/snmp.yml";
-          sha256 = "1m12khms588cch43wmglz2fsxh9i15am3imvqa4i8k7lhw5yn0sf";
-        };
+        configurationPath =
+          let
+            mib = pkgs.fetchzip {
+              url = "https://dl4jz3rbrsfum.cloudfront.net/software/CyberPower_MIB_v2.13.MIB.zip";
+              hash = "sha256-YwZOhh4A1aBfBmhh+rEQrx4aw/ZtW6ulX4Mex7y+d1Q=";
+            };
+          in
+          pkgs.runCommand "snmp.yml" { nativeBuildInputs = [ pkgs.prometheus-snmp-exporter ]; } ''
+            mkdir mibs
+            sed -E 's/(DisplayString[[:space:]]*FROM )RFC1213-MIB/\1SNMPv2-TC/' \
+              ${mib}/CyberPower_MIB_v2.13.MIB > mibs/CyberPower_MIB_v2.13.MIB
+            generator generate \
+              -m mibs \
+              -m ${pkgs.net-snmp.out}/share/snmp/mibs \
+              -g ${./snmp-generator.yml} \
+              -o $out
+          '';
       };
     };
 

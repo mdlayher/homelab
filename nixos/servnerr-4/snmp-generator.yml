@@ -1,0 +1,15 @@
+# Generator input for the SNMP exporter's data file, written against
+# CyberPower MIB v2.13; see the snmp exporter in prometheus.nix.
+auths:
+  # The cards' read-only community, which they answer for the server's
+  # address alone.
+  public_v1:
+    version: 1
+    community: public
+
+modules:
+  cyberpower:
+    walk:
+      - 1.3.6.1.4.1.3808.1.1.1 # ups
+      - 1.3.6.1.4.1.3808.1.1.4 # environmentSensor
+      - 1.3.6.1.4.1.3808.1.1.6 # ePDU2
