@@ -388,13 +388,17 @@ let
   snmpCyberpowerJob = "snmp-cyberpower";
   # The cards answer SNMP for the server's IPv4 address alone, so a card
   # with an IPv6 address is scraped by its IPv4 name.
-  snmpCyberpower = map (
-    h: at h.name (qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}"))
-  ) (config.homelab.inventory.tagged [ "cyberpower" ]);
+  cyberpowerTarget = h: qualify (if h.ula == null then h.dnsName else "ipv4.${h.dnsName}");
+  snmpCyberpower = map (h: at h.name (cyberpowerTarget h)) (
+    config.homelab.inventory.tagged [ "cyberpower" ]
+  );
 
-  # The SNMP targets with an environment sensor attached. pdu01's card has
-  # none and reports zeros.
-  environmentSensors = [ "ups01" ];
+  # The SNMP targets with an environment sensor attached, by the name
+  # they are scraped under. A card without one reports zeros for the
+  # sensor objects.
+  environmentSensors = map (name: cyberpowerTarget config.homelab.inventory.hosts.${name}) [
+    "pdu01"
+  ];
 
   # The LG TVs' Glasshouse servers (lgtv/hosts.nix).
   lgtv = import ../../lgtv/hosts.nix;
@@ -540,7 +544,7 @@ let
     ];
     routers = map qualify (hostsWhere (h: h.router or false));
     readOnlyRoots = map qualify (hostsWhere (h: h.readOnlyRoot or false));
-    environmentSensors = map qualify environmentSensors;
+    inherit environmentSensors;
     # Every host expected to ship logs to Loki: the machines themselves plus
     # the containers and microvms they start, whose journals the hosting
     # machine ships; see nixos/modules/alloy.nix. A guest started by hand

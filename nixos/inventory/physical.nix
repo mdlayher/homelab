@@ -193,6 +193,18 @@ in
         };
       }
       {
+        type = "RJ45-DB9, CyberPower pinout";
+        console.baud = 9600;
+        src = {
+          device = "serial-8port";
+          port = "5";
+        };
+        dst = {
+          device = "ups01";
+          port = "console";
+        };
+      }
+      {
         type = "USB serial";
         serial = "Q3245527461";
         console.baud = 115200;
