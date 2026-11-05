@@ -88,6 +88,8 @@ let
       flush set inet filter lgtv_syslog_v4
       flush set inet filter lgtv_syslog_v6
       flush set inet filter prusa_syslog_v4
+      flush set inet filter windows_loki_v4
+      flush set inet filter windows_loki_v6
       flush set inet filter cyberpower_snmp_v4
       flush map ip nat tailscale_dnat
 
@@ -136,6 +138,12 @@ let
       ${lib.optionalString (
         prusas != [ ]
       ) "add element inet filter prusa_syslog_v4 { ${prusaSyslogElements} }"}
+      ${lib.optionalString (windows != [ ]) ''
+        add element inet filter windows_loki_v4 { ${windowsLokiElements (h: h.ipv4) windows} }
+        ${lib.optionalString (windows6 != [ ])
+          "add element inet filter windows_loki_v6 { ${windowsLokiElements (h: h.ula) windows6} }"
+        }
+      ''}
       ${lib.optionalString (
         cyberpowers != [ ]
       ) "add element inet filter cyberpower_snmp_v4 { ${cyberpowerSnmpElements} }"}
@@ -265,6 +273,25 @@ let
       ) (lib.attrValues (import ../../prusa/syslog.nix))
     ) inventory.roles.server
   ) prusas;
+
+  # Alloy on each Windows PC pushes its logs to Loki on each server role
+  # holder (see windows/default.nix), at whichever of its addresses the PC
+  # resolves, on the port the server's own configuration listens on.
+  windows = inventory.tagged [ "windows" ];
+  # A PC with no known IPv6 address pushes over IPv4 alone.
+  windows6 = lib.filter (pc: pc.ula != null) windows;
+  windowsLokiElements =
+    addr: pcs:
+    lib.concatMapStringsSep ", " (
+      pc:
+      lib.concatMapStringsSep ", " (
+        server:
+        "${addr pc} . ${addr inventory.hosts.${server}} . ${
+          toString
+            inputs.self.nixosConfigurations.${server}.config.services.loki.configuration.server.http_listen_port
+        }"
+      ) inventory.roles.server
+    ) pcs;
 
   # SNMP management of the CyberPower cards runs from the development
   # container, which is on a restricted LAN, over IPv4: the cards serve
@@ -473,6 +500,16 @@ in
         # prusaSyslogElements.
         set prusa_syslog_v4 {
           type ipv4_addr . ipv4_addr . inet_service
+        }
+
+        # The Windows PCs' Alloy pushes to Loki on the server, by source
+        # address, destination address and TCP port; see
+        # windowsLokiElements.
+        set windows_loki_v4 {
+          type ipv4_addr . ipv4_addr . inet_service
+        }
+        set windows_loki_v6 {
+          type ipv6_addr . ipv6_addr . inet_service
         }
 
         # The CyberPower cards' SNMP agents from the development container,
@@ -982,6 +1019,11 @@ in
           # The Prusa printers' metrics and logs to the server, above the
           # same drop.
           ip saddr . ip daddr . udp dport @prusa_syslog_v4 counter accept comment "Prusa metrics and logs"
+
+          # The Windows PCs' log pushes to Loki on the server, above the
+          # same drop.
+          ip saddr . ip daddr . tcp dport @windows_loki_v4 counter accept comment "Windows PC Loki push"
+          ip6 saddr . ip6 daddr . tcp dport @windows_loki_v6 counter accept comment "Windows PC Loki push"
 
           # SNMP management of the CyberPower cards from the development
           # container, above the same drop.

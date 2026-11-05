@@ -63,7 +63,7 @@ locals {
   # a port set that way passed another host), so no host is named.
   office = {
     1 = { name = "workstation", network = "mgmt0" }
-    2 = { name = "gaming pc", network = "lan0" }
+    2 = { name = "gaming pc", network = "media0" }
     3 = { name = "office printer", network = "iot0" }
   }
 
@@ -71,10 +71,10 @@ locals {
   # model: the core powers it over its uplink and it powers the living
   # room access point on port 8.
   living_room = {
-    1 = { name = "htpc", network = "lan0" }
+    1 = { name = "htpc", network = "media0" }
     2 = { name = "tv streamer", network = "iot0" }
-    3 = { name = "playstation", network = "guest0" }
-    4 = { name = "switch 2", network = "guest0" }
+    3 = { name = "playstation", network = "media0" }
+    4 = { name = "switch 2", network = "media0" }
     5 = { name = "av receiver", network = "iot0" }
   }
 

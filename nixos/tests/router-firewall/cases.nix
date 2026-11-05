@@ -22,6 +22,7 @@ let
   printer = f.hosts.${(lib.head (f.inv.tagged [ "prusa" ])).name};
   deployer = f.hosts.linuxdev;
   card = f.hosts.${(lib.head (f.inv.tagged [ "cyberpower" ])).name};
+  pc = f.hosts.${(lib.head (f.inv.tagged [ "windows" ])).name};
   forwards = map (fw: f.hosts.${fw.host} // { inherit (fw) port; }) f.inv.tailscaleForwards;
   fwd = lib.head forwards;
   reach = lib.head f.remote.device.reaches;
@@ -472,6 +473,111 @@ assert lib.assertMsg
     dst = s.ipv4;
     tcp = 22;
     drop = "restricted_forward_drop";
+  })
+
+  # The media VLAN: a restricted LAN whose Windows PCs push their logs to
+  # Loki on the server.
+
+  # forward: "restricted LANs only to WANs"
+  (case "media to WAN v4" {
+    from = "media0";
+    to = "internet";
+    dst = f.net.wan0.peer4;
+    tcp = 443;
+    accept = "restricted LANs only to WANs";
+  })
+  (case "media to WAN v6" {
+    from = "media0";
+    to = "internet";
+    dst = f.net.wan0.peer6;
+    tcp = 443;
+    accept = "restricted LANs only to WANs";
+  })
+  # input_restricted: "router restricted anycast DNS", "router restricted
+  # anycast NTP"
+  (case "media to anycast DNS v4" {
+    from = "media0";
+    to = "router";
+    dst = f.inv.anycast4.dns;
+    udp = 53;
+    accept = "router restricted anycast DNS";
+  })
+  (case "media to anycast DNS v6" {
+    from = "media0";
+    to = "router";
+    dst = f.inv.anycast6.dns;
+    tcp = 53;
+    accept = "router restricted anycast DNS";
+  })
+  (case "media to anycast NTP v6" {
+    from = "media0";
+    to = "router";
+    dst = f.inv.anycast6.ntp;
+    udp = 123;
+    accept = "router restricted anycast NTP";
+  })
+  # forward: "Windows PC Loki push"
+  (case "PC Loki push v4" {
+    from = pc.interface;
+    to = s.interface;
+    src = pc.ipv4;
+    dst = s.ipv4;
+    tcp = f.lokiPort;
+    accept = "Windows PC Loki push";
+  })
+  (case "PC Loki push v6" {
+    from = pc.interface;
+    to = s.interface;
+    src = pc.ula;
+    dst = s.ula;
+    tcp = f.lokiPort;
+    accept = "Windows PC Loki push";
+  })
+  # forward: "restricted LANs to LANs"
+  (case "media Loki push from another address v4" {
+    from = "media0";
+    to = s.interface;
+    dst = s.ipv4;
+    tcp = f.lokiPort;
+    drop = "restricted_forward_drop";
+  })
+  (case "PC to server SSH v6" {
+    from = pc.interface;
+    to = s.interface;
+    src = pc.ula;
+    dst = s.ula;
+    tcp = 22;
+    drop = "restricted_forward_drop";
+  })
+  (case "media to home LAN v4" {
+    from = "media0";
+    to = "lan0";
+    dst = client4 "lan0";
+    tcp = 22;
+    drop = "restricted_forward_drop";
+  })
+  (case "media to home LAN v6" {
+    from = "media0";
+    to = "lan0";
+    dst = client6 "lan0";
+    tcp = 22;
+    drop = "restricted_forward_drop";
+  })
+  # forward: "trusted LANs to all LANs"
+  (case "home LAN to media" {
+    from = "lan0";
+    to = "media0";
+    dst = client4 "media0";
+    tcp = 22;
+    accept = "trusted LANs to all LANs";
+  })
+  (case "server scrape of a PC v6" {
+    from = s.interface;
+    to = pc.interface;
+    src = s.ula;
+    dst = pc.ula;
+    tcp = f.windows.exporters.windows;
+    accept = "trusted LANs to all LANs";
   })
 
   # Spoofed sources and hosts denied the internet.

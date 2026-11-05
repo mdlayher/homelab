@@ -469,16 +469,27 @@
         trusted = true;
         role = "lan";
         hosts = {
+          psframework = {
+            ipv6 = "eui64";
+            tags = [ "personal" ];
+          };
+        };
+      };
+
+      # Media VLAN: machines we own that get the internet and the services
+      # opened toward them, and nothing else. The wired consoles are on it
+      # unnamed.
+      media0 = {
+        vlan = 30;
+        trusted = false;
+        role = "media";
+        hosts = {
           gamnerr-1 = {
             ipv6 = "eui64";
             tags = [
               "personal"
               "windows"
             ];
-          };
-          psframework = {
-            ipv6 = "eui64";
-            tags = [ "personal" ];
           };
           theatnerr-2 = {
             ipv6 = "eui64";

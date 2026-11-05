@@ -124,6 +124,7 @@ let
   lans = {
     mgmt0 = "15-mgmt0";
     lan0 = "20-lan0";
+    media0 = "21-media0";
     iot0 = "25-iot0";
     iot1 = "26-iot1";
     guest0 = "30-guest0";
@@ -379,6 +380,7 @@ in
       # anything from the inventory.
       vlan = [
         "lan0"
+        "media0"
         "iot0"
         "iot1"
         "guest0"
@@ -404,6 +406,10 @@ in
     # Home VLAN.
     netdevs."20-lan0" = vlanNetdev "lan0" inventory.interfaces.lan0.vlan;
     networks."20-lan0" = lanNetwork inventory.interfaces.lan0;
+
+    # Media VLAN.
+    netdevs."21-media0" = vlanNetdev "media0" inventory.interfaces.media0.vlan;
+    networks."21-media0" = lanNetwork inventory.interfaces.media0;
 
     # IoT VLAN.
     netdevs."25-iot0" = vlanNetdev "iot0" inventory.interfaces.iot0.vlan;

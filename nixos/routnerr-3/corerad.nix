@@ -34,74 +34,85 @@ in
         ]
 
         # Downstream advertising interfaces.
-        ++ lib.forEach [ mgmt0 lan0 guest0 iot0 iot1 dev0 ] (
-          ifi:
-          {
-            name = ifi.name;
-            advertise = true;
-
-            # Configure a higher preference for interfaces with more bandwidth.
-            preference = ifi.preference;
-
-            # Advertise all /64 prefixes on the interface.
-            prefix = [
-              # RFC8978: Reaction of IPv6 SLAAC to Flash-Renumbering Events
+        ++
+          lib.forEach
+            [
+              mgmt0
+              lan0
+              media0
+              guest0
+              iot0
+              iot1
+              dev0
+            ]
+            (
+              ifi:
               {
-                preferred_lifetime = "45m";
-                valid_lifetime = "90m";
-              }
-            ];
+                name = ifi.name;
+                advertise = true;
 
-            # The anycast address alone (see modules/anycast.nix), not this
-            # interface's own. Both are answered by the same process here,
-            # so advertising the interface address as well offers no second
-            # chance: it fails at the same moment and, unlike the anycast
-            # address, the IGP cannot move it to a node which is still
-            # serving. A client which happened to try it first would wait
-            # out a timeout before reaching one that answers.
-            rdnss = [ { servers = [ inventory.anycast6.dns ]; } ];
+                # Configure a higher preference for interfaces with more bandwidth.
+                preference = ifi.preference;
 
-            # Route information, tuned per RFC 8978 (Reaction of IPv6 SLAAC
-            # to Flash-Renumbering Events). Trusted LANs get the loopback
-            # routes covering an address on the interface: the site ULA
-            # and delegated GUA aggregates. Restricted LANs get an explicit
-            # site ULA route alone. dev0 needs it, since the dn42 VLAN's
-            # fd00::/8 route would otherwise capture the site's ULA
-            # traffic too.
-            route = [
-              (
-                {
-                  lifetime = "45m";
-                }
-                // lib.optionalAttrs (!ifi.trusted) { prefix = inventory.ulaPrefix6; }
-              )
-            ];
-          }
-          # DNS search: this segment's own namespace, and on a trusted LAN
-          # the other trusted namespaces, the site domain and the service
-          # zone after it. A host whose other resolver claims every name
-          # routes these zones here by them. A restricted LAN gets its own
-          # alone, since it cannot reach the others. A segment the inventory
-          # names no host on is told nothing.
-          // lib.optionalAttrs (ifi.hosts != [ ]) {
-            dnssl = [
-              {
-                domain_names = [
-                  ifi.searchDomain
-                ]
-                ++ lib.optionals ifi.trusted (
-                  (map (i: i.searchDomain) (
-                    lib.filter (i: i.trusted && i.name != ifi.name) (lib.attrValues inventory.interfaces)
-                  ))
-                  ++ [
-                    inventory.domain
-                    "svc.${inventory.zone}"
-                  ]
-                );
+                # Advertise all /64 prefixes on the interface.
+                prefix = [
+                  # RFC8978: Reaction of IPv6 SLAAC to Flash-Renumbering Events
+                  {
+                    preferred_lifetime = "45m";
+                    valid_lifetime = "90m";
+                  }
+                ];
+
+                # The anycast address alone (see modules/anycast.nix), not this
+                # interface's own. Both are answered by the same process here,
+                # so advertising the interface address as well offers no second
+                # chance: it fails at the same moment and, unlike the anycast
+                # address, the IGP cannot move it to a node which is still
+                # serving. A client which happened to try it first would wait
+                # out a timeout before reaching one that answers.
+                rdnss = [ { servers = [ inventory.anycast6.dns ]; } ];
+
+                # Route information, tuned per RFC 8978 (Reaction of IPv6 SLAAC
+                # to Flash-Renumbering Events). Trusted LANs get the loopback
+                # routes covering an address on the interface: the site ULA
+                # and delegated GUA aggregates. Restricted LANs get an explicit
+                # site ULA route alone. dev0 needs it, since the dn42 VLAN's
+                # fd00::/8 route would otherwise capture the site's ULA
+                # traffic too.
+                route = [
+                  (
+                    {
+                      lifetime = "45m";
+                    }
+                    // lib.optionalAttrs (!ifi.trusted) { prefix = inventory.ulaPrefix6; }
+                  )
+                ];
               }
-            ];
-          }
-        )
+              # DNS search: this segment's own namespace, and on a trusted LAN
+              # the other trusted namespaces, the site domain and the service
+              # zone after it. A host whose other resolver claims every name
+              # routes these zones here by them. A restricted LAN gets its own
+              # alone, since it cannot reach the others. A segment the inventory
+              # names no host on is told nothing.
+              // lib.optionalAttrs (ifi.hosts != [ ]) {
+                dnssl = [
+                  {
+                    domain_names = [
+                      ifi.searchDomain
+                    ]
+                    ++ lib.optionals ifi.trusted (
+                      (map (i: i.searchDomain) (
+                        lib.filter (i: i.trusted && i.name != ifi.name) (lib.attrValues inventory.interfaces)
+                      ))
+                      ++ [
+                        inventory.domain
+                        "svc.${inventory.zone}"
+                      ]
+                    );
+                  }
+                ];
+              }
+            )
 
         # The internal dn42 VLAN (see dn42.nix): SLAAC for its /64, and
         # dn42 reached through the router by route information rather than

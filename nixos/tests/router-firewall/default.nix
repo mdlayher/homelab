@@ -409,6 +409,7 @@ let
     lokiPort = server.services.loki.configuration.server.http_listen_port;
     lgtv = import ../../../lgtv/hosts.nix;
     prusa = import ../../../prusa/syslog.nix;
+    windows = import ../../../windows/hosts.nix;
   };
   cases = import ./cases.nix { inherit lib f; };
 
