@@ -311,7 +311,7 @@ in
     ../modules/nftables-inventory.nix
   ];
 
-  homelab.mgmtLockdown.enforce = false;
+  homelab.mgmtLockdown.enforce = true;
 
   # A forward is matched by interface identifier, so a host whose identifier
   # changes with the prefix cannot be one: its element would name an address

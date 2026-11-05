@@ -72,7 +72,7 @@ in
     }: "
     add rule inet input-guard mgmt_inventory ether saddr != @mgmt_known counter name mgmt_unknown ${lib.optionalString mgmtEnforce "drop "}comment "unknown host on mgmt"
   '';
-  homelab.mgmtLockdown.enforce = false;
+  homelab.mgmtLockdown.enforce = true;
 
   networking = {
     # Host name and ID.
