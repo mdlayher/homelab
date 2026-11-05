@@ -27,6 +27,17 @@ function Installed-Version([string]$id) {
     return $null
 }
 
+# A firewall rule's remote address as the configuration writes it. Windows
+# stores an IPv4 prefix as address/mask and reads it back that way, so the
+# mask becomes a prefix length; an IPv6 prefix is stored as given.
+function Prefix-Form([string]$addr) {
+    if ($addr -match '^(\d+\.\d+\.\d+\.\d+)/(\d+\.\d+\.\d+\.\d+)$') {
+        $bits = ([IPAddress]$Matches[2]).GetAddressBytes() | ForEach-Object { [Convert]::ToString($_, 2).PadLeft(8, '0') }
+        return "$($Matches[1])/$((-join $bits).TrimEnd('0').Length)"
+    }
+    return $addr
+}
+
 # Packages.
 foreach ($p in $config.packages) {
     $have = Installed-Version $p.id
@@ -121,7 +132,7 @@ if ($w32.NtpServer -ne $peer -or $w32.Type -ne 'NTP' -or $w32svc.StartMode -ne '
 foreach ($r in $config.firewall) {
     $rule = Get-NetFirewallRule -DisplayName $r.name -ErrorAction SilentlyContinue | Select-Object -First 1
     $filter = if ($rule) { $rule | Get-NetFirewallPortFilter } else { $null }
-    $remote = if ($rule) { @(($rule | Get-NetFirewallAddressFilter).RemoteAddress) | Sort-Object } else { @() }
+    $remote = if ($rule) { @(($rule | Get-NetFirewallAddressFilter).RemoteAddress | ForEach-Object { Prefix-Form $_ }) | Sort-Object } else { @() }
     $wanted = if ($r.remote) { @($r.remote) | Sort-Object } else { @('Any') }
     $ok = $rule -and $rule.Enabled -eq 'True' -and $rule.Direction -eq 'Inbound' -and
         $rule.Action -eq 'Allow' -and $rule.Profile -eq 'Any' -and $filter.Protocol -eq $r.protocol -and
