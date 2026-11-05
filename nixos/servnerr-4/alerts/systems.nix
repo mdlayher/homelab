@@ -128,10 +128,12 @@
     }
     # Jobs excluded from PrometheusInstanceDown flap too often for a 5
     # minute window, but a full day of failed scrapes means the target is
-    # dead rather than flaky.
+    # dead rather than flaky. The average alone also matches a target
+    # created minutes ago with every sample so far failed, so the series
+    # must have been failing a day ago too.
     {
       alert = "PrometheusInstanceDownLong";
-      expr = "avg_over_time(up{job=~${excludedJobsRegex}}[1d]) == 0";
+      expr = "avg_over_time(up{job=~${excludedJobsRegex}}[1d]) == 0 and up{job=~${excludedJobsRegex}} offset 1d == 0";
       annotations.summary = "{{ $labels.instance }} of flaky job {{ $labels.job }} has been down for an entire day.";
     }
     # Always firing; routed to an external heartbeat so that silence from
