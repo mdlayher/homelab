@@ -17,8 +17,12 @@ data "unifi_client_qos_rate" "default" {
 # The lowest 2.4 GHz rate the SSIDs carry, which sets the rate of their
 # beacons and management frames. The band is busy with the neighbours'
 # networks, and the legacy rates below 6 Mbps serve 802.11b devices alone.
+# The 5 GHz rate every SSID declares. 6 Mbps is already the lowest rate on
+# that band, so the setting changes nothing on the air; the controller
+# rejects a WLAN created without one (api.err.InvalidRate).
 locals {
   min_rate_2g_kbps = 6000
+  min_rate_5g_kbps = 6000
 }
 
 # The LAN's SSID: WPA3 alone, with management frame protection required.
@@ -34,8 +38,27 @@ resource "unifi_wlan" "lan" {
   pmf_mode                   = "required"
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  minimum_data_rate_5g_kbps  = local.min_rate_5g_kbps
   bss_transition             = true
   network_id                 = unifi_network.vlan["lan0"].id
+  ap_group_ids               = [data.unifi_ap_group.default.id]
+  user_group_id              = data.unifi_client_qos_rate.default.id
+}
+
+# The media network's SSID: WPA3 with WPA2 alongside and management frame
+# protection optional, the settings the TVs join with.
+resource "unifi_wlan" "media" {
+  name                       = "Two Hearted Ale"
+  security                   = "wpapsk"
+  passphrase                 = var.wlan_media_passphrase
+  wpa3_support               = true
+  wpa3_transition            = true
+  pmf_mode                   = "optional"
+  minrate_setting_preference = "manual"
+  minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  minimum_data_rate_5g_kbps  = local.min_rate_5g_kbps
+  bss_transition             = true
+  network_id                 = unifi_network.vlan["media0"].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id
 }
@@ -53,6 +76,7 @@ resource "unifi_wlan" "guest" {
   l2_isolation               = true
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  minimum_data_rate_5g_kbps  = local.min_rate_5g_kbps
   bss_transition             = true
   network_id                 = unifi_network.vlan["guest0"].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
@@ -62,7 +86,7 @@ resource "unifi_wlan" "guest" {
 # The IoT SSIDs, with management frame protection optional since most of
 # the devices speak only WPA2. wpa3 offers WPA3 alongside WPA2; the IoT
 # SSID is WPA2 alone because a transition-mode beacon stops some of its
-# devices joining at all. Both stay off 6 GHz, where the controller
+# devices joining at all. They stay off 6 GHz, where the controller
 # refuses a WPA2 SSID.
 locals {
   iot_wlans = {
@@ -71,12 +95,6 @@ locals {
       network    = "iot0"
       passphrase = var.wlan_iot_passphrase
       wpa3       = false
-    }
-    iot1 = {
-      name       = "MDL IoT1"
-      network    = "iot1"
-      passphrase = var.wlan_iot1_passphrase
-      wpa3       = true
     }
   }
 }
@@ -92,6 +110,7 @@ resource "unifi_wlan" "iot" {
   pmf_mode                   = "optional"
   minrate_setting_preference = "manual"
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
+  minimum_data_rate_5g_kbps  = local.min_rate_5g_kbps
   bss_transition             = true
   wlan_bands                 = ["2g", "5g"]
   network_id                 = unifi_network.vlan[each.value.network].id

@@ -42,7 +42,6 @@ in
               media0
               guest0
               iot0
-              iot1
               dev0
             ]
             (

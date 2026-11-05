@@ -11,13 +11,12 @@ locals {
     media0       = 30
     dn42         = 42
     iot0         = 66
-    iot1         = 67
     lasthop-isis = 131
   }
 
   # The segments the router runs a DHCP server on: the inventory's subnets
   # (nixos/inventory/default.nix). The dn42 and lab VLANs address themselves.
-  served = ["guest0", "lan0", "media0", "dev0", "iot0", "iot1"]
+  served = ["guest0", "lan0", "media0", "dev0", "iot0"]
 
   # The router's address on each served segment, by the inventory's layout
   # (nixos/modules/inventory.nix): the site's /16 is the management LAN's,

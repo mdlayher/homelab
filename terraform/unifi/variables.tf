@@ -27,14 +27,16 @@ variable "wlan_guest_passphrase" {
   sensitive = true
 }
 
-# The IoT SSIDs' passphrases (see wlans.tf), from secrets/unifi.yaml as
-# TF_VAR_wlan_iot_passphrase and TF_VAR_wlan_iot1_passphrase.
-variable "wlan_iot_passphrase" {
+# The media SSID's passphrase (see wlans.tf), from secrets/unifi.yaml as
+# TF_VAR_wlan_media_passphrase.
+variable "wlan_media_passphrase" {
   type      = string
   sensitive = true
 }
 
-variable "wlan_iot1_passphrase" {
+# The IoT SSID's passphrase (see wlans.tf), from secrets/unifi.yaml as
+# TF_VAR_wlan_iot_passphrase.
+variable "wlan_iot_passphrase" {
   type      = string
   sensitive = true
 }

@@ -126,7 +126,6 @@ let
     lan0 = "20-lan0";
     media0 = "21-media0";
     iot0 = "25-iot0";
-    iot1 = "26-iot1";
     guest0 = "30-guest0";
     dev0 = "40-dev0";
   };
@@ -382,7 +381,6 @@ in
         "lan0"
         "media0"
         "iot0"
-        "iot1"
         "guest0"
         "dev0"
       ]
@@ -414,10 +412,6 @@ in
     # IoT VLAN.
     netdevs."25-iot0" = vlanNetdev "iot0" inventory.interfaces.iot0.vlan;
     networks."25-iot0" = lanNetwork inventory.interfaces.iot0;
-
-    # Second IoT VLAN.
-    netdevs."26-iot1" = vlanNetdev "iot1" inventory.interfaces.iot1.vlan;
-    networks."26-iot1" = lanNetwork inventory.interfaces.iot1;
 
     # Guest VLAN.
     netdevs."30-guest0" = vlanNetdev "guest0" inventory.interfaces.guest0.vlan;

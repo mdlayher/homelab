@@ -63,7 +63,7 @@ tag rather than by name or by role union: NixOS modules through
 and the deploy scripts' `hosts.nix` files through `inventory/tagged.nix`,
 which needs no nixpkgs and returns names. A tag says what a host is, never
 what a consumer does with it.
-Untrusted subnets (`media0`, `guest0`, `iot0`, `iot1`, `dev0`) only reach the internet and the
+Untrusted subnets (`media0`, `guest0`, `iot0`, `dev0`) only reach the internet and the
 router's DHCP and DNS. `dev0` is carried tagged to the server for its
 containers, so its switch port must be a trunk with VLAN 20 allowed, and
 VLAN 42 as well for the internal dn42 VLAN (see the router's `dn42.nix`).

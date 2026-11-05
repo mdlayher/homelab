@@ -477,8 +477,8 @@
       };
 
       # Media VLAN: machines we own that get the internet and the services
-      # opened toward them, and nothing else. The wired consoles are on it
-      # unnamed.
+      # opened toward them, and nothing else, on one segment so they reach
+      # each other at layer 2. The wired consoles are on it unnamed.
       media0 = {
         vlan = 30;
         trusted = false;
@@ -490,6 +490,14 @@
               "personal"
               "windows"
             ];
+          };
+          living-room-lgcx = {
+            ipv6 = "eui64";
+            tags = [ "lgtv" ];
+          };
+          office-lgc4 = {
+            ipv6 = "eui64";
+            tags = [ "lgtv" ];
           };
           theatnerr-2 = {
             ipv6 = "eui64";
@@ -558,25 +566,6 @@
           server-rack-hue-hub = {
             ipv6 = "eui64";
             tags = [ "hue" ];
-          };
-        };
-      };
-
-      # Second IoT VLAN, for the LG TVs, kept apart from the appliances on
-      # iot0. It shares iot0's role, so its hosts are named in the same
-      # namespace.
-      iot1 = {
-        vlan = 67;
-        trusted = false;
-        role = "iot";
-        hosts = {
-          living-room-lgcx = {
-            ipv6 = "eui64";
-            tags = [ "lgtv" ];
-          };
-          office-lgc4 = {
-            ipv6 = "eui64";
-            tags = [ "lgtv" ];
           };
         };
       };
