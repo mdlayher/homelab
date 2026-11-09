@@ -89,6 +89,15 @@
       for = "15m";
       annotations.summary = "The UPS behind {{ $labels.instance }} reports that its batteries need replacing.";
     }
+    # The maintenance bypass leaves the UPS powered but carrying nothing
+    # while the rack draws through the PDUs, which no battery or load
+    # rule notices. The wait covers a deliberate transfer.
+    {
+      alert = "UPSBypassed";
+      expr = "upsAdvanceOutputLoad == 0 and on (site) max by (site) (ePDU2DeviceStatusPowerLoad) > 0";
+      for = "30m";
+      annotations.summary = "The UPS behind {{ $labels.instance }} carries no load while the rack draws through the PDUs; the maintenance bypass is still engaged.";
+    }
     {
       alert = "UPSLoadHigh";
       expr = "upsAdvanceOutputLoad > 80";
