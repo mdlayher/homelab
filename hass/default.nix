@@ -101,6 +101,9 @@ let
 
     prometheus:
 
+    zha:
+      custom_quirks_path: /config/zha_quirks
+
     template:
       - binary_sensor:
     ${indent 6 pulseSensors}
@@ -248,6 +251,12 @@ let
   files = {
     "configuration.yaml" = {
       source = pkgs.writeText "configuration.yaml" configuration;
+      action = "core";
+    };
+    # Custom ZHA quirks, from the directory configuration.yaml names in
+    # zha.custom_quirks_path; ZHA loads them when core starts.
+    "zha_quirks/aqara_plug_outage_memory.py" = {
+      source = ./zha_quirks/aqara_plug_outage_memory.py;
       action = "core";
     };
     # The configuration the Alloy add-on runs, named by its
