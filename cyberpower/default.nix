@@ -14,6 +14,15 @@ let
   kinds = import ./hosts.nix;
   inherit (kinds) hosts;
 
+  # Each PDU's cabled outlets, by outlet number, named for the device the
+  # physical inventory's power cable from it reaches. An outlet with no
+  # cable keeps its name from pduDefaults.
+  powerCables = (import ../nixos/inventory/physical.nix).cables.power;
+  pduCables = pdu: lib.filter (c: c.src.device == pdu) powerCables;
+  cabledOutlets =
+    pdu:
+    lib.listToAttrs (map (c: lib.nameValuePair c.src.port { name = c.dst.device; }) (pduCables pdu));
+
   # A row of a card's desired state as { name, oid, type, value }: object
   # is a column of table, under the subtree at base, and index its instance.
   mkRow =
@@ -93,25 +102,12 @@ let
     });
   };
 
-  # Each PDU's overrides of pduDefaults, merged attribute by attribute, so
-  # outlets."3".name = "..." renames one outlet and keeps its times.
+  # Each PDU's overrides of pduDefaults and its cabled outlets' names,
+  # merged attribute by attribute, so outlets."3".powerOnTime = 10 changes
+  # one outlet's time and keeps its name.
   pdus = {
-    pdu01.outlets = {
-      "5".name = "nest-mini";
-      "6".name = "hue-hub";
-      "7".name = "serial-8port";
-      "8".name = "hass";
-    };
-    pdu02 = {
-      metered = true;
-      outlets."1".name = "router";
-      outlets."2".name = "switch-core";
-      outlets."3".name = "server";
-      outlets."5".name = "jump";
-      outlets."6".name = "pikvm";
-      outlets."7".name = "ont";
-      outlets."8".name = "cable-modem";
-    };
+    pdu01 = { };
+    pdu02.metered = true;
   };
 
   # The rows of one PDU.
@@ -239,7 +235,15 @@ let
     ) rows;
   hostRows =
     lib.genAttrs kinds.pdus (
-      name: checked name (pduRows (lib.recursiveUpdate pduDefaults pdus.${name}))
+      name:
+      checked name (
+        pduRows (
+          lib.foldl' lib.recursiveUpdate pduDefaults [
+            { outlets = cabledOutlets name; }
+            pdus.${name}
+          ]
+        )
+      )
     )
     // lib.genAttrs kinds.upses (
       name: checked name (upsRows (lib.recursiveUpdate upsDefaults upses.${name}))
@@ -262,6 +266,16 @@ assert lib.assertMsg (
 assert lib.assertMsg (
   lib.attrNames upses == kinds.upses
 ) "cyberpower: upses in default.nix must be the UPSes in hosts.nix";
+assert lib.assertMsg (lib.all (
+  pdu: lib.all (n: pduDefaults.outlets ? ${n}) (lib.attrNames (cabledOutlets pdu))
+) kinds.pdus) "cyberpower: a power cable leaves an outlet pduDefaults does not manage";
+assert lib.assertMsg (lib.all (
+  pdu:
+  let
+    outlets = map (c: c.src.port) (pduCables pdu);
+  in
+  lib.unique outlets == outlets
+) kinds.pdus) "cyberpower: a PDU outlet has more than one power cable";
 pkgs.runCommand "cyberpower-config" { } (
   ''
     mkdir $out

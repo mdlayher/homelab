@@ -17,9 +17,25 @@
 # USB host, the video source, or the radio feeding an antenna. A serial line's cable carries
 # `console` with its `baud`. A USB serial cable carries its adapter's
 # `serial`. ./consoles.nix derives each machine's consoles from these.
+# A power cable runs from the outlet or receptacle feeding a device to
+# that device, and cyberpower/default.nix names each PDU outlet for the
+# device its cable reaches.
 # nixos/modules/inventory-checks.nix holds the checks on this data.
 let
   range = n: builtins.genList (i: i + 1) n;
+
+  # A power cable from port on src to device's power input.
+  power = src: port: device: {
+    type = "NEMA 5-15";
+    src = {
+      device = src;
+      port = toString port;
+    };
+    dst = {
+      inherit device;
+      port = "power";
+    };
+  };
 in
 {
   devices = {
@@ -46,6 +62,7 @@ in
         "atx"
         "ethernet"
         "sma-main"
+        "power"
       ];
       reserved.usb-serial = "exclusive with rj45-serial";
     };
@@ -82,6 +99,7 @@ in
       ports = [
         "usb"
         "atx"
+        "power"
       ];
     };
 
@@ -124,6 +142,7 @@ in
       ports = map toString (range 8) ++ [
         "usb-b"
         "usb-a"
+        "power"
       ];
       reserved.usb-a = "daisy chain";
     };
@@ -150,7 +169,65 @@ in
     # The OpenWrt router for the out-of-band VLAN.
     jumpnerr-1 = {
       model = "PC Engines apu4d4";
-      ports = [ "console" ];
+      ports = [
+        "console"
+        "power"
+      ];
+    };
+
+    # The PDUs' outlets are named by the number the card indexes them by.
+    pdu01 = {
+      model = "CyberPower PDU41001";
+      ports = [
+        "console"
+        "power"
+      ]
+      ++ map toString (range 8);
+    };
+    pdu02 = {
+      model = "CyberPower PDU81001";
+      ports = [
+        "console"
+        "power"
+      ]
+      ++ map toString (range 8);
+    };
+
+    # The maintenance bypass. Its cords and the UPS's input receptacle are
+    # named for their panel labels, and its unlabelled AC outlets are
+    # numbered from the end farthest from the bypass switch.
+    bypass = {
+      model = "CyberPower MBP15A6";
+      ports = [
+        "utility-power"
+        "to-ups-input"
+        "to-ups-output"
+      ]
+      ++ map toString (range 6);
+    };
+
+    # Every load runs through the bypass, so the UPS's outlets are one
+    # port.
+    ups01 = {
+      model = "CyberPower OR1500LCDRTXL2U";
+      ports = [
+        "console"
+        "power"
+        "output"
+      ];
+    };
+
+    # The wall circuit the bypass draws utility power from.
+    wall.ports = [ "outlet" ];
+
+    # Optical network terminal.
+    ont.ports = [ "power" ];
+
+    cable-modem.ports = [ "power" ];
+
+    nest-mini = {
+      model = "Google Nest Mini";
+      ports = [ "power" ];
     };
   };
 
@@ -353,7 +430,44 @@ in
       }
     ];
 
-    power = [ ];
+    power = [
+      {
+        type = "NEMA 5-15";
+        src = {
+          device = "wall";
+          port = "outlet";
+        };
+        dst = {
+          device = "bypass";
+          port = "utility-power";
+        };
+      }
+      (power "bypass" "to-ups-input" "ups01")
+      {
+        type = "NEMA 5-15";
+        src = {
+          device = "ups01";
+          port = "output";
+        };
+        dst = {
+          device = "bypass";
+          port = "to-ups-output";
+        };
+      }
+      (power "bypass" 1 "pdu01")
+      (power "bypass" 2 "pdu02")
+      (power "pdu01" 5 "nest-mini")
+      (power "pdu01" 6 "server-rack-hue-hub")
+      (power "pdu01" 7 "serial-8port")
+      (power "pdu01" 8 "hass")
+      (power "pdu02" 1 "routnerr-3")
+      (power "pdu02" 2 "switch-core")
+      (power "pdu02" 3 "servnerr-4")
+      (power "pdu02" 5 "jumpnerr-1")
+      (power "pdu02" 6 "pikvm")
+      (power "pdu02" 7 "ont")
+      (power "pdu02" 8 "cable-modem")
+    ];
 
     network = [ ];
   };

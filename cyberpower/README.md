@@ -8,7 +8,9 @@ so this directory builds the SNMP objects the repository manages on them and
 - `hosts.nix`: the PDUs, the inventory hosts tagged `pdu`, and the UPSes,
   those tagged `ups`.
 - `default.nix`: the managed objects, built as `.#cyberpower`. On a PDU,
-  per outlet its name and power-on, power-off and reboot times; per device
+  per outlet its name, which a cabled outlet takes from the device its
+  power cable in `nixos/inventory/physical.nix` reaches, and power-on,
+  power-off and reboot times; per device
   its location, contact, cold-start delay and current thresholds; the current
   thresholds of each bank and phase; and on a PDU with metered outlets,
   each outlet's power thresholds. On a UPS, the writable configuration
