@@ -96,8 +96,22 @@ let
   # Each PDU's overrides of pduDefaults, merged attribute by attribute, so
   # outlets."3".name = "..." renames one outlet and keeps its times.
   pdus = {
-    pdu01 = { };
-    pdu02.metered = true;
+    pdu01.outlets = {
+      "5".name = "nest-mini";
+      "6".name = "hue-hub";
+      "7".name = "serial-8port";
+      "8".name = "hass";
+    };
+    pdu02 = {
+      metered = true;
+      outlets."1".name = "router";
+      outlets."2".name = "switch-core";
+      outlets."3".name = "server";
+      outlets."5".name = "jump";
+      outlets."6".name = "pikvm";
+      outlets."7".name = "ont";
+      outlets."8".name = "cable-modem";
+    };
   };
 
   # The rows of one PDU.
