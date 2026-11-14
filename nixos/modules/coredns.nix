@@ -172,6 +172,14 @@ let
     @ IN SOA ns hostmaster 1 7200 3600 1209600 3600
   '';
 
+  # The same for the internal forward zones, with a minute's negative TTL:
+  # their names come from the inventory, and a client that asked before a
+  # name's deploy holds the NXDOMAIN for that long.
+  emptyInternalZone = pkgs.writeText "coredns-empty-internal.zone" ''
+    $TTL 60
+    @ IN SOA ns hostmaster 1 7200 3600 1209600 60
+  '';
+
   # The site's own reverse zones, answered locally: the ULA /48 from the
   # inventory, and all of RFC 1918 except dn42's 172.20.0.0/14, since the
   # LAN prefixes are secrets and no outside resolver can answer for that
@@ -256,9 +264,7 @@ in
         # machine - and it would be a browsing history for every device in
         # the house, which is not a thing worth keeping for a year.
         #
-        # This block only, not the internal zone below: a name missing from
-        # the hosts file is answered SERVFAIL rather than NXDOMAIN, so it is
-        # of class error and a log directive there would not see it anyway.
+        # This block only; the internal zones below are not logged.
         log . {
           class denial
         }
@@ -270,8 +276,13 @@ in
 
       # Internal zone, this site's. Never the bare zone above it: the root
       # block forwards that to the clearnet, where the public records live.
+      # Here and in the internal blocks below, a name missing from the hosts
+      # file falls through to an empty zone, which answers NXDOMAIN.
       ${inventory.domain} {
-        hosts /run/credentials/coredns.service/${credential}
+        hosts /run/credentials/coredns.service/${credential} {
+          fallthrough
+        }
+        file ${emptyInternalZone}
       }
 
       # Service names, network-wide rather than this site's, so a service
@@ -280,14 +291,20 @@ in
       # A block of its own because ownership differs from a site zone's,
       # which a second resolver would have to respect.
       svc.${inventory.zone} {
-        hosts /run/credentials/coredns.service/${credential}
+        hosts /run/credentials/coredns.service/${credential} {
+          fallthrough
+        }
+        file ${emptyInternalZone}
       }
 
       # Other sites. Plain data from the inventory, so a store path rather
       # than a rendered credential: a reader of this file can see that
       # nothing about the far site is secret here.
       ${remoteDomains} {
-        hosts ${remoteHostsFile}
+        hosts ${remoteHostsFile} {
+          fallthrough
+        }
+        file ${emptyInternalZone}
       }
 
       # The tailnet: its names exist only in each node's tailscaled, which

@@ -11,8 +11,9 @@
 # view follows the address the request arrived on rather than the name it
 # asked for, so the clearnet cannot reach the fabric one by sending a Host
 # header. That address is this site's loopback, which the circuits and every
-# segment here can reach, and which no certificate can name, so the fabric
-# view is plain HTTP.
+# segment here can reach. Its names are internal, which a CA can validate
+# over DNS-01 and not over HTTP-01, so the fabric view is HTTPS where the
+# machine orders over DNS-01 and plain HTTP elsewhere.
 {
   config,
   lib,
@@ -46,6 +47,27 @@ let
     (dial "ipv6")
   ]
   ++ cfg.extraNames;
+
+  # The loopback's names, and its address, which is all a client across a
+  # circuit has. The names are on a certificate of their own where the order
+  # is over DNS-01; the address is never on one.
+  loopbackNames =
+    lib.optional (loopback.siteFqdn != null) loopback.siteFqdn
+    ++ lib.optional (loopback.fqdn != null) loopback.fqdn;
+  loopbackAddress = "[${loopback.addr6}]";
+  fabricNames = loopbackNames ++ [ loopbackAddress ];
+  fabricTls = cfg.acmeEnvironmentFile != null && loopbackNames != [ ];
+  fabricCert = lib.head loopbackNames;
+
+  # The page, served the same under either vhost below.
+  locations."= /".extraConfig = ''
+    try_files /$icl_view.$icl_type =404;
+    charset utf-8;
+    sub_filter 'via HTTP over IP' 'via $icl_proto over $icl_family';
+    sub_filter_once on;
+    sub_filter_types text/plain;
+    add_header Vary Accept;
+  '';
 
   # HTTP-01's challenge directory, used when no DNS credential is given.
   webroot = "/var/lib/acme/acme-challenge";
@@ -222,7 +244,9 @@ in
         HTTP-01 instead, which needs no credential on the machine and is
         what a site with one uplink should use; a site whose names are
         pinned to an uplink each needs DNS-01, since HTTP-01 cannot validate
-        a name whose uplink is down.
+        a name whose uplink is down. The loopback's names are certified
+        only over DNS-01, since a CA cannot reach them to validate over
+        HTTP-01; without the credential the fabric view is plain HTTP.
       '';
     };
   };
@@ -237,27 +261,44 @@ in
 
     # Its own order rather than more names on another page's certificate: an
     # order fails as a unit, so one name failing validation here would stop
-    # that one renewing too. The domain is a name that resolves, because the
-    # server discovers HTTPS probe targets from these certificates (see
-    # nixos/servnerr-4/prometheus.nix) and the label above does not.
+    # that one renewing too. The domain is a name that resolves rather than
+    # the label: the server's HTTPS probe discovery skips a name which keys a
+    # certificate without being on it (see nixos/servnerr-4/prometheus.nix).
     security.acme = {
       acceptTerms = true;
       defaults.email = lib.mkDefault "mdlayher@gmail.com";
 
-      certs.${label} = {
-        domain = dial "ipv6";
-        extraDomainNames = [ (dial "ipv4") ] ++ cfg.extraNames;
-        group = config.services.nginx.group;
+      certs = {
+        ${label} = {
+          domain = dial "ipv6";
+          extraDomainNames = [ (dial "ipv4") ] ++ cfg.extraNames;
+          group = config.services.nginx.group;
+        }
+        // (
+          if cfg.acmeEnvironmentFile == null then
+            { inherit webroot; }
+          else
+            {
+              dnsProvider = "cloudflare";
+              environmentFile = cfg.acmeEnvironmentFile;
+            }
+        );
       }
-      // (
-        if cfg.acmeEnvironmentFile == null then
-          { inherit webroot; }
-        else
-          {
-            dnsProvider = "cloudflare";
-            environmentFile = cfg.acmeEnvironmentFile;
-          }
-      );
+      // lib.optionalAttrs fabricTls {
+        # The loopback's names, in an order of their own for the same reason.
+        # A public resolver finds their zone: the site's resolver is
+        # authoritative for the internal zone beneath the public one (see
+        # modules/coredns.nix), and lego takes the first SOA it finds as the
+        # zone to edit at the provider.
+        ${fabricCert} = {
+          domain = fabricCert;
+          extraDomainNames = lib.tail loopbackNames;
+          group = config.services.nginx.group;
+          dnsProvider = "cloudflare";
+          dnsResolver = "1.1.1.1:53";
+          environmentFile = cfg.acmeEnvironmentFile;
+        };
+      };
     };
 
     services.nginx = {
@@ -291,32 +332,24 @@ in
         }
       '';
 
+      # The public names. The challenge location an HTTP-01 order needs is
+      # the nginx module's own, added for any vhost naming a certificate.
       virtualHosts.${label} = {
         addSSL = true;
         useACMEHost = label;
+        serverAliases = names;
+        inherit root locations;
+      };
 
-        # The loopback by the name every site's carries, by the machine's own
-        # where it has one, and by number, which is all a client across a
-        # circuit has. None can be on the certificate: two are internal names
-        # and one an address, so the fabric view is plain HTTP.
-        serverAliases =
-          names
-          ++ lib.optional (loopback.siteFqdn != null) loopback.siteFqdn
-          ++ lib.optional (loopback.fqdn != null) loopback.fqdn
-          ++ [ "[${loopback.addr6}]" ];
-
-        inherit root;
-
-        # The challenge location an HTTP-01 order needs is the nginx
-        # module's own, added for any vhost naming a certificate.
-        locations."= /".extraConfig = ''
-          try_files /$icl_view.$icl_type =404;
-          charset utf-8;
-          sub_filter 'via HTTP over IP' 'via $icl_proto over $icl_family';
-          sub_filter_once on;
-          sub_filter_types text/plain;
-          add_header Vary Accept;
-        '';
+      # The loopback, by its names and by number. HTTPS only where its names
+      # have a certificate: the server probes every name a vhost serving TLS
+      # answers for (see nixos/servnerr-4/prometheus.nix).
+      virtualHosts.icl-fabric = {
+        serverName = lib.head fabricNames;
+        serverAliases = lib.tail fabricNames;
+        addSSL = fabricTls;
+        useACMEHost = if fabricTls then fabricCert else null;
+        inherit root locations;
       };
     };
   };

@@ -242,12 +242,12 @@
       annotations.summary = "{{ $labels.instance }} saw traffic on the management LAN from hardware the inventory does not name there.";
     }
     # Every HTTPS probe target's certificate, whoever issues it: Tailscale
-    # renews its Services certificates itself, and the acme module
-    # renews the ones this flake issues (the router's dn42 peering page,
-    # from Let's Encrypt over DNS-01) from 30 days out, retrying daily.
-    # Both are 90-day certificates, so anything under 14 days means
-    # renewal has been failing for over two weeks, which nothing else
-    # reports. The probes are discovered with the certificates; see
+    # renews its Services certificates itself, Netlify the sites it hosts,
+    # and the acme module the ones this flake issues from 30 days out,
+    # retrying daily. The public ones are 90-day certificates, so anything
+    # under 14 days means renewal has been failing for over two weeks,
+    # which nothing else reports. The probes are discovered from the names
+    # nginx serves over TLS, with the rest listed by hand; see
     # prometheus.nix.
     {
       alert = "TLSCertificateExpiringSoon";

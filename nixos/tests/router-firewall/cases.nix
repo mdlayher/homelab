@@ -1425,6 +1425,13 @@ assert lib.assertMsg
     tcp = 80;
     accept = "router interconnect page";
   })
+  (case "far site to router page over HTTPS" {
+    from = "far";
+    to = "router";
+    dst = f.routerLo.addr6;
+    tcp = 443;
+    accept = "router interconnect page";
+  })
   # input_icl: "tailscale endpoint discovery over the circuit"
   (case "far site Tailscale probe to router" {
     from = "far";

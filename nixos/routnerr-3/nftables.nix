@@ -745,7 +745,7 @@ in
             # the edges admit it from a circuit.
             ip6 daddr $anycast_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
             ip daddr $anycast4_ntp udp dport $ntp counter accept comment "router interconnect anycast NTP"
-            ip6 daddr $loopback6 tcp dport $http counter accept comment "router interconnect page"
+            ip6 daddr $loopback6 tcp dport { $http, $https } counter accept comment "router interconnect page"
 
             # The edges are tailnet nodes, and tailscaled probes every
             # address a peer holds as a candidate endpoint, which the IGP

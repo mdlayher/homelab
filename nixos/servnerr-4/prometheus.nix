@@ -301,9 +301,8 @@ let
   # frontend is a prompt to add its probe, since nothing else would notice
   # its certificate expiring.
   #
-  # Certificates a machine in this flake issues through the acme module are
-  # discovered from its configuration instead, so the probe arrives with the
-  # certificate and never before it.
+  # The names nginx serves over TLS on a machine in this flake are discovered
+  # from its configuration instead, so the probe arrives with the name.
   probes =
     map (at hostName) [
       "${alertmanagerUrl}/-/healthy"
@@ -318,14 +317,43 @@ let
       "https://loki.${tailnetDomain}/ready"
       "https://prometheus.${tailnetDomain}/-/healthy"
     ]
-    # A certificate belongs to the machine that issues it, so its probe
-    # carries that machine's site rather than this one's.
+    # Sites served outside this flake, by Netlify.
+    ++ map nowhere [
+      "https://mdlayher.com/"
+      "https://corerad.net/"
+    ]
+    # A name belongs to the machine that serves it, so its probe carries
+    # that machine's site rather than this one's.
     ++ lib.concatMap (
-      name:
-      map (cert: at name "https://${cert.domain}/") (
-        lib.attrValues inputs.self.nixosConfigurations.${name}.config.security.acme.certs
-      )
+      name: map (n: at name "https://${n}/") (tlsNames inputs.self.nixosConfigurations.${name}.config)
     ) (lib.attrNames inputs.self.nixosConfigurations);
+
+  # Every name a vhost serving TLS answers for, so a name served under the
+  # wrong certificate fails its probe. A probed name is a single DNS name:
+  # wildcards, regexes, address literals and dotless names are skipped, as
+  # is a name which keys a certificate without being on it, which is a label
+  # nothing resolves (see modules/icl-page.nix). blackbox follows redirects,
+  # so a redirecting vhost's handshake is checked under its own name and
+  # the 2xx comes from where it points.
+  tlsNames =
+    cfg:
+    let
+      labels = lib.attrNames (
+        lib.filterAttrs (
+          key: cert: !(lib.elem key ([ cert.domain ] ++ cert.extraDomainNames))
+        ) cfg.security.acme.certs
+      );
+      single =
+        n: lib.hasInfix "." n && builtins.match "[*~.\\[].*|[0-9.]+" n == null && !(lib.elem n labels);
+      names =
+        key: vhost:
+        lib.optionals (vhost.addSSL || vhost.onlySSL || vhost.forceSSL) (
+          [ (if vhost.serverName != null then vhost.serverName else key) ] ++ vhost.serverAliases
+        );
+    in
+    lib.optionals cfg.services.nginx.enable (
+      lib.filter single (lib.concatLists (lib.mapAttrsToList names cfg.services.nginx.virtualHosts))
+    );
 
   # Blackbox ICMP probe targets: public anchors over both IPv4 and IPv6, so
   # internet reachability, latency, and loss are tracked per address family.
