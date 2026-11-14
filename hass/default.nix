@@ -255,8 +255,8 @@ let
     };
     # Custom ZHA quirks, from the directory configuration.yaml names in
     # zha.custom_quirks_path; ZHA loads them when core starts.
-    "zha_quirks/aqara_plug_outage_memory.py" = {
-      source = ./zha_quirks/aqara_plug_outage_memory.py;
+    "zha_quirks/aqara_plug_settings.py" = {
+      source = ./zha_quirks/aqara_plug_settings.py;
       action = "core";
     };
     # The configuration the Alloy add-on runs, named by its

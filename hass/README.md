@@ -14,7 +14,7 @@ SSH, as root in the Terminal & SSH add-on. Nothing applies it nightly.
     pinned release of its source and loaded by a restart of core;
   - the custom ZHA quirks under `zha_quirks/`, which
     `zha.custom_quirks_path` names and ZHA loads at a restart of core;
-    see [Power outage memory](#power-outage-memory);
+    see [Aqara plug settings](#aqara-plug-settings);
   - the options of each managed add-on, `addons/<slug>.json`, posted to
     the Supervisor; options left out keep the add-on's defaults and are not
     compared. The Terminal & SSH add-on takes the admin's FIDO2 keys from
@@ -42,14 +42,16 @@ so), and the add-ons whose options changed. The deploy's connection runs
 through the Terminal & SSH and Tailscale add-ons, so they restart a few
 seconds after the deploy has finished.
 
-## Power outage memory
+## Aqara plug settings
 
-The Aqara smart plugs (`lumi.plug.maus01`) must restore their relay state
-after a utility outage. ZHA exposes no entity for the setting, so
-`zha_quirks/aqara_plug_outage_memory.py` extends the upstream quirk with
-the manufacturer-specific Basic attribute the plug takes it through,
-0xFFF0, keeping every other cluster as upstream has it. The setting is
-write-only; set it once per plug, from Developer tools → Actions:
+The Aqara plugs (`lumi.plug.maus01`) take outage memory and the night LED
+through write-only Basic attribute 0xFFF0, which ZHA has no entity for.
+`zha_quirks/aqara_plug_settings.py` makes it writable and writes outage
+memory on and the night LED off whenever ZHA configures a plug: at join,
+rejoin and Reconfigure, not at a restart of core. A failed write is logged
+as a warning; a value set by hand is put back at the next configuration.
+
+To write one by hand, from Developer tools → Actions:
 
 ```yaml
 action: zha.set_zigbee_cluster_attribute
@@ -59,12 +61,18 @@ data:
   cluster_id: 0
   attribute: 65520
   manufacturer: 4447
-  # On; "aa 80 05 d1 47 01 01 10 00" turns it off.
-  value: "aa 80 05 d1 47 00 01 10 01"
+  value: "<value>"
 ```
 
-The payloads are zigbee2mqtt's `lumi_switch_power_outage_memory` in
-zigbee-herdsman-converters `src/lib/lumi.ts`.
+| Setting | Value |
+| --- | --- |
+| Outage memory on | `aa 80 05 d1 47 00 01 10 01` |
+| Outage memory off | `aa 80 05 d1 47 01 01 10 00` |
+| Night LED off | `aa 80 05 d1 47 00 03 10 00` |
+| Night LED on | `aa 80 05 d1 47 01 03 10 01` |
+
+The values are zigbee-herdsman-converters' (`src/lib/lumi.ts`); the night
+LED ones are its ZNCZ11LM payloads, observed working on these plugs.
 
 ## Not managed here
 
