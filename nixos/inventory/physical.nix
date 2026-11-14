@@ -229,6 +229,12 @@ in
       model = "Google Nest Mini";
       ports = [ "power" ];
     };
+
+    # A monitor on the PiKVM's own display output.
+    crash-cart.ports = [
+      "hdmi"
+      "power"
+    ];
   };
 
   cables = {
@@ -414,6 +420,17 @@ in
           port = "host2-hdmi";
         };
       }
+      {
+        type = "HDMI";
+        src = {
+          device = "pikvm";
+          port = "hdmi-out1";
+        };
+        dst = {
+          device = "crash-cart";
+          port = "hdmi";
+        };
+      }
     ];
 
     rf = [
@@ -456,6 +473,7 @@ in
       }
       (power "bypass" 1 "pdu01")
       (power "bypass" 2 "pdu02")
+      (power "pdu01" 1 "crash-cart")
       (power "pdu01" 5 "nest-mini")
       (power "pdu01" 6 "server-rack-hue-hub")
       (power "pdu01" 7 "serial-8port")
