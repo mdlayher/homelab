@@ -5,6 +5,15 @@
   # settings (terraform/unifi/settings.tf) read the same key.
   admin = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ./ssh-keys/admin.pub);
 
+  # Root's key on the KVM, for its sessions to the serial consoles through
+  # consrv. pikvm/apply.sh generates it on the device and prints the public
+  # half to commit here; null until that is committed.
+  pikvmRoot =
+    if builtins.pathExists ./ssh-keys/pikvm-root.pub then
+      builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ./ssh-keys/pikvm-root.pub)
+    else
+      null;
+
   # The admin's FIDO2 keys, the only ones accepted for SSH from the
   # development container: each signature requires a physical touch on the
   # workstation or laptop the agent is forwarded from. One entry per

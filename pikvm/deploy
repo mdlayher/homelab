@@ -77,7 +77,7 @@ send() {
   cat "$1" >&"$in"
 }
 
-tar -C "$out" -chf "$tmp/build.tar" apply.sh manifest packages sums
+tar -C "$out" -chf "$tmp/build.tar" apply.sh manifest packages root_key.pub sums
 send "$tmp/build.tar"
 
 # The device's answer, each line "wanted <path>", closed by "wanted end".

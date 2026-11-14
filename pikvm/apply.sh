@@ -94,6 +94,40 @@ if [[ ! -f /etc/consrv/host_key ]]; then
   echo "missing: /etc/consrv/host_key"
 fi
 
+# Root's key for its sessions to the consoles through consrv is generated
+# on the device, and its private half never leaves it. The public half is
+# committed as nixos/ssh-keys/pikvm-root.pub, which the build carries as
+# root_key.pub; until the two match it is printed to be committed.
+rootkey=ok
+if [[ ! -f /root/.ssh/consrv_ed25519 ]]; then
+  rootkey=missing
+  echo "missing: /root/.ssh/consrv_ed25519"
+fi
+report_root_key() {
+  local pub=/root/.ssh/consrv_ed25519.pub
+  if [[ $(cut -d ' ' -f 1,2 "$pub") != "$(cut -d ' ' -f 1,2 root_key.pub)" ]]; then
+    echo "uncommitted: $pub; commit it as nixos/ssh-keys/pikvm-root.pub:"
+    cat "$pub"
+  fi
+}
+if [[ $rootkey == ok ]]; then
+  report_root_key
+fi
+
+# Root's client config pins consrv's host key through this known hosts
+# file, written from the host key's public half.
+knownhosts=ok
+consrv_known_host() {
+  echo "[127.0.0.1]:2222 $(cut -d ' ' -f 1,2 /etc/consrv/host_key.pub)"
+}
+if [[ $hostkey == missing || ! -f /root/.ssh/known_hosts_consrv ]]; then
+  knownhosts=missing
+  echo "missing: /root/.ssh/known_hosts_consrv"
+elif [[ $(cat /root/.ssh/known_hosts_consrv) != "$(consrv_known_host)" ]]; then
+  knownhosts=differs
+  echo "differs: /root/.ssh/known_hosts_consrv"
+fi
+
 # The login prompt on the OTG serial device, a unit kvmd ships.
 getty=ok
 if ! systemctl -q is-enabled kvmd-otg-getty@ttyGS0.service; then
@@ -117,7 +151,7 @@ if [[ $(systemctl is-enabled archlinux-keyring-wkd-sync.timer 2>/dev/null) != ma
   echo "unmasked: archlinux-keyring-wkd-sync.timer"
 fi
 
-if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $getty == ok && $dispatcher == ok && $keyring == ok ]]; then
+if [[ ${#changed[@]} -eq 0 && $serve == ok && $dns == ok && $hostkey == ok && $rootkey == ok && $knownhosts == ok && $getty == ok && $dispatcher == ok && $keyring == ok ]]; then
   echo "up to date"
   exit 0
 fi
@@ -153,6 +187,15 @@ if [[ $hostkey == missing ]]; then
   install -d -m 0700 /etc/consrv
   ssh-keygen -q -t ed25519 -N "" -C "" -f /etc/consrv/host_key
   todo[consrv]=1
+fi
+if [[ $knownhosts != ok ]]; then
+  install -d -m 0700 /root/.ssh
+  consrv_known_host >/root/.ssh/known_hosts_consrv
+fi
+if [[ $rootkey == missing ]]; then
+  install -d -m 0700 /root/.ssh
+  ssh-keygen -q -t ed25519 -N "" -C "pikvm-root" -f /root/.ssh/consrv_ed25519
+  report_root_key
 fi
 
 if [[ -n ${todo[consrv]:-} ]]; then

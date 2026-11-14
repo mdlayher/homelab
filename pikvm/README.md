@@ -36,6 +36,29 @@ serial port disconnect and return), consrv (open console sessions drop)
 and tailscaled (a few seconds off the tailnet, after the deploy has
 finished).
 
+## Consoles from the KVM
+
+Root on the KVM opens the serial consoles through consrv, so each session
+is logged and announced as one from anywhere else is, and consrv logs its
+login as identity `pikvm-root`. `/root/.ssh/config` has a host alias per
+console, `console-<name>`, which connects to consrv on 127.0.0.1:2222 with
+root's own key, `/root/.ssh/consrv_ed25519`:
+
+```sh
+ssh console-router
+```
+
+The key is generated on the KVM and its private half never leaves it.
+Its public half is committed as `nixos/ssh-keys/pikvm-root.pub`, so the
+first deploy after a reflash needs a commit in between:
+
+1. `pikvm/deploy` generates the key and prints its public half after
+   `uncommitted:`; every later run prints it again until the build
+   carries the same key.
+2. Commit that line as `nixos/ssh-keys/pikvm-root.pub` and run
+   `pikvm/deploy` again. consrv then accepts the key, and the client
+   config is installed.
+
 The server reaches the KVM's own login prompt over USB at `/dev/ttyACM0`,
 for when the KVM is off the network:
 `sudo minicom -o -b 115200 -D /dev/ttyACM0`.
@@ -50,7 +73,10 @@ Generated or set on the device, and never copied off it:
   the `svc:consrv` serve configuration; `apply.sh` re-creates the serve
   configuration when it is missing
 - consrv's SSH host key at `/etc/consrv/host_key`, which `apply.sh`
-  generates when it is missing
+  generates when it is missing, and root's known hosts file for it,
+  `/root/.ssh/known_hosts_consrv`, which `apply.sh` writes from it
+- root's consrv key at `/root/.ssh/consrv_ed25519`, which `apply.sh`
+  generates when it is missing; see Consoles from the KVM
 
 ## Rebuilding after a reflash
 
@@ -64,7 +90,9 @@ Generated or set on the device, and never copied off it:
 4. Install the admin's keys by hand so the first deploy can log in, from
    `nixos/ssh-keys.nix` into `/root/.ssh/authorized_keys`.
 5. `pikvm/deploy`. The first one generates consrv's host key, so SSH
-   clients see a new one for `consrv.<tailnet>.ts.net`.
+   clients see a new one for `consrv.<tailnet>.ts.net`. It also generates
+   root's consrv key; commit its public half and deploy again, as in
+   Consoles from the KVM.
 
 tailscaled writes its state under the read-only root, so any `tailscale up`,
 `set` or `serve` must run between `rw` and `ro` or it is lost at the next

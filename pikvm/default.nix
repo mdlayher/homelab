@@ -74,6 +74,12 @@ let
   # The serial consoles consrv serves, from the cabling in the inventory.
   consoles = (import ../nixos/inventory/consoles.nix { inherit lib inventory; }).pikvm;
 
+  # Root's key for consrv, generated on the KVM by apply.sh; null until
+  # its public half is committed (see nixos/ssh-keys.nix), and until then
+  # consrv does not accept it and root has no client config for it.
+  rootKey = sshKeys.pikvmRoot;
+  identities = [ "mdlayher" ] ++ lib.optional (rootKey != null) "pikvm-root";
+
   linuxdev = inventory.tailnetHosts.linuxdev;
 
   # The site whose LAN the KVM is on, for the label every log stream
@@ -445,7 +451,7 @@ let
           ${
             lib.optionalString (c ? interface) "interface = ${toString c.interface}\n"
           }baud = ${toString c.baud}
-          identities = ["mdlayher"]
+          identities = [${lib.concatMapStringsSep ", " (i: ''"${i}"'') identities}]
           logtostdout = true
 
         '') consoles
@@ -454,12 +460,47 @@ let
         [[identities]]
         name = "mdlayher"
         public_key = "${sshKeys.admin}"
+      ''
+      + lib.optionalString (rootKey != null) ''
+
+        [[identities]]
+        name = "pikvm-root"
+        public_key = "${rootKey}"
+      ''
+      + ''
 
         [debug]
         address = ":9288"
         prometheus = true
       '';
     }
+  ]
+  # Root's SSH client config: a host alias per console, prefixed so none
+  # shadows a machine's name, reaching consrv on this machine with root's
+  # key alone. apply.sh keeps the known hosts file from consrv's host key.
+  ++ lib.optional (rootKey != null) {
+    path = "/root/.ssh/config";
+    mode = "600";
+    action = "none";
+    text =
+      lib.concatStrings (
+        lib.mapAttrsToList (name: _: ''
+          Host console-${name}
+              User ${name}
+
+        '') consoles
+      )
+      + ''
+        Host ${lib.concatMapStringsSep " " (name: "console-${name}") (lib.attrNames consoles)}
+            HostName 127.0.0.1
+            Port 2222
+            IdentityFile /root/.ssh/consrv_ed25519
+            IdentitiesOnly yes
+            UserKnownHostsFile /root/.ssh/known_hosts_consrv
+            StrictHostKeyChecking yes
+      '';
+  }
+  ++ [
     {
       path = "/etc/systemd/system/consrv.service";
       mode = "644";
@@ -511,6 +552,7 @@ pkgs.runCommand "pikvm-config" { } (
     mkdir -p $out/tree
     install -m 0755 ${./apply.sh} $out/apply.sh
     echo ${lib.escapeShellArg (lib.concatLines packages)} > $out/packages
+    echo ${lib.escapeShellArg (if rootKey == null then "" else rootKey)} > $out/root_key.pub
   ''
   + lib.concatMapStrings (f: ''
     install -D -m ${f.mode} ${sourceOf f} $out/tree${f.path}
