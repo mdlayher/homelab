@@ -446,6 +446,13 @@
               "unifi"
             ];
           };
+          switch-movie-room = {
+            ipv6 = "eui64";
+            tags = [
+              "switch"
+              "unifi"
+            ];
+          };
           switch-office = {
             ipv6 = "eui64";
             tags = [

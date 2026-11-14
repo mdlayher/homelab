@@ -99,7 +99,8 @@ locals {
 
   # Ports with nothing cabled to them, per switch and by index.
   disabled = {
-    core        = concat(range(10, 18), [23, 24, 26, 28])
+    core        = concat(range(10, 18), [23, 24, 28])
+    movie_room  = range(1, 10)
     office      = concat(range(4, 8), [10])
     living_room = concat(range(6, 8), [10])
   }
@@ -191,6 +192,12 @@ resource "unifi_device" "switch_core" {
     name            = "switch-office"
     port_profile_id = unifi_port_profile.trunk.id
   }
+
+  port_override {
+    index           = 26
+    name            = "switch-movie-room"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
 }
 
 # The basement access point. Its trunk is core port 20, above.
@@ -257,6 +264,28 @@ resource "unifi_device" "switch_office" {
 
   dynamic "port_override" {
     for_each = toset(local.disabled.office)
+    content {
+      index           = port_override.value
+      name            = "unused"
+      port_profile_id = unifi_port_profile.disabled.id
+    }
+  }
+}
+
+# The movie room switch, on the DAC from core port 26 into its SFP+ port.
+# Both ends of the DAC are trunks. Disabled ports as on the core, above.
+resource "unifi_device" "switch_movie_room" {
+  name           = "switch-movie-room"
+  config_network = local.static["switch-movie-room"]
+
+  port_override {
+    index           = 10
+    name            = "switch-core"
+    port_profile_id = unifi_port_profile.trunk.id
+  }
+
+  dynamic "port_override" {
+    for_each = toset(local.disabled.movie_room)
     content {
       index           = port_override.value
       name            = "unused"
