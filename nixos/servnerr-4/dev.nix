@@ -1131,13 +1131,11 @@ in
                 lib.attrValues inventory.sites.${config.homelab.site}.loopbacks
               )).siteFqdn;
 
-            # Tailscale SSH is off. On, it answers port 22 for tailnet peers
-            # under the policy's ssh rules (terraform/tailscale/policy.hujson),
-            # keyless: the break-glass path via the admin console's SSH
-            # Console. Its unix socket forwarding lets a session have the
-            # root daemon open or replace root-owned sockets, root here with
-            # no YubiKey touch. Back on once a release closes that; the policy
-            # rule stays. sshd still serves dev0. Toggling the flag hangs
+            # Tailscale SSH is off, and the tailnet policy
+            # (terraform/tailscale/policy.hujson) has no ssh rule for the
+            # container. Tailnet lock refuses the path it once served, the
+            # admin console's SSH Console: each console session is a new node
+            # which no signing node has signed. Toggling the flag hangs
             # connections open to the container's tailnet address.
             services.tailscale.extraSetFlags = [ "--ssh=false" ];
 

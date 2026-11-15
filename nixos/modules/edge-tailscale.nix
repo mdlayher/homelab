@@ -23,14 +23,7 @@
     # Not Tailscale SSH. Turning it on makes tailscaled answer port 22 for
     # every tailnet connection, which takes the port away from sshd: the
     # deploys that ride tag:dev reach tailscaled instead and are refused,
-    # because the ssh policy grants only autogroup:member. Widening that to
-    # tag:dev would be worse than the problem -- it would let the
-    # development container in without the admin's key, and agents run there.
-    #
-    # The admin console's SSH Console is worth having on a machine with no
-    # LAN, but it needs sshd on a second port to coexist with key-based
-    # deploys. That is a decision to take before the public port closes, not
-    # a flag.
+    # because the tailnet policy has no ssh rule for this machine.
     "--ssh=false"
   ];
 }

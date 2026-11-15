@@ -294,36 +294,10 @@
 			"users":  ["autogroup:nonroot", "root"],
 		},
 
-		// Personal devices into the development container as the admin
-		// user, keyless: the break-glass path from a device that is not on
-		// the tailnet, via the admin console's SSH Console. The container
-		// is tagged, so the user is named rather than autogroup:nonroot;
-		// the machines beyond it still require the admin's FIDO2 key. The
-		// check gates new connections only, and every one of them; open
-		// sessions outlive it.
-		{
-			"action":      "check",
-			"checkPeriod": "always",
-			"src":         ["group:admin"],
-			"dst":         ["tag:dev"],
-			"users":       ["mdlayher"],
-		},
-
-		// Personal devices into an edge, on the same terms and for the same
-		// reason: it is the machine with no public port to fall back on, so
-		// the admin console's SSH Console is the path that depends on nothing
-		// but the coordination server. Requires --ssh on the machine.
-		{
-			"action":      "check",
-			"checkPeriod": "always",
-			"src":         ["group:admin"],
-			"dst":         ["tag:edge"],
-			"users":       ["mdlayher"],
-		},
-
 		// Personal devices into the out-of-band router as root, the only
-		// user OpenWrt has: the way in when the router is down. Requires
-		// --ssh on the machine.
+		// user OpenWrt has: the way in when the router is down. The check
+		// gates new connections only, and every one of them; open sessions
+		// outlive it. Requires --ssh on the machine.
 		{
 			"action":      "check",
 			"checkPeriod": "always",
@@ -571,18 +545,12 @@
 		},
 	],
 
-	// Tailscale SSH: personal devices get a checked session as the admin
-	// user on the container and the edges and as root on the out-of-band
-	// router, and nowhere else; no machine gets one anywhere. The source
+	// Tailscale SSH: personal devices get a checked session as root on the
+	// out-of-band router, and nowhere else; no machine gets one anywhere.
+	// The source
 	// is the login itself: the SSH test evaluator resolves a user, not a
 	// group (tailscale/tailscale#11790).
 	"sshTests": [
-		{
-			"src":   "mdlayher@gmail.com",
-			"dst":   ["tag:dev", "tag:edge"],
-			"check": ["mdlayher"],
-			"deny":  ["root"],
-		},
 		{
 			"src":   "mdlayher@gmail.com",
 			"dst":   ["tag:oob"],
@@ -590,8 +558,16 @@
 			"deny":  ["mdlayher"],
 		},
 		{
-			"src":  "mdlayher@gmail.com",
-			"dst":  ["tag:infra", "tag:router", "tag:kvm", "tag:hass", "tag:windows"],
+			"src": "mdlayher@gmail.com",
+			"dst": [
+				"tag:dev",
+				"tag:edge",
+				"tag:infra",
+				"tag:router",
+				"tag:kvm",
+				"tag:hass",
+				"tag:windows",
+			],
 			"deny": ["mdlayher", "root"],
 		},
 		{
