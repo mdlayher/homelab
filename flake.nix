@@ -80,6 +80,13 @@
           inherit inventory;
           inherit (self) nixosConfigurations;
         };
+
+        # Tofu's switch ports against the inventory's network cables.
+        unifi-cabling = import ./nixos/tests/unifi-cabling {
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit (nixpkgs) lib;
+          inherit inventory;
+        };
       });
 
       # The KVM's configuration, built here and applied by pikvm/deploy; the

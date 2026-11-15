@@ -17,6 +17,9 @@
 # USB host, the video source, or the radio feeding an antenna. A serial line's cable carries
 # `console` with its `baud`. A USB serial cable carries its adapter's
 # `serial`. ./consoles.nix derives each machine's consoles from these.
+# A network cable runs from the device nearer the internet to the one it
+# serves. One that powers `dst` carries `poe`, the power coming from `src`
+# or an injector in `via`.
 # A power cable runs from the outlet or receptacle feeding a device to
 # that device, and cyberpower/default.nix names each PDU outlet for the
 # device its cable reaches.
@@ -34,6 +37,19 @@ let
     dst = {
       inherit device;
       port = "power";
+    };
+  };
+
+  # A network cable from port on src to port on dst.
+  link = type: src: srcPort: dst: dstPort: {
+    inherit type;
+    src = {
+      device = src;
+      port = toString srcPort;
+    };
+    dst = {
+      device = dst;
+      port = toString dstPort;
     };
   };
 in
@@ -99,8 +115,30 @@ in
       ports = [
         "usb"
         "atx"
+        "eth0"
         "power"
       ];
+    };
+
+    server-nic = {
+      model = "HP 560SFP+";
+      fittedIn = {
+        device = "servnerr-4";
+        slot = "PCIEX16_3";
+      };
+      ports = [
+        "sfp0"
+        "enp4s0f1"
+      ];
+    };
+
+    # The disks' SAS controller.
+    server-hba = {
+      model = "LSI SAS9300-16i";
+      fittedIn = {
+        device = "servnerr-4";
+        slot = "PCIEX16_1";
+      };
     };
 
     server-serial = {
@@ -171,6 +209,7 @@ in
       model = "PC Engines apu4d4";
       ports = [
         "console"
+        "ethernet"
         "power"
       ];
     };
@@ -180,6 +219,7 @@ in
       model = "CyberPower PDU41001";
       ports = [
         "console"
+        "ethernet"
         "power"
       ]
       ++ map toString (range 8);
@@ -188,6 +228,7 @@ in
       model = "CyberPower PDU81001";
       ports = [
         "console"
+        "ethernet"
         "power"
       ]
       ++ map toString (range 8);
@@ -212,6 +253,7 @@ in
       model = "CyberPower OR1500LCDRTXL2U";
       ports = [
         "console"
+        "ethernet"
         "power"
         "output"
       ];
@@ -221,9 +263,27 @@ in
     wall.ports = [ "outlet" ];
 
     # Optical network terminal.
-    ont.ports = [ "power" ];
+    ont.ports = [
+      "ethernet"
+      "power"
+    ];
 
-    cable-modem.ports = [ "power" ];
+    cable-modem.ports = [
+      "ethernet"
+      "power"
+    ];
+
+    # UniFi switch ports, numbered as the controller indexes them. A switch
+    # powered over its uplink has no power port.
+    switch-core.ports = map toString (range 28) ++ [ "power" ];
+    switch-office.ports = map toString (range 10);
+    switch-living-room.ports = map toString (range 10);
+    switch-movie-room.ports = map toString (range 10) ++ [ "power" ];
+
+    living-room-streamer.ports = [ "ethernet" ];
+    living-room-playstation.ports = [ "ethernet" ];
+    living-room-nintendo-switch.ports = [ "ethernet" ];
+    living-room-av-receiver.ports = [ "ethernet" ];
 
     nest-mini = {
       model = "Google Nest Mini";
@@ -487,6 +547,42 @@ in
       (power "pdu02" 8 "cable-modem")
     ];
 
-    network = [ ];
+    network = [
+      (link "RJ45" "cable-modem" "ethernet" "routnerr-3" "wan0")
+      (link "RJ45" "ont" "ethernet" "routnerr-3" "wan1")
+      (link "RJ45" "routnerr-3" "eth1" "switch-core" 22)
+      (link "SFP+ DAC, 0.5 m" "routnerr-3" "sfp0" "switch-core" 25)
+      (link "RJ45" "switch-core" 1 "pikvm" "ethernet")
+      (link "RJ45" "switch-core" 2 "servnerr-4" "eth0")
+      (link "RJ45" "switch-core" 3 "jumpnerr-1" "ethernet")
+      (link "RJ45" "switch-core" 4 "hass" "ethernet")
+      (link "RJ45" "switch-core" 5 "pdu01" "ethernet")
+      (link "RJ45" "switch-core" 6 "ups01" "ethernet")
+      (link "RJ45" "switch-core" 7 "server-rack-hue-hub" "ethernet")
+      (link "RJ45" "switch-core" 8 "pdu02" "ethernet")
+      (link "SFP+ DAC, 1 m" "switch-core" 27 "server-nic" "sfp0")
+      (link "RJ45" "switch-core" 9 "prusa-core-one" "ethernet")
+      ((link "RJ45" "switch-core" 18 "switch-office" 9) // { poe = true; })
+      ((link "RJ45" "switch-core" 19 "switch-living-room" 9) // { poe = true; })
+      ((link "RJ45" "switch-core" 20 "ap-basement" "ethernet") // { poe = true; })
+      ((link "RJ45" "switch-core" 21 "ap-laundry-room" "ethernet") // { poe = true; })
+      (link "SFP+ DAC, 3 m" "switch-core" 26 "switch-movie-room" 10)
+      (link "RJ45" "switch-office" 1 "nerr-4" "ethernet")
+      (link "RJ45" "switch-office" 2 "gamnerr-1" "ethernet")
+      (link "RJ45" "switch-office" 3 "office-printer" "ethernet")
+      (
+        (link "RJ45" "switch-office" 8 "ap-movie-room" "ethernet")
+        // {
+          poe = true;
+          via = [ "PoE injector" ];
+        }
+      )
+      (link "RJ45" "switch-living-room" 1 "theatnerr-2" "ethernet")
+      (link "RJ45" "switch-living-room" 2 "living-room-streamer" "ethernet")
+      (link "RJ45" "switch-living-room" 3 "living-room-playstation" "ethernet")
+      (link "RJ45" "switch-living-room" 4 "living-room-nintendo-switch" "ethernet")
+      (link "RJ45" "switch-living-room" 5 "living-room-av-receiver" "ethernet")
+      ((link "RJ45" "switch-living-room" 8 "ap-living-room" "ethernet") // { poe = true; })
+    ];
   };
 }

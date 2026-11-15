@@ -13,70 +13,28 @@
 # reserved for 10 Gbit copper links. The SFP+ cages hold the router and
 # the server.
 locals {
-  # Core ports locked to one host each, by port index: the port's label,
-  # the host whose hardware address alone may use it, and the network it
-  # carries untagged. trunk carries every other network tagged, tagged
-  # names the networks carried tagged, and otherwise tagged frames are
-  # blocked. A new host's port opens without a lock so the host can take
-  # the lease the inventory records; the lock follows. extra_macs admits a
-  # host's other addresses.
-  locked = {
-    1 = { name = "kvm", host = "pikvm", network = "mgmt0" }
-    # The server's bond standby: mgmt0 untagged, the container VLANs
-    # tagged. No lock: the port carries the bridged containers' addresses
-    # beside the host's.
-    2 = {
-      name    = "server 1g"
-      network = "mgmt0"
-      tagged  = ["dev0", "dn42", "lasthop-isis"]
-    }
-    3 = { name = "jump", host = "jumpnerr-1", network = "mgmt0" }
-    4 = { name = "hass", host = "hass", network = "mgmt0" }
-    5 = { name = "pdu01", host = "pdu01", network = "mgmt0" }
-    6 = { name = "ups01", host = "ups01", network = "mgmt0" }
-    7 = { name = "hue hub", host = "server-rack-hue-hub", network = "iot0" }
-    8 = { name = "pdu02", host = "pdu02", network = "mgmt0" }
-    9 = { name = "3d printer", host = "prusa-core-one", network = "iot0" }
-    # The router's bond standby. Its LLDP leaves from the port's own MAC.
-    22 = {
-      name       = "router 1g"
-      host       = "routnerr-3"
-      network    = "mgmt0"
-      trunk      = true
-      extra_macs = [local.extra["routnerr-3 1g"]]
-    }
-    # The router's bond primary, its SFP+ port: mgmt0 untagged, every
-    # VLAN tagged.
-    25 = { name = "router 10g", host = "routnerr-3", network = "mgmt0", trunk = true }
-    # The server's bond primary, its SFP+ port: the same networks as its
-    # standby, and no lock for the same reason.
-    27 = {
-      name    = "server 10g"
-      network = "mgmt0"
-      tagged  = ["dev0", "dn42", "lasthop-isis"]
-    }
-  }
+  # Switch ports by device and index, also checked against the inventory
+  # by the flake check unifi-cabling. manual ports state their own
+  # settings, trunks name their far-end device, disabled ports have
+  # nothing cabled.
+  ports = jsondecode(file("${path.module}/ports.json"))
 
-  # Office ports, by index: the port's label and the network it carries
-  # untagged, blocking tagged frames. The office switch cannot restrict a
-  # port by hardware address (its specifications list no such feature, and
-  # a port set that way passed another host), so no host is named.
-  office = {
-    1 = { name = "workstation", network = "mgmt0" }
-    2 = { name = "gaming pc", network = "media0" }
-    3 = { name = "office printer", network = "iot0" }
-  }
+  # Core ports: label, the host whose MAC alone may use the port, and the
+  # untagged network. trunk tags every other network, tagged lists the
+  # tagged ones, and otherwise tagged frames are blocked. A new host's
+  # port opens unlocked until its lease is in the inventory. extra names
+  # the host's other MACs in local.extra.
+  #
+  # The server's ports are unlocked: they carry its containers' MACs. The
+  # router's standby sends LLDP from that port's own MAC.
+  locked = local.ports["switch-core"].manual
 
-  # Living room ports, by index, as the office ones. The switch is the PoE
-  # model: the core powers it over its uplink and it powers the living
-  # room access point on port 8.
-  living_room = {
-    1 = { name = "htpc", network = "media0" }
-    2 = { name = "tv streamer", network = "iot0" }
-    3 = { name = "playstation", network = "media0" }
-    4 = { name = "switch 2", network = "media0" }
-    5 = { name = "av receiver", network = "iot0" }
-  }
+  # Office ports: label and untagged network, tagged frames blocked. No
+  # host: the switch cannot lock a port to a MAC.
+  office = local.ports["switch-office"].manual
+
+  # Living room ports, as the office ones.
+  living_room = local.ports["switch-living-room"].manual
 
   # Each access point's fixed channels. On 2.4 GHz, access points that
   # hear each other never share a channel; with more access points than
@@ -95,14 +53,6 @@ locals {
       { radio = "na", channel = tostring(ch.na), ht = 40, tx_power_mode = "auto" },
       { radio = "6e", channel = tostring(ch["6e"]), ht = 160, tx_power_mode = "auto" },
     ]
-  }
-
-  # Ports with nothing cabled to them, per switch and by index.
-  disabled = {
-    core        = concat(range(10, 18), [23, 24, 28])
-    movie_room  = range(1, 10)
-    office      = concat(range(4, 8), [10])
-    living_room = concat(range(6, 8), [10])
   }
 
   # Each device's static management address, by host name: the address it
@@ -155,12 +105,12 @@ resource "unifi_device" "switch_core" {
         if name != port_override.value.network && !contains(port_override.value.tagged, name)
       ] : null
       port_security_enabled     = can(port_override.value.host)
-      port_security_mac_address = can(port_override.value.host) ? concat([local.mac[port_override.value.host]], try(port_override.value.extra_macs, [])) : null
+      port_security_mac_address = can(port_override.value.host) ? concat([local.mac[port_override.value.host]], [for name in try(port_override.value.extra, []) : local.extra[name]]) : null
     }
   }
 
   dynamic "port_override" {
-    for_each = toset(local.disabled.core)
+    for_each = toset(local.ports["switch-core"].disabled)
     content {
       index           = port_override.value
       name            = "unused"
@@ -168,39 +118,18 @@ resource "unifi_device" "switch_core" {
     }
   }
 
-  # The living room switch's uplink, which also powers it.
-  port_override {
-    index           = 19
-    name            = "switch-living-room"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  port_override {
-    index           = 20
-    name            = "ap-basement"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  port_override {
-    index           = 21
-    name            = "ap-laundry-room"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  port_override {
-    index           = 18
-    name            = "switch-office"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  port_override {
-    index           = 26
-    name            = "switch-movie-room"
-    port_profile_id = unifi_port_profile.trunk.id
+  # Uplinks to the other switches and access points.
+  dynamic "port_override" {
+    for_each = local.ports["switch-core"].trunks
+    content {
+      index           = tonumber(port_override.key)
+      name            = port_override.value
+      port_profile_id = unifi_port_profile.trunk.id
+    }
   }
 }
 
-# The basement access point. Its trunk is core port 20, above.
+# The basement access point, on core port 20.
 resource "unifi_device" "ap_basement" {
   name           = "ap-basement"
   config_network = local.static["ap-basement"]
@@ -215,14 +144,14 @@ resource "unifi_device" "ap_living_room" {
   radio_table    = local.radios.ap_living_room
 }
 
-# The laundry room access point. Its trunk is core port 21, above.
+# The laundry room access point, on core port 21.
 resource "unifi_device" "ap_laundry_room" {
   name           = "ap-laundry-room"
   config_network = local.static["ap-laundry-room"]
   radio_table    = local.radios.ap_laundry_room
 }
 
-# The movie room access point, on the office switch's port 8, above.
+# The movie room access point, on office switch port 8.
 resource "unifi_device" "ap_movie_room" {
   name           = "ap-movie-room"
   config_network = local.static["ap-movie-room"]
@@ -236,18 +165,14 @@ resource "unifi_device" "switch_office" {
   name           = "switch-office"
   config_network = local.static["switch-office"]
 
-  port_override {
-    index           = 9
-    name            = "switch-core"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  # The movie room access point, powered by its own injector since this
-  # switch has no PoE.
-  port_override {
-    index           = 8
-    name            = "ap-movie-room"
-    port_profile_id = unifi_port_profile.trunk.id
+  # The uplink and the movie room access point, powered by an injector.
+  dynamic "port_override" {
+    for_each = local.ports["switch-office"].trunks
+    content {
+      index           = tonumber(port_override.key)
+      name            = port_override.value
+      port_profile_id = unifi_port_profile.trunk.id
+    }
   }
 
   dynamic "port_override" {
@@ -263,7 +188,7 @@ resource "unifi_device" "switch_office" {
   }
 
   dynamic "port_override" {
-    for_each = toset(local.disabled.office)
+    for_each = toset(local.ports["switch-office"].disabled)
     content {
       index           = port_override.value
       name            = "unused"
@@ -278,14 +203,17 @@ resource "unifi_device" "switch_movie_room" {
   name           = "switch-movie-room"
   config_network = local.static["switch-movie-room"]
 
-  port_override {
-    index           = 10
-    name            = "switch-core"
-    port_profile_id = unifi_port_profile.trunk.id
+  dynamic "port_override" {
+    for_each = local.ports["switch-movie-room"].trunks
+    content {
+      index           = tonumber(port_override.key)
+      name            = port_override.value
+      port_profile_id = unifi_port_profile.trunk.id
+    }
   }
 
   dynamic "port_override" {
-    for_each = toset(local.disabled.movie_room)
+    for_each = toset(local.ports["switch-movie-room"].disabled)
     content {
       index           = port_override.value
       name            = "unused"
@@ -303,16 +231,14 @@ resource "unifi_device" "switch_living_room" {
   name           = "switch-living-room"
   config_network = local.static["switch-living-room"]
 
-  port_override {
-    index           = 9
-    name            = "switch-core"
-    port_profile_id = unifi_port_profile.trunk.id
-  }
-
-  port_override {
-    index           = 8
-    name            = "ap-living-room"
-    port_profile_id = unifi_port_profile.trunk.id
+  # The uplink and the living room access point.
+  dynamic "port_override" {
+    for_each = local.ports["switch-living-room"].trunks
+    content {
+      index           = tonumber(port_override.key)
+      name            = port_override.value
+      port_profile_id = unifi_port_profile.trunk.id
+    }
   }
 
   dynamic "port_override" {
@@ -328,7 +254,7 @@ resource "unifi_device" "switch_living_room" {
   }
 
   dynamic "port_override" {
-    for_each = toset(local.disabled.living_room)
+    for_each = toset(local.ports["switch-living-room"].disabled)
     content {
       index           = port_override.value
       name            = "unused"
