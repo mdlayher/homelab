@@ -21,6 +21,10 @@ let
   # admin user's home at every container start.
   containerSystemd = config.containers.linuxdev.config.systemd.package;
 
+  # Where this machine's systemd binds the same listener; see
+  # sockets.ssh-agent-relay in modules/common.nix.
+  hostRelay = "${config.users.users.${config.homelab.user}.home}/.ssh";
+
   rule =
     dir: filters: key:
     "-a always,exit -F arch=b64 ${filters} -F dir=${dir} -k ${key}";
@@ -28,10 +32,12 @@ in
 {
   security.audit = {
     enable = true;
-    # The first matching rule decides, so the exemption for the container's
-    # own listener precedes the watches.
+    # The first matching rule decides, so the exemptions for the agent
+    # relay listener precede the watches. The container's systemd and this
+    # machine's are one binary, so this machine's is exempted as process 1.
     rules = [
       "-a never,exit -F arch=b64 -S bind -F exe=${containerSystemd}/lib/systemd/systemd -F dir=${containerHome}"
+      "-a never,exit -F arch=b64 -S bind -F pid=1 -F dir=${hostRelay}"
     ]
     ++ lib.concatMap (dir: [
       (rule dir "-S bind -F uid=0" "tailscale-socket")
