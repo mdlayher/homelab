@@ -323,6 +323,7 @@
   # role: a generation swap moves the name when the role's holder list is
   # reordered, and hardcoded clients follow it at their next lookup.
   services = {
+    grafana = "server";
     loki = "server";
     nix-cache = "server";
     prometheus = "server";

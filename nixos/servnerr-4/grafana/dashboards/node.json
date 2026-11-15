@@ -1,0 +1,568 @@
+{
+  "uid": "node",
+  "title": "Linux node",
+  "description": "One machine from job=\"node\". The machine variable matches instances by prefix, so every query selects instance=~\"$machine.*\": Grafana offers each instance, and in grom `grom-dash node machine=<prefix>` takes any prefix of one, such as a machine's first DNS label, or edge.<site> for an edge. Machines without pressure, systemd or filesystem collectors show no data in those panels.",
+  "tags": [
+    "node"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "machine",
+        "label": "machine",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(up{job=\"node\"}, instance)",
+        "query": {
+          "query": "label_values(up{job=\"node\"}, instance)",
+          "refId": "machine"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "servnerr-4.mgmt.azo.mdlayher.net:9100",
+          "value": "servnerr-4.mgmt.azo.mdlayher.net:9100"
+        },
+        "options": []
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "uptime",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "time() - node_boot_time_seconds{job=\"node\", instance=~\"$machine.*\"}"
+        }
+      ],
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "CPUs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(node_cpu_seconds_total{job=\"node\", instance=~\"$machine.*\", mode=\"idle\"})"
+        }
+      ],
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_memory_MemTotal_bytes{job=\"node\", instance=~\"$machine.*\"}"
+        }
+      ],
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "failed units",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(node_systemd_unit_state{job=\"node\", instance=~\"$machine.*\", state=\"failed\"} == 1) or vector(0)"
+        }
+      ],
+      "options": {
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "CPU busy by mode",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (mode) (rate(node_cpu_seconds_total{job=\"node\", instance=~\"$machine.*\", mode!=\"idle\"}[5m])) / scalar(count(node_cpu_seconds_total{job=\"node\", instance=~\"$machine.*\", mode=\"idle\"}))",
+          "legendFormat": "{{mode}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_memory_MemTotal_bytes{job=\"node\", instance=~\"$machine.*\"} - node_memory_MemAvailable_bytes{job=\"node\", instance=~\"$machine.*\"}",
+          "legendFormat": "used"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_memory_Cached_bytes{job=\"node\", instance=~\"$machine.*\"} + node_memory_Buffers_bytes{job=\"node\", instance=~\"$machine.*\"}",
+          "legendFormat": "page cache"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_memory_SwapTotal_bytes{job=\"node\", instance=~\"$machine.*\"} - node_memory_SwapFree_bytes{job=\"node\", instance=~\"$machine.*\"}",
+          "legendFormat": "swap used"
+        }
+      ],
+      "description": "Used is total less available; on a ZFS host the ARC counts as used."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "pressure, share of time stalled",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(node_pressure_cpu_waiting_seconds_total{job=\"node\", instance=~\"$machine.*\"}[5m])",
+          "legendFormat": "CPU"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(node_pressure_memory_waiting_seconds_total{job=\"node\", instance=~\"$machine.*\"}[5m])",
+          "legendFormat": "memory"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(node_pressure_io_waiting_seconds_total{job=\"node\", instance=~\"$machine.*\"}[5m])",
+          "legendFormat": "I/O"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "disk bytes/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(node_disk_read_bytes_total{job=\"node\", instance=~\"$machine.*\", device!~\"(dm-|md|zd|sr).*\"}[5m]))",
+          "legendFormat": "read"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(node_disk_written_bytes_total{job=\"node\", instance=~\"$machine.*\", device!~\"(dm-|md|zd|sr).*\"}[5m]))",
+          "legendFormat": "write"
+        }
+      ],
+      "description": "Whole disks; device-mapper, md and zvol devices are left out so nothing counts twice."
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "filesystem used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.75
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sort_desc(max by (mountpoint) (1 - node_filesystem_avail_bytes{job=\"node\", instance=~\"$machine.*\", fstype!~\"tmpfs|ramfs|devtmpfs|overlay|squashfs|zfs|nsfs|fuse.*|efivarfs|autofs\"} / node_filesystem_size_bytes{job=\"node\", instance=~\"$machine.*\", fstype!~\"tmpfs|ramfs|devtmpfs|overlay|squashfs|zfs|nsfs|fuse.*|efivarfs|autofs\"}))",
+          "legendFormat": "{{mountpoint}}",
+          "instant": true
+        }
+      ],
+      "description": "ZFS datasets are left out: their sizes misreport. The server dashboard reads the pools.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "disk busy by device",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(node_disk_io_time_seconds_total{job=\"node\", instance=~\"$machine.*\", device!~\"(dm-|md|zd|sr).*\"}[5m]) > 0.01",
+          "legendFormat": "{{device}}"
+        }
+      ],
+      "description": "A device appears while it is more than 1% busy."
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "network bytes/s by interface, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (device) (rate(node_network_receive_bytes_total{job=\"node\", instance=~\"$machine.*\", device!=\"lo\"}[5m]) + rate(node_network_transmit_bytes_total{job=\"node\", instance=~\"$machine.*\", device!=\"lo\"}[5m])) > 1024",
+          "legendFormat": "{{device}}"
+        }
+      ],
+      "description": "An interface appears while it moves more than 1 KiB/s."
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "network errors and drops/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum by (device) (rate(node_network_receive_errs_total{job=\"node\", instance=~\"$machine.*\"}[5m])) + sum by (device) (rate(node_network_transmit_errs_total{job=\"node\", instance=~\"$machine.*\"}[5m])) + sum by (device) (rate(node_network_receive_drop_total{job=\"node\", instance=~\"$machine.*\"}[5m])) + sum by (device) (rate(node_network_transmit_drop_total{job=\"node\", instance=~\"$machine.*\"}[5m]))) > 0",
+          "legendFormat": "{{device}}"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "service restarts per hour",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "increase(node_systemd_service_restart_total{job=\"node\", instance=~\"$machine.*\"}[1h]) > 0",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    }
+  ]
+}

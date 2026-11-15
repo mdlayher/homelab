@@ -1,0 +1,371 @@
+{
+  "uid": "unifi",
+  "title": "UniFi network",
+  "description": "The switches and access points over time, from the UniFi controller through UnPoller (job=\"unpoller\"). Ports carry their controller names. Client traffic is summed by network: client names are left out.",
+  "tags": [
+    "unifi",
+    "network"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "core switch: router, server and switch links Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (name, port_name) (rate(unpoller_device_port_receive_bytes_total{name=\"switch-core\", port_name=~\"router.*|server.*|switch-.*\"}[5m]) + rate(unpoller_device_port_transmit_bytes_total{name=\"switch-core\", port_name=~\"router.*|server.*|switch-.*\"}[5m])) * 8 / 1e6",
+          "legendFormat": "{{port_name}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "core switch: other ports Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (name, port_name) (rate(unpoller_device_port_receive_bytes_total{name=\"switch-core\", port_name!~\"router.*|server.*|switch-.*\"}[5m]) + rate(unpoller_device_port_transmit_bytes_total{name=\"switch-core\", port_name!~\"router.*|server.*|switch-.*\"}[5m])) * 8 / 1e6",
+          "legendFormat": "{{port_name}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "other switches Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (name, port_name) (rate(unpoller_device_port_receive_bytes_total{name!=\"switch-core\", port_name!=\"switch-core\"}[5m]) + rate(unpoller_device_port_transmit_bytes_total{name!=\"switch-core\", port_name!=\"switch-core\"}[5m])) * 8 / 1e6",
+          "legendFormat": "{{name}} {{port_name}}"
+        }
+      ],
+      "description": "Their uplinks to the core switch are left out; the core switch panel shows them."
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "port errors and drops/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum by (name, port_name) (rate(unpoller_device_port_receive_errors_total[10m])) + sum by (name, port_name) (rate(unpoller_device_port_transmit_errors_total[10m])) + sum by (name, port_name) (rate(unpoller_device_port_receive_dropped_total[10m])) + sum by (name, port_name) (rate(unpoller_device_port_transmit_dropped_total[10m]))) > 0",
+          "legendFormat": "{{name}} {{port_name}}"
+        }
+      ],
+      "description": "A port appears while it counts errors or drops."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "PoE draw W",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "W",
+          "min": 0,
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "unpoller_device_port_poe_watts and max_over_time(unpoller_device_port_poe_watts[7d]) > 0",
+          "legendFormat": "{{name}} {{port_name}}"
+        }
+      ],
+      "description": "Ports that supplied power in the last 7 days."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "wireless clients per AP",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (name) (unpoller_device_radio_stations)",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "channel utilisation 2.4 GHz",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "unpoller_device_radio_channel_utilization_total_ratio{radio=\"ng\"}",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "channel utilisation 5 GHz",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 24,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "unpoller_device_radio_channel_utilization_total_ratio{radio=\"na\"}",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "channel utilisation 6 GHz",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 24,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "unpoller_device_radio_channel_utilization_total_ratio{radio=\"6e\"}",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "client traffic by network bytes/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (network) (label_replace(rate(unpoller_client_receive_bytes_total[10m]) + rate(unpoller_client_transmit_bytes_total[10m]), \"network\", \"none\", \"network\", \"\"))",
+          "legendFormat": "{{network}}"
+        }
+      ],
+      "description": "Clients the controller reports with no network are grouped as none."
+    }
+  ]
+}

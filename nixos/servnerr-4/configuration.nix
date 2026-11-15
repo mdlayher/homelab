@@ -117,10 +117,19 @@
     grafana = {
       enable = true;
 
-      # Declarative datasource; anything else in the Grafana database is
-      # disposable. Dashboards will be rebuilt from scratch.
+      # Declarative datasources and dashboards; anything else in the
+      # Grafana database is disposable. Dashboards come only from
+      # grafana/dashboards/ and cannot be saved or deleted in the UI.
       provision = {
         enable = true;
+        dashboards.settings.providers = [
+          {
+            name = "homelab";
+            allowUiUpdates = false;
+            disableDeletion = true;
+            options.path = ./grafana/dashboards;
+          }
+        ];
         datasources.settings.datasources = [
           {
             name = "Prometheus";
@@ -147,6 +156,17 @@
           # generates resolve anywhere on the tailnet.
           root_url = "https://grafana.${config.homelab.inventory.tailnetDomain}/";
         };
+
+        # No logins: everyone who reaches Grafana is an anonymous Editor,
+        # the role Explore needs, and who reaches it is decided by the
+        # tailnet policy and the firewalls. Dashboards and datasources are
+        # provisioned, so nothing needs an admin.
+        "auth.anonymous" = {
+          enabled = true;
+          org_role = "Editor";
+        };
+        auth.disable_login_form = true;
+        "auth.basic".enabled = false;
 
         # NixOS 26.05 no longer ships a default secret_key. Grafana was reset
         # (fresh /var/lib/grafana) when switching to the flake, so this key is

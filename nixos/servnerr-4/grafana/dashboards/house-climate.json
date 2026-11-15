@@ -1,0 +1,351 @@
+{
+  "uid": "house-climate",
+  "title": "House climate",
+  "description": "Each room's temperature and humidity over days, what the thermostat and mini splits are doing, and what the metered plugs use. Source: Home Assistant (job=\"homeassistant\"). A room reads its *_climate_sensor (the living room its Nest thermostat), joined to the room's area and floor; legends name areas by id. The utility meter's Green Button statistics are not exported to Prometheus, so whole-house energy is not here.",
+  "tags": [
+    "homeassistant",
+    "climate"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-168h",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "main floor temperature °F",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°F"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) (homeassistant_sensor_temperature_celsius{entity=~\"sensor[.].+_(climate_sensor|nest_thermostat)_temperature\"} * on (entity) group_left (area) homeassistant_entity_info * on (area) group_left (floor) homeassistant_area_info{floor=\"main_floor\"}) * 9 / 5 + 32",
+          "legendFormat": "{{area}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "basement temperature °F",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°F"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) (homeassistant_sensor_temperature_celsius{entity=~\"sensor[.].+_(climate_sensor|nest_thermostat)_temperature\"} * on (entity) group_left (area) homeassistant_entity_info * on (area) group_left (floor) homeassistant_area_info{floor=\"basement\"}) * 9 / 5 + 32",
+          "legendFormat": "{{area}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "outdoor °F",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°F"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "min(homeassistant_sensor_temperature_celsius{entity=~\"sensor[.].+_outdoor_temperature\"}) * 9 / 5 + 32",
+          "legendFormat": "coolest condenser thermistor"
+        }
+      ],
+      "description": "The mini split condensers' outdoor thermistors; the coolest reads closest to the air."
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "main floor humidity %",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) (homeassistant_sensor_humidity_percent{entity=~\"sensor[.].+_(climate_sensor|nest_thermostat)_humidity\"} * on (entity) group_left (area) homeassistant_entity_info * on (area) group_left (floor) homeassistant_area_info{floor=\"main_floor\"})",
+          "legendFormat": "{{area}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "basement humidity %",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) (homeassistant_sensor_humidity_percent{entity=~\"sensor[.].+_(climate_sensor|nest_thermostat)_humidity\"} * on (entity) group_left (area) homeassistant_entity_info * on (area) group_left (floor) homeassistant_area_info{floor=\"basement\"})",
+          "legendFormat": "{{area}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "HVAC running, share of each hour",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area, action) (avg_over_time(homeassistant_climate_action{action=~\"heating|cooling\"}[1h]) * on (entity) group_left (area) homeassistant_entity_info) > 0",
+          "legendFormat": "{{area}} {{action}}"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area, mode) (avg_over_time(homeassistant_climate_mode{mode!=\"off\"}[1h]) unless on (entity) homeassistant_climate_action * on (entity) group_left (area) homeassistant_entity_info) > 0",
+          "legendFormat": "{{area}} {{mode}}"
+        }
+      ],
+      "description": "The thermostat reports whether it is heating or cooling; the mini splits report only their mode, so theirs is the share of the hour they were switched on."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "setpoints °F",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°F"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) ((homeassistant_climate_target_temperature_low_celsius * 9 / 5 + 32) * on (entity) group_left (area) homeassistant_entity_info unless on (entity) homeassistant_climate_mode{mode=\"off\"} == 1)",
+          "legendFormat": "{{area}} low"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) ((homeassistant_climate_target_temperature_high_celsius * 9 / 5 + 32) * on (entity) group_left (area) homeassistant_entity_info unless on (entity) homeassistant_climate_mode{mode=\"off\"} == 1)",
+          "legendFormat": "{{area}} high"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area) ((homeassistant_climate_target_temperature_celsius * 9 / 5 + 32) * on (entity) group_left (area) homeassistant_entity_info unless on (entity) homeassistant_climate_mode{mode=\"off\"} == 1)",
+          "legendFormat": "{{area}} target"
+        }
+      ],
+      "description": "Only while the unit is not off."
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "plug power W, hourly average",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 14,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "W",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (area, plug) (label_replace(label_replace(avg_over_time(homeassistant_sensor_power_w{entity=~\"sensor[.].+_plug_power\"}[1h]), \"plug\", \"$2\", \"entity\", \"sensor[.](.*_)?([a-z]+)_plug_power\"), \"plug\", \"plug\", \"plug\", \"room\") * on (entity) group_left (area) homeassistant_entity_info)",
+          "legendFormat": "{{area}} {{plug}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "plug energy kWh, last 7 days",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 33,
+        "w": 10,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sort_desc(max by (area, plug) (label_replace(label_replace((max_over_time(homeassistant_sensor_energy_kwh{entity=~\"sensor[.].+_plug_summation_delivered\"}[7d]) - min_over_time(homeassistant_sensor_energy_kwh{entity=~\"sensor[.].+_plug_summation_delivered\"}[7d])), \"plug\", \"$2\", \"entity\", \"sensor[.](.*_)?([a-z]+)_plug_summation_delivered\"), \"plug\", \"plug\", \"plug\", \"room\") * on (entity) group_left (area) homeassistant_entity_info))",
+          "legendFormat": "{{area}} {{plug}}",
+          "instant": true
+        }
+      ],
+      "description": "The meter's rise over the window: the plugs' readings dip now and then, which increase() would count as resets.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    }
+  ]
+}

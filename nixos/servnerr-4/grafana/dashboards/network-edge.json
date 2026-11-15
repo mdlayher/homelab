@@ -1,0 +1,531 @@
+{
+  "uid": "network-edge",
+  "title": "Network edge",
+  "description": "Uplink health and traffic on the router and the edges, what each segment and interconnect circuit carries, what the firewalls drop, how the resolvers answer, and WireGuard handshakes. Sources: node, nftables, coredns and wireguard exporters, and the server's ICMP probes.",
+  "tags": [
+    "network"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "bargauge",
+      "title": "uplink carrier",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(node_network_carrier{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}, \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{device}} {{machine}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "uplink Mbit/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 10,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(rate(node_network_receive_bytes_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m]) * 8 / 1e6, \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{machine}} {{device}} in"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(rate(node_network_transmit_bytes_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m]) * 8 / 1e6, \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{machine}} {{device}} out"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "uplink errors and drops/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(sum by (instance, device) (rate(node_network_receive_errs_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m])) + sum by (instance, device) (rate(node_network_transmit_errs_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m])) + sum by (instance, device) (rate(node_network_receive_drop_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m])) + sum by (instance, device) (rate(node_network_transmit_drop_total{job=\"node\", device=~\"wan[0-9]+|ens[0-9]+\"}[5m])), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{machine}} {{device}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "internet anchors round trip",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "probe_icmp_duration_seconds{job=\"blackbox_icmp\", phase=\"rtt\", site=\"\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "description": "ICMP from the server to public anchors, over whichever uplink carries it. A gap is a failed probe."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "WAN traffic by segment Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 7,
+        "w": 16,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0,
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (segment) (label_replace(rate(nftables_counter_bytes_total{table=\"accounting\", name=~\".+_wan_(in|out)\"}[5m]), \"segment\", \"$1\", \"name\", \"(.+)_wan_(in|out)\")) * 8 / 1e6",
+          "legendFormat": "{{segment}}"
+        }
+      ],
+      "description": "The router's accounting counters for traffic between each segment and the WAN."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "interconnect at the house Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (machine, device) (label_replace(label_replace(rate(nftables_set_element_bytes_total{table=\"icl-accounting\", site=\"azo\"}[5m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")) * 8 / 1e6",
+          "legendFormat": "{{machine}} {{device}}"
+        }
+      ],
+      "description": "IP on each circuit as its carrier sees it, IS-IS PDUs excluded."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "interconnect at the edges Mbit/s, in + out",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbit/s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (machine, device) (label_replace(label_replace(rate(nftables_set_element_bytes_total{table=\"icl-accounting\", site!=\"azo\"}[5m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")) * 8 / 1e6",
+          "legendFormat": "{{machine}} {{device}}"
+        }
+      ],
+      "description": "A circuit between edges shows at both ends."
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "firewall drops packets/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (machine, name) (label_replace(label_replace(rate(nftables_counter_packets_total{table!=\"accounting\", name!~\".+_probe\"}[10m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")) > 0",
+          "legendFormat": "{{machine}} {{name}}"
+        }
+      ],
+      "description": "Every named filter counter except the probe markers; a counter appears while it is counting. A few thousand WAN input and cross-VLAN drops a day are normal background."
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "DNS queries/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (machine) (label_replace(label_replace(rate(coredns_dns_requests_total[10m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\"))",
+          "legendFormat": "{{machine}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "DNS SERVFAIL/s",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 31,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (machine) (label_replace(label_replace(rate(coredns_dns_responses_total{rcode=\"SERVFAIL\"}[10m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\"))",
+          "legendFormat": "{{machine}}"
+        }
+      ],
+      "description": "A resolver that has answered no SERVFAIL since it started has no line."
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "DNS p99 response time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 31,
+        "w": 8,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (machine, le) (label_replace(label_replace(rate(coredns_dns_request_duration_seconds_bucket[10m]), \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\"))) >= 0",
+          "legendFormat": "{{machine}}"
+        }
+      ],
+      "description": "A resolver with no queries in the window has no line."
+    },
+    {
+      "id": 12,
+      "type": "bargauge",
+      "title": "WireGuard handshake age: interconnect",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 11
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 180
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(time() - wireguard_latest_handshake_seconds{interface=~\"iclw-.+\"} and wireguard_latest_handshake_seconds > 0, \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{interface}} {{machine}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 13,
+      "type": "bargauge",
+      "title": "WireGuard handshake age: dn42 and remote access",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 38,
+        "w": 12,
+        "h": 11
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 180
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(label_replace(time() - wireguard_latest_handshake_seconds{interface!~\"iclw-.+\"} and wireguard_latest_handshake_seconds > 0, \"machine\", \"$1\", \"instance\", \"([^.:]+).*\"), \"machine\", \"edge-$1\", \"instance\", \"edge[.]([^.]+)[.].*\")",
+          "legendFormat": "{{interface}} {{machine}}",
+          "instant": true
+        }
+      ],
+      "description": "A peer that has never completed a handshake has no row.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    }
+  ]
+}

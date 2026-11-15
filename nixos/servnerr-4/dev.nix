@@ -375,15 +375,22 @@ let
   # Prometheus datasource uid "prometheus".
   dashboards = ./grafana/dashboards;
 
-  # grom-dash <name|file> [grom run flags]: opens a dashboard from
-  # grafana/dashboards/ (or a JSON file) against the server's Prometheus.
-  # With no arguments it lists the dashboards.
+  # grom-dash <name|file> [var=value ...] [grom run flags]: opens a
+  # dashboard from grafana/dashboards/ (or a JSON file) against the
+  # server's Prometheus. With no arguments it lists the dashboards.
+  # grom does not expand dashboard variables, so this does: each
+  # var=value replaces $var in the queries, and a variable not given
+  # takes the current value saved in the dashboard.
   gromDash = pkgs.writeShellApplication {
     name = "grom-dash";
-    runtimeInputs = [ grom ];
+    runtimeInputs = [
+      grom
+      pkgs.coreutils
+      pkgs.jq
+    ];
     text = ''
       if [ $# -eq 0 ]; then
-        echo "usage: grom-dash <dashboard|file.json> [grom run flags]" >&2
+        echo "usage: grom-dash <dashboard|file.json> [var=value ...] [grom run flags]" >&2
         echo "dashboards:" >&2
         for f in ${dashboards}/*.json; do basename "$f" .json; done >&2
         exit 2
@@ -391,7 +398,20 @@ let
       dash=$1
       shift
       [ -f "$dash" ] || dash=${dashboards}/$dash.json
-      exec grom run --grafana-json "$dash" \
+      vars=()
+      while [ $# -gt 0 ] && [[ $1 =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; do
+        vars+=("$1")
+        shift
+      done
+      tmp=$(mktemp --suffix .json)
+      trap 'rm -f "$tmp"' EXIT
+      jq '
+        (([.templating.list[]? | {key: .name, value: (.current.value // "")}] | from_entries)
+          + ($ARGS.positional | map(capture("^(?<key>[^=]+)=(?<value>.*)$")) | from_entries)) as $vars
+        | reduce ($vars | to_entries[]) as $v (.;
+            walk(if type == "string" then gsub("\\$" + $v.key + "\\b"; $v.value) else . end))
+      ' "$dash" --args "''${vars[@]}" >"$tmp"
+      grom run --grafana-json "$tmp" \
         --prom https://prometheus.taild07ab.ts.net --theme tokyo-night "$@"
     '';
   };

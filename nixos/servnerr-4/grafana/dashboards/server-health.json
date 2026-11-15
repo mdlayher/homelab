@@ -1,0 +1,408 @@
+{
+  "uid": "server-health",
+  "title": "Server",
+  "description": "Whether the server's storage is filling or degrading, whether replication and the off-box backup run, and whether anything is hot. Sources: zfs, smartctl, zrepl, the rclone backup textfile and node hwmon series. The GPU's temperature comes from its kernel driver; no GPU exporter runs on the server.",
+  "tags": [
+    "server",
+    "storage"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "pool used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "zfs_pool_allocated_bytes / zfs_pool_size_bytes",
+          "legendFormat": "{{pool}}"
+        }
+      ],
+      "description": "From the pools: node filesystem sizes misreport ZFS datasets."
+    },
+    {
+      "id": 2,
+      "type": "bargauge",
+      "title": "since last success",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "time() - zrepl_replication_last_successful",
+          "legendFormat": "zrepl {{zrepl_job}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "time() - homelab_rclone_backup_last_success_timestamp_seconds",
+          "legendFormat": "rclone backup",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "time() - homelab_rclone_backup_check_timestamp_seconds",
+          "legendFormat": "rclone check",
+          "instant": true
+        }
+      ],
+      "description": "The rclone check runs weekly.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "attention",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "zfs_pool_health",
+          "legendFormat": "pool {{pool}} state",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (device, model_name) ((smartctl_device_attribute{instance=~\"servnerr-4[.].*\", attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect|UDMA_CRC_Error_Count\"} or label_replace(smartctl_device_media_errors{instance=~\"servnerr-4[.].*\"}, \"attribute_name\", \"media_errors\", \"\", \"\") or label_replace(smartctl_device_critical_warning{instance=~\"servnerr-4[.].*\"}, \"attribute_name\", \"critical_warning\", \"\", \"\") or label_replace(1 - smartctl_device_smart_status{instance=~\"servnerr-4[.].*\"}, \"attribute_name\", \"smart_failed\", \"\", \"\")) * on (instance, device) group_left (model_name) smartctl_device)",
+          "legendFormat": "{{device}} {{model_name}}",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (zrepl_job) (zrepl_replication_filesystem_errors)",
+          "legendFormat": "zrepl {{zrepl_job}} errors",
+          "instant": true
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(homelab_rclone_backup_check_mismatches)",
+          "legendFormat": "rclone check mismatches",
+          "instant": true
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "homelab_rclone_backup_last_run_errors",
+          "legendFormat": "rclone run errors",
+          "instant": true
+        }
+      ],
+      "description": "Every row reads 0 when all is well. A drive row sums its SATA error counters (reallocated, pending, uncorrectable, CRC) or NVMe media errors and critical warnings, plus 1 for a failed SMART status. A pool state above 0 is not online.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "board temperatures °C",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°C"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip, sensor) group_left (label) node_hwmon_sensor_label{label=\"Tctl\"})",
+          "legendFormat": "CPU"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip, sensor) group_left (label) node_hwmon_sensor_label{label=~\"Chipset|Motherboard\"}",
+          "legendFormat": "{{label}}"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip) group_left (chip_name) node_hwmon_chip_names{chip_name=\"jc42\"})",
+          "legendFormat": "memory, hottest DIMM"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip) group_left (chip_name) node_hwmon_chip_names{chip_name=\"nvme\"}",
+          "legendFormat": "NVMe"
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip) group_left (chip_name) node_hwmon_chip_names{chip_name=\"ixgbe\"}",
+          "legendFormat": "10G NIC"
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_hwmon_temp_celsius{instance=~\"servnerr-4[.].*\"} * on (instance, chip) group_left (chip_name) node_hwmon_chip_names{chip_name=\"nouveau\"}",
+          "legendFormat": "GPU"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "drive temperatures °C",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "°C"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "smartctl_device_temperature{instance=~\"servnerr-4[.].*\", temperature_type=\"current\"}",
+          "legendFormat": "{{device}}"
+        }
+      ],
+      "description": "Kernel device names; the attention panel maps each to its model."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "fans RPM",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "RPM",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(node_hwmon_fan_rpm{instance=~\"servnerr-4[.].*\"} and max_over_time(node_hwmon_fan_rpm{instance=~\"servnerr-4[.].*\"}[7d]) > 0, \"chip\", \"$1\", \"chip\", \"platform_(.+?)(?:_sensors|_[0-9]+)?\")",
+          "legendFormat": "{{chip}} {{sensor}}"
+        }
+      ],
+      "description": "Fans that turned in the last 7 days; a stopped fan reads 0."
+    },
+    {
+      "id": 7,
+      "type": "bargauge",
+      "title": "NVMe rated endurance used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.6
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "smartctl_device_percentage_used{instance=~\"servnerr-4[.].*\"} / 100 * on (instance, device) group_left (model_name) smartctl_device",
+          "legendFormat": "{{device}} {{model_name}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic"
+      }
+    }
+  ]
+}

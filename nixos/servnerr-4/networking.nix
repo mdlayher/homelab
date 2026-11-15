@@ -124,8 +124,8 @@ in
         53
       ];
 
-      # The UniFi controller (see unifi.nix), for the switches and access
-      # points, which it manages over the management LAN alone.
+      # The management LAN alone: the UniFi controller (see unifi.nix), for
+      # the switches and access points, and Grafana.
       interfaces.mgmt0 = {
         allowedTCPPorts = [
           # Device inform: adopted devices report in and take their
@@ -133,6 +133,9 @@ in
           8080
           # The web UI and API, for the admin and terraform/unifi.
           8443
+          # Grafana, for LAN devices off the tailnet via grafana.svc; the
+          # router forwards the trusted LANs and the remote access tunnel.
+          config.services.grafana.settings.server.http_port
         ];
         allowedUDPPorts = [
           # STUN, which devices use so the controller can reach them

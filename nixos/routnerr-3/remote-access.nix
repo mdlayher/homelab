@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   ...
 }:
@@ -107,7 +108,12 @@ in
           target = "pikvm";
           port = 443;
         }
-      ];
+      ]
+      # Grafana on each server role holder, at the port it listens on.
+      ++ map (server: {
+        target = server;
+        port = inputs.self.nixosConfigurations.${server}.config.services.grafana.settings.server.http_port;
+      }) inventory.roles.server;
     };
 
     assertions = [
