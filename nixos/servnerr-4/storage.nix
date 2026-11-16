@@ -2,6 +2,12 @@
 
 let
 
+  # The buddy backup datasets (see buddy.nix), one per machine beneath
+  # this one, which the pool's jobs leave out: they are snapshotted by a
+  # job of their own and never replicated.
+  buddy = "primary/buddy";
+  buddies = builtins.attrNames config.homelab.buddies;
+
   # Creates snapshots of zpool source using a zrepl snap job.
   snap = (
     source: {
@@ -9,7 +15,10 @@ let
       type = "snap";
 
       # Snapshot the entire pool every 15 minutes.
-      filesystems."${source}<" = true;
+      filesystems = {
+        "${source}<" = true;
+        "${buddy}<" = false;
+      };
       snapshotting = {
         type = "periodic";
         prefix = "zrepl_";
@@ -28,7 +37,10 @@ let
       type = "source";
 
       # Export everything, do not snapshot in this job.
-      filesystems."${source}<" = true;
+      filesystems = {
+        "${source}<" = true;
+        "${buddy}<" = false;
+      };
       snapshotting.type = "manual";
 
       serve = {
@@ -137,19 +149,51 @@ let
     }
   ];
 
+  # Snapshots of the buddy datasets, the protection against a sender
+  # deleting its own backups: SFTP offers no append-only mode. Kept about
+  # two weeks, and counted against each dataset's quota.
+  snapBuddy = {
+    name = "snap_buddy";
+    type = "snap";
+    filesystems."${buddy}<" = true;
+    snapshotting = {
+      type = "periodic";
+      prefix = "zrepl_";
+      interval = "1h";
+    };
+    pruning.keep = [
+      {
+        type = "regex";
+        regex = "^manual_.*";
+      }
+      {
+        type = "grid";
+        # Keep:
+        # - every hour from the last 24 hours
+        # - every day from the last 2 weeks
+        grid = "24x1h | 14x1d";
+        regex = "^zrepl_.*";
+      }
+    ];
+  };
+
 in
 {
   # primary zpool mounts.
   fileSystems =
     lib.genAttrs
-      [
-        "/primary"
-        "/primary/archive"
-        "/primary/media"
-        "/primary/misc"
-        "/primary/text"
-        "/primary/vm"
-      ]
+      (
+        [
+          "/primary"
+          "/primary/archive"
+          "/primary/buddy"
+          "/primary/media"
+          "/primary/misc"
+          "/primary/text"
+          "/primary/vm"
+        ]
+        ++ map (name: "/${buddy}/${name}") buddies
+      )
       (device: {
         # The device has the leading / removed.
         device = builtins.substring 1 255 device;
@@ -239,6 +283,8 @@ in
 
           # Pull primary into the hot backup pool.
           (pullLocal "primary" "secondary")
+
+          snapBuddy
         ];
       };
     };

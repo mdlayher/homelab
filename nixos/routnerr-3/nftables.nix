@@ -83,6 +83,7 @@ let
       flush set inet filter tailscale_v6
       ${lib.optionalString (icl && iclServices != [ ]) "flush set inet filter icl_services_v6"}
       flush set inet filter remote_access_v6
+      flush set inet filter remote_reached_v6
       flush set inet filter deploy_v4
       flush set inet filter deploy_v6
       flush set inet filter lgtv_syslog_v4
@@ -125,6 +126,9 @@ let
       ${lib.optionalString (
         remoteReaches != [ ]
       ) "add element inet filter remote_access_v6 { ${lib.concatStringsSep ", " remoteReaches} }"}
+      ${lib.optionalString (
+        remoteReachedBy != [ ]
+      ) "add element inet filter remote_reached_v6 { ${lib.concatStringsSep ", " remoteReachedBy} }"}
       ${lib.optionalString (lgtvDeploys != [ ]) ''
         add element inet filter deploy_v4 { ${deployElements deployFrom.ipv4 (tv: tv.ipv4) lgtvDeploys} }
         ${lib.optionalString (lgtvDeploys6 != [ ])
@@ -222,6 +226,13 @@ let
     map (
       r: "${device.address} . ${inventory.hosts.${r.target}.ula} . ${r.protocol} . ${toString r.port}"
     ) device.reaches
+  ) (lib.attrValues remote.devices);
+  # And every host and port reaching each device, the host first.
+  remoteReachedBy = lib.concatMap (
+    device:
+    map (
+      r: "${inventory.hosts.${r.source}.ula} . ${device.address} . ${r.protocol} . ${toString r.port}"
+    ) device.reachedBy
   ) (lib.attrValues remote.devices);
 
   # lgtv/deploy runs from the development container, which is on a
@@ -474,6 +485,11 @@ in
         # What each remote access device may initiate toward, by device
         # address, host address, protocol and port; see forward_remote.
         set remote_access_v6 {
+          type ipv6_addr . ipv6_addr . inet_proto . inet_service
+        }
+        # What may initiate toward each remote access device, by host
+        # address, device address, protocol and port.
+        set remote_reached_v6 {
           type ipv6_addr . ipv6_addr . inet_proto . inet_service
         }
 
@@ -941,6 +957,11 @@ in
 
           iifname $wans jump forward_wan
           iifname $remote_ifname jump forward_remote
+          # Hosts here toward the remote access devices that list them;
+          # replies return as established. No interface is matched: the
+          # spoofed source drop on the physical LANs in prerouting keeps
+          # another LAN from sending as a listed host.
+          oifname $remote_ifname ip6 saddr . ip6 daddr . meta l4proto . th dport @remote_reached_v6 counter accept comment "remote access device reached"
 
           # Our own dn42 hosts face dn42 the way the LANs face the internet:
           # they initiate toward it, and it reaches them only through the

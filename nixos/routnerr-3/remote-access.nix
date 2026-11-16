@@ -8,8 +8,10 @@
 # A WireGuard tunnel from devices off the tailnet into this site. Each
 # device holds one address in the tunnel and reaches only the hosts and
 # ports it lists, plus the anycast resolver for the site's names; names on
-# the tailnet resolve past an SSH host with ssh -J. nftables.nix admits
-# each device's reaches and the resolver, and nothing else.
+# the tailnet resolve past an SSH host with ssh -J. A device may also be
+# reached from the hosts and ports it lists. nftables.nix admits each
+# device's reaches, the resolver and what reaches each device, and nothing
+# else.
 
 let
   inventory = config.homelab.inventory;
@@ -24,6 +26,33 @@ let
   devices = lib.attrValues cfg.devices;
   hosts = map (device: device.host) devices;
   targets = lib.unique (lib.concatMap (device: map (r: r.target) device.reaches) devices);
+  sources = lib.unique (lib.concatMap (device: map (r: r.source) device.reachedBy) devices);
+
+  # A protocol and destination port, shared by reaches and reachedBy.
+  flow = {
+    protocol = lib.mkOption {
+      type = lib.types.enum [
+        "tcp"
+        "udp"
+      ];
+      default = "tcp";
+      description = "The transport protocol.";
+    };
+    port = lib.mkOption {
+      type = lib.types.port;
+      description = "The destination port.";
+    };
+  };
+
+  # The server holding the buddy backup datasets and their SFTP accounts,
+  # and the machines trading backups with it (see the server's buddy.nix).
+  buddyServer = lib.head inventory.roles.server;
+  buddyConfig = inputs.self.nixosConfigurations.${buddyServer}.config;
+  buddySsh = lib.head buddyConfig.services.openssh.ports;
+  buddies = buddyConfig.homelab.buddies;
+  # Buddies take the hosts ::b001 and up, leaving the low host numbers to
+  # the admin's own devices.
+  buddyHost = index: lib.fromHexString "b000" + index;
 in
 {
   options.homelab.remoteAccess = {
@@ -50,17 +79,17 @@ in
                 description = "The device's WireGuard public key, from its client.";
               };
               host = lib.mkOption {
-                type = lib.types.ints.between 2 9999;
+                type = lib.types.ints.between 2 65535;
                 description = ''
-                  The device's address in the tunnel, written as the last
-                  hextet: 2 is ::2. Assigned rather than derived, so adding
-                  or removing a device never renumbers another.
+                  The device's address in the tunnel, written in hex as the
+                  last hextet: 2 is ::2. Assigned rather than derived, so
+                  adding or removing a device never renumbers another.
                 '';
               };
               address = lib.mkOption {
                 type = lib.types.str;
                 readOnly = true;
-                default = "${net6}::${toString config.host}";
+                default = "${net6}::${lib.toLower (lib.toHexString config.host)}";
                 description = "The device's address in the tunnel, built from host.";
               };
               reaches = lib.mkOption {
@@ -72,19 +101,28 @@ in
                         type = lib.types.str;
                         description = "An inventory host at this site, reached at its ULA.";
                       };
-                      protocol = lib.mkOption {
-                        type = lib.types.enum [
-                          "tcp"
-                          "udp"
-                        ];
-                        default = "tcp";
-                        description = "The transport protocol.";
+                    }
+                    // flow;
+                  }
+                );
+              };
+              reachedBy = lib.mkOption {
+                default = [ ];
+                description = ''
+                  What may initiate toward the device, by inventory host and
+                  the port on the device. Reaching it needs the device's
+                  endpoint, which the router learns only from the device's
+                  own handshakes.
+                '';
+                type = lib.types.listOf (
+                  lib.types.submodule {
+                    options = {
+                      source = lib.mkOption {
+                        type = lib.types.str;
+                        description = "An inventory host at this site, initiating from its ULA.";
                       };
-                      port = lib.mkOption {
-                        type = lib.types.port;
-                        description = "The destination port.";
-                      };
-                    };
+                    }
+                    // flow;
                   }
                 );
               };
@@ -96,25 +134,48 @@ in
   };
 
   config = {
-    homelab.remoteAccess.devices.psframework = {
-      publicKey = "TPjQairhxMGjiEjWNx5yBx/c8l2L3sYhG5SsxzOYAW4=";
-      host = 2;
-      reaches = [
-        {
-          target = "linuxdev";
-          port = 22;
-        }
-        {
-          target = "pikvm";
-          port = 443;
-        }
-      ]
-      # Grafana on each server role holder, at the port it listens on.
-      ++ map (server: {
-        target = server;
-        port = inputs.self.nixosConfigurations.${server}.config.services.grafana.settings.server.http_port;
-      }) inventory.roles.server;
-    };
+    homelab.remoteAccess.devices = {
+      psframework = {
+        publicKey = "TPjQairhxMGjiEjWNx5yBx/c8l2L3sYhG5SsxzOYAW4=";
+        host = 2;
+        reaches = [
+          {
+            target = "linuxdev";
+            port = 22;
+          }
+          {
+            target = "pikvm";
+            port = 443;
+          }
+        ]
+        # Grafana on each server role holder, at the port it listens on.
+        ++ map (server: {
+          target = server;
+          port = inputs.self.nixosConfigurations.${server}.config.services.grafana.settings.server.http_port;
+        }) inventory.roles.server;
+      };
+    }
+    # Each machine trading backups with the server over SFTP: it pushes to
+    # its account on the server, and the server pushes to it.
+    // lib.mapAttrs' (
+      name: buddy:
+      lib.nameValuePair "buddy-${name}" {
+        publicKey = buddy.wireguardKey;
+        host = buddyHost buddy.index;
+        reaches = [
+          {
+            target = buddyServer;
+            port = buddySsh;
+          }
+        ];
+        reachedBy = [
+          {
+            source = buddyServer;
+            port = buddy.sshPort;
+          }
+        ];
+      }
+    ) buddies;
 
     assertions = [
       {
@@ -124,6 +185,10 @@ in
       {
         assertion = lib.all (t: (inventory.hosts.${t} or { ula = null; }).ula != null) targets;
         message = "homelab: every remote access target must be an inventory host at this site with an IPv6 address.";
+      }
+      {
+        assertion = lib.all (s: (inventory.hosts.${s} or { ula = null; }).ula != null) sources;
+        message = "homelab: every source reaching a remote access device must be an inventory host at this site with an IPv6 address.";
       }
     ];
 

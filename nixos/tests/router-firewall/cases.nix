@@ -90,10 +90,14 @@ let
     ]
     // probe
     // verdict;
+  reached = f.remote.reached;
+  reachedBy = lib.head reached.reachedBy;
+  reachedFrom = f.hosts.${reachedBy.source};
 in
-assert lib.assertMsg
-  (!lib.any (x: x.target == lib.head f.inv.roles.server && x.port == 22) f.remote.device.reaches)
-  "router-firewall: the remote access refusal case needs the server's SSH outside the device's reaches";
+assert lib.assertMsg (
+  reached == null
+  || !lib.any (x: x.source == reachedBy.source && x.port == reachedBy.port) f.remote.device.reachedBy
+) "router-firewall: the reached refusal case needs a device its source does not reach";
 [
   # Restricted LANs.
 
@@ -1523,9 +1527,31 @@ assert lib.assertMsg
     from = "remote";
     to = s.interface;
     dst = s.ula;
-    tcp = 22;
+    tcp = p.serverSsh;
     drop = "remote_forward_drop";
   })
+]
+++ lib.optionals (reached != null) [
+  # forward: "remote access device reached"
+  (case "host to a remote device it reaches" {
+    from = reachedFrom.interface;
+    to = "remote";
+    src = reachedFrom.ula;
+    dst = reached.address;
+    ${reachedBy.protocol} = reachedBy.port;
+    accept = "remote access device reached";
+  })
+  # forward: the final reject
+  (case "host to a remote device it does not reach" {
+    from = reachedFrom.interface;
+    to = "remote";
+    src = reachedFrom.ula;
+    dst = f.remote.device.address;
+    ${reachedBy.protocol} = reachedBy.port;
+    reject = "forward_reject";
+  })
+]
+++ [
   # input: "remote access anycast DNS"
   (case "remote device to anycast DNS" {
     from = "remote";

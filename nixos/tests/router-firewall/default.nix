@@ -286,6 +286,7 @@ let
       )
     );
     bfd = 3784;
+    serverSsh = lib.head server.services.openssh.ports;
     peerfinder = dn42.peerfinder.port;
     remoteAccess = router.homelab.remoteAccess.port;
     dn42Peer = (lib.head (lib.attrValues dn42.peers)).port;
@@ -294,11 +295,20 @@ let
     );
   };
 
-  # The first remote access device and the router's end of its tunnel.
-  device = lib.head (lib.attrValues router.homelab.remoteAccess.devices);
+  # The remote access devices, all held by the remote namespace, and the
+  # router's end of their tunnel. Probes leave from a device whose reaches
+  # leave out the server's SSH, for the refusal case, and arrive at a
+  # device something reaches.
+  devices = lib.attrValues router.homelab.remoteAccess.devices;
+  reachesServerSsh = r: r.target == lib.head inv.roles.server && r.port == ports.serverSsh;
+  device =
+    lib.findFirst (d: !lib.any reachesServerSsh d.reaches)
+      (throw "router-firewall: every remote access device reaches the server's SSH, leaving none for the refusal case")
+      devices;
   remote = {
     ifname = router.homelab.remoteAccess.interface;
     inherit device;
+    reached = lib.findFirst (d: d.reachedBy != [ ]) null devices;
     router6 = "${lib.head (lib.splitString "::" device.address)}::1";
   };
 
@@ -444,7 +454,7 @@ let
         net.ts0.peer4
         net.ts0.peer6
       ];
-      remote = [ device.address ];
+      remote = map (d: d.address) devices;
     }
     // lib.mapAttrs (_: d: [
       d.ipv4
@@ -537,7 +547,7 @@ let
       link ${remote.ifname} remote ${
         sh [
           "${remote.router6}/64"
-          "${device.address}/64"
+          (lib.concatMapStringsSep " " (d: "${d.address}/64") devices)
         ]
       }
       route remote ${remote.router6} eth0 default6
