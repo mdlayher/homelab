@@ -82,11 +82,26 @@ in
     name: _: "d ${chroot name}${dir} 0700 ${name} ${name} -"
   ) buddies;
 
+  # The SFTP server logs each session's file operations to syslog, which it
+  # opens after the chroot: the journal's socket is bound into each chroot
+  # at /dev/log for it to find.
+  config.fileSystems = lib.mapAttrs' (
+    name: _:
+    lib.nameValuePair "${chroot name}/dev/log" {
+      device = "/run/systemd/journal/dev-log";
+      fsType = "none";
+      options = [
+        "bind"
+        "nofail"
+      ];
+    }
+  ) buddies;
+
   config.services.openssh.extraConfig = lib.concatStrings (
     lib.mapAttrsToList (name: _: ''
       Match User ${name}
         ChrootDirectory ${chroot name}
-        ForceCommand internal-sftp -d ${dir}
+        ForceCommand internal-sftp -l INFO -d ${dir}
         AuthenticationMethods publickey
         AllowTcpForwarding no
         AllowStreamLocalForwarding no

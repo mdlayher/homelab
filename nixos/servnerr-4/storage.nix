@@ -194,11 +194,23 @@ in
         ]
         ++ map (name: "/${buddy}/${name}") buddies
       )
-      (device: {
-        # The device has the leading / removed.
-        device = builtins.substring 1 255 device;
-        fsType = "zfs";
-      });
+      (
+        device:
+        {
+          # The device has the leading / removed.
+          device = builtins.substring 1 255 device;
+          fsType = "zfs";
+        }
+        # The buddy datasets hold files other people upload, whose mode bits
+        # are theirs to set over SFTP.
+        // lib.optionalAttrs (lib.hasPrefix "/${buddy}" device) {
+          options = [
+            "nosuid"
+            "nodev"
+            "noexec"
+          ];
+        }
+      );
 
   boot.zfs = {
     # Don't mount secondary, just import it on boot.
