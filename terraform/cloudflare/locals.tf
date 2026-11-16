@@ -16,4 +16,8 @@ locals {
 
   iad_endpoint_v4 = "44.193.36.229"
   iad_endpoint_v6 = "2600:1f18:2900:e00:f29a:1a95:373b:2479"
+
+  # The server's address, which buddy.svc names. The server role moving to
+  # another machine is an edit here.
+  buddy_svc_v6 = "fd9e:1a04:f01d:100::10"
 }

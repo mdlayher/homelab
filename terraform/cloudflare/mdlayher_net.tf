@@ -192,3 +192,16 @@ resource "cloudflare_dns_record" "mdlayher_net_https" {
     value    = "alpn=\"h3,h2\""
   }
 }
+
+# The name a buddy backup machine gives its SFTP client: the server, at the
+# address the remote access tunnel reaches it on. The router's resolver
+# answers the same name inside the house from the inventory's services, so
+# this record is the copy for machines that resolve it over the internet.
+resource "cloudflare_dns_record" "mdlayher_net_svc_buddy" {
+  zone_id = local.zones["mdlayher.net"]
+  name    = "buddy.svc.mdlayher.net"
+  type    = "AAAA"
+  content = local.buddy_svc_v6
+  ttl     = 1
+  proxied = false
+}
