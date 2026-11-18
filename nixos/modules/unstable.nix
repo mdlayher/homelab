@@ -16,5 +16,21 @@
       };
       llm-agents = inputs.llm-agents.packages.${prev.stdenv.hostPlatform.system};
     })
+
+    # nginx 1.30.7, which fixes the remote code execution in HTTP/2
+    # (CVE-2026-123007) and the bugs disclosed with it. Evaluation fails
+    # once the nixpkgs pin carries that release, when this is removed.
+    (final: prev: {
+      nginxStable =
+        assert prev.lib.assertMsg (prev.lib.versionOlder prev.nginxStable.version "1.30.7")
+          "nixpkgs carries nginx 1.30.7 or later: remove the nginxStable overlay in modules/unstable.nix";
+        prev.nginxStable.overrideAttrs (old: rec {
+          version = "1.30.7";
+          src = prev.fetchurl {
+            url = "https://nginx.org/download/nginx-${version}.tar.gz";
+            hash = "sha256-JWW1yDcFDpWPcPsPc8SOK8pFQq00n9NW9G+wxyYQvG4=";
+          };
+        });
+    })
   ];
 }
