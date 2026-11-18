@@ -9,9 +9,38 @@
 # chronyd binds every address and nftables.nix decides who may ask, as with
 # CoreDNS: the trusted LANs as for any router service, the restricted LANs
 # and both dn42 classes by an explicit rule, the WANs not at all.
-{ ... }:
+{ config, pkgs, ... }:
 
+let
+  # A terminal dashboard for chronyd (github.com/geerlingguy/chronytop);
+  # nixpkgs has no package. It runs chronyc by a fixed absolute path, which
+  # is replaced with the one chronyd here is built from. The server and
+  # client panels need root, since chronyd answers those on its own socket.
+  chronytop = (pkgs.buildGoModule.override { go = pkgs.unstable.go_1_27; }) {
+    pname = "chronytop";
+    version = "0.2.0";
+    src = pkgs.fetchFromGitHub {
+      owner = "geerlingguy";
+      repo = "chronytop";
+      rev = "v${chronytop.version}";
+      hash = "sha256-ouuU4xXmDkGxKD0Qq9pET9MTPXFF72KUgYI5US5/oAg=";
+    };
+    vendorHash = null;
+    postPatch = ''
+      substituteInPlace chrony.go \
+        --replace-fail /usr/bin/chronyc ${config.services.chrony.package}/bin/chronyc
+    '';
+    ldflags = [
+      "-s"
+      "-w"
+      "-X main.version=v${chronytop.version}"
+    ];
+  };
+
+in
 {
+  environment.systemPackages = [ chronytop ];
+
   # Answered at every site, alongside the resolver (see coredns.nix). The
   # LANs keep the unicast server DHCP hands them: a client whose server can
   # change identity when the topology does is a property of anycast NTP,
