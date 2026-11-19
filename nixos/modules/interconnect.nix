@@ -992,15 +992,16 @@ in
 
           # The circuits cross residential WANs and the internet, where
           # loss of a second or so is routine. bfdd's defaults (300 ms x3)
-          # dropped adjacencies on those bursts; 1 s x3 detects a dead
-          # circuit in 3 s, still well inside the 30 s hello hold, and
-          # the other plane carries traffic meanwhile.
+          # dropped adjacencies on those bursts, and 1 s x3 still dropped
+          # them several times a day on the paths into one site; 1 s x5
+          # detects a dead circuit in 5 s, still well inside the 30 s
+          # hello hold, and the other plane carries traffic meanwhile.
           bfdProfile = ''
             bfd
              profile icl
               transmit-interval 1000
               receive-interval 1000
-              detect-multiplier 3
+              detect-multiplier 5
              !
             !
           '';
