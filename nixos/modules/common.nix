@@ -227,6 +227,15 @@ in
         wget
         xterm
 
+        # procps whose w prints the FROM column without -f, ahead of the
+        # base system's copy in PATH. Not an overlay, which would rebuild
+        # everything that depends on procps.
+        (lib.hiPrio (
+          procps.overrideAttrs (old: {
+            configureFlags = old.configureFlags ++ [ "--enable-w-from" ];
+          })
+        ))
+
         # Unstable packages.
         unstable.go
       ];
