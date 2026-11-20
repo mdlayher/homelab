@@ -23,10 +23,12 @@
     # only sensors assigned to an area of the house, which excludes
     # personal devices (phones, tablets) that run low routinely and
     # charge themselves; assign an area to a new sensor and it is
-    # monitored.
+    # monitored. Sensors report stray near-zero levels for hours at a
+    # time and then recover, so the rule takes the highest reading over
+    # the window: a flat battery stays under the threshold throughout.
     {
       alert = "HomeAssistantBatteryLow";
-      expr = ''homeassistant_sensor_battery_percent * on (entity) group_left(area) homeassistant_entity_info{area!=""} < 15'';
+      expr = ''max_over_time(homeassistant_sensor_battery_percent[12h]) * on (entity) group_left(area) homeassistant_entity_info{area!=""} < 15'';
       for = "1h";
       annotations.summary = "Home Assistant sensor {{ $labels.friendly_name }} ({{ $labels.area }}) battery is at {{ $value }}%.";
     }
