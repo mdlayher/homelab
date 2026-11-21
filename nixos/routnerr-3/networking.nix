@@ -17,10 +17,11 @@ let
   #
   # The tables hold a copy of each WAN's gateway rather than taking it away
   # from main, which still carries the defaults everything else on this
-  # router uses. A WAN with one address family holds an unreachable default
-  # for the other, so a marked packet of that family fails in its own table
-  # rather than falling through to main and leaving by the other WAN, which
-  # is the collapse onto one path the marks exist to prevent.
+  # router uses. Each table also holds an unreachable default per address
+  # family behind its gateways, so a marked packet whose WAN is down, or has
+  # no route for that family, fails in its own table rather than falling
+  # through to main and leaving by the other WAN, which is the collapse onto
+  # one path the marks exist to prevent.
   wan0 = {
     mark = 1;
     table = 100;
@@ -30,16 +31,34 @@ let
     table = 200;
   };
 
-  # Rules sit with the WAN they steer to, so a WAN going away takes its rule
-  # with it and the marked carrier fails rather than quietly falling back.
-  markRule = wan: [
-    {
-      FirewallMark = wan.mark;
-      Table = wan.table;
-      Family = "both";
-      Priority = 100;
-    }
-  ];
+  # The rules and the unreachable defaults belong to the loopback, which
+  # outlasts either WAN: networkd withdraws a WAN's own rules and routes
+  # when its link goes down, and a marked carrier with no rule left follows
+  # main out the other WAN.
+  markRule = wan: {
+    FirewallMark = wan.mark;
+    Table = wan.table;
+    Family = "both";
+    Priority = 100;
+  };
+
+  # Worse than any gateway route in the tables: a DHCP gateway takes the
+  # lease's RouteMetric, and the others the kernel's defaults, 0 for IPv4
+  # and 1024 for IPv6.
+  unreachableMetric = 4096;
+  unreachableDefaults =
+    wan:
+    map
+      (destination: {
+        Destination = destination;
+        Type = "unreachable";
+        Table = wan.table;
+        Metric = unreachableMetric;
+      })
+      [
+        "0.0.0.0/0"
+        "::/0"
+      ];
 
   ethLink = name: mac: {
     matchConfig = {
@@ -230,9 +249,15 @@ in
 
     # Loopback. We own the ULA /48 and the IPv4 /8: a blanket unreachable
     # route for each, superseded by the more specific prefixes on each LAN
-    # and by what the IGP learns from the other sites.
+    # and by what the IGP learns from the other sites. It also carries the
+    # interconnect carriers' mark rules and their tables' unreachable
+    # defaults (see markRule).
     networks."5-lo" = {
       matchConfig.Name = "lo";
+      routingPolicyRules = map markRule [
+        wan0
+        wan1
+      ];
       routes = [
         {
           Destination = inventory.ulaPrefix6;
@@ -242,7 +267,9 @@ in
           Destination = inventory.privatePrefix4;
           Type = "unreachable";
         }
-      ];
+      ]
+      ++ unreachableDefaults wan0
+      ++ unreachableDefaults wan1;
     };
 
     # Wired WAN: Spectrum 1GbE.
@@ -287,7 +314,6 @@ in
 
       # This is the only WAN with IPv6, so the carrier pinned here is the
       # one that can use it.
-      routingPolicyRules = markRule wan0;
       routes = [
         {
           Gateway = "_dhcp4";
@@ -317,17 +343,7 @@ in
           Gateway = "216.82.20.65";
           Table = wan1.table;
         }
-        # This WAN has no IPv6 at all. A carrier marked for it names an
-        # IPv4-only endpoint, and should that name ever resolve to IPv6
-        # the packet meets this rather than main's default out wan0.
-        {
-          Destination = "::/0";
-          Type = "unreachable";
-          Table = wan1.table;
-        }
       ];
-
-      routingPolicyRules = markRule wan1;
     };
 
     # The management LAN trunks to the core switch over an active-backup

@@ -262,10 +262,12 @@ let
   # The routes the router's lo network discards traffic with: the
   # blackhole (see modules/interconnect.nix) and the unreachable
   # aggregates (see the router's networking.nix), and an address inside
-  # the first blackhole.
+  # the first blackhole. Routes in another table are left out: the rig
+  # builds the main table only.
   discards = lib.filter (
     r:
-    lib.elem (r.Type or null) [
+    !(r ? Table)
+    && lib.elem (r.Type or null) [
       "blackhole"
       "unreachable"
     ]
