@@ -27,9 +27,8 @@ locals {
 
 # The LAN's SSID: WPA3 alone, with management frame protection required
 # and 802.11r fast roaming. Every SSID but the legacy one tells a roaming
-# client about the neighbouring access points. Multi-link stays off, as
-# does 802.11r on the other SSIDs: pushing them hung the access points'
-# management agents on firmware 8.7.11.
+# client about the neighbouring access points. Multi-link stays off:
+# pushing it hung the access points' management agents on firmware 8.7.11.
 resource "unifi_wlan" "lan" {
   name                       = "Black Note Stout"
   security                   = "wpapsk"
@@ -66,8 +65,8 @@ resource "unifi_wlan" "media" {
 }
 
 # The guest network's SSID: WPA3 with WPA2 alongside for the devices that
-# speak only that, and stations kept from reaching one another over the
-# air.
+# speak only that, 802.11r fast roaming, and stations kept from reaching
+# one another over the air.
 resource "unifi_wlan" "guest" {
   name                       = "Raspberry Wild One"
   security                   = "wpapsk"
@@ -80,6 +79,7 @@ resource "unifi_wlan" "guest" {
   minimum_data_rate_2g_kbps  = local.min_rate_2g_kbps
   minimum_data_rate_5g_kbps  = local.min_rate_5g_kbps
   bss_transition             = true
+  fast_roaming_enabled       = true
   network_id                 = unifi_network.vlan["guest0"].id
   ap_group_ids               = [data.unifi_ap_group.default.id]
   user_group_id              = data.unifi_client_qos_rate.default.id
