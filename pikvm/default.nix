@@ -189,6 +189,7 @@ let
       '';
     }
     {
+      # resolved neither announces nor resolves over mDNS or LLMNR on LTE.
       path = "/etc/NetworkManager/system-connections/pikvm-lte.nmconnection";
       mode = "600";
       action = "networkmanager";
@@ -197,6 +198,8 @@ let
         id=pikvm-lte
         uuid=1ca18f28-1d2e-492d-acc0-22b373c634c2
         type=gsm
+        mdns=0
+        llmnr=0
 
         [gsm]
         apn=h2g2
@@ -209,6 +212,72 @@ let
         method=auto
 
         [proxy]
+      '';
+    }
+    {
+      # Firewall for the LTE interface only. The empty table line lets the
+      # delete succeed on a first load, so each load replaces this table
+      # alone in one transaction.
+      path = "/etc/wwan-nftables.nft";
+      mode = "644";
+      action = "wwan-nftables";
+      text = ''
+        table inet wwan-nftables
+        delete table inet wwan-nftables
+
+        table inet wwan-nftables {
+          chain input {
+            type filter hook input priority filter; policy accept;
+
+            iifname != "wwan0" accept
+
+            ct state { established, related } counter accept
+
+            # Errors, neighbor discovery and router advertisements.
+            meta l4proto ipv6-icmp icmpv6 type {
+              destination-unreachable,
+              packet-too-big,
+              time-exceeded,
+              parameter-problem,
+              nd-router-advert,
+              nd-neighbor-solicit,
+              nd-neighbor-advert,
+            } counter accept
+            meta l4proto icmp icmp type {
+              destination-unreachable,
+              time-exceeded,
+              parameter-problem,
+            } counter accept
+
+            udp dport ${toString tailscalePort} counter accept comment "tailscaled direct connections"
+
+            counter drop
+          }
+        }
+      '';
+    }
+    {
+      # Loads the LTE firewall before NetworkManager brings up the modem.
+      path = "/etc/systemd/system/wwan-nftables.service";
+      mode = "644";
+      action = "wwan-nftables";
+      text = ''
+        [Unit]
+        Description=Host firewall on the LTE interface
+        DefaultDependencies=no
+        Wants=network-pre.target
+        Before=network-pre.target shutdown.target
+        Conflicts=shutdown.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/nft -f /etc/wwan-nftables.nft
+        ExecReload=/usr/bin/nft -f /etc/wwan-nftables.nft
+        ExecStop=/usr/bin/nft delete table inet wwan-nftables
+
+        [Install]
+        WantedBy=multi-user.target
       '';
     }
     {

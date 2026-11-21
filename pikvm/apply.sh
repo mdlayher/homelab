@@ -245,6 +245,12 @@ if [[ -n ${todo[sshd]:-} ]]; then
   sshd -t
   systemctl reload sshd
 fi
+if [[ -n ${todo[wwan-nftables]:-} ]]; then
+  nft -c -f /etc/wwan-nftables.nft
+  systemctl daemon-reload
+  systemctl enable wwan-nftables
+  systemctl reload-or-restart wwan-nftables
+fi
 if [[ -n ${todo[networkmanager]:-} ]] && systemctl -q is-active NetworkManager; then
   nmcli connection reload
 fi
