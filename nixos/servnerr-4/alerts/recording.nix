@@ -14,9 +14,8 @@
   rules = [
     # BGP session state changes per hour, as a series to graph and alert
     # on rather than a query to remember. BIRDBGPSessionDown needs ten
-    # straight minutes down and DN42PeerSessionDown an hour, so a
-    # session bouncing every few minutes never trips either and only
-    # shows up here.
+    # straight minutes down and no rule watches a single dn42 peer, so
+    # a session bouncing every few minutes only shows up here.
     #
     # The subquery is load-bearing: the exporter puts a state label
     # (Established, Active, Idle ... Error: ...) on a BGP protocol's

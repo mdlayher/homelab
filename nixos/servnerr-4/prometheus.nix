@@ -96,7 +96,7 @@ let
         }
         # dn42_peer_exporter runs on every host terminating external dn42
         # tunnels, probing each peer's link-local address across its own
-        # tunnel; see the router host's dn42.nix and the DN42PeerLatencyHigh
+        # tunnel; see the router host's dn42.nix and the DN42PeerMTUBlackhole
         # alert. The option exists only on hosts that import that file, and
         # holds the external peers alone: the internal dn42i-* VLANs are
         # declared separately and are not tunnels.

@@ -1217,9 +1217,9 @@ in
           '';
         };
 
-    # Latency to each external peer across its tunnel, for the
-    # DN42PeerLatencyHigh alert, plus a full-size echo at the tunnel's MTU
-    # (the mtu option above) for DN42PeerMTUBlackhole, since a path that
+    # Latency to each external peer across its tunnel, plus a full-size
+    # echo at the tunnel's MTU (the mtu option above) for
+    # DN42PeerMTUBlackhole, since a path that
     # drops packets of the configured size leaves the session looking
     # healthy. It runs here because a link-local address is only reachable
     # from the interface it lives on, and the tunnels are on this machine;

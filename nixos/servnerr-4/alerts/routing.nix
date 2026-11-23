@@ -64,11 +64,10 @@
     # alerts. 10 minutes skips the ordinary flap and still catches a
     # session that is really gone.
     #
-    # The external dn42 peers are split out below: their sessions fail
-    # at the far end far more often than at this one, and nothing here
-    # fixes a peer's reboot, so a single peer down is a notice after an
-    # hour rather than an alert. The aggregate rule after it is the
-    # loud one, since every external peer down at once is this router.
+    # The external dn42 peers are left out: their sessions fail at the
+    # far end far more often than at this one, and nothing here fixes a
+    # peer's reboot, so a single peer down raises nothing. The aggregate
+    # rule below covers them.
     #
     # Internal sessions are named dn42i_* on purpose: the exporter
     # passes bird's protocol name through as the name label, so the
@@ -90,13 +89,6 @@
       expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name!~${internalProtocols},name!~${externalProtocols}}) == 0'';
       for = "10m";
       annotations.summary = "BGP session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} is not Established.";
-    }
-    {
-      alert = "DN42PeerSessionDown";
-      expr = ''max by (instance, name, ip_version) (bird_protocol_up{proto="BGP",name=~${externalProtocols}}) == 0'';
-      for = "1h";
-      labels.notify = "ops";
-      annotations.summary = "dn42 peer session {{ $labels.name }} (IPv{{ $labels.ip_version }}) on {{ $labels.instance }} has not been Established for an hour.";
     }
     # Peers fail independently of each other, so most of a router's
     # external peers down at once is this end: the tunnel endpoint, the
@@ -127,25 +119,27 @@
       annotations.summary = "The BIRD exporter on {{ $labels.instance }} is failing, so dn42 protocol state is unmonitored.";
     }
     # Multiple RTR servers feed the same ROA tables, so one down is
-    # redundancy doing its job rather than an outage, and the tables
-    # hold their data for the two hour expire window. That leaves
-    # plenty of room to wait out a refresh or retry cycle before
-    # alerting; what this catches ahead of an empty table is the rest
-    # of the feeds going the same way. rpki_sess_flap is in here too
-    # and matters less: its tables fail open, so losing it suppresses
-    # nothing rather than rejecting everything.
+    # redundancy doing its job and raises nothing. The import filters
+    # reject every route once the tables empty, and the tables hold
+    # their data for the two hour expire window, so this fires while
+    # fewer than two feeds remain, ahead of that. rpki_sess_flap is
+    # left out: its tables are its own and fail open, so losing it
+    # suppresses nothing rather than rejecting everything.
     #
-    # Not `bird_protocol_up == 0`: the exporter puts the protocol state
-    # in a label, so a session cycling Transport-Error -> Connecting ->
-    # Sync-Start is a different series each hop and the `for` timer
-    # restarts every retry, never reaching 30m. Sync-Start reports up=1
-    # besides. Ask instead for a session with no Established series,
-    # which is one series per session and holds across the flapping.
+    # Counted by the Established state label, not `bird_protocol_up`:
+    # Sync-Start reports up=1, and a session cycling through its retry
+    # states is a new series each hop. The `or` gives a router with no
+    # feed Established a zero rather than no series.
     {
-      alert = "BIRDRPKISessionDown";
-      expr = ''count by (instance, name) (bird_protocol_up{proto="RPKI"}) unless on (instance, name) bird_protocol_up{proto="RPKI", state="Established"}'';
+      alert = "BIRDRPKIFeedsDown";
+      expr = ''
+        (
+          count by (instance) (bird_protocol_up{proto="RPKI",name!="rpki_sess_flap",state="Established"})
+            or on (instance) 0 * count by (instance) (bird_protocol_up{proto="RPKI",name!="rpki_sess_flap"})
+        ) < 2
+      '';
       for = "30m";
-      annotations.summary = "RPKI validator session {{ $labels.name }} on {{ $labels.instance }} is not Established.";
+      annotations.summary = "{{ $labels.instance }} has {{ $value }} RPKI feeds Established for its ROA tables, which empty and reject every route once the last feed expires.";
     }
     # rtrtr resets this age only when the RTR cache's ROA set changes
     # or a fetch starts failing, and the registry can go several days
@@ -292,28 +286,6 @@
       for = "2m";
       annotations.summary = "A LAN client's {{ $labels.family }} query to the anycast resolver {{ $labels.instance }} goes unanswered, so every client following that address has no names.";
     }
-    # Some dn42 networks drop a session whose latency exceeds 100ms, so
-    # that is the permissible round trip to any peer, and 80ms leaves
-    # margin to act. The metric is the ICMP round trip to a peer's
-    # link-local address across its own tunnel, probed by the router's
-    # dn42_peer_exporter (see its dn42.nix). The median over an hour
-    # rather than a mean or a `for`: a handful of multi-second probes
-    # during a peer's flap pulls a mean over the line while the path is
-    # unchanged, a path hovering around the line would keep resetting a
-    # timer, and a median only moves once most of the hour is slow. A
-    # failed probe publishes no round trip at all, so it neither lowers
-    # the median nor fires this; a dead tunnel is the WireGuard and BIRD
-    # rules' to report. A notice rather than an alert: the path is the
-    # peer's and the internet's, and a session dropped over it is
-    # DN42PeerSessionDown's to report. External peers only: the
-    # exporter's peers are the router's dn42 peer set, which has no
-    # dn42i-* entries.
-    {
-      alert = "DN42PeerLatencyHigh";
-      expr = "quantile_over_time(0.5, dn42_peer_rtt_seconds[1h]) > 0.080";
-      labels.notify = "ops";
-      annotations.summary = "dn42 peer {{ $labels.peer }} ({{ $labels.instance }}) has a median {{ $value | humanizeDuration }} round trip over the last hour, above the 80ms warning line for a 100ms limit.";
-    }
     # A tunnel that carries small packets but drops full-size ones is
     # the quiet dn42 failure: the session stays up while large updates
     # and traffic blackhole. After each answered probe the exporter
@@ -336,30 +308,19 @@
       for = "5m";
       annotations.summary = "The WireGuard exporter on {{ $labels.instance }} is down, so its tunnel handshakes are unmonitored.";
     }
-    # Nothing else notices a dead dn42 tunnel this quickly: BGP holds for
-    # 240 seconds before the session drops, and BIRDBGPSessionDown then
-    # waits 10 minutes on top of that. WireGuard rehandshakes roughly
-    # every two minutes while traffic flows, and BGP keepalives guarantee
-    # traffic, so three minutes of silence means the tunnel is gone
-    # rather than idle. That reasoning is specific to dn42 peers, hence
-    # the interface match: a future tunnel carrying no keepalives would
-    # need its own threshold. The prefix is dn42e- rather than dn42-,
-    # since the latter also matches the dn42i- VLANs, which carry no
-    # WireGuard at all. A peer which has never handshaken reports a
-    # delay measured from the epoch and fires immediately, which is the
-    # right answer for a tunnel that never came up. Rates on the byte
-    # counters would add nothing: the handshakes are themselves driven by
-    # that traffic, so a tunnel whose bytes stop moving goes stale within
-    # a handshake interval anyway, and a live tunnel carrying no useful
-    # routes is what the BIRD rules above catch.
-    #
-    # The interconnect carriers (iclw-) qualify on the same reasoning:
-    # the IGP's hellos cross them every few seconds, so a quiet carrier
-    # is a dead one there too, and both ends of a carrier run the
-    # exporter, so a circuit between two edges is measured as well.
+    # The interconnect carriers only. The IGP's hellos cross a carrier
+    # every few seconds and WireGuard rehandshakes roughly every two
+    # minutes while traffic flows, so three minutes of silence means
+    # the carrier is gone rather than idle. Both ends of a carrier run
+    # the exporter, so a circuit between two edges is measured as well.
+    # A peer which has never handshaken reports a delay measured from
+    # the epoch and fires immediately, which is the right answer for a
+    # tunnel that never came up. The dn42 peers' tunnels are left out:
+    # one going stale is its peer's session going down, which
+    # DN42PeersDown reports once enough of them have.
     {
       alert = "WireGuardPeerHandshakeStale";
-      expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "(dn42e|iclw)-.*"}} > 180";
+      expr = "wireguard_latest_handshake_delay_seconds{interface=~${raw "iclw-.*"}} > 180";
       for = "5m";
       annotations.summary = "WireGuard tunnel {{ $labels.interface }} on {{ $labels.instance }} last handshook {{ $value | humanizeDuration }} ago.";
     }
