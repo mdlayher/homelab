@@ -152,6 +152,11 @@ in
         ++ map (server: {
           target = server;
           port = inputs.self.nixosConfigurations.${server}.config.services.grafana.settings.server.http_port;
+        }) inventory.roles.server
+        # The UniFi controller's web UI and API on each server role holder.
+        ++ map (server: {
+          target = server;
+          port = 8443;
         }) inventory.roles.server;
       };
     }
