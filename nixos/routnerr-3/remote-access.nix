@@ -46,16 +46,6 @@ let
 
   # The LG TVs running Glasshouse, and the port it listens on.
   lgtv = import ../../lgtv/hosts.nix;
-
-  # The server holding the buddy backup datasets and their SFTP accounts,
-  # and the machines trading backups with it (see the server's buddy.nix).
-  buddyServer = lib.head inventory.roles.server;
-  buddyConfig = inputs.self.nixosConfigurations.${buddyServer}.config;
-  buddySsh = lib.head buddyConfig.services.openssh.ports;
-  buddies = buddyConfig.homelab.buddies;
-  # Buddies take the hosts ::b001 and up, leaving the low host numbers to
-  # the admin's own devices.
-  buddyHost = index: lib.fromHexString "b000" + index;
 in
 {
   options.homelab.remoteAccess = {
@@ -167,28 +157,7 @@ in
           port = lgtv.port;
         }) lgtv.hosts;
       };
-    }
-    # Each machine trading backups with the server over SFTP: it pushes to
-    # its account on the server, and the server pushes to it.
-    // lib.mapAttrs' (
-      name: buddy:
-      lib.nameValuePair "buddy-${name}" {
-        publicKey = buddy.wireguardKey;
-        host = buddyHost buddy.index;
-        reaches = [
-          {
-            target = buddyServer;
-            port = buddySsh;
-          }
-        ];
-        reachedBy = [
-          {
-            source = buddyServer;
-            port = buddy.sshPort;
-          }
-        ];
-      }
-    ) buddies;
+    };
 
     assertions = [
       {
