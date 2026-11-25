@@ -44,6 +44,9 @@ let
     };
   };
 
+  # The LG TVs running Glasshouse, and the port it listens on.
+  lgtv = import ../../lgtv/hosts.nix;
+
   # The server holding the buddy backup datasets and their SFTP accounts,
   # and the machines trading backups with it (see the server's buddy.nix).
   buddyServer = lib.head inventory.roles.server;
@@ -157,7 +160,12 @@ in
         ++ map (server: {
           target = server;
           port = 8443;
-        }) inventory.roles.server;
+        }) inventory.roles.server
+        # Glasshouse's dashboard and API on each LG TV.
+        ++ map (tv: {
+          target = tv;
+          port = lgtv.port;
+        }) lgtv.hosts;
       };
     }
     # Each machine trading backups with the server over SFTP: it pushes to
