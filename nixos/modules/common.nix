@@ -364,6 +364,9 @@ in
         PasswordAuthentication = false;
         KbdInteractiveAuthentication = false;
         PermitRootLogin = "no";
+        # Record a client by the name its address reverses to, where that
+        # name resolves back to the address, so w and who show names.
+        UseDns = true;
       };
 
       # SSH from the development container accepts only the admin's FIDO2
