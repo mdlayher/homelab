@@ -316,7 +316,9 @@ in
       # (terraform/tailscale/policy.hujson). No cache: tailscaled answers
       # from memory with a 5 s TTL. Counted like the root zone, so
       # CoreDNSUpstreamFailing notices the router's tailscaled going quiet.
-      ${inventory.tailnetDomain} {
+      # Tailscale's address ranges are served the same way, so a tailnet
+      # address reverses to its node's name.
+      ${inventory.tailnetDomain} 100.64.0.0/10 fd7a:115c:a1e0::/48 {
         prometheus :9153
         forward . 100.100.100.100
       }
