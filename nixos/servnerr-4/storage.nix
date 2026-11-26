@@ -154,6 +154,10 @@ in
         # The device has the leading / removed.
         device = builtins.substring 1 255 device;
         fsType = "zfs";
+        # A dataset that fails to mount leaves a failed unit and nothing
+        # more: local-fs.target does not require it, so the machine does
+        # not drop to emergency mode.
+        options = [ "nofail" ];
       });
 
   boot.zfs = {
