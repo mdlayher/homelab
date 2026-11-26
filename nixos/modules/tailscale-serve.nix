@@ -79,15 +79,24 @@ in
         (builtins.toJSON tlsCommands)
       ];
 
+      # A failed run is retried, since tailscaled cannot log in until the
+      # machine reaches the internet, which at a cold start of the whole
+      # site takes longer than the wait below. The start limit ends the
+      # retries, so a lasting failure leaves the unit failed for the
+      # SystemdUnitFailed alert.
+      startLimitIntervalSec = 3600;
+      startLimitBurst = 10;
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
 
-      # tailscaled may still be connecting at boot; failure after the retries
-      # surfaces through the SystemdUnitFailed alert. set-config --all clears
-      # all previous serve state before the TLS endpoints are layered on, so
-      # each run converges on exactly this configuration.
+      # tailscaled may still be connecting when the unit starts. set-config
+      # --all clears all previous serve state before the TLS endpoints are
+      # layered on, so each run converges on exactly this configuration.
       script = ''
         for _ in $(seq 30); do
           ${tailscale}/bin/tailscale status >/dev/null 2>&1 && break

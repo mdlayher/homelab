@@ -336,7 +336,9 @@ let
       # module parameter, and the kernel builds the frames itself, so the
       # host's hardware address comes from the neighbor table once a ping
       # has filled it. Like any console it receives the messages below
-      # the console log level, here the kernel's default.
+      # the console log level, here the kernel's default. The unit retries
+      # a failed start, since the host may still be booting, and the start
+      # limit ends the retries so a lasting failure leaves it failed.
       path = "/usr/local/bin/netconsole-up";
       mode = "755";
       action = "netconsole";
@@ -358,10 +360,14 @@ let
         Description=Kernel netconsole to the loki host
         After=network-online.target
         Wants=network-online.target
+        StartLimitIntervalSec=3600
+        StartLimitBurst=10
 
         [Service]
         Type=oneshot
         RemainAfterExit=yes
+        Restart=on-failure
+        RestartSec=30
         ExecStart=/usr/local/bin/netconsole-up
         ExecStop=/usr/bin/modprobe -r netconsole
 
